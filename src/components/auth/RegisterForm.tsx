@@ -48,6 +48,9 @@ export function RegisterForm() {
     }
 
     if (data.session) {
+      if (referredByCode) {
+        void fetch("/api/referrals/notify", { method: "POST", keepalive: true });
+      }
       router.push("/onboarding");
       router.refresh();
       return;

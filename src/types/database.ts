@@ -85,6 +85,7 @@ export type Referral = {
   referred_id: string;
   code: string;
   reward_status: "pending" | "granted";
+  notified_at: string | null;
   created_at: string;
 };
 
