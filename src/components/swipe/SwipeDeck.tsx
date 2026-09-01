@@ -1,0 +1,205 @@
+"use client";
+
+import { forwardRef, useImperativeHandle, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { motion, useMotionValue, useTransform, animate } from "framer-motion";
+import { createClient } from "@/lib/supabase/client";
+import { OfferCardContent } from "@/components/swipe/OfferCard";
+import type { Offer, SwipeDirection } from "@/types/database";
+
+const SWIPE_THRESHOLD = 120;
+const EXIT_DISTANCE = 600;
+
+export interface SwipeCardHandle {
+  swipeOut: (direction: SwipeDirection) => void;
+}
+
+const SwipeCard = forwardRef<
+  SwipeCardHandle,
+  { offer: Offer; isTop: boolean; onExited: (direction: SwipeDirection) => void }
+>(function SwipeCard({ offer, isTop, onExited }, ref) {
+  const x = useMotionValue(0);
+  const rotate = useTransform(x, [-300, 300], [-18, 18]);
+  const likeOpacity = useTransform(x, [20, 140], [0, 1]);
+  const passOpacity = useTransform(x, [-140, -20], [1, 0]);
+
+  function swipeOut(direction: SwipeDirection) {
+    void animate(x, direction === "like" ? EXIT_DISTANCE : -EXIT_DISTANCE, {
+      duration: 0.3,
+      ease: "easeIn",
+      onComplete: () => onExited(direction),
+    });
+  }
+
+  useImperativeHandle(ref, () => ({ swipeOut }));
+
+  return (
+    <motion.div
+      className="absolute inset-0"
+      style={{ x, rotate }}
+      drag={isTop ? "x" : false}
+      dragConstraints={{ left: 0, right: 0 }}
+      dragElastic={0.9}
+      onDragEnd={(_, info) => {
+        if (info.offset.x > SWIPE_THRESHOLD) {
+          swipeOut("like");
+        } else if (info.offset.x < -SWIPE_THRESHOLD) {
+          swipeOut("pass");
+        } else {
+          void animate(x, 0, { type: "spring", stiffness: 400, damping: 30 });
+        }
+      }}
+    >
+      <div className="relative h-full w-full overflow-hidden rounded-3xl border border-border bg-surface shadow-xl">
+        {isTop && (
+          <>
+            <motion.span
+              style={{ opacity: likeOpacity }}
+              className="pointer-events-none absolute left-6 top-6 z-10 rotate-[-12deg] rounded-lg border-4 border-accent-like px-3 py-1 text-xl font-extrabold text-accent-like"
+            >
+              LIKE
+            </motion.span>
+            <motion.span
+              style={{ opacity: passOpacity }}
+              className="pointer-events-none absolute right-6 top-6 z-10 rotate-[12deg] rounded-lg border-4 border-accent-pass px-3 py-1 text-xl font-extrabold text-accent-pass"
+            >
+              PASS
+            </motion.span>
+          </>
+        )}
+        <OfferCardContent offer={offer} />
+      </div>
+    </motion.div>
+  );
+});
+
+export function SwipeDeck({
+  offers,
+  userId,
+}: {
+  offers: Offer[];
+  userId: string;
+}) {
+  const router = useRouter();
+  const [stack, setStack] = useState(offers);
+  const [busy, setBusy] = useState(false);
+  const topCardRef = useRef<SwipeCardHandle>(null);
+
+  const visible = stack.slice(0, 3);
+
+  async function recordSwipe(offer: Offer, direction: SwipeDirection) {
+    const supabase = createClient();
+    await supabase
+      .from("swipes")
+      .upsert(
+        { user_id: userId, offer_id: offer.id, direction },
+        { onConflict: "user_id,offer_id" },
+      );
+  }
+
+  function handleSwipeIntent(direction: SwipeDirection) {
+    const offer = stack[0];
+    if (!offer) return;
+    void recordSwipe(offer, direction);
+    topCardRef.current?.swipeOut(direction);
+  }
+
+  function handleExited(offerId: string) {
+    setStack((prev) => prev.filter((o) => o.id !== offerId));
+  }
+
+  async function handleApplyNow() {
+    const offer = stack[0];
+    if (!offer || busy) return;
+    setBusy(true);
+
+    const supabase = createClient();
+    await supabase
+      .from("swipes")
+      .upsert(
+        { user_id: userId, offer_id: offer.id, direction: "like" },
+        { onConflict: "user_id,offer_id" },
+      );
+    await supabase
+      .from("applications")
+      .upsert(
+        { user_id: userId, offer_id: offer.id, status: "envoyee" },
+        { onConflict: "user_id,offer_id" },
+      );
+
+    router.push(`/candidature/${offer.id}`);
+  }
+
+  if (visible.length === 0) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center text-center px-6 py-20">
+        <p className="text-4xl">🎉</p>
+        <h2 className="mt-4 text-xl font-bold">
+          Tu as vu toutes les offres du moment
+        </h2>
+        <p className="mt-2 text-foreground/60">
+          Reviens un peu plus tard, on en ajoute régulièrement.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center py-6">
+      <div className="relative h-[520px] w-full max-w-sm">
+        {visible
+          .slice()
+          .reverse()
+          .map((offer, i) => {
+            const indexFromTop = visible.length - 1 - i;
+            const isTop = indexFromTop === 0;
+            return (
+              <motion.div
+                key={offer.id}
+                className="absolute inset-0"
+                style={{ zIndex: 10 - indexFromTop }}
+                animate={{
+                  scale: 1 - indexFromTop * 0.04,
+                  y: indexFromTop * 10,
+                }}
+              >
+                <SwipeCard
+                  ref={isTop ? topCardRef : undefined}
+                  offer={offer}
+                  isTop={isTop}
+                  onExited={() => handleExited(offer.id)}
+                />
+              </motion.div>
+            );
+          })}
+      </div>
+
+      <div className="mt-6 flex items-center gap-5">
+        <button
+          type="button"
+          onClick={() => handleSwipeIntent("pass")}
+          aria-label="Passer"
+          className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-accent-pass text-2xl text-accent-pass hover:bg-accent-pass/10 transition-colors"
+        >
+          ✕
+        </button>
+        <button
+          type="button"
+          onClick={handleApplyNow}
+          disabled={busy}
+          className="rounded-full bg-brand px-5 py-3 text-sm font-semibold text-white hover:bg-brand-dark transition-colors disabled:opacity-60"
+        >
+          Postuler direct
+        </button>
+        <button
+          type="button"
+          onClick={() => handleSwipeIntent("like")}
+          aria-label="Aimer"
+          className="flex h-16 w-16 items-center justify-center rounded-full bg-accent-like text-3xl text-white shadow-lg hover:opacity-90 transition-opacity"
+        >
+          ♥
+        </button>
+      </div>
+    </div>
+  );
+}
