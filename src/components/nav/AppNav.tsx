@@ -27,7 +27,7 @@ export async function AppNav() {
     <header className="sticky top-0 z-20 border-b border-border bg-surface/90 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
         <Link href="/swipe" className="text-lg font-bold text-brand-dark">
-          Alt
+          Stageio
         </Link>
 
         <nav className="hidden sm:flex items-center gap-5 text-sm font-medium">

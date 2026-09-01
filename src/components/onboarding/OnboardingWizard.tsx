@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { TagInput } from "@/components/ui/TagInput";
 import { ChipMultiSelect } from "@/components/ui/ChipMultiSelect";
 import { cn } from "@/lib/utils";
-import type { ContractType, GenderType, Profile } from "@/types/database";
+import type { ContractType, Profile } from "@/types/database";
 
 const SECTORS = [
   "Informatique",
@@ -21,14 +21,24 @@ const SECTORS = [
   "Autre",
 ];
 
-const GENDER_OPTIONS: { value: GenderType; label: string }[] = [
-  { value: "femme", label: "Femme" },
-  { value: "homme", label: "Homme" },
-  { value: "autre", label: "Autre" },
-  { value: "non_precise", label: "Je préfère ne pas préciser" },
+const EDUCATION_LEVELS = ["Bac", "Bac+2", "Bac+3", "Bac+4", "Bac+5", "Bac+6 et plus"];
+
+const EXPERIENCE_LEVELS = [
+  "Aucune expérience",
+  "Stage(s) réalisé(s)",
+  "1-2 ans",
+  "3-5 ans",
+  "5 ans et plus",
 ];
 
-const TOTAL_STEPS = 4;
+const MOBILITY_OPTIONS = [
+  "Sur place uniquement",
+  "Mobile dans la région",
+  "Mobile en France",
+  "Full remote",
+];
+
+const TOTAL_STEPS = 5;
 
 export function OnboardingWizard({
   userId,
@@ -46,15 +56,30 @@ export function OnboardingWizard({
   const [sectors, setSectors] = useState<string[]>(
     initialProfile?.sectors ?? [],
   );
+  const [targetJobs, setTargetJobs] = useState<string[]>(
+    initialProfile?.target_jobs ?? [],
+  );
+
   const [city, setCity] = useState(initialProfile?.city ?? "");
+  const [mobility, setMobility] = useState(initialProfile?.mobility ?? "");
   const [lookingFor, setLookingFor] = useState<ContractType[]>(
     initialProfile?.looking_for ?? ["alternance", "stage"],
   );
+
+  const [educationLevel, setEducationLevel] = useState(
+    initialProfile?.education_level ?? "",
+  );
+  const [formation, setFormation] = useState(initialProfile?.formation ?? "");
+  const [experienceLevel, setExperienceLevel] = useState(
+    initialProfile?.experience_level ?? "",
+  );
+
   const [bio, setBio] = useState(initialProfile?.bio ?? "");
   const [birthDate, setBirthDate] = useState(initialProfile?.birth_date ?? "");
-  const [gender, setGender] = useState<GenderType | "">(
-    initialProfile?.gender ?? "",
+  const [availabilityDate, setAvailabilityDate] = useState(
+    initialProfile?.availability_date ?? "",
   );
+
   const [cvFile, setCvFile] = useState<File | null>(null);
 
   function toggleLookingFor(type: ContractType) {
@@ -110,11 +135,16 @@ export function OnboardingWizard({
       .update({
         skills,
         sectors,
+        target_jobs: targetJobs,
         city: city.trim(),
+        mobility: mobility || null,
         looking_for: lookingFor,
+        education_level: educationLevel || null,
+        formation: formation.trim() || null,
+        experience_level: experienceLevel || null,
         bio: bio.trim() || null,
         birth_date: birthDate || null,
-        gender: gender || null,
+        availability_date: availabilityDate || null,
         cv_path: cvPath,
         cv_uploaded_at: cvUploadedAt,
         onboarding_completed: true,
@@ -169,6 +199,16 @@ export function OnboardingWizard({
               onChange={setSectors}
             />
           </div>
+          <div>
+            <p className="mb-2 text-sm font-medium">
+              Métiers recherchés (optionnel)
+            </p>
+            <TagInput
+              value={targetJobs}
+              onChange={setTargetJobs}
+              placeholder="Ex : Chargé de marketing, développeur..."
+            />
+          </div>
         </div>
       )}
 
@@ -177,7 +217,7 @@ export function OnboardingWizard({
           <div>
             <h1 className="text-2xl font-bold">Où est-ce que tu vis ?</h1>
             <p className="mt-1 text-sm text-foreground/60">
-              On te proposera des offres proches ou en remote.
+              On te proposera des offres proches ou compatibles avec ta mobilité.
             </p>
           </div>
           <input
@@ -186,6 +226,24 @@ export function OnboardingWizard({
             placeholder="Ta ville"
             className="w-full rounded-lg border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
           />
+          <div>
+            <label className="block text-sm font-medium mb-1" htmlFor="mobility">
+              Mobilité
+            </label>
+            <select
+              id="mobility"
+              value={mobility}
+              onChange={(e) => setMobility(e.target.value)}
+              className="w-full rounded-lg border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
+            >
+              <option value="">—</option>
+              {MOBILITY_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+          </div>
           <div>
             <p className="mb-2 text-sm font-medium">Tu cherches...</p>
             <div className="flex gap-2">
@@ -210,6 +268,65 @@ export function OnboardingWizard({
       )}
 
       {step === 3 && (
+        <div className="space-y-5">
+          <div>
+            <h1 className="text-2xl font-bold">Ton parcours scolaire</h1>
+            <p className="mt-1 text-sm text-foreground/60">
+              Ça nous aide à ne te montrer que des offres accessibles.
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1" htmlFor="educationLevel">
+              Niveau d&apos;études
+            </label>
+            <select
+              id="educationLevel"
+              value={educationLevel}
+              onChange={(e) => setEducationLevel(e.target.value)}
+              className="w-full rounded-lg border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
+            >
+              <option value="">—</option>
+              {EDUCATION_LEVELS.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1" htmlFor="formation">
+              Formation / école
+            </label>
+            <input
+              id="formation"
+              value={formation}
+              onChange={(e) => setFormation(e.target.value)}
+              placeholder="Ex : BUT informatique, BTS MCO..."
+              className="w-full rounded-lg border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1" htmlFor="experienceLevel">
+              Expérience
+            </label>
+            <select
+              id="experienceLevel"
+              value={experienceLevel}
+              onChange={(e) => setExperienceLevel(e.target.value)}
+              className="w-full rounded-lg border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
+            >
+              <option value="">—</option>
+              {EXPERIENCE_LEVELS.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
+
+      {step === 4 && (
         <div className="space-y-5">
           <div>
             <h1 className="text-2xl font-bold">Parle-nous de toi</h1>
@@ -238,37 +355,36 @@ export function OnboardingWizard({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1" htmlFor="gender">
-                Genre
-              </label>
-              <select
-                id="gender"
-                value={gender}
-                onChange={(e) => setGender(e.target.value as GenderType)}
-                className="w-full rounded-lg border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
+              <label
+                className="block text-sm font-medium mb-1"
+                htmlFor="availabilityDate"
               >
-                <option value="">—</option>
-                {GENDER_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
+                Disponible à partir de
+              </label>
+              <input
+                id="availabilityDate"
+                type="date"
+                value={availabilityDate}
+                onChange={(e) => setAvailabilityDate(e.target.value)}
+                className="w-full rounded-lg border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
+              />
             </div>
           </div>
           <p className="text-xs text-foreground/50">
-            Ces deux champs sont facultatifs, ils nous servent uniquement à
-            mieux comprendre qui utilise Alt.
+            Ces deux champs sont facultatifs.
           </p>
         </div>
       )}
 
-      {step === 4 && (
+      {step === 5 && (
         <div className="space-y-5">
           <div>
-            <h1 className="text-2xl font-bold">Ton CV</h1>
+            <h1 className="text-2xl font-bold">
+              Ajoute ton CV pour améliorer tes recommandations
+            </h1>
             <p className="mt-1 text-sm text-foreground/60">
-              Facultatif : tu peux l&apos;ajouter plus tard depuis ton profil.
+              Facultatif : le CV permet ensuite d&apos;affiner automatiquement le
+              matching. Tu peux l&apos;ajouter plus tard depuis ton profil.
             </p>
           </div>
           <label className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border px-6 py-10 text-center cursor-pointer hover:border-brand/50">
@@ -309,7 +425,7 @@ export function OnboardingWizard({
               onClick={() => finish(true)}
               className="text-sm font-medium text-foreground/60 hover:text-foreground disabled:opacity-60"
             >
-              Passer cette étape
+              Passer pour l&apos;instant
             </button>
           )}
           <button

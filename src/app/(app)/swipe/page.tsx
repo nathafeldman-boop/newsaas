@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SwipeDeck } from "@/components/swipe/SwipeDeck";
+import { DailyDigest } from "@/components/swipe/DailyDigest";
+import { computeMatchScore } from "@/lib/matching/score";
 
 export default async function SwipePage() {
   const supabase = await createClient();
@@ -12,7 +14,7 @@ export default async function SwipePage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("looking_for")
+    .select("*")
     .eq("id", user.id)
     .single();
 
@@ -38,11 +40,31 @@ export default async function SwipePage() {
     query = query.in("contract_type", profile.looking_for);
   }
 
-  const { data: offers } = await query;
+  const { data: rawOffers } = await query;
+  const offers = rawOffers ?? [];
+
+  const scores: Record<string, number> = {};
+  if (profile) {
+    for (const offer of offers) {
+      scores[offer.id] = computeMatchScore(profile, offer);
+    }
+  }
+
+  const sortedOffers = profile
+    ? [...offers].sort((a, b) => (scores[b.id] ?? 0) - (scores[a.id] ?? 0))
+    : offers;
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const newToday = offers.filter((o) => o.published_at.slice(0, 10) === todayStr);
+  const topMatches = [...offers]
+    .sort((a, b) => (scores[b.id] ?? 0) - (scores[a.id] ?? 0))
+    .slice(0, 3)
+    .map((o) => ({ offer: o, score: scores[o.id] ?? 0 }));
 
   return (
     <div className="flex flex-1 flex-col items-center">
-      <SwipeDeck offers={offers ?? []} userId={user.id} />
+      <DailyDigest newTodayCount={newToday.length} topMatches={topMatches} />
+      <SwipeDeck offers={sortedOffers} scores={scores} userId={user.id} />
     </div>
   );
 }

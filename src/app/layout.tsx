@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Alt — trouve ton alternance ou ton stage",
+  title: "Stageio — trouve ton alternance ou ton stage",
   description:
     "Swipe les offres d'alternance et de stage qui te correspondent, postule en un geste.",
 };

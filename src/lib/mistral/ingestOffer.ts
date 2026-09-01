@@ -24,7 +24,7 @@ export async function fetchSourceText(sourceUrl: string): Promise<string> {
   const res = await fetch(sourceUrl, {
     headers: {
       "User-Agent":
-        "Mozilla/5.0 (compatible; AltOffersBot/1.0; +https://alt.app)",
+        "Mozilla/5.0 (compatible; StageioOffersBot/1.0; +https://stageio.app)",
     },
   });
   if (!res.ok) {

@@ -16,8 +16,13 @@ export interface SwipeCardHandle {
 
 const SwipeCard = forwardRef<
   SwipeCardHandle,
-  { offer: Offer; isTop: boolean; onExited: (direction: SwipeDirection) => void }
->(function SwipeCard({ offer, isTop, onExited }, ref) {
+  {
+    offer: Offer;
+    matchScore?: number;
+    isTop: boolean;
+    onExited: (direction: SwipeDirection) => void;
+  }
+>(function SwipeCard({ offer, matchScore, isTop, onExited }, ref) {
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-300, 300], [-18, 18]);
   const likeOpacity = useTransform(x, [20, 140], [0, 1]);
@@ -67,7 +72,7 @@ const SwipeCard = forwardRef<
             </motion.span>
           </>
         )}
-        <OfferCardContent offer={offer} />
+        <OfferCardContent offer={offer} matchScore={matchScore} />
       </div>
     </motion.div>
   );
@@ -75,9 +80,11 @@ const SwipeCard = forwardRef<
 
 export function SwipeDeck({
   offers,
+  scores,
   userId,
 }: {
   offers: Offer[];
+  scores: Record<string, number>;
   userId: string;
 }) {
   const router = useRouter();
@@ -166,6 +173,7 @@ export function SwipeDeck({
                 <SwipeCard
                   ref={isTop ? topCardRef : undefined}
                   offer={offer}
+                  matchScore={scores[offer.id]}
                   isTop={isTop}
                   onExited={() => handleExited(offer.id)}
                 />

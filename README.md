@@ -1,4 +1,4 @@
-# Alt — l'app Tinder de l'alternance et du stage
+# Stageio — l'app Tinder de l'alternance et du stage
 
 Trouve ton alternance ou ton stage en swipant les offres, comme sur une app
 de rencontre. Onboarding rapide (compétences, ville, parcours, CV

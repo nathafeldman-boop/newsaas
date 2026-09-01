@@ -31,14 +31,14 @@ export async function notifyReferrerOfNewSignup(referredUserId: string) {
 
   const resend = getResendClient();
   const fromEmail = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://alt.app";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://stageio.app";
 
   await resend.emails.send({
-    from: `Alt <${fromEmail}>`,
+    from: `Stageio <${fromEmail}>`,
     to: referrer.email,
     subject: "Un pote vient de s'inscrire grâce à toi 🎉",
     html: `<p>Salut${referrer.full_name ? ` ${referrer.full_name}` : ""},</p>
-<p><strong>${referred?.full_name || "Quelqu'un"}</strong> vient de créer son compte sur Alt avec ton lien de parrainage.</p>
+<p><strong>${referred?.full_name || "Quelqu'un"}</strong> vient de créer son compte sur Stageio avec ton lien de parrainage.</p>
 <p>Retrouve le suivi de tes filleuls sur ton <a href="${siteUrl}/parrainage">tableau de parrainage</a>.</p>`,
   });
 }

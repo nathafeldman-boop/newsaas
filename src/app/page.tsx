@@ -19,7 +19,7 @@ export default function LandingPage() {
   return (
     <div className="flex-1">
       <header className="flex items-center justify-between px-6 py-5 max-w-5xl mx-auto w-full">
-        <span className="text-xl font-bold text-brand-dark">Alt</span>
+        <span className="text-xl font-bold text-brand-dark">Stageio</span>
         <nav className="flex items-center gap-4 text-sm font-medium">
           <Link href="/login" className="text-foreground/70 hover:text-foreground">
             Se connecter
@@ -37,13 +37,14 @@ export default function LandingPage() {
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div>
             <h1 className="text-4xl md:text-5xl font-extrabold leading-tight tracking-tight">
-              Trouve ton alternance ou ton stage,{" "}
-              <span className="text-brand">en swipant</span>.
+              Trouve ton alternance{" "}
+              <span className="text-brand">sans passer des heures</span> à
+              chercher.
             </h1>
             <p className="mt-5 text-lg text-foreground/70">
-              Fini les 40 candidatures identiques sur 10 sites différents. On
-              te propose les offres qui matchent ton profil, tu likes, tu
-              postules — c&apos;est tout.
+              On trouve les offres qui te correspondent, tu swipes, tu
+              postules. Fini les 40 candidatures identiques sur 10 sites
+              différents.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
@@ -64,9 +65,14 @@ export default function LandingPage() {
           <div className="relative mx-auto w-full max-w-xs">
             <div className="absolute inset-0 translate-x-3 translate-y-3 rounded-3xl bg-accent-pass/30" />
             <div className="relative rounded-3xl border border-border bg-surface shadow-xl p-6">
-              <p className="text-xs font-semibold uppercase tracking-wide text-brand">
-                Alternance · Paris
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wide text-brand">
+                  Alternance · Paris
+                </p>
+                <span className="rounded-full bg-accent-like/10 px-2.5 py-0.5 text-xs font-bold text-accent-like">
+                  ⭐ 92%
+                </span>
+              </div>
               <h3 className="mt-2 text-xl font-bold">
                 Développeur Web Full-Stack
               </h3>

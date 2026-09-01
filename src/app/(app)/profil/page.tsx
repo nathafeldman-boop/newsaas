@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ProfileForm } from "@/components/profile/ProfileForm";
+import { CvAuditPanel } from "@/components/profile/CvAuditPanel";
 
 export default async function ProfilPage() {
   const supabase = await createClient();
@@ -37,6 +38,9 @@ export default async function ProfilPage() {
           initialProfile={profile}
           cvSignedUrl={cvSignedUrl}
         />
+      </div>
+      <div className="mt-8">
+        <CvAuditPanel hasCv={Boolean(profile.cv_path)} />
       </div>
     </div>
   );

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { TagInput } from "@/components/ui/TagInput";
 import { ChipMultiSelect } from "@/components/ui/ChipMultiSelect";
-import type { ContractType, GenderType, Profile } from "@/types/database";
+import type { ContractType, Profile } from "@/types/database";
 
 const SECTORS = [
   "Informatique",
@@ -21,11 +21,21 @@ const SECTORS = [
   "Autre",
 ];
 
-const GENDER_OPTIONS: { value: GenderType; label: string }[] = [
-  { value: "femme", label: "Femme" },
-  { value: "homme", label: "Homme" },
-  { value: "autre", label: "Autre" },
-  { value: "non_precise", label: "Je préfère ne pas préciser" },
+const EDUCATION_LEVELS = ["Bac", "Bac+2", "Bac+3", "Bac+4", "Bac+5", "Bac+6 et plus"];
+
+const EXPERIENCE_LEVELS = [
+  "Aucune expérience",
+  "Stage(s) réalisé(s)",
+  "1-2 ans",
+  "3-5 ans",
+  "5 ans et plus",
+];
+
+const MOBILITY_OPTIONS = [
+  "Sur place uniquement",
+  "Mobile dans la région",
+  "Mobile en France",
+  "Full remote",
 ];
 
 export function ProfileForm({
@@ -41,14 +51,25 @@ export function ProfileForm({
   const [fullName, setFullName] = useState(initialProfile.full_name ?? "");
   const [skills, setSkills] = useState<string[]>(initialProfile.skills);
   const [sectors, setSectors] = useState<string[]>(initialProfile.sectors);
+  const [targetJobs, setTargetJobs] = useState<string[]>(
+    initialProfile.target_jobs,
+  );
   const [city, setCity] = useState(initialProfile.city ?? "");
+  const [mobility, setMobility] = useState(initialProfile.mobility ?? "");
   const [lookingFor, setLookingFor] = useState<ContractType[]>(
     initialProfile.looking_for,
   );
+  const [educationLevel, setEducationLevel] = useState(
+    initialProfile.education_level ?? "",
+  );
+  const [formation, setFormation] = useState(initialProfile.formation ?? "");
+  const [experienceLevel, setExperienceLevel] = useState(
+    initialProfile.experience_level ?? "",
+  );
   const [bio, setBio] = useState(initialProfile.bio ?? "");
   const [birthDate, setBirthDate] = useState(initialProfile.birth_date ?? "");
-  const [gender, setGender] = useState<GenderType | "">(
-    initialProfile.gender ?? "",
+  const [availabilityDate, setAvailabilityDate] = useState(
+    initialProfile.availability_date ?? "",
   );
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
@@ -92,11 +113,16 @@ export function ProfileForm({
         full_name: fullName.trim() || null,
         skills,
         sectors,
+        target_jobs: targetJobs,
         city: city.trim(),
+        mobility: mobility || null,
         looking_for: lookingFor,
+        education_level: educationLevel || null,
+        formation: formation.trim() || null,
+        experience_level: experienceLevel || null,
         bio: bio.trim() || null,
         birth_date: birthDate || null,
-        gender: gender || null,
+        availability_date: availabilityDate || null,
         cv_path: cvPath,
         cv_uploaded_at: cvUploadedAt,
       })
@@ -143,6 +169,17 @@ export function ProfileForm({
       </div>
 
       <div>
+        <label className="block text-sm font-medium mb-1">
+          Métiers recherchés
+        </label>
+        <TagInput
+          value={targetJobs}
+          onChange={setTargetJobs}
+          placeholder="Ajoute un métier"
+        />
+      </div>
+
+      <div>
         <label className="block text-sm font-medium mb-1" htmlFor="city">
           Ville
         </label>
@@ -152,6 +189,25 @@ export function ProfileForm({
           onChange={(e) => setCity(e.target.value)}
           className="w-full rounded-lg border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
         />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1" htmlFor="mobility">
+          Mobilité
+        </label>
+        <select
+          id="mobility"
+          value={mobility}
+          onChange={(e) => setMobility(e.target.value)}
+          className="w-full rounded-lg border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
+        >
+          <option value="">—</option>
+          {MOBILITY_OPTIONS.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div>
@@ -172,6 +228,63 @@ export function ProfileForm({
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label
+            className="block text-sm font-medium mb-1"
+            htmlFor="educationLevel"
+          >
+            Niveau d&apos;études
+          </label>
+          <select
+            id="educationLevel"
+            value={educationLevel}
+            onChange={(e) => setEducationLevel(e.target.value)}
+            className="w-full rounded-lg border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
+          >
+            <option value="">—</option>
+            {EDUCATION_LEVELS.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label
+            className="block text-sm font-medium mb-1"
+            htmlFor="experienceLevel"
+          >
+            Expérience
+          </label>
+          <select
+            id="experienceLevel"
+            value={experienceLevel}
+            onChange={(e) => setExperienceLevel(e.target.value)}
+            className="w-full rounded-lg border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
+          >
+            <option value="">—</option>
+            {EXPERIENCE_LEVELS.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1" htmlFor="formation">
+          Formation / école
+        </label>
+        <input
+          id="formation"
+          value={formation}
+          onChange={(e) => setFormation(e.target.value)}
+          className="w-full rounded-lg border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
+        />
       </div>
 
       <div>
@@ -201,22 +314,19 @@ export function ProfileForm({
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1" htmlFor="gender">
-            Genre
-          </label>
-          <select
-            id="gender"
-            value={gender}
-            onChange={(e) => setGender(e.target.value as GenderType)}
-            className="w-full rounded-lg border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
+          <label
+            className="block text-sm font-medium mb-1"
+            htmlFor="availabilityDate"
           >
-            <option value="">—</option>
-            {GENDER_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+            Disponible à partir de
+          </label>
+          <input
+            id="availabilityDate"
+            type="date"
+            value={availabilityDate}
+            onChange={(e) => setAvailabilityDate(e.target.value)}
+            className="w-full rounded-lg border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
+          />
         </div>
       </div>
 

@@ -30,6 +30,12 @@ export type Profile = {
   skills: string[];
   sectors: string[];
   looking_for: ContractType[];
+  education_level: string | null;
+  formation: string | null;
+  target_jobs: string[];
+  experience_level: string | null;
+  mobility: string | null;
+  availability_date: string | null;
   cv_path: string | null;
   cv_uploaded_at: string | null;
   onboarding_completed: boolean;
@@ -51,6 +57,8 @@ export type Offer = {
   duration: string | null;
   salary: string | null;
   remote_policy: string | null;
+  start_date: string | null;
+  education_level: string | null;
   image_url: string | null;
   apply_url: string | null;
   source: OfferSource;
