@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { GoogleButton } from "@/components/auth/GoogleButton";
 
 export function LoginForm() {
   const router = useRouter();
@@ -42,6 +43,15 @@ export function LoginForm() {
   }
 
   return (
+    <div className="space-y-4">
+      <GoogleButton next={next} />
+
+      <div className="flex items-center gap-3 text-xs text-foreground/40">
+        <div className="h-px flex-1 bg-border" />
+        ou
+        <div className="h-px flex-1 bg-border" />
+      </div>
+
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label className="block text-sm font-medium mb-1" htmlFor="email">
@@ -80,12 +90,13 @@ export function LoginForm() {
         {loading ? "Connexion..." : "Se connecter"}
       </button>
 
-      <p className="text-center text-sm text-foreground/60">
-        Pas encore de compte ?{" "}
-        <Link href="/inscription" className="text-brand font-medium">
-          Inscris-toi
-        </Link>
-      </p>
-    </form>
+        <p className="text-center text-sm text-foreground/60">
+          Pas encore de compte ?{" "}
+          <Link href="/inscription" className="text-brand font-medium">
+            Inscris-toi
+          </Link>
+        </p>
+      </form>
+    </div>
   );
 }
