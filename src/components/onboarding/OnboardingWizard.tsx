@@ -287,7 +287,7 @@ export function OnboardingWizard({
         </div>
       )}
 
-      <div style={{ flex: 1, position: "relative", overflow: "hidden", marginTop: showChrome ? 20 : 0 }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflowX: "hidden", marginTop: showChrome ? 20 : 0 }}>
         <AnimatePresence mode="wait" custom={direction} initial={false}>
           <motion.div
             key={stepId}
@@ -297,7 +297,7 @@ export function OnboardingWizard({
             animate="center"
             exit="exit"
             transition={{ duration: 0.26, ease: "easeInOut" }}
-            style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column" }}
+            style={{ display: "flex", flexDirection: "column", flex: 1 }}
           >
             {stepId === "intro" && (
               <div className="flex flex-1 flex-col items-center justify-center text-center gap-6 px-2">
