@@ -32,6 +32,8 @@ const organizationJsonLd = {
   "@type": "Organization",
   name: "Stageio",
   url: SITE_URL,
+  logo: `${SITE_URL}/logo.png`,
+  image: `${SITE_URL}/og-image.jpg`,
   sameAs: [],
 };
 
