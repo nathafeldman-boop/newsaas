@@ -5,7 +5,9 @@ import type { Database } from "@/types/database";
 // /offres (+ /offres/[slug]) est le seul contenu app censé être indexable
 // sans compte (voir robots.ts / sitemap.ts) ; robots.txt et sitemap.xml
 // doivent eux-mêmes rester atteignables par un crawler non connecté, sinon
-// Google ne peut même pas découvrir qu'ils existent.
+// Google ne peut même pas découvrir qu'ils existent. /admin gère son propre
+// accès par code (voir lib/admin/accessCode.ts) et ne doit jamais dépendre
+// d'une session Supabase.
 const PUBLIC_PATHS = [
   "/",
   "/login",
@@ -15,8 +17,9 @@ const PUBLIC_PATHS = [
   "/offres",
   "/robots.txt",
   "/sitemap.xml",
+  "/admin",
 ];
-const ONBOARDING_EXEMPT_PATHS = ["/onboarding", "/auth"];
+const ONBOARDING_EXEMPT_PATHS = ["/onboarding", "/auth", "/admin"];
 
 function matchesPath(pathname: string, paths: string[]) {
   return paths.some(

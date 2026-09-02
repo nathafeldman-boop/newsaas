@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { randomBytes } from "node:crypto";
-import { assertAdmin } from "@/lib/admin/assertAdmin";
+import { assertAdminSession } from "@/lib/admin/accessCode";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 function generateCode(): string {
@@ -10,7 +10,7 @@ function generateCode(): string {
 }
 
 export async function createAccessCodeAction(formData: FormData) {
-  const admin = await assertAdmin();
+  await assertAdminSession();
   const note = ((formData.get("note") as string) || "").trim() || null;
   const maxUses = Math.max(1, Number(formData.get("maxUses")) || 1);
 
@@ -19,14 +19,13 @@ export async function createAccessCodeAction(formData: FormData) {
     code: generateCode(),
     note,
     max_uses: maxUses,
-    created_by: admin.id,
   });
 
   revalidatePath("/admin/codes");
 }
 
 export async function deleteAccessCodeAction(formData: FormData) {
-  await assertAdmin();
+  await assertAdminSession();
   const id = formData.get("id") as string;
   const db = createAdminClient();
   await db.from("access_codes").delete().eq("id", id);

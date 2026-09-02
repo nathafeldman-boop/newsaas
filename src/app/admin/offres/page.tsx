@@ -1,5 +1,4 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { IngestForm } from "@/components/admin/IngestForm";
 
 // L'ingestion en lot fait un fetch + un appel Mistral par URL, séquentiellement :
@@ -8,22 +7,10 @@ import { IngestForm } from "@/components/admin/IngestForm";
 export const maxDuration = 60;
 
 export default async function AdminOffresPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login?next=/admin/offres");
-
-  const adminEmails = (process.env.ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-
-  if (!user.email || !adminEmails.includes(user.email.toLowerCase())) {
-    redirect("/swipe");
-  }
-
-  const { count: activeOffersCount } = await supabase
+  // Accès déjà vérifié par admin/layout.tsx (code d'accès, pas de session
+  // Supabase requise) : cette page n'a plus besoin de son propre guard.
+  const admin = createAdminClient();
+  const { count: activeOffersCount } = await admin
     .from("offers")
     .select("id", { count: "exact", head: true })
     .eq("is_active", true);

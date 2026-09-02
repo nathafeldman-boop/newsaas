@@ -1,24 +1,8 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { assertAdminSession } from "@/lib/admin/accessCode";
 import { ingestOffer } from "@/lib/mistral/ingestOffer";
 import type { ContractType } from "@/types/database";
-
-async function assertAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const adminEmails = (process.env.ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-
-  if (!user?.email || !adminEmails.includes(user.email.toLowerCase())) {
-    throw new Error("Accès refusé.");
-  }
-}
 
 export type BulkResult = {
   url: string;
@@ -43,7 +27,7 @@ export async function ingestOfferAction(
   formData: FormData,
 ): Promise<IngestState> {
   try {
-    await assertAdmin();
+    await assertAdminSession();
   } catch {
     return { status: "error", message: "Accès refusé." };
   }
