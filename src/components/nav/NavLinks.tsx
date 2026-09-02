@@ -12,13 +12,12 @@ const LINKS = [
   { href: "/profil", label: "Profil" },
 ];
 
-export function NavLinks({ isAdmin }: { isAdmin: boolean }) {
+export function NavLinks() {
   const pathname = usePathname();
-  const items = isAdmin ? [...LINKS, { href: "/admin/offres", label: "Admin" }] : LINKS;
 
   return (
     <>
-      {items.map((link) => {
+      {LINKS.map((link) => {
         const active = pathname === link.href;
         return (
           <Link

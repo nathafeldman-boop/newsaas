@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { ingestOfferAction, type IngestState } from "@/app/(app)/admin/offres/actions";
+import { ingestOfferAction, type IngestState } from "@/app/admin/offres/actions";
 
 const initialState: IngestState = { status: "idle" };
 

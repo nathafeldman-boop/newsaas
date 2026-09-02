@@ -8,11 +8,12 @@ import { computeQuotaStatus } from "@/lib/subscription/quota";
 import { isAdminEmail } from "@/lib/admin/assertAdmin";
 
 // Pages où on ne redirige jamais vers /premium, même quota dépassé : la page
-// premium elle-même (boucle infinie sinon), l'espace admin, et candidater
-// (/candidature) qui doit rester illimité même quota de swipe atteint —
-// exactement comme le trigger SQL enforce_swipe_quota l'autorise déjà côté
-// base pour les mêmes raisons.
-const PAYWALL_EXEMPT_PATHS = ["/premium", "/admin", "/candidature"];
+// premium elle-même (boucle infinie sinon), et candidater (/candidature) qui
+// doit rester illimité même quota de swipe atteint — exactement comme le
+// trigger SQL enforce_swipe_quota l'autorise déjà côté base pour les mêmes
+// raisons. /admin vit hors de ce groupe de routes désormais, donc n'a plus
+// besoin d'exemption ici.
+const PAYWALL_EXEMPT_PATHS = ["/premium", "/candidature"];
 
 function isExempt(pathname: string) {
   return PAYWALL_EXEMPT_PATHS.some(
