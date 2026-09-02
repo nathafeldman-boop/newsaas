@@ -18,6 +18,8 @@ export type ApplicationStatus =
   | "acceptee"
   | "refusee";
 export type OfferSource = "demo" | "manuel" | "mistral_ingest" | "adzuna";
+export type EmailProvider = "gmail";
+export type EmailReplySentiment = "positive" | "negative" | "neutral";
 
 export type Profile = {
   id: string;
@@ -88,6 +90,30 @@ export type Application = {
   updated_at: string;
 };
 
+export type EmailConnection = {
+  id: string;
+  user_id: string;
+  provider: EmailProvider;
+  email_address: string;
+  refresh_token: string;
+  last_synced_at: string | null;
+  connected_at: string;
+};
+
+export type EmailReply = {
+  id: string;
+  user_id: string;
+  application_id: string | null;
+  provider_message_id: string;
+  from_address: string | null;
+  subject: string | null;
+  snippet: string | null;
+  sentiment: EmailReplySentiment;
+  confidence: number | null;
+  received_at: string | null;
+  created_at: string;
+};
+
 export type Referral = {
   id: string;
   referrer_id: string;
@@ -144,6 +170,26 @@ export type Database = {
         Update: Partial<Referral>;
         Relationships: [];
       };
+      email_connections: {
+        Row: EmailConnection;
+        Insert: Partial<EmailConnection> & {
+          user_id: string;
+          email_address: string;
+          refresh_token: string;
+        };
+        Update: Partial<EmailConnection>;
+        Relationships: [];
+      };
+      email_replies: {
+        Row: EmailReply;
+        Insert: Partial<EmailReply> & {
+          user_id: string;
+          provider_message_id: string;
+          sentiment: EmailReplySentiment;
+        };
+        Update: Partial<EmailReply>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -153,6 +199,8 @@ export type Database = {
       swipe_direction: SwipeDirection;
       application_status: ApplicationStatus;
       offer_source: OfferSource;
+      email_provider: EmailProvider;
+      email_reply_sentiment: EmailReplySentiment;
     };
     CompositeTypes: Record<string, never>;
   };

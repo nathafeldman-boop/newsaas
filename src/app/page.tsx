@@ -186,6 +186,18 @@ export default function LandingPage() {
             </Link>
           </div>
         </section>
+
+        <footer
+          className="py-6"
+          style={{ borderTop: "1px solid var(--color-divider)" }}
+        >
+          <Link
+            href="/legal"
+            style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}
+          >
+            Politique de confidentialité
+          </Link>
+        </footer>
       </div>
     </div>
   );

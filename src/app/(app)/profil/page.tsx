@@ -3,8 +3,14 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ProfileForm } from "@/components/profile/ProfileForm";
 import { CvAuditPanel } from "@/components/profile/CvAuditPanel";
+import { GmailConnectionPanel } from "@/components/profile/GmailConnectionPanel";
 
-export default async function ProfilPage() {
+export default async function ProfilPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ gmail?: string }>;
+}) {
+  const { gmail } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -34,6 +40,13 @@ export default async function ProfilPage() {
   }
 
   const initial = (profile.full_name || user.email || "?").charAt(0).toUpperCase();
+
+  const { data: gmailConnection } = await supabase
+    .from("email_connections")
+    .select("*")
+    .eq("user_id", user.id)
+    .eq("provider", "gmail")
+    .maybeSingle();
 
   return (
     <div className="mx-auto w-full max-w-[520px]">
@@ -68,6 +81,8 @@ export default async function ProfilPage() {
       </div>
 
       <CvAuditPanel hasCv={Boolean(profile.cv_path)} />
+
+      <GmailConnectionPanel connection={gmailConnection ?? null} statusParam={gmail} />
 
       <div className="flex flex-col gap-2.5 mt-5">
         <Link
