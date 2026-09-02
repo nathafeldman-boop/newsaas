@@ -5,11 +5,9 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const LINKS = [
-  { href: "/accueil", label: "Accueil" },
   { href: "/swipe", label: "Swipe" },
   { href: "/favoris", label: "Favoris" },
-  { href: "/mes-candidatures", label: "Candidatures" },
-  { href: "/parrainage", label: "Parrainage" },
+  { href: "/cv", label: "CV" },
   { href: "/profil", label: "Profil" },
 ];
 

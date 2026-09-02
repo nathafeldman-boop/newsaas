@@ -42,11 +42,9 @@ const MOBILITY_OPTIONS = [
 export function ProfileForm({
   userId,
   initialProfile,
-  cvSignedUrl,
 }: {
   userId: string;
   initialProfile: Profile;
-  cvSignedUrl: string | null;
 }) {
   const router = useRouter();
   const [fullName, setFullName] = useState(initialProfile.full_name ?? "");
@@ -72,7 +70,6 @@ export function ProfileForm({
   const [availabilityDate, setAvailabilityDate] = useState(
     initialProfile.availability_date ?? "",
   );
-  const [cvFile, setCvFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -90,23 +87,6 @@ export function ProfileForm({
     setSuccess(false);
 
     const supabase = createClient();
-    let cvPath = initialProfile.cv_path;
-    let cvUploadedAt = initialProfile.cv_uploaded_at;
-
-    if (cvFile) {
-      const ext = cvFile.name.split(".").pop();
-      const path = `${userId}/cv-${Date.now()}.${ext}`;
-      const { error: uploadError } = await supabase.storage
-        .from("cvs")
-        .upload(path, cvFile, { upsert: true });
-      if (uploadError) {
-        setSaving(false);
-        setError("Le CV n'a pas pu être envoyé : " + uploadError.message);
-        return;
-      }
-      cvPath = path;
-      cvUploadedAt = new Date().toISOString();
-    }
 
     const { error: updateError } = await supabase
       .from("profiles")
@@ -124,8 +104,6 @@ export function ProfileForm({
         bio: bio.trim() || null,
         birth_date: birthDate || null,
         availability_date: availabilityDate || null,
-        cv_path: cvPath,
-        cv_uploaded_at: cvUploadedAt,
       })
       .eq("id", userId);
 
@@ -137,7 +115,6 @@ export function ProfileForm({
     }
 
     setSuccess(true);
-    setCvFile(null);
     router.refresh();
   }
 
@@ -269,29 +246,6 @@ export function ProfileForm({
             className="input"
           />
         </div>
-      </div>
-
-      <div>
-        <p style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "0 0 6px" }}>
-          CV
-        </p>
-        {cvSignedUrl && (
-          <a href={cvSignedUrl} target="_blank" rel="noreferrer" style={{ fontSize: 13, display: "block", marginBottom: 8 }}>
-            Voir mon CV actuel
-          </a>
-        )}
-        <label
-          className="flex items-center justify-center gap-2 text-center cursor-pointer"
-          style={{ border: "2px dashed var(--color-divider)", borderRadius: "var(--radius-lg)", padding: "22px 16px" }}
-        >
-          <input
-            type="file"
-            accept=".pdf,.doc,.docx"
-            className="hidden"
-            onChange={(e) => setCvFile(e.target.files?.[0] ?? null)}
-          />
-          <span style={{ fontSize: 13 }}>{cvFile ? cvFile.name : "Remplacer mon CV"}</span>
-        </label>
       </div>
 
       {error && <p className="text-sm" style={{ color: "var(--color-accent-700)" }}>{error}</p>}

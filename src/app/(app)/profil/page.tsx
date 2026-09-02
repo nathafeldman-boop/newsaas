@@ -2,9 +2,9 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ProfileForm } from "@/components/profile/ProfileForm";
-import { CvAuditPanel } from "@/components/profile/CvAuditPanel";
 import { GmailConnectionPanel } from "@/components/profile/GmailConnectionPanel";
 import { isPremium } from "@/lib/subscription/isPremium";
+import type { ApplicationStatus } from "@/types/database";
 
 export default async function ProfilPage({
   searchParams,
@@ -32,23 +32,30 @@ export default async function ProfilPage({
     .filter(Boolean);
   const isAdmin = Boolean(user.email && adminEmails.includes(user.email.toLowerCase()));
 
-  let cvSignedUrl: string | null = null;
-  if (profile.cv_path) {
-    const { data } = await supabase.storage
-      .from("cvs")
-      .createSignedUrl(profile.cv_path, 60 * 60);
-    cvSignedUrl = data?.signedUrl ?? null;
-  }
-
   const initial = (profile.full_name || user.email || "?").charAt(0).toUpperCase();
   const premium = isPremium(profile);
 
-  const { data: gmailConnection } = await supabase
-    .from("email_connections")
-    .select("*")
-    .eq("user_id", user.id)
-    .eq("provider", "gmail")
-    .maybeSingle();
+  const [{ data: gmailConnection }, { data: applications }] = await Promise.all([
+    supabase
+      .from("email_connections")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("provider", "gmail")
+      .maybeSingle(),
+    supabase.from("applications").select("status").eq("user_id", user.id),
+  ]);
+
+  const statCounts: Record<"total" | ApplicationStatus, number> = {
+    total: applications?.length ?? 0,
+    envoyee: 0,
+    en_cours: 0,
+    entretien: 0,
+    acceptee: 0,
+    refusee: 0,
+  };
+  for (const app of applications ?? []) {
+    statCounts[app.status]++;
+  }
 
   return (
     <div className="mx-auto w-full max-w-[520px]">
@@ -71,18 +78,51 @@ export default async function ProfilPage({
           {initial}
         </div>
         <div>
-          <h1 style={{ fontSize: 28, margin: 0 }}>Ton profil</h1>
+          <h1 style={{ fontSize: 28, margin: 0 }}>Profil & stats</h1>
           <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "2px 0 0" }}>
             Ces infos servent à te proposer de meilleures offres.
           </p>
         </div>
       </div>
 
-      <div className="mt-6">
-        <ProfileForm userId={user.id} initialProfile={profile} cvSignedUrl={cvSignedUrl} />
-      </div>
+      {statCounts.total > 0 && (
+        <Link
+          href="/mes-candidatures"
+          className="card elev-sm mt-6 grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-4 sm:gap-5 no-underline"
+          style={{ color: "inherit", padding: "var(--space-4) var(--space-6)" }}
+        >
+          <div>
+            <p style={{ fontFamily: "var(--font-heading)", fontSize: 26, color: "var(--color-accent)", margin: 0 }}>
+              {statCounts.envoyee + statCounts.en_cours}
+            </p>
+            <p style={{ fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "4px 0 0" }}>
+              Envoyées
+            </p>
+          </div>
+          <div>
+            <p style={{ fontFamily: "var(--font-heading)", fontSize: 26, margin: 0 }}>{statCounts.entretien}</p>
+            <p style={{ fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "4px 0 0" }}>
+              Entretiens
+            </p>
+          </div>
+          <div>
+            <p style={{ fontFamily: "var(--font-heading)", fontSize: 26, color: "var(--color-accent-2-700)", margin: 0 }}>{statCounts.acceptee}</p>
+            <p style={{ fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "4px 0 0" }}>
+              Ton alternance ✓
+            </p>
+          </div>
+          <div>
+            <p style={{ fontFamily: "var(--font-heading)", fontSize: 26, margin: 0 }}>{statCounts.refusee}</p>
+            <p style={{ fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "4px 0 0" }}>
+              Refusées
+            </p>
+          </div>
+        </Link>
+      )}
 
-      <CvAuditPanel hasCv={Boolean(profile.cv_path)} isPremium={premium} />
+      <div className="mt-6">
+        <ProfileForm userId={user.id} initialProfile={profile} />
+      </div>
 
       <GmailConnectionPanel connection={gmailConnection ?? null} statusParam={gmail} />
 

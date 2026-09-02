@@ -14,7 +14,7 @@ export default function robots(): MetadataRoute.Robots {
         "/mes-candidatures",
         "/parrainage",
         "/profil",
-        "/accueil",
+        "/cv",
         "/onboarding",
         "/auth/",
         "/candidature/",
