@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { extractCvText } from "@/lib/cv/extractText";
 import { auditCvText } from "@/lib/mistral/auditCv";
+import { isPremium } from "@/lib/subscription/isPremium";
 import type { CvAudit } from "@/lib/mistral/auditCv";
 
 export type CvAuditState =
@@ -25,9 +26,16 @@ export async function auditCvAction(
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("cv_path")
+    .select("cv_path, subscription_status")
     .eq("id", user.id)
     .single();
+
+  if (!isPremium(profile)) {
+    return {
+      status: "error",
+      message: "L'audit CV est réservé aux membres Premium (7,99€/mois).",
+    };
+  }
 
   if (!profile?.cv_path) {
     return {

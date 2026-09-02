@@ -1,11 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { auditCvAction, type CvAuditState } from "@/app/(app)/profil/cv-audit-actions";
 
 const initialState: CvAuditState = { status: "idle" };
 
-export function CvAuditPanel({ hasCv }: { hasCv: boolean }) {
+export function CvAuditPanel({ hasCv, isPremium }: { hasCv: boolean; isPremium: boolean }) {
   const [state, formAction, pending] = useActionState(
     auditCvAction,
     initialState,
@@ -106,7 +107,17 @@ export function CvAuditPanel({ hasCv }: { hasCv: boolean }) {
         <p style={{ fontSize: 13, color: "var(--color-accent-700)", marginTop: 12 }}>{state.message}</p>
       )}
 
-      {hasCv && (
+      {hasCv && !isPremium && (
+        <Link
+          href="/premium"
+          className="btn btn-primary"
+          style={{ marginTop: 14, background: "var(--color-accent-2)", whiteSpace: "nowrap" }}
+        >
+          🔓 Débloquer avec Premium (7,99€/mois)
+        </Link>
+      )}
+
+      {hasCv && isPremium && (
         <form action={formAction}>
           <button
             type="submit"

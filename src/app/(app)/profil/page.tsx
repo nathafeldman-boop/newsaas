@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ProfileForm } from "@/components/profile/ProfileForm";
 import { CvAuditPanel } from "@/components/profile/CvAuditPanel";
 import { GmailConnectionPanel } from "@/components/profile/GmailConnectionPanel";
+import { isPremium } from "@/lib/subscription/isPremium";
 
 export default async function ProfilPage({
   searchParams,
@@ -40,6 +41,7 @@ export default async function ProfilPage({
   }
 
   const initial = (profile.full_name || user.email || "?").charAt(0).toUpperCase();
+  const premium = isPremium(profile);
 
   const { data: gmailConnection } = await supabase
     .from("email_connections")
@@ -80,11 +82,19 @@ export default async function ProfilPage({
         <ProfileForm userId={user.id} initialProfile={profile} cvSignedUrl={cvSignedUrl} />
       </div>
 
-      <CvAuditPanel hasCv={Boolean(profile.cv_path)} />
+      <CvAuditPanel hasCv={Boolean(profile.cv_path)} isPremium={premium} />
 
       <GmailConnectionPanel connection={gmailConnection ?? null} statusParam={gmail} />
 
       <div className="flex flex-col gap-2.5 mt-5">
+        <Link
+          href="/premium"
+          className="card flex-row items-center justify-between no-underline"
+          style={{ color: "inherit", padding: "var(--space-3) var(--space-4)" }}
+        >
+          <span style={{ fontSize: 14 }}>{premium ? "🔓 Abonnement Premium actif" : "Passer Premium (7,99€/mois)"}</span>
+          <span>→</span>
+        </Link>
         <Link
           href="/mes-candidatures"
           className="card flex-row items-center justify-between no-underline"

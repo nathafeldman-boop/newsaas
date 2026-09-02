@@ -1,6 +1,7 @@
 "use client";
 
 import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   motion,
@@ -153,17 +154,22 @@ function SwipeDeckInner({
   scores,
   userId,
   initialSwipesToday,
+  isPremium,
+  initialQuotaReached,
 }: {
   offers: Offer[];
   scores: Record<string, number>;
   userId: string;
   initialSwipesToday: number;
+  isPremium: boolean;
+  initialQuotaReached: boolean;
 }) {
   const router = useRouter();
   const [stack, setStack] = useState(offers);
   const [busy, setBusy] = useState(false);
   const [swipesToday, setSwipesToday] = useState(initialSwipesToday);
   const [celebrating, setCelebrating] = useState(false);
+  const [quotaReached, setQuotaReached] = useState(initialQuotaReached);
   const topCardRef = useRef<SwipeCardHandle>(null);
   const celebrationTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -171,12 +177,15 @@ function SwipeDeckInner({
 
   async function recordSwipe(offer: Offer, direction: SwipeDirection) {
     const supabase = createClient();
-    await supabase
+    const { error } = await supabase
       .from("swipes")
       .upsert(
         { user_id: userId, offer_id: offer.id, direction },
         { onConflict: "user_id,offer_id" },
       );
+    if (error?.message.includes("SWIPE_QUOTA_REACHED")) {
+      setQuotaReached(true);
+    }
   }
 
   function triggerCelebration() {
@@ -186,6 +195,7 @@ function SwipeDeckInner({
   }
 
   function handleSwipeIntent(direction: SwipeDirection) {
+    if (quotaReached && !isPremium) return;
     const offer = stack[0];
     if (!offer) return;
     void recordSwipe(offer, direction);
@@ -206,20 +216,39 @@ function SwipeDeckInner({
     setBusy(true);
 
     const supabase = createClient();
-    await supabase
-      .from("swipes")
-      .upsert(
-        { user_id: userId, offer_id: offer.id, direction: "like" },
-        { onConflict: "user_id,offer_id" },
-      );
+    // Candidater doit rester illimité même quota de swipe atteint : on
+    // insère la candidature AVANT le swipe, pour que le trigger de quota
+    // (enforce_swipe_quota) voie déjà l'application et laisse passer.
     await supabase
       .from("applications")
       .upsert(
         { user_id: userId, offer_id: offer.id, status: "envoyee" },
         { onConflict: "user_id,offer_id" },
       );
+    await supabase
+      .from("swipes")
+      .upsert(
+        { user_id: userId, offer_id: offer.id, direction: "like" },
+        { onConflict: "user_id,offer_id" },
+      );
 
     router.push(`/candidature/${offer.id}`);
+  }
+
+  if (quotaReached && !isPremium) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center text-center px-6 py-20">
+        <span className="tag tag-accent">🔓 Premium</span>
+        <h2 style={{ fontSize: 22, marginTop: 12 }}>4 offres découvertes cette semaine</h2>
+        <p style={{ marginTop: 8, maxWidth: "34ch", color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
+          Passe Premium pour swiper en illimité, ou reviens la semaine
+          prochaine. Tu peux toujours candidater librement aux offres déjà vues.
+        </p>
+        <Link href="/premium" className="btn btn-primary mt-5">
+          Votre avenir vaut bien 7,99€
+        </Link>
+      </div>
+    );
   }
 
   if (visible.length === 0) {
@@ -327,11 +356,15 @@ export function SwipeDeck({
   scores,
   userId,
   swipesToday = 0,
+  isPremium = false,
+  quotaReached = false,
 }: {
   offers: Offer[];
   scores: Record<string, number>;
   userId: string;
   swipesToday?: number;
+  isPremium?: boolean;
+  quotaReached?: boolean;
 }) {
   const availableTypes = useMemo(() => {
     const types = new Set(offers.map((o) => o.contract_type));
@@ -375,6 +408,8 @@ export function SwipeDeck({
         scores={scores}
         userId={userId}
         initialSwipesToday={swipesToday}
+        isPremium={isPremium}
+        initialQuotaReached={quotaReached}
       />
     </div>
   );

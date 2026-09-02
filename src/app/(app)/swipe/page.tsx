@@ -2,6 +2,10 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SwipeDeck } from "@/components/swipe/SwipeDeck";
 import { computeMatchScore } from "@/lib/matching/score";
+import { isPremium } from "@/lib/subscription/isPremium";
+import type { Offer } from "@/types/database";
+
+const FREE_WEEKLY_SWIPE_QUOTA = 4;
 
 export default async function SwipePage() {
   const supabase = await createClient();
@@ -17,10 +21,10 @@ export default async function SwipePage() {
     .eq("id", user.id)
     .single();
 
-  const { data: swiped } = await supabase
-    .from("swipes")
-    .select("offer_id, created_at")
-    .eq("user_id", user.id);
+  const [{ data: swiped }, { data: applications }] = await Promise.all([
+    supabase.from("swipes").select("offer_id, created_at").eq("user_id", user.id),
+    supabase.from("applications").select("offer_id").eq("user_id", user.id),
+  ]);
 
   const excludeIds = (swiped ?? []).map((s) => s.offer_id);
 
@@ -30,23 +34,38 @@ export default async function SwipePage() {
     (s) => new Date(s.created_at) >= todayStart,
   ).length;
 
-  let query = supabase
-    .from("offers")
-    .select("*")
-    .eq("is_active", true)
-    .order("published_at", { ascending: false })
-    .limit(30);
+  const premium = isPremium(profile);
+  const appliedOfferIds = new Set((applications ?? []).map((a) => a.offer_id));
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  // Miroir du trigger SQL enforce_swipe_quota : seuls les swipes de pure
+  // découverte (sans candidature associée) comptent dans le quota gratuit.
+  const browseSwipesThisWeek = (swiped ?? []).filter(
+    (s) => new Date(s.created_at) >= sevenDaysAgo && !appliedOfferIds.has(s.offer_id),
+  ).length;
+  const quotaReached = !premium && browseSwipesThisWeek >= FREE_WEEKLY_SWIPE_QUOTA;
 
-  if (excludeIds.length > 0) {
-    query = query.not("id", "in", `(${excludeIds.join(",")})`);
+  let offers: Offer[] = [];
+
+  if (!quotaReached) {
+    let query = supabase
+      .from("offers")
+      .select("*")
+      .eq("is_active", true)
+      .order("published_at", { ascending: false })
+      .limit(30);
+
+    if (excludeIds.length > 0) {
+      query = query.not("id", "in", `(${excludeIds.join(",")})`);
+    }
+
+    if (profile?.looking_for && profile.looking_for.length > 0) {
+      query = query.in("contract_type", profile.looking_for);
+    }
+
+    const { data: rawOffers } = await query;
+    offers = rawOffers ?? [];
   }
-
-  if (profile?.looking_for && profile.looking_for.length > 0) {
-    query = query.in("contract_type", profile.looking_for);
-  }
-
-  const { data: rawOffers } = await query;
-  const offers = rawOffers ?? [];
 
   const scores: Record<string, number> = {};
   if (profile) {
@@ -66,6 +85,8 @@ export default async function SwipePage() {
         scores={scores}
         userId={user.id}
         swipesToday={swipesToday}
+        isPremium={premium}
+        quotaReached={quotaReached}
       />
     </div>
   );

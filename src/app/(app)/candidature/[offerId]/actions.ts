@@ -19,13 +19,16 @@ export async function applyToOffer(offerId: string) {
     .eq("id", offerId)
     .single();
 
-  await supabase.from("swipes").upsert(
-    { user_id: user.id, offer_id: offerId, direction: "like" },
+  // Candidater doit rester illimité même quota de swipe atteint : on insère
+  // la candidature AVANT le swipe, pour que le trigger de quota
+  // (enforce_swipe_quota) voie déjà l'application et laisse passer.
+  await supabase.from("applications").upsert(
+    { user_id: user.id, offer_id: offerId, status: "envoyee" },
     { onConflict: "user_id,offer_id" },
   );
 
-  await supabase.from("applications").upsert(
-    { user_id: user.id, offer_id: offerId, status: "envoyee" },
+  await supabase.from("swipes").upsert(
+    { user_id: user.id, offer_id: offerId, direction: "like" },
     { onConflict: "user_id,offer_id" },
   );
 
