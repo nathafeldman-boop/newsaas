@@ -52,7 +52,7 @@ jobs:
             body=$(printf '%s\n' "${chunk[@]}" | jq -R . | jq -s '{sourceUrls: .}')
 
             echo "--- Lot $chunk_num (${#chunk[@]} URLs) ---"
-            response=$(curl -sS -w "\n%{http_code}" -X POST "$TARGET_URL/api/offers/ingest" \
+            response=$(curl -sS -L -w "\n%{http_code}" -X POST "$TARGET_URL/api/offers/ingest" \
               -H "Authorization: Bearer $INGEST_API_SECRET" \
               -H "Content-Type: application/json" \
               --max-time 90 \
