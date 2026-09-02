@@ -18,7 +18,7 @@ export async function AppNav() {
 
   return (
     <header
-      className="nav sticky top-0 z-20 mx-auto w-full max-w-[1040px] overflow-x-auto"
+      className="nav hidden sm:flex sticky top-0 z-20 mx-auto w-full max-w-[1040px] overflow-x-auto"
       style={{ borderBottom: "1px solid var(--color-divider)", background: "var(--color-bg)" }}
     >
       <a href="/accueil" className="nav-brand" style={{ textDecoration: "none", color: "inherit" }}>

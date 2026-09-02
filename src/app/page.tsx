@@ -96,19 +96,15 @@ export default function LandingPage() {
 
         <section className="py-8">
           <div
-            className="card elev-sm grid gap-6"
-            style={{
-              gridTemplateColumns: "repeat(4,auto)",
-              justifyContent: "space-between",
-              padding: "var(--space-6)",
-            }}
+            className="card elev-sm grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-4 sm:gap-6"
+            style={{ padding: "var(--space-6)" }}
           >
             {STATS.map((stat) => (
               <div key={stat.label}>
                 <p
                   style={{
                     fontFamily: "var(--font-heading)",
-                    fontSize: 36,
+                    fontSize: "clamp(26px,7vw,36px)",
                     color: stat.color,
                     margin: 0,
                   }}

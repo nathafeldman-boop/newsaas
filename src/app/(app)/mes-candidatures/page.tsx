@@ -61,12 +61,8 @@ export default async function MesCandidaturesPage() {
 
       {applications && applications.length > 0 && (
         <div
-          className="card elev-sm mt-6 grid gap-5"
-          style={{
-            gridTemplateColumns: "repeat(4,auto)",
-            justifyContent: "space-between",
-            padding: "var(--space-4) var(--space-6)",
-          }}
+          className="card elev-sm mt-6 grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-4 sm:gap-5"
+          style={{ padding: "var(--space-4) var(--space-6)" }}
         >
           <div>
             <p style={{ fontFamily: "var(--font-heading)", fontSize: 28, color: "var(--color-accent)", margin: 0 }}>

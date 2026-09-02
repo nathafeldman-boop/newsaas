@@ -236,7 +236,7 @@ function SwipeDeckInner({
 
   return (
     <div className="flex flex-col items-center">
-      <div className="relative h-[520px] w-full max-w-sm">
+      <div className="relative h-[clamp(360px,66dvh,520px)] w-full max-w-sm">
         <MatchCelebration show={celebrating} />
         {visible
           .slice()

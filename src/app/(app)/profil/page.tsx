@@ -19,6 +19,12 @@ export default async function ProfilPage() {
 
   if (!profile) redirect("/onboarding");
 
+  const adminEmails = (process.env.ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  const isAdmin = Boolean(user.email && adminEmails.includes(user.email.toLowerCase()));
+
   let cvSignedUrl: string | null = null;
   if (profile.cv_path) {
     const { data } = await supabase.storage
@@ -80,6 +86,16 @@ export default async function ProfilPage() {
           <span style={{ fontSize: 14 }}>Parrainage</span>
           <span>→</span>
         </Link>
+        {isAdmin && (
+          <Link
+            href="/admin/offres"
+            className="card flex-row items-center justify-between no-underline sm:hidden"
+            style={{ color: "inherit", padding: "var(--space-3) var(--space-4)" }}
+          >
+            <span style={{ fontSize: 14 }}>Admin — ingestion d&apos;offres</span>
+            <span>→</span>
+          </Link>
+        )}
         <form action="/auth/signout" method="post">
           <button
             type="submit"
