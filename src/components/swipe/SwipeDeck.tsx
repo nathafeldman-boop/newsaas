@@ -232,6 +232,12 @@ function SwipeDeckInner({
         { onConflict: "user_id,offer_id" },
       );
 
+    setBusy(false);
+
+    // La page /candidature génère une lettre de motivation personnalisée
+    // puis propose "Postuler sur le site" (copie la lettre + ouvre
+    // l'annonce réelle) : c'est elle qui amène vers l'annonce, pas ce
+    // bouton de raccourci.
     router.push(`/candidature/${offer.id}`);
   }
 

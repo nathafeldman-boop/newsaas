@@ -1,17 +1,14 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { applyToOffer } from "./actions";
+import { CoverLetterPanel } from "@/components/candidature/CoverLetterPanel";
 
 export default async function CandidaturePage({
   params,
-  searchParams,
 }: {
   params: Promise<{ offerId: string }>;
-  searchParams: Promise<{ postule?: string }>;
 }) {
   const { offerId } = await params;
-  const { postule } = await searchParams;
 
   const supabase = await createClient();
   const {
@@ -33,8 +30,6 @@ export default async function CandidaturePage({
     .eq("user_id", user.id)
     .eq("offer_id", offerId)
     .maybeSingle();
-
-  const applyAction = applyToOffer.bind(null, offerId);
 
   return (
     <div className="mx-auto max-w-xl">
@@ -78,25 +73,18 @@ export default async function CandidaturePage({
           {offer.remote_policy && <span className="tag tag-neutral">{offer.remote_policy}</span>}
         </div>
 
-        {postule === "1" && (
-          <p className="tag tag-accent-2 mt-5" style={{ padding: "8px 14px", fontSize: 13, display: "block" }}>
-            Candidature enregistrée — ce recruteur n&apos;a pas de lien
-            externe, on lui a noté ton intérêt.
-          </p>
-        )}
-
-        {application ? (
+        {application && (
           <p className="tag tag-accent mt-6" style={{ padding: "8px 14px", fontSize: 13, display: "block" }}>
             Tu as déjà postulé à cette offre le{" "}
             {new Date(application.applied_at).toLocaleDateString("fr-FR")}.
           </p>
-        ) : (
-          <form action={applyAction} className="mt-6">
-            <button type="submit" className="btn btn-primary btn-block">
-              Postuler maintenant
-            </button>
-          </form>
         )}
+
+        <CoverLetterPanel
+          offerId={offerId}
+          applyUrl={offer.apply_url}
+          initialLetter={application?.cover_note ?? null}
+        />
       </div>
     </div>
   );
