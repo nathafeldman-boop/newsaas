@@ -14,9 +14,9 @@ const ERROR_MESSAGES: Record<string, string> = {
 export default async function PremiumPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; limite?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, limite } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -85,6 +85,22 @@ export default async function PremiumPage({
             <p style={{ fontSize: 13, opacity: 0.9, margin: "10px 0 0" }}>
               Passe illimité, candidatures illimitées, audit CV inclus.
             </p>
+
+            {limite === "1" && (
+              <p
+                style={{
+                  fontSize: 13,
+                  marginTop: 16,
+                  background: "rgba(0,0,0,0.15)",
+                  padding: 10,
+                  borderRadius: 8,
+                }}
+              >
+                🔒 Tu as atteint ton quota gratuit de la semaine. Passe Premium pour continuer à
+                swiper en illimité dès maintenant.
+              </p>
+            )}
+
             <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 26 }}>
               <span style={{ fontFamily: "var(--font-heading)", fontSize: 44 }}>7,99€</span>
               <span style={{ fontSize: 13, opacity: 0.85 }}>/mois</span>
@@ -121,18 +137,20 @@ export default async function PremiumPage({
                 Votre avenir vaut bien 7,99€
               </button>
             </form>
-            <Link
-              href="/swipe"
-              style={{
-                display: "block",
-                textAlign: "center",
-                fontSize: 12,
-                marginTop: 14,
-                color: "color-mix(in srgb, var(--color-bg) 80%, transparent)",
-              }}
-            >
-              Continuer avec l&apos;offre gratuite
-            </Link>
+            {limite !== "1" && (
+              <Link
+                href="/swipe"
+                style={{
+                  display: "block",
+                  textAlign: "center",
+                  fontSize: 12,
+                  marginTop: 14,
+                  color: "color-mix(in srgb, var(--color-bg) 80%, transparent)",
+                }}
+              >
+                Continuer avec l&apos;offre gratuite
+              </Link>
+            )}
             <AccessCodeForm />
           </>
         )}

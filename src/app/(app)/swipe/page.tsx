@@ -2,10 +2,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SwipeDeck } from "@/components/swipe/SwipeDeck";
 import { computeMatchScore } from "@/lib/matching/score";
-import { isPremium } from "@/lib/subscription/isPremium";
+import { computeQuotaStatus } from "@/lib/subscription/quota";
 import type { Offer } from "@/types/database";
-
-const FREE_WEEKLY_SWIPE_QUOTA = 4;
 
 export default async function SwipePage() {
   const supabase = await createClient();
@@ -34,16 +32,7 @@ export default async function SwipePage() {
     (s) => new Date(s.created_at) >= todayStart,
   ).length;
 
-  const premium = isPremium(profile);
-  const appliedOfferIds = new Set((applications ?? []).map((a) => a.offer_id));
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  // Miroir du trigger SQL enforce_swipe_quota : seuls les swipes de pure
-  // découverte (sans candidature associée) comptent dans le quota gratuit.
-  const browseSwipesThisWeek = (swiped ?? []).filter(
-    (s) => new Date(s.created_at) >= sevenDaysAgo && !appliedOfferIds.has(s.offer_id),
-  ).length;
-  const quotaReached = !premium && browseSwipesThisWeek >= FREE_WEEKLY_SWIPE_QUOTA;
+  const { premium, quotaReached } = computeQuotaStatus(profile, swiped ?? [], applications ?? []);
 
   let offers: Offer[] = [];
 
