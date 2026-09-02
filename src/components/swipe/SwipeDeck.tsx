@@ -2,7 +2,13 @@
 
 import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion, useMotionValue, useTransform, animate } from "framer-motion";
+import {
+  motion,
+  AnimatePresence,
+  useMotionValue,
+  useTransform,
+  animate,
+} from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { OfferCardContent } from "@/components/swipe/OfferCard";
 import { cn } from "@/lib/utils";
@@ -10,6 +16,7 @@ import type { ContractType, Offer, SwipeDirection } from "@/types/database";
 
 const SWIPE_THRESHOLD = 120;
 const EXIT_DISTANCE = 600;
+const CELEBRATION_THRESHOLD = 90;
 
 export interface SwipeCardHandle {
   swipeOut: (direction: SwipeDirection) => void;
@@ -108,19 +115,57 @@ const SwipeCard = forwardRef<
   );
 });
 
+function MatchCelebration({ show }: { show: boolean }) {
+  return (
+    <AnimatePresence>
+      {show && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.6, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.8, y: -14 }}
+          transition={{ type: "spring", stiffness: 350, damping: 20 }}
+          style={{
+            position: "absolute",
+            top: 18,
+            left: "50%",
+            translateX: "-50%",
+            zIndex: 30,
+            pointerEvents: "none",
+            background: "var(--color-accent-2)",
+            color: "var(--color-bg)",
+            fontFamily: "var(--font-heading)",
+            fontSize: 15,
+            padding: "10px 20px",
+            borderRadius: 999,
+            boxShadow: "var(--shadow-lg)",
+            whiteSpace: "nowrap",
+          }}
+        >
+          ✨ Excellent match !
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 function SwipeDeckInner({
   offers,
   scores,
   userId,
+  initialSwipesToday,
 }: {
   offers: Offer[];
   scores: Record<string, number>;
   userId: string;
+  initialSwipesToday: number;
 }) {
   const router = useRouter();
   const [stack, setStack] = useState(offers);
   const [busy, setBusy] = useState(false);
+  const [swipesToday, setSwipesToday] = useState(initialSwipesToday);
+  const [celebrating, setCelebrating] = useState(false);
   const topCardRef = useRef<SwipeCardHandle>(null);
+  const celebrationTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const visible = stack.slice(0, 3);
 
@@ -134,10 +179,20 @@ function SwipeDeckInner({
       );
   }
 
+  function triggerCelebration() {
+    setCelebrating(true);
+    if (celebrationTimeout.current) clearTimeout(celebrationTimeout.current);
+    celebrationTimeout.current = setTimeout(() => setCelebrating(false), 1300);
+  }
+
   function handleSwipeIntent(direction: SwipeDirection) {
     const offer = stack[0];
     if (!offer) return;
     void recordSwipe(offer, direction);
+    setSwipesToday((n) => n + 1);
+    if (direction === "like" && (scores[offer.id] ?? 0) >= CELEBRATION_THRESHOLD) {
+      triggerCelebration();
+    }
     topCardRef.current?.swipeOut(direction);
   }
 
@@ -182,6 +237,7 @@ function SwipeDeckInner({
   return (
     <div className="flex flex-col items-center">
       <div className="relative h-[520px] w-full max-w-sm">
+        <MatchCelebration show={celebrating} />
         {visible
           .slice()
           .reverse()
@@ -250,6 +306,18 @@ function SwipeDeckInner({
           ♥
         </button>
       </div>
+
+      <p
+        style={{
+          marginTop: 18,
+          fontSize: 12,
+          color: "color-mix(in srgb, var(--color-text) 55%, transparent)",
+        }}
+      >
+        {swipesToday > 0
+          ? `🔥 Série en cours · ${swipesToday} offre${swipesToday > 1 ? "s" : ""} vue${swipesToday > 1 ? "s" : ""} aujourd'hui`
+          : "Swipe ta première offre du jour !"}
+      </p>
     </div>
   );
 }
@@ -258,10 +326,12 @@ export function SwipeDeck({
   offers,
   scores,
   userId,
+  swipesToday = 0,
 }: {
   offers: Offer[];
   scores: Record<string, number>;
   userId: string;
+  swipesToday?: number;
 }) {
   const availableTypes = useMemo(() => {
     const types = new Set(offers.map((o) => o.contract_type));
@@ -304,6 +374,7 @@ export function SwipeDeck({
         offers={filteredOffers}
         scores={scores}
         userId={userId}
+        initialSwipesToday={swipesToday}
       />
     </div>
   );

@@ -19,10 +19,16 @@ export default async function SwipePage() {
 
   const { data: swiped } = await supabase
     .from("swipes")
-    .select("offer_id")
+    .select("offer_id, created_at")
     .eq("user_id", user.id);
 
   const excludeIds = (swiped ?? []).map((s) => s.offer_id);
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const swipesToday = (swiped ?? []).filter(
+    (s) => new Date(s.created_at) >= todayStart,
+  ).length;
 
   let query = supabase
     .from("offers")
@@ -55,7 +61,12 @@ export default async function SwipePage() {
 
   return (
     <div className="flex flex-1 flex-col items-center">
-      <SwipeDeck offers={sortedOffers} scores={scores} userId={user.id} />
+      <SwipeDeck
+        offers={sortedOffers}
+        scores={scores}
+        userId={user.id}
+        swipesToday={swipesToday}
+      />
     </div>
   );
 }
