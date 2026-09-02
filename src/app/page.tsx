@@ -1,5 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
+import { createClient } from "@/lib/supabase/server";
+import { offerPath } from "@/lib/offers/publicUrl";
+import { SITE_URL } from "@/lib/site";
 
 const STEPS = [
   {
@@ -23,9 +26,45 @@ const STATS = [
   { value: "4.6★", label: "Note moyenne" },
 ];
 
-export default function LandingPage() {
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "Stageio",
+  url: SITE_URL,
+  sameAs: [],
+};
+
+const websiteJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "Stageio",
+  url: SITE_URL,
+  potentialAction: {
+    "@type": "SearchAction",
+    target: `${SITE_URL}/offres?q={search_term_string}`,
+    "query-input": "required name=search_term_string",
+  },
+};
+
+export default async function LandingPage() {
+  const supabase = await createClient();
+  const { data: featuredOffers } = await supabase
+    .from("offers")
+    .select("id, title, company, location, contract_type, published_at")
+    .eq("is_active", true)
+    .order("published_at", { ascending: false })
+    .limit(4);
+
   return (
     <div className="flex-1">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+      />
       <nav className="nav mx-auto max-w-[1200px]">
         <span className="nav-brand">Stageio</span>
         <Link href="/login" style={{ whiteSpace: "nowrap" }}>
@@ -165,6 +204,27 @@ export default function LandingPage() {
             </figcaption>
           </div>
         </section>
+
+        {featuredOffers && featuredOffers.length > 0 && (
+          <section className="py-8">
+            <span className="tag tag-accent" style={{ marginBottom: 16 }}>
+              Offres à la une
+            </span>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              {featuredOffers.map((offer) => (
+                <Link key={offer.id} href={offerPath(offer)} className="card elev-sm">
+                  <h3 className="card-title">{offer.title}</h3>
+                  <p className="card-body">
+                    {offer.company} — {offer.location}
+                  </p>
+                </Link>
+              ))}
+            </div>
+            <Link href="/offres" className="btn btn-ghost mt-4" style={{ display: "inline-flex" }}>
+              Voir toutes les offres →
+            </Link>
+          </section>
+        )}
 
         <section className="py-10 pb-20">
           <h2 style={{ fontSize: 28, margin: 0, maxWidth: "24ch" }}>

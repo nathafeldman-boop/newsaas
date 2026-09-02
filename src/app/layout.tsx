@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Poppins, Inter } from "next/font/google";
+import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -14,9 +15,23 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Stageio — trouve ton alternance ou ton stage",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "Stageio — trouve ton alternance ou ton stage",
+    template: "%s | Stageio",
+  },
   description:
     "Swipe les offres d'alternance et de stage qui te correspondent, postule en un geste.",
+  openGraph: {
+    siteName: "Stageio",
+    type: "website",
+    locale: "fr_FR",
+    images: ["/team-photo.jpg"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/team-photo.jpg"],
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -31,7 +31,7 @@ export async function notifyReferrerOfNewSignup(referredUserId: string) {
 
   const resend = getResendClient();
   const fromEmail = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://stageio.app";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://stageio.fr";
 
   await resend.emails.send({
     from: `Stageio <${fromEmail}>`,
