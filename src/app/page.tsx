@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 const STEPS = [
   {
@@ -75,22 +76,22 @@ export default function LandingPage() {
           </div>
           <figure
             className="washed m-0 overflow-hidden"
-            style={{ borderRadius: "var(--radius-lg)" }}
+            style={{
+              borderRadius: "var(--radius-lg)",
+              position: "relative",
+              width: "100%",
+              aspectRatio: "4/3",
+              background: "var(--color-accent-200)",
+            }}
           >
-            <div
-              style={{
-                width: "100%",
-                aspectRatio: "4/3",
-                background: "var(--color-accent-200)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "var(--color-accent-700)",
-                fontFamily: "var(--font-heading)",
-              }}
-            >
-              photo d&apos;équipe
-            </div>
+            <Image
+              src="/team-photo.jpg"
+              alt="L'équipe Stageio"
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              style={{ objectFit: "cover" }}
+              priority
+            />
           </figure>
         </section>
 
