@@ -2,6 +2,11 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { ingestOffer } from "@/lib/mistral/ingestOffer";
 
+// Un fetch + un appel Mistral par URL, séquentiellement : sans ceci la route
+// tourne sur le défaut Vercel (10s), dépassé dès qu'on envoie plus de
+// quelques URLs par requête. 60s = plafond du plan Hobby.
+export const maxDuration = 60;
+
 // Endpoint pour brancher un script externe / cron d'ingestion Mistral.
 // Protégé par un secret partagé (jamais exposé côté client).
 //

@@ -1,0 +1,83 @@
+name: Ingest offers into Stageio
+
+on:
+  workflow_dispatch:
+    inputs:
+      urls:
+        description: "URLs d'offres, une par ligne"
+        required: true
+        type: string
+      target_url:
+        description: "Base URL du site (par défaut https://stageio.fr)"
+        required: false
+        default: "https://stageio.fr"
+        type: string
+      chunk_size:
+        description: "URLs par requête (reste sous la limite de 60s côté serveur)"
+        required: false
+        default: "8"
+        type: string
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: POST URLs in chunks to /api/offers/ingest
+        env:
+          INGEST_API_SECRET: ${{ secrets.INGEST_API_SECRET }}
+          URLS: ${{ inputs.urls }}
+          TARGET_URL: ${{ inputs.target_url }}
+          CHUNK_SIZE: ${{ inputs.chunk_size }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${INGEST_API_SECRET:-}" ]; then
+            echo "::error::Le secret de dépôt INGEST_API_SECRET n'est pas configuré (Settings > Secrets and variables > Actions)."
+            exit 1
+          fi
+
+          mapfile -t all_urls < <(printf '%s\n' "$URLS" | sed '/^[[:space:]]*$/d')
+          total=${#all_urls[@]}
+          echo "Total d'URLs à traiter : $total"
+
+          ok_count=0
+          fail_count=0
+          i=0
+          chunk_num=0
+
+          while [ $i -lt $total ]; do
+            chunk_num=$((chunk_num + 1))
+            chunk=("${all_urls[@]:$i:$CHUNK_SIZE}")
+
+            body=$(printf '%s\n' "${chunk[@]}" | jq -R . | jq -s '{sourceUrls: .}')
+
+            echo "--- Lot $chunk_num (${#chunk[@]} URLs) ---"
+            response=$(curl -sS -w "\n%{http_code}" -X POST "$TARGET_URL/api/offers/ingest" \
+              -H "Authorization: Bearer $INGEST_API_SECRET" \
+              -H "Content-Type: application/json" \
+              --max-time 90 \
+              -d "$body" || echo -e "\nCURL_ERROR")
+
+            http_code=$(echo "$response" | tail -n1)
+            payload=$(echo "$response" | sed '$d')
+
+            echo "HTTP $http_code"
+            echo "$payload"
+
+            if [ "$http_code" = "200" ]; then
+              chunk_ok=$(echo "$payload" | jq '[.results[]? | select(.ok == true)] | length' 2>/dev/null || echo 0)
+              chunk_fail=$(echo "$payload" | jq '[.results[]? | select(.ok == false)] | length' 2>/dev/null || echo 0)
+              ok_count=$((ok_count + chunk_ok))
+              fail_count=$((fail_count + chunk_fail))
+            else
+              fail_count=$((fail_count + ${#chunk[@]}))
+            fi
+
+            i=$((i + CHUNK_SIZE))
+            if [ $i -lt $total ]; then
+              sleep 3
+            fi
+          done
+
+          echo "=================================="
+          echo "Terminé : $ok_count offre(s) ajoutée(s), $fail_count échec(s) sur $total URL(s)."
