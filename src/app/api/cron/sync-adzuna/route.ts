@@ -16,8 +16,12 @@ import { mapAdzunaJob } from "@/lib/adzuna/mapOffer";
 export const maxDuration = 60;
 
 const QUERIES = ["alternance", "stage"] as const;
-const PAGES_PER_QUERY = 6;
-const STALE_AFTER_DAYS = 7;
+// Conservateur tant que le compte Adzuna est en plan "Trial Access" (quota
+// limité, souvent quelques centaines d'appels/mois). 2 requêtes x 4 pages x
+// 1 run/jour (vercel.json) = 8 appels/jour, ~240/mois. Augmenter une fois
+// le plan/quota réel connu (page "Stats" du dashboard Adzuna).
+const PAGES_PER_QUERY = 4;
+const STALE_AFTER_DAYS = 10;
 
 export async function GET(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
