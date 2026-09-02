@@ -3,6 +3,7 @@ import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import { offerPath } from "@/lib/offers/publicUrl";
 import { SITE_URL } from "@/lib/site";
+import { safeJsonLd } from "@/lib/seo/jsonLd";
 
 const STEPS = [
   {
@@ -59,11 +60,11 @@ export default async function LandingPage() {
     <div className="flex-1">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(organizationJsonLd) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(websiteJsonLd) }}
       />
       <nav className="nav mx-auto max-w-[1200px]">
         <span className="nav-brand">Stageio</span>

@@ -2,7 +2,20 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/types/database";
 
-const PUBLIC_PATHS = ["/", "/login", "/inscription", "/auth", "/legal"];
+// /offres (+ /offres/[slug]) est le seul contenu app censé être indexable
+// sans compte (voir robots.ts / sitemap.ts) ; robots.txt et sitemap.xml
+// doivent eux-mêmes rester atteignables par un crawler non connecté, sinon
+// Google ne peut même pas découvrir qu'ils existent.
+const PUBLIC_PATHS = [
+  "/",
+  "/login",
+  "/inscription",
+  "/auth",
+  "/legal",
+  "/offres",
+  "/robots.txt",
+  "/sitemap.xml",
+];
 const ONBOARDING_EXEMPT_PATHS = ["/onboarding", "/auth"];
 
 function matchesPath(pathname: string, paths: string[]) {

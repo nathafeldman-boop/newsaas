@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { extractOfferId, offerPath } from "@/lib/offers/publicUrl";
 import { SITE_URL } from "@/lib/site";
+import { safeJsonLd } from "@/lib/seo/jsonLd";
 import type { Offer } from "@/types/database";
 
 // Fiche publique, sans compte : c'est le seul contenu de l'app indexable par
@@ -101,7 +102,7 @@ export default async function PublicOfferPage({
     <div className="mx-auto max-w-2xl px-5 py-10 sm:px-9">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jobPostingJsonLd(offer)) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(jobPostingJsonLd(offer)) }}
       />
 
       <Link href="/offres" style={{ fontSize: 13 }}>
