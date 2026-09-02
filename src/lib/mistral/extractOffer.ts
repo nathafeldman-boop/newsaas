@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { getMistralClient } from "@/lib/mistral/client";
+import { getMistralClient, getMistralModel } from "@/lib/mistral/client";
 
 export const extractedOfferSchema = z.object({
   title: z.string().min(2),
@@ -45,7 +45,7 @@ export async function extractOfferFromText(
   hints?: { sourceUrl?: string; contractTypeHint?: "alternance" | "stage" },
 ): Promise<ExtractedOffer> {
   const client = getMistralClient();
-  const model = process.env.MISTRAL_MODEL || "mistral-large-latest";
+  const model = getMistralModel();
 
   const truncated = rawText.slice(0, 12000);
 

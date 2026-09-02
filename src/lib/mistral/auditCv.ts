@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { getMistralClient } from "@/lib/mistral/client";
+import { getMistralClient, getMistralModel } from "@/lib/mistral/client";
 
 export const cvAuditSchema = z.object({
   score: z.number().min(0).max(100),
@@ -29,7 +29,7 @@ projets, structure, et absence de fautes ou d'incohérences évidentes. Ne mets 
 
 export async function auditCvText(cvText: string): Promise<CvAudit> {
   const client = getMistralClient();
-  const model = process.env.MISTRAL_MODEL || "mistral-large-latest";
+  const model = getMistralModel();
 
   const result = await client.chat.complete({
     model,

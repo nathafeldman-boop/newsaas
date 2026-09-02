@@ -1,4 +1,4 @@
-import { getMistralClient } from "@/lib/mistral/client";
+import { getMistralClient, getMistralModel } from "@/lib/mistral/client";
 import type { Offer, Profile } from "@/types/database";
 
 const SYSTEM_PROMPT = `Tu es un conseiller carrière qui rédige, pour des étudiants et jeunes
@@ -52,7 +52,7 @@ export async function generateCoverLetter(
   cvText: string | null,
 ): Promise<string> {
   const client = getMistralClient();
-  const model = process.env.MISTRAL_MODEL || "mistral-large-latest";
+  const model = getMistralModel();
 
   const result = await client.chat.complete({
     model,

@@ -70,9 +70,10 @@ export async function auditCvAction(
     const audit = await auditCvText(text);
     return { status: "success", ...audit };
   } catch (err) {
+    console.error("auditCvAction", err);
     return {
       status: "error",
-      message: err instanceof Error ? err.message : "Erreur inconnue.",
+      message: "L'analyse de ton CV a échoué, réessaie dans un instant.",
     };
   }
 }

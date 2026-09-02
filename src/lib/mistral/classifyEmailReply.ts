@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { getMistralClient } from "@/lib/mistral/client";
+import { getMistralClient, getMistralModel } from "@/lib/mistral/client";
 
 const classificationSchema = z.object({
   is_recruiting_reply: z.boolean(),
@@ -41,7 +41,7 @@ export async function classifyEmailReply(
   candidateCompanies: string[],
 ): Promise<EmailClassification> {
   const client = getMistralClient();
-  const model = process.env.MISTRAL_MODEL || "mistral-large-latest";
+  const model = getMistralModel();
 
   const userContent = [
     `Entreprises auxquelles ce candidat a postulé (liste fermée) : ${candidateCompanies.join(", ") || "(aucune)"}`,

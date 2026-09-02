@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { getMistralClient } from "@/lib/mistral/client";
+import { getMistralClient, getMistralModel } from "@/lib/mistral/client";
 
 // Utilise l'outil de recherche web natif de Mistral (Conversations API,
 // /v1/conversations — différent de l'endpoint chat.complete utilisé
@@ -34,7 +34,7 @@ export async function discoverOfferUrls(
   count = 5,
 ): Promise<string[]> {
   const client = getMistralClient();
-  const model = process.env.MISTRAL_MODEL || "mistral-large-latest";
+  const model = getMistralModel();
 
   const result = await client.beta.conversations.start({
     model,

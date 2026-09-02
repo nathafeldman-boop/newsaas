@@ -88,9 +88,10 @@ export async function generateCoverLetterAction(offerId: string): Promise<Genera
 
     return { status: "success", letter };
   } catch (err) {
+    console.error("generateCoverLetterAction", err);
     return {
       status: "error",
-      message: err instanceof Error ? err.message : "Erreur inconnue.",
+      message: "La génération de ta lettre a échoué, réessaie dans un instant.",
     };
   }
 }
