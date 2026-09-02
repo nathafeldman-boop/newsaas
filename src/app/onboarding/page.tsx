@@ -23,8 +23,8 @@ export default async function OnboardingPage() {
   }
 
   return (
-    <div className="flex-1 flex items-center justify-center px-6 py-10">
-      <div className="w-full max-w-lg">
+    <div className="flex flex-1 flex-col px-5 py-6">
+      <div className="mx-auto flex w-full max-w-lg flex-1 flex-col">
         <OnboardingWizard userId={user.id} initialProfile={profile ?? null} />
       </div>
     </div>
