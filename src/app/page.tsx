@@ -3,117 +3,194 @@ import Link from "next/link";
 const STEPS = [
   {
     title: "Crée ton profil",
-    text: "Compétences, ville, parcours, et ton CV si tu veux (facultatif).",
+    text: "Compétences, ville, parcours, et ton CV si tu veux — facultatif.",
   },
   {
     title: "Swipe les offres",
-    text: "Aime ou passe les alternances et stages, comme sur une appli de rencontre.",
+    text: "Logo, salaire, avis d'anciens alternants : tout pour décider d'un regard.",
   },
   {
     title: "Postule en un geste",
-    text: "Directement depuis une carte que tu aimes, sans ressaisir tes infos.",
+    text: "Directement depuis la carte que tu aimes, sans ressaisir tes infos.",
   },
+];
+
+const STATS = [
+  { value: "1 400", label: "Offres actives", color: "var(--color-accent)" },
+  { value: "48h", label: "Délai moyen" },
+  { value: "62%", label: "Alternances", color: "var(--color-accent-2)" },
+  { value: "4.6★", label: "Note moyenne" },
 ];
 
 export default function LandingPage() {
   return (
     <div className="flex-1">
-      <header className="flex items-center justify-between px-6 py-5 max-w-5xl mx-auto w-full">
-        <span className="text-xl font-bold text-brand-dark">Stageio</span>
-        <nav className="flex items-center gap-4 text-sm font-medium">
-          <Link href="/login" className="text-foreground/70 hover:text-foreground">
-            Se connecter
-          </Link>
-          <Link
-            href="/inscription"
-            className="rounded-full bg-brand px-4 py-2 text-white hover:bg-brand-dark transition-colors"
-          >
-            Créer mon compte
-          </Link>
-        </nav>
-      </header>
+      <nav className="nav mx-auto max-w-[1200px]">
+        <span className="nav-brand">Stageio</span>
+        <Link href="/login" style={{ whiteSpace: "nowrap" }}>
+          Se connecter
+        </Link>
+        <Link href="/inscription" className="btn btn-primary" style={{ whiteSpace: "nowrap" }}>
+          Créer mon compte
+        </Link>
+      </nav>
 
-      <main className="max-w-5xl mx-auto px-6 pt-12 pb-24">
-        <div className="grid md:grid-cols-2 gap-12 items-center">
+      <div className="mx-auto max-w-[1200px] px-5 sm:px-9">
+        <section className="grid gap-10 py-16 md:grid-cols-[6fr_5fr] md:items-center md:py-[90px]">
           <div>
-            <h1 className="text-4xl md:text-5xl font-extrabold leading-tight tracking-tight">
-              Trouve ton alternance{" "}
-              <span className="text-brand">sans passer des heures</span> à
-              chercher.
+            <span className="tag tag-accent" style={{ marginBottom: 16 }}>
+              Alternance &amp; stage
+            </span>
+            <h1
+              style={{
+                fontSize: "clamp(42px,6vw,72px)",
+                lineHeight: 1.05,
+                margin: "16px 0 0",
+                maxWidth: "14ch",
+              }}
+            >
+              Trouve ta prochaine expérience, en swipant.
             </h1>
-            <p className="mt-5 text-lg text-foreground/70">
-              On trouve les offres qui te correspondent, tu swipes, tu
-              postules. Fini les 40 candidatures identiques sur 10 sites
-              différents.
+            <p
+              style={{
+                fontSize: 17,
+                lineHeight: "28px",
+                maxWidth: "52ch",
+                color: "color-mix(in srgb, var(--color-text) 78%, transparent)",
+                margin: "22px 0 0",
+              }}
+            >
+              Fini les quarante candidatures identiques sur dix sites
+              différents. On te propose les offres qui matchent ton profil ;
+              tu likes, tu postules, c&apos;est tout.
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                href="/inscription"
-                className="rounded-full bg-brand px-6 py-3 text-white font-semibold hover:bg-brand-dark transition-colors"
-              >
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link href="/inscription" className="btn btn-primary" style={{ whiteSpace: "nowrap" }}>
                 Créer mon compte gratuitement
               </Link>
-              <Link
-                href="/login"
-                className="rounded-full border border-border px-6 py-3 font-semibold hover:bg-surface transition-colors"
-              >
+              <Link href="/login" className="btn btn-secondary" style={{ whiteSpace: "nowrap" }}>
                 J&apos;ai déjà un compte
               </Link>
             </div>
           </div>
+          <figure
+            className="washed m-0 overflow-hidden"
+            style={{ borderRadius: "var(--radius-lg)" }}
+          >
+            <div
+              style={{
+                width: "100%",
+                aspectRatio: "4/3",
+                background: "var(--color-accent-200)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "var(--color-accent-700)",
+                fontFamily: "var(--font-heading)",
+              }}
+            >
+              photo d&apos;équipe
+            </div>
+          </figure>
+        </section>
 
-          <div className="relative mx-auto w-full max-w-xs">
-            <div className="absolute inset-0 translate-x-3 translate-y-3 rounded-3xl bg-accent-pass/30" />
-            <div className="relative rounded-3xl border border-border bg-surface shadow-xl p-6">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold uppercase tracking-wide text-brand">
-                  Alternance · Paris
+        <section className="py-8">
+          <div
+            className="card elev-sm grid gap-6"
+            style={{
+              gridTemplateColumns: "repeat(4,auto)",
+              justifyContent: "space-between",
+              padding: "var(--space-6)",
+            }}
+          >
+            {STATS.map((stat) => (
+              <div key={stat.label}>
+                <p
+                  style={{
+                    fontFamily: "var(--font-heading)",
+                    fontSize: 36,
+                    color: stat.color,
+                    margin: 0,
+                  }}
+                >
+                  {stat.value}
                 </p>
-                <span className="rounded-full bg-accent-like/10 px-2.5 py-0.5 text-xs font-bold text-accent-like">
-                  ⭐ 92%
-                </span>
+                <p
+                  style={{
+                    fontSize: 12,
+                    letterSpacing: "0.06em",
+                    textTransform: "uppercase",
+                    color: "color-mix(in srgb, var(--color-text) 70%, transparent)",
+                    margin: "6px 0 0",
+                  }}
+                >
+                  {stat.label}
+                </p>
               </div>
-              <h3 className="mt-2 text-xl font-bold">
-                Développeur Web Full-Stack
-              </h3>
-              <p className="mt-1 text-sm text-foreground/60">Numeria</p>
-              <p className="mt-4 text-sm text-foreground/70">
-                React, Node.js, équipe produit en croissance. 12-24 mois.
-              </p>
-              <div className="mt-6 flex items-center justify-center gap-4">
-                <span className="flex h-12 w-12 items-center justify-center rounded-full border border-accent-pass text-accent-pass text-xl">
-                  ✕
-                </span>
-                <span className="flex h-14 w-14 items-center justify-center rounded-full bg-accent-like text-white text-2xl shadow-lg">
-                  ♥
-                </span>
-              </div>
-            </div>
+            ))}
           </div>
-        </div>
+        </section>
 
-        <div className="mt-24 grid sm:grid-cols-3 gap-8">
-          {STEPS.map((step, i) => (
-            <div key={step.title}>
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand/10 text-brand font-bold">
-                {i + 1}
+        <section className="py-8">
+          <span className="tag tag-accent-2" style={{ marginBottom: 16 }}>
+            Le parcours
+          </span>
+          <div className="mt-4 grid gap-7 sm:grid-cols-3">
+            {STEPS.map((step) => (
+              <div key={step.title} className="card">
+                <h3 className="card-title">{step.title}</h3>
+                <p className="card-body">{step.text}</p>
               </div>
-              <h2 className="mt-4 font-semibold text-lg">{step.title}</h2>
-              <p className="mt-1 text-sm text-foreground/70">{step.text}</p>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </section>
 
-        <div className="mt-24 rounded-3xl bg-brand text-white px-8 py-10 text-center">
-          <h2 className="text-2xl font-bold">
+        <section className="py-8">
+          <div
+            className="card elev-md"
+            style={{ background: "var(--color-accent-2-100)", padding: "var(--space-8)" }}
+          >
+            <blockquote
+              style={{
+                fontFamily: "var(--font-heading)",
+                fontSize: "clamp(22px,2.4vw,30px)",
+                lineHeight: 1.35,
+                maxWidth: "34ch",
+                margin: 0,
+                color: "var(--color-accent-2-800)",
+              }}
+            >
+              « Trois jours après mon inscription, j&apos;avais déjà un
+              entretien. »
+            </blockquote>
+            <figcaption style={{ fontSize: 14, color: "var(--color-accent-2-700)", marginTop: 16 }}>
+              — Léa, alternante en marketing digital
+            </figcaption>
+          </div>
+        </section>
+
+        <section className="py-10 pb-20">
+          <h2 style={{ fontSize: 28, margin: 0, maxWidth: "24ch" }}>
             Un pote te parraine ? Vous gagnez tous les deux.
           </h2>
-          <p className="mt-2 text-white/80">
-            Chaque compte a son lien de parrainage — dispo dans ton profil
+          <p
+            style={{
+              fontSize: 15,
+              color: "color-mix(in srgb, var(--color-text) 78%, transparent)",
+              margin: "12px 0 0",
+              maxWidth: "50ch",
+            }}
+          >
+            Chaque compte a son lien de parrainage, disponible dans le profil
             une fois inscrit.
           </p>
-        </div>
-      </main>
+          <div className="mt-5 flex max-w-[420px] items-stretch gap-3">
+            <Link href="/inscription" className="btn btn-primary" style={{ whiteSpace: "nowrap" }}>
+              Créer mon compte
+            </Link>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

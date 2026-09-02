@@ -5,6 +5,28 @@ function formatStartDate(dateStr: string): string {
   return date.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
 }
 
+function LogoPlaceholder({ company }: { company: string }) {
+  return (
+    <div
+      style={{
+        width: 44,
+        height: 44,
+        borderRadius: "50%",
+        background: "var(--color-accent-100)",
+        color: "var(--color-accent-700)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontFamily: "var(--font-heading)",
+        fontSize: 17,
+        flexShrink: 0,
+      }}
+    >
+      {company.charAt(0).toUpperCase()}
+    </div>
+  );
+}
+
 export function OfferCardContent({
   offer,
   matchScore,
@@ -13,45 +35,73 @@ export function OfferCardContent({
   matchScore?: number;
 }) {
   return (
-    <div className="flex h-full flex-col p-6">
-      <div className="flex items-center justify-between">
-        <span className="rounded-full bg-brand/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-dark">
-          {offer.contract_type === "alternance" ? "Alternance" : "Stage"}
-        </span>
-        {typeof matchScore === "number" && (
-          <span className="flex items-center gap-1 rounded-full bg-accent-like/10 px-3 py-1 text-xs font-bold text-accent-like">
-            ⭐ {matchScore}% compatible
-          </span>
+    <div className="flex h-full flex-col">
+      <div style={{ padding: "26px 26px 0" }} className="flex flex-col">
+        <div className="flex items-center gap-3">
+          <LogoPlaceholder company={offer.company} />
+          <div className="ml-auto flex flex-col items-end gap-1.5">
+            <span className="tag tag-accent" style={{ whiteSpace: "nowrap" }}>
+              {offer.contract_type === "alternance" ? "Alternance" : "Stage"}
+            </span>
+            {typeof matchScore === "number" && (
+              <span
+                style={{
+                  fontFamily: "var(--font-heading)",
+                  fontSize: 15,
+                  color: "var(--color-accent-2-700)",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                ★ {matchScore}% compatible
+              </span>
+            )}
+          </div>
+        </div>
+
+        <h2 style={{ fontSize: 24, lineHeight: 1.2, margin: "16px 0 0" }}>{offer.title}</h2>
+        <p
+          style={{
+            fontSize: 14,
+            color: "color-mix(in srgb, var(--color-text) 70%, transparent)",
+            margin: "4px 0 0",
+          }}
+        >
+          {offer.company} · {offer.location}
+          {offer.start_date && ` · dès ${formatStartDate(offer.start_date)}`}
+        </p>
+        {offer.education_level && (
+          <p style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "2px 0 0" }}>
+            🎓 {offer.education_level}
+          </p>
         )}
+
+        <p
+          className="flex-1 overflow-y-auto"
+          style={{
+            margin: "16px 0 0",
+            fontSize: 13.5,
+            lineHeight: 1.6,
+            color: "color-mix(in srgb, var(--color-text) 80%, transparent)",
+          }}
+        >
+          {offer.description}
+        </p>
       </div>
 
-      <h2 className="mt-4 text-2xl font-bold leading-tight">{offer.title}</h2>
-
-      <div className="mt-2 flex flex-col gap-1 text-sm text-foreground/70">
-        <span>📍 {offer.location}</span>
-        <span>🏢 {offer.company}</span>
-        {offer.start_date && <span>📅 {formatStartDate(offer.start_date)}</span>}
-        {offer.education_level && <span>🎓 {offer.education_level}</span>}
-      </div>
-
-      <p className="mt-4 flex-1 overflow-y-auto text-sm text-foreground/80 leading-relaxed">
-        {offer.description}
-      </p>
-
-      <div className="mt-4 flex flex-wrap gap-2 text-xs text-foreground/60">
+      <div style={{ padding: "20px 26px 26px" }} className="flex flex-wrap gap-2">
         {offer.duration && (
-          <span className="rounded-full border border-border px-2.5 py-1">
-            ⏱ {offer.duration}
+          <span className="tag tag-neutral" style={{ whiteSpace: "nowrap" }}>
+            {offer.duration}
           </span>
         )}
         {offer.salary && (
-          <span className="rounded-full border border-border px-2.5 py-1">
-            💶 {offer.salary}
+          <span className="tag tag-neutral" style={{ whiteSpace: "nowrap" }}>
+            {offer.salary}
           </span>
         )}
         {offer.remote_policy && (
-          <span className="rounded-full border border-border px-2.5 py-1">
-            🏠 {offer.remote_policy}
+          <span className="tag tag-neutral" style={{ whiteSpace: "nowrap" }}>
+            {offer.remote_policy}
           </span>
         )}
       </div>

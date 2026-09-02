@@ -1,11 +1,12 @@
 "use client";
 
-import { forwardRef, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, useMotionValue, useTransform, animate } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { OfferCardContent } from "@/components/swipe/OfferCard";
-import type { Offer, SwipeDirection } from "@/types/database";
+import { cn } from "@/lib/utils";
+import type { ContractType, Offer, SwipeDirection } from "@/types/database";
 
 const SWIPE_THRESHOLD = 120;
 const EXIT_DISTANCE = 600;
@@ -55,18 +56,47 @@ const SwipeCard = forwardRef<
         }
       }}
     >
-      <div className="relative h-full w-full overflow-hidden rounded-3xl border border-border bg-surface shadow-xl">
+      <div
+        className="card elev-lg relative h-full w-full overflow-hidden"
+        style={{ padding: 0, background: "var(--color-surface)" }}
+      >
         {isTop && (
           <>
             <motion.span
-              style={{ opacity: likeOpacity }}
-              className="pointer-events-none absolute left-6 top-6 z-10 rotate-[-12deg] rounded-lg border-4 border-accent-like px-3 py-1 text-xl font-extrabold text-accent-like"
+              style={{
+                opacity: likeOpacity,
+                position: "absolute",
+                left: 24,
+                top: 24,
+                zIndex: 10,
+                transform: "rotate(-12deg)",
+                border: "4px solid var(--color-accent-2)",
+                color: "var(--color-accent-2)",
+                borderRadius: 8,
+                padding: "4px 12px",
+                fontSize: 20,
+                fontFamily: "var(--font-heading)",
+                pointerEvents: "none",
+              }}
             >
               LIKE
             </motion.span>
             <motion.span
-              style={{ opacity: passOpacity }}
-              className="pointer-events-none absolute right-6 top-6 z-10 rotate-[12deg] rounded-lg border-4 border-accent-pass px-3 py-1 text-xl font-extrabold text-accent-pass"
+              style={{
+                opacity: passOpacity,
+                position: "absolute",
+                right: 24,
+                top: 24,
+                zIndex: 10,
+                transform: "rotate(12deg)",
+                border: "4px solid var(--color-neutral-500)",
+                color: "var(--color-neutral-600)",
+                borderRadius: 8,
+                padding: "4px 12px",
+                fontSize: 20,
+                fontFamily: "var(--font-heading)",
+                pointerEvents: "none",
+              }}
             >
               PASS
             </motion.span>
@@ -78,7 +108,7 @@ const SwipeCard = forwardRef<
   );
 });
 
-export function SwipeDeck({
+function SwipeDeckInner({
   offers,
   scores,
   userId,
@@ -141,10 +171,8 @@ export function SwipeDeck({
     return (
       <div className="flex flex-1 flex-col items-center justify-center text-center px-6 py-20">
         <p className="text-4xl">🎉</p>
-        <h2 className="mt-4 text-xl font-bold">
-          Tu as vu toutes les offres du moment
-        </h2>
-        <p className="mt-2 text-foreground/60">
+        <h2 style={{ fontSize: 22, marginTop: 16 }}>Tu as vu toutes les offres du moment</h2>
+        <p style={{ marginTop: 8, color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
           Reviens un peu plus tard, on en ajoute régulièrement.
         </p>
       </div>
@@ -152,7 +180,7 @@ export function SwipeDeck({
   }
 
   return (
-    <div className="flex flex-col items-center py-6">
+    <div className="flex flex-col items-center">
       <div className="relative h-[520px] w-full max-w-sm">
         {visible
           .slice()
@@ -182,12 +210,13 @@ export function SwipeDeck({
           })}
       </div>
 
-      <div className="mt-6 flex items-center gap-5">
+      <div className="mt-7 flex items-center gap-6">
         <button
           type="button"
           onClick={() => handleSwipeIntent("pass")}
           aria-label="Passer"
-          className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-accent-pass text-2xl text-accent-pass hover:bg-accent-pass/10 transition-colors"
+          className="btn btn-icon btn-secondary"
+          style={{ width: 52, height: 52, borderRadius: "50%", fontSize: 20 }}
         >
           ✕
         </button>
@@ -195,7 +224,12 @@ export function SwipeDeck({
           type="button"
           onClick={handleApplyNow}
           disabled={busy}
-          className="rounded-full bg-brand px-5 py-3 text-sm font-semibold text-white hover:bg-brand-dark transition-colors disabled:opacity-60"
+          className="btn btn-secondary"
+          style={{
+            whiteSpace: "nowrap",
+            color: "var(--color-accent)",
+            borderColor: "var(--color-accent)",
+          }}
         >
           Postuler direct
         </button>
@@ -203,11 +237,74 @@ export function SwipeDeck({
           type="button"
           onClick={() => handleSwipeIntent("like")}
           aria-label="Aimer"
-          className="flex h-16 w-16 items-center justify-center rounded-full bg-accent-like text-3xl text-white shadow-lg hover:opacity-90 transition-opacity"
+          className="btn btn-icon"
+          style={{
+            width: 60,
+            height: 60,
+            borderRadius: "50%",
+            fontSize: 24,
+            background: "var(--color-accent)",
+            color: "var(--color-bg)",
+          }}
         >
           ♥
         </button>
       </div>
+    </div>
+  );
+}
+
+export function SwipeDeck({
+  offers,
+  scores,
+  userId,
+}: {
+  offers: Offer[];
+  scores: Record<string, number>;
+  userId: string;
+}) {
+  const availableTypes = useMemo(() => {
+    const types = new Set(offers.map((o) => o.contract_type));
+    return Array.from(types);
+  }, [offers]);
+
+  const [contractFilter, setContractFilter] = useState<ContractType | "all">(
+    availableTypes.length > 1 ? "all" : (availableTypes[0] ?? "all"),
+  );
+
+  const filteredOffers =
+    contractFilter === "all"
+      ? offers
+      : offers.filter((o) => o.contract_type === contractFilter);
+
+  return (
+    <div className="flex flex-col items-center">
+      {availableTypes.length > 1 && (
+        <div className="seg mb-5">
+          {(["alternance", "stage"] as ContractType[]).map((type) => (
+            <label
+              key={type}
+              className={cn("seg-opt", contractFilter === type && "is-active")}
+            >
+              <input
+                type="checkbox"
+                checked={contractFilter === type}
+                onChange={() =>
+                  setContractFilter((prev) => (prev === type ? "all" : type))
+                }
+                style={{ position: "absolute", opacity: 0, width: 0, height: 0 }}
+              />
+              {type === "alternance" ? "Alternance" : "Stage"}
+            </label>
+          ))}
+        </div>
+      )}
+      <SwipeDeckInner
+        key={contractFilter}
+        offers={filteredOffers}
+        scores={scores}
+        userId={userId}
+      />
     </div>
   );
 }

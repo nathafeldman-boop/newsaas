@@ -25,16 +25,16 @@ export default async function AdminOffresPage() {
 
   return (
     <div className="mx-auto max-w-xl">
-      <h1 className="text-2xl font-bold">Ingestion d&apos;offres (Mistral)</h1>
-      <p className="mt-1 text-sm text-foreground/60">
+      <h1 style={{ fontSize: 28, margin: 0 }}>Ingestion d&apos;offres (Mistral)</h1>
+      <p style={{ fontSize: 14, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "6px 0 0" }}>
         Colle une URL d&apos;offre publique ou son contenu brut : Mistral
         structure les champs et l&apos;offre est ajoutée au deck de swipe.
       </p>
-      <p className="mt-1 text-xs text-foreground/40">
+      <p style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 40%, transparent)", margin: "4px 0 0" }}>
         {activeOffersCount ?? 0} offre(s) active(s) actuellement.
       </p>
 
-      <div className="mt-6 rounded-2xl border border-border bg-surface p-6">
+      <div className="card elev-sm mt-6" style={{ padding: "var(--space-6)" }}>
         <IngestForm />
       </div>
     </div>

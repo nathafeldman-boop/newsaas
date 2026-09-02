@@ -12,44 +12,30 @@ export function IngestForm() {
   );
 
   return (
-    <form action={formAction} className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium mb-1" htmlFor="sourceUrl">
-          URL de l&apos;offre
-        </label>
-        <input
-          id="sourceUrl"
-          name="sourceUrl"
-          type="url"
-          placeholder="https://..."
-          className="w-full rounded-lg border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
-        />
+    <form action={formAction} className="flex flex-col gap-4">
+      <div className="field">
+        <label htmlFor="sourceUrl">URL de l&apos;offre</label>
+        <input id="sourceUrl" name="sourceUrl" type="url" placeholder="https://..." className="input" />
       </div>
 
-      <p className="text-center text-xs text-foreground/40">— ou —</p>
+      <p className="text-center text-xs" style={{ color: "color-mix(in srgb, var(--color-text) 40%, transparent)" }}>
+        — ou —
+      </p>
 
-      <div>
-        <label className="block text-sm font-medium mb-1" htmlFor="rawText">
-          Texte brut de l&apos;offre (copié-collé)
-        </label>
+      <div className="field">
+        <label htmlFor="rawText">Texte brut de l&apos;offre (copié-collé)</label>
         <textarea
           id="rawText"
           name="rawText"
           rows={8}
           placeholder="Colle ici le contenu de l'annonce si l'URL n'est pas accessible..."
-          className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+          className="input"
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium mb-1" htmlFor="contractTypeHint">
-          Indice type de contrat (optionnel)
-        </label>
-        <select
-          id="contractTypeHint"
-          name="contractTypeHint"
-          className="w-full rounded-lg border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
-        >
+      <div className="field">
+        <label htmlFor="contractTypeHint">Indice type de contrat (optionnel)</label>
+        <select id="contractTypeHint" name="contractTypeHint" className="input">
           <option value="">Laisser Mistral déterminer</option>
           <option value="alternance">Alternance</option>
           <option value="stage">Stage</option>
@@ -57,19 +43,13 @@ export function IngestForm() {
       </div>
 
       {state.status === "error" && (
-        <p className="text-sm text-red-600">{state.message}</p>
+        <p className="text-sm" style={{ color: "var(--color-accent-700)" }}>{state.message}</p>
       )}
       {state.status === "success" && (
-        <p className="text-sm text-green-600">
-          Offre ajoutée : {state.offerTitle}
-        </p>
+        <p className="text-sm" style={{ color: "var(--color-accent-2-700)" }}>Offre ajoutée : {state.offerTitle}</p>
       )}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="w-full rounded-full bg-brand px-6 py-3 font-semibold text-white hover:bg-brand-dark transition-colors disabled:opacity-60"
-      >
+      <button type="submit" disabled={pending} className="btn btn-primary btn-block">
         {pending ? "Analyse par Mistral..." : "Analyser et ajouter l'offre"}
       </button>
     </form>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { cn } from "@/lib/utils";
 
 export function TagInput({
   value,
@@ -27,18 +26,15 @@ export function TagInput({
   }
 
   return (
-    <div className="rounded-lg border border-border px-2 py-2 focus-within:ring-2 focus-within:ring-brand">
+    <div className="input" style={{ height: "auto", minHeight: 36, paddingBlock: 8 }}>
       <div className="flex flex-wrap gap-2">
         {value.map((tag) => (
-          <span
-            key={tag}
-            className="flex items-center gap-1 rounded-full bg-brand/10 px-3 py-1 text-sm text-brand-dark"
-          >
+          <span key={tag} className="tag tag-accent">
             {tag}
             <button
               type="button"
               onClick={() => removeTag(tag)}
-              className="text-brand-dark/60 hover:text-brand-dark"
+              style={{ opacity: 0.6, marginLeft: 4, cursor: "pointer" }}
               aria-label={`Retirer ${tag}`}
             >
               ×
@@ -58,9 +54,16 @@ export function TagInput({
           }}
           onBlur={addTag}
           placeholder={value.length ? "" : placeholder}
-          className={cn(
-            "flex-1 min-w-[8rem] px-1 py-1 text-sm focus:outline-none",
-          )}
+          style={{
+            flex: 1,
+            minWidth: 120,
+            border: "none",
+            outline: "none",
+            background: "transparent",
+            fontFamily: "var(--font-body)",
+            fontSize: 14,
+            padding: 4,
+          }}
         />
       </div>
     </div>

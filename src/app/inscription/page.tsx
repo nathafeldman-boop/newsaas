@@ -5,13 +5,19 @@ import { RegisterForm } from "@/components/auth/RegisterForm";
 export default function InscriptionPage() {
   return (
     <div className="flex-1 flex items-center justify-center px-6 py-12">
-      <div className="w-full max-w-sm">
-        <Link href="/" className="text-xl font-bold text-brand-dark">
+      <div className="w-full max-w-[380px]">
+        <Link href="/" className="nav-brand" style={{ textDecoration: "none", color: "inherit" }}>
           Stageio
         </Link>
-        <h1 className="mt-6 text-2xl font-bold">Crée ton compte</h1>
-        <p className="mt-1 text-sm text-foreground/60">
-          Deux minutes, puis on te montre des offres qui matchent.
+        <h1 style={{ fontSize: 32, margin: "20px 0 0" }}>Crée ton compte</h1>
+        <p
+          style={{
+            fontSize: 14,
+            color: "color-mix(in srgb, var(--color-text) 70%, transparent)",
+            margin: "6px 0 0",
+          }}
+        >
+          Deux minutes, puis des offres qui te correspondent.
         </p>
         <div className="mt-6">
           <Suspense>

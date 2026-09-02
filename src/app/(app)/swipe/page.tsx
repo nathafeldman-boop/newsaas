@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SwipeDeck } from "@/components/swipe/SwipeDeck";
-import { DailyDigest } from "@/components/swipe/DailyDigest";
 import { computeMatchScore } from "@/lib/matching/score";
 
 export default async function SwipePage() {
@@ -54,16 +53,8 @@ export default async function SwipePage() {
     ? [...offers].sort((a, b) => (scores[b.id] ?? 0) - (scores[a.id] ?? 0))
     : offers;
 
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const newToday = offers.filter((o) => o.published_at.slice(0, 10) === todayStr);
-  const topMatches = [...offers]
-    .sort((a, b) => (scores[b.id] ?? 0) - (scores[a.id] ?? 0))
-    .slice(0, 3)
-    .map((o) => ({ offer: o, score: scores[o.id] ?? 0 }));
-
   return (
     <div className="flex flex-1 flex-col items-center">
-      <DailyDigest newTodayCount={newToday.length} topMatches={topMatches} />
       <SwipeDeck offers={sortedOffers} scores={scores} userId={user.id} />
     </div>
   );

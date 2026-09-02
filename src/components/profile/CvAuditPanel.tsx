@@ -2,15 +2,8 @@
 
 import { useActionState } from "react";
 import { auditCvAction, type CvAuditState } from "@/app/(app)/profil/cv-audit-actions";
-import { cn } from "@/lib/utils";
 
 const initialState: CvAuditState = { status: "idle" };
-
-function scoreColor(score: number) {
-  if (score >= 75) return "text-green-600 border-green-600";
-  if (score >= 50) return "text-amber-600 border-amber-600";
-  return "text-red-600 border-red-600";
-}
 
 export function CvAuditPanel({ hasCv }: { hasCv: boolean }) {
   const [state, formAction, pending] = useActionState(
@@ -18,81 +11,112 @@ export function CvAuditPanel({ hasCv }: { hasCv: boolean }) {
     initialState,
   );
 
+  const score = state.status === "success" ? state.score : null;
+
   return (
-    <div className="rounded-2xl border border-border bg-surface p-5">
-      <h2 className="font-bold">Audit de ton CV</h2>
-      <p className="mt-1 text-sm text-foreground/60">
+    <div
+      className="card elev-sm"
+      style={{ marginTop: 28, background: "var(--color-accent-2-100)" }}
+    >
+      <p style={{ fontFamily: "var(--font-heading)", fontSize: 17, margin: 0, color: "var(--color-accent-2-800)" }}>
+        Améliore ton CV
+      </p>
+      <p style={{ fontSize: 13, color: "var(--color-accent-2-800)", opacity: 0.85, margin: "6px 0 0" }}>
         Mistral analyse ton CV et te donne une note sur 100, avec des pistes
-        concrètes pour l&apos;améliorer.
+        concrètes pour convaincre plus de recruteurs.
       </p>
 
       {!hasCv ? (
-        <p className="mt-4 text-sm text-foreground/50">
+        <p style={{ fontSize: 13, color: "var(--color-accent-2-800)", opacity: 0.7, marginTop: 16 }}>
           Ajoute d&apos;abord ton CV ci-dessus pour pouvoir l&apos;analyser.
         </p>
-      ) : (
-        <form action={formAction} className="mt-4">
-          <button
-            type="submit"
-            disabled={pending}
-            className="rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark transition-colors disabled:opacity-60"
+      ) : score !== null ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 16 }}>
+          <div
+            style={{
+              position: "relative",
+              width: 64,
+              height: 64,
+              borderRadius: "50%",
+              flexShrink: 0,
+              background: `conic-gradient(var(--color-accent-2) 0% ${score}%, var(--color-accent-2-200) ${score}% 100%)`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
           >
-            {pending ? "Analyse en cours..." : "Analyser mon CV"}
-          </button>
-        </form>
-      )}
-
-      {state.status === "error" && (
-        <p className="mt-4 text-sm text-red-600">{state.message}</p>
-      )}
+            <div
+              style={{
+                width: 50,
+                height: 50,
+                borderRadius: "50%",
+                background: "var(--color-accent-2-100)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontFamily: "var(--font-heading)",
+                fontSize: 15,
+                color: "var(--color-accent-2-800)",
+              }}
+            >
+              {score}
+            </div>
+          </div>
+          <div style={{ flex: 1 }}>
+            <p style={{ fontSize: 12, color: "var(--color-accent-2-800)", margin: 0 }}>
+              Score sur 100
+              {state.status === "success" && state.missing_sections.length > 0
+                ? ` · manque : ${state.missing_sections.slice(0, 2).join(", ")}`
+                : ""}
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       {state.status === "success" && (
-        <div className="mt-5 space-y-5">
-          <div className="flex items-center gap-4">
-            <div
-              className={cn(
-                "flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-4 text-lg font-extrabold",
-                scoreColor(state.score),
-              )}
-            >
-              {state.score}
-            </div>
-            <p className="text-sm text-foreground/60">sur 100</p>
-          </div>
-
+        <div className="flex flex-col gap-4" style={{ marginTop: 16 }}>
           {state.strengths.length > 0 && (
             <div>
-              <p className="text-sm font-semibold">✅ Points forts</p>
-              <ul className="mt-1 space-y-1 text-sm text-foreground/70">
+              <p style={{ fontSize: 12, fontWeight: 600, color: "var(--color-accent-2-800)", margin: 0 }}>
+                ✅ Points forts
+              </p>
+              <ul style={{ marginTop: 4, fontSize: 13, color: "var(--color-accent-2-800)", opacity: 0.85 }}>
                 {state.strengths.map((s, i) => (
                   <li key={i}>• {s}</li>
                 ))}
               </ul>
             </div>
           )}
-
           {state.improvements.length > 0 && (
             <div>
-              <p className="text-sm font-semibold">🔧 À améliorer</p>
-              <ul className="mt-1 space-y-1 text-sm text-foreground/70">
+              <p style={{ fontSize: 12, fontWeight: 600, color: "var(--color-accent-2-800)", margin: 0 }}>
+                🔧 À améliorer
+              </p>
+              <ul style={{ marginTop: 4, fontSize: 13, color: "var(--color-accent-2-800)", opacity: 0.85 }}>
                 {state.improvements.map((s, i) => (
                   <li key={i}>• {s}</li>
                 ))}
               </ul>
             </div>
           )}
-
-          {state.missing_sections.length > 0 && (
-            <div>
-              <p className="text-sm font-semibold">⚠️ Sections manquantes</p>
-              <ul className="mt-1 space-y-1 text-sm text-foreground/70">
-                {state.missing_sections.map((s, i) => (
-                  <li key={i}>• {s}</li>
-                ))}
-              </ul>
-            </div>
-          )}
         </div>
+      )}
+
+      {state.status === "error" && (
+        <p style={{ fontSize: 13, color: "var(--color-accent-700)", marginTop: 12 }}>{state.message}</p>
+      )}
+
+      {hasCv && (
+        <form action={formAction}>
+          <button
+            type="submit"
+            disabled={pending}
+            className="btn btn-primary"
+            style={{ marginTop: 14, background: "var(--color-accent-2)", whiteSpace: "nowrap" }}
+          >
+            {pending ? "Analyse en cours..." : score !== null ? "Relancer l'analyse" : "Lancer l'analyse complète"}
+          </button>
+        </form>
       )}
     </div>
   );

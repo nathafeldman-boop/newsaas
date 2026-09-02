@@ -114,18 +114,16 @@ export function RegisterForm() {
 
   if (awaitingCode) {
     return (
-      <form onSubmit={handleVerify} className="space-y-4">
-        <div className="rounded-xl border border-border bg-surface p-4 text-sm">
-          <p className="font-medium">Vérifie ta boîte mail 📬</p>
-          <p className="mt-1 text-foreground/70">
+      <form onSubmit={handleVerify} className="flex flex-col gap-4">
+        <div className="card" style={{ fontSize: 14 }}>
+          <p style={{ fontFamily: "var(--font-heading)", margin: 0 }}>Vérifie ta boîte mail 📬</p>
+          <p style={{ margin: "4px 0 0", color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
             On a envoyé un code à 6 chiffres à <b>{email}</b>.
           </p>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1" htmlFor="code">
-            Code de vérification
-          </label>
+        <div className="field">
+          <label htmlFor="code">Code de vérification</label>
           <input
             id="code"
             type="text"
@@ -136,18 +134,15 @@ export function RegisterForm() {
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
             placeholder="123456"
-            className="w-full rounded-lg border border-border px-3 py-2 text-center text-lg tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-brand"
+            className="input"
+            style={{ textAlign: "center", fontSize: 18, letterSpacing: "0.5em" }}
           />
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        {resent && <p className="text-sm text-green-600">Nouveau code envoyé.</p>}
+        {error && <p className="text-sm" style={{ color: "var(--color-accent-700)" }}>{error}</p>}
+        {resent && <p className="text-sm" style={{ color: "var(--color-accent-2-700)" }}>Nouveau code envoyé.</p>}
 
-        <button
-          type="submit"
-          disabled={verifying || code.length !== 6}
-          className="w-full rounded-full bg-brand px-4 py-2.5 font-semibold text-white hover:bg-brand-dark transition-colors disabled:opacity-60"
-        >
+        <button type="submit" disabled={verifying || code.length !== 6} className="btn btn-primary btn-block">
           {verifying ? "Vérification..." : "Valider le code"}
         </button>
 
@@ -155,7 +150,8 @@ export function RegisterForm() {
           type="button"
           onClick={handleResend}
           disabled={resending}
-          className="w-full text-center text-sm text-foreground/60 hover:text-foreground disabled:opacity-60"
+          className="btn btn-ghost"
+          style={{ width: "100%" }}
         >
           {resending ? "Envoi..." : "Renvoyer le code"}
         </button>
@@ -164,52 +160,46 @@ export function RegisterForm() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4">
       <GoogleButton referredByCode={referredByCode} />
 
-      <div className="flex items-center gap-3 text-xs text-foreground/40">
-        <div className="h-px flex-1 bg-border" />
+      <div className="flex items-center gap-3 text-xs" style={{ color: "color-mix(in srgb, var(--color-text) 45%, transparent)" }}>
+        <div className="h-px flex-1" style={{ background: "var(--color-divider)" }} />
         ou
-        <div className="h-px flex-1 bg-border" />
+        <div className="h-px flex-1" style={{ background: "var(--color-divider)" }} />
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         {referredByCode && (
-          <p className="rounded-lg bg-brand/10 px-3 py-2 text-xs text-brand-dark">
-            Tu as été invité·e avec le code <b>{referredByCode}</b> 🎉
+          <p className="tag tag-accent" style={{ padding: "7px 12px", fontSize: 12 }}>
+            Tu as été invité·e avec le code <b>&nbsp;{referredByCode}</b> 🎉
           </p>
         )}
 
-        <div>
-          <label className="block text-sm font-medium mb-1" htmlFor="fullName">
-            Prénom et nom
-          </label>
+        <div className="field">
+          <label htmlFor="fullName">Prénom et nom</label>
           <input
             id="fullName"
             type="text"
             required
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
-            className="w-full rounded-lg border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
+            className="input"
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium mb-1" htmlFor="email">
-            Email
-          </label>
+        <div className="field">
+          <label htmlFor="email">Email</label>
           <input
             id="email"
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
+            className="input"
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium mb-1" htmlFor="password">
-            Mot de passe
-          </label>
+        <div className="field">
+          <label htmlFor="password">Mot de passe</label>
           <input
             id="password"
             type="password"
@@ -217,26 +207,24 @@ export function RegisterForm() {
             minLength={8}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
+            className="input"
           />
-          <p className="mt-1 text-xs text-foreground/50">8 caractères minimum.</p>
+          <p style={{ fontSize: 11, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", margin: "5px 0 0" }}>
+            8 caractères minimum.
+          </p>
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm" style={{ color: "var(--color-accent-700)" }}>{error}</p>}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-full bg-brand px-4 py-2.5 font-semibold text-white hover:bg-brand-dark transition-colors disabled:opacity-60"
-        >
+        <button type="submit" disabled={loading} className="btn btn-primary btn-block">
           {loading ? "Création..." : "Créer mon compte"}
         </button>
 
-        <p className="text-center text-sm text-foreground/60">
-          Déjà inscrit·e ?{" "}
-          <Link href="/login" className="text-brand font-medium">
-            Connecte-toi
-          </Link>
+        <p
+          className="text-center text-sm"
+          style={{ color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "4px 0 0" }}
+        >
+          Déjà inscrit·e ? <Link href="/login">Connecte-toi</Link>
         </p>
       </form>
     </div>

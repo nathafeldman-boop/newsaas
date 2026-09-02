@@ -38,76 +38,61 @@ export default async function CandidaturePage({
 
   return (
     <div className="mx-auto max-w-xl">
-      <Link href="/favoris" className="text-sm text-brand font-medium">
+      <Link href="/favoris" style={{ fontSize: 14 }}>
         ← Retour aux favoris
       </Link>
 
-      <div className="mt-4 rounded-3xl border border-border bg-surface p-6">
+      <div className="card elev-sm mt-4" style={{ padding: "var(--space-6)" }}>
         <div className="flex items-center justify-between">
-          <span className="rounded-full bg-brand/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-dark">
+          <span className="tag tag-accent">
             {offer.contract_type === "alternance" ? "Alternance" : "Stage"}
           </span>
           {offer.source === "demo" && (
-            <span className="text-xs text-foreground/40">
+            <span style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 40%, transparent)" }}>
               Offre de démonstration
             </span>
           )}
         </div>
 
-        <h1 className="mt-3 text-2xl font-bold">{offer.title}</h1>
-        <p className="mt-1 text-foreground/70">
+        <h1 style={{ fontSize: 26, margin: "12px 0 0" }}>{offer.title}</h1>
+        <p style={{ margin: "4px 0 0", color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
           {offer.company} · {offer.location}
         </p>
 
-        <p className="mt-4 whitespace-pre-line text-sm text-foreground/80">
+        <p style={{ marginTop: 16, whiteSpace: "pre-line", fontSize: 14, color: "color-mix(in srgb, var(--color-text) 80%, transparent)" }}>
           {offer.description}
         </p>
 
         {offer.requirements && (
           <div className="mt-4">
-            <h2 className="text-sm font-semibold">Profil recherché</h2>
-            <p className="mt-1 text-sm text-foreground/70">
+            <h2 style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>Profil recherché</h2>
+            <p style={{ marginTop: 4, fontSize: 14, color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
               {offer.requirements}
             </p>
           </div>
         )}
 
-        <div className="mt-4 flex flex-wrap gap-2 text-xs text-foreground/60">
-          {offer.duration && (
-            <span className="rounded-full border border-border px-2.5 py-1">
-              ⏱ {offer.duration}
-            </span>
-          )}
-          {offer.salary && (
-            <span className="rounded-full border border-border px-2.5 py-1">
-              💶 {offer.salary}
-            </span>
-          )}
-          {offer.remote_policy && (
-            <span className="rounded-full border border-border px-2.5 py-1">
-              📍 {offer.remote_policy}
-            </span>
-          )}
+        <div className="mt-4 flex flex-wrap gap-2">
+          {offer.duration && <span className="tag tag-neutral">{offer.duration}</span>}
+          {offer.salary && <span className="tag tag-neutral">{offer.salary}</span>}
+          {offer.remote_policy && <span className="tag tag-neutral">{offer.remote_policy}</span>}
         </div>
 
         {postule === "1" && (
-          <p className="mt-5 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
+          <p className="tag tag-accent-2 mt-5" style={{ padding: "8px 14px", fontSize: 13, display: "block" }}>
             Candidature enregistrée — ce recruteur n&apos;a pas de lien
             externe, on lui a noté ton intérêt.
           </p>
         )}
 
         {application ? (
-          <p className="mt-6 rounded-lg bg-brand/10 px-3 py-2 text-sm text-brand-dark">
+          <p className="tag tag-accent mt-6" style={{ padding: "8px 14px", fontSize: 13, display: "block" }}>
             Tu as déjà postulé à cette offre le{" "}
             {new Date(application.applied_at).toLocaleDateString("fr-FR")}.
           </p>
         ) : (
           <form action={applyAction} className="mt-6">
-            <button
-              type="submit"
-              className="w-full rounded-full bg-brand px-6 py-3 font-semibold text-white hover:bg-brand-dark transition-colors"
-            >
+            <button type="submit" className="btn btn-primary btn-block">
               Postuler maintenant
             </button>
           </form>

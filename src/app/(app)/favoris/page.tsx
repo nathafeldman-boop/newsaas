@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { OfferListCard } from "@/components/offers/OfferListCard";
+import { computeMatchScore } from "@/lib/matching/score";
 import type { ApplicationStatus } from "@/types/database";
 
 export default async function FavorisPage() {
@@ -9,6 +10,12 @@ export default async function FavorisPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/favoris");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .single();
 
   const { data: liked } = await supabase
     .from("swipes")
@@ -39,22 +46,23 @@ export default async function FavorisPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold">Tes favoris</h1>
-      <p className="mt-1 text-sm text-foreground/60">
+      <h1 style={{ fontSize: 30, margin: 0 }}>Tes favoris</h1>
+      <p style={{ fontSize: 14, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "6px 0 0" }}>
         Les offres que tu as likées, prêtes à recevoir ta candidature.
       </p>
 
       {orderedOffers.length === 0 ? (
-        <p className="mt-10 text-center text-foreground/60">
+        <p className="mt-10 text-center" style={{ color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
           Aucun favori pour l&apos;instant — va swiper quelques offres !
         </p>
       ) : (
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {orderedOffers.map((offer) => (
             <OfferListCard
               key={offer.id}
               offer={offer}
               applicationStatus={statusByOffer.get(offer.id) ?? null}
+              matchScore={profile ? computeMatchScore(profile, offer) : undefined}
             />
           ))}
         </div>

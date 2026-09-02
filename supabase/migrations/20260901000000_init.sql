@@ -149,11 +149,12 @@ declare
   referrer_code text;
   referrer_profile_id uuid;
 begin
-  new_code := upper(substr(encode(gen_random_bytes(6), 'base64'), 1, 8));
-  new_code := regexp_replace(new_code, '[^A-Z0-9]', '', 'g');
-  if length(new_code) < 6 then
-    new_code := new_code || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 6));
-  end if;
+  -- gen_random_uuid() est intégré au coeur de Postgres (pg_catalog) depuis la
+  -- v13 : contrairement à gen_random_bytes() (extension pgcrypto, souvent
+  -- installée dans le schéma "extensions" chez Supabase), il reste résolu
+  -- quel que soit search_path. Évite un "Database error saving new user"
+  -- si pgcrypto n'est pas visible depuis search_path = public.
+  new_code := upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 8));
 
   referrer_code := nullif(new.raw_user_meta_data->>'referred_by_code', '');
   if referrer_code is not null then

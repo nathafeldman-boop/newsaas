@@ -3,12 +3,12 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import type { ApplicationStatus } from "@/types/database";
 
-const STATUS_STYLES: Record<ApplicationStatus, string> = {
-  envoyee: "bg-brand/10 text-brand-dark",
-  en_cours: "bg-amber-100 text-amber-700",
-  entretien: "bg-blue-100 text-blue-700",
-  acceptee: "bg-green-100 text-green-700",
-  refusee: "bg-red-100 text-red-700",
+const STATUS_TAG_CLASS: Record<ApplicationStatus, string> = {
+  envoyee: "tag tag-accent",
+  en_cours: "tag tag-neutral",
+  entretien: "tag tag-outline",
+  acceptee: "tag tag-accent-2",
+  refusee: "tag tag-neutral",
 };
 
 const STATUS_LABELS: Record<ApplicationStatus, string> = {
@@ -39,19 +39,70 @@ export default async function MesCandidaturesPage() {
 
   const offerById = new Map((offers ?? []).map((o) => [o.id, o]));
 
+  const counts = {
+    envoyee: 0,
+    entretien: 0,
+    acceptee: 0,
+    refusee: 0,
+  };
+  for (const app of applications ?? []) {
+    if (app.status === "envoyee" || app.status === "en_cours") counts.envoyee++;
+    else if (app.status === "entretien") counts.entretien++;
+    else if (app.status === "acceptee") counts.acceptee++;
+    else if (app.status === "refusee") counts.refusee++;
+  }
+
   return (
     <div>
-      <h1 className="text-2xl font-bold">Mes candidatures</h1>
-      <p className="mt-1 text-sm text-foreground/60">
+      <h1 style={{ fontSize: 30, margin: 0 }}>Mes candidatures</h1>
+      <p style={{ fontSize: 14, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "6px 0 0" }}>
         Le suivi de toutes les offres auxquelles tu as postulé.
       </p>
 
+      {applications && applications.length > 0 && (
+        <div
+          className="card elev-sm mt-6 grid gap-5"
+          style={{
+            gridTemplateColumns: "repeat(4,auto)",
+            justifyContent: "space-between",
+            padding: "var(--space-4) var(--space-6)",
+          }}
+        >
+          <div>
+            <p style={{ fontFamily: "var(--font-heading)", fontSize: 28, color: "var(--color-accent)", margin: 0 }}>
+              {counts.envoyee}
+            </p>
+            <p style={{ fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "4px 0 0" }}>
+              Envoyées
+            </p>
+          </div>
+          <div>
+            <p style={{ fontFamily: "var(--font-heading)", fontSize: 28, margin: 0 }}>{counts.entretien}</p>
+            <p style={{ fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "4px 0 0" }}>
+              Entretiens
+            </p>
+          </div>
+          <div>
+            <p style={{ fontFamily: "var(--font-heading)", fontSize: 28, margin: 0 }}>{counts.acceptee}</p>
+            <p style={{ fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "4px 0 0" }}>
+              Acceptées
+            </p>
+          </div>
+          <div>
+            <p style={{ fontFamily: "var(--font-heading)", fontSize: 28, margin: 0 }}>{counts.refusee}</p>
+            <p style={{ fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "4px 0 0" }}>
+              Refusées
+            </p>
+          </div>
+        </div>
+      )}
+
       {!applications || applications.length === 0 ? (
-        <p className="mt-10 text-center text-foreground/60">
+        <p className="mt-10 text-center" style={{ color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
           Aucune candidature envoyée pour l&apos;instant.
         </p>
       ) : (
-        <div className="mt-6 space-y-3">
+        <div className="mt-6 flex flex-col gap-3.5">
           {applications.map((app) => {
             const offer = offerById.get(app.offer_id);
             if (!offer) return null;
@@ -59,23 +110,19 @@ export default async function MesCandidaturesPage() {
               <Link
                 key={app.id}
                 href={`/candidature/${offer.id}`}
-                className="flex items-center justify-between rounded-2xl border border-border bg-surface p-4 hover:border-brand/40 transition-colors"
+                className="card flex-row items-center justify-between no-underline"
+                style={{ color: "inherit" }}
               >
                 <div>
-                  <p className="font-semibold">{offer.title}</p>
-                  <p className="text-sm text-foreground/60">
+                  <p style={{ fontWeight: 600, margin: 0 }}>{offer.title}</p>
+                  <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "2px 0 0" }}>
                     {offer.company} · {offer.location}
                   </p>
-                  <p className="mt-1 text-xs text-foreground/40">
-                    Postulé le{" "}
-                    {new Date(app.applied_at).toLocaleDateString("fr-FR")}
+                  <p style={{ fontSize: 11, color: "color-mix(in srgb, var(--color-text) 45%, transparent)", margin: "4px 0 0" }}>
+                    Postulé le {new Date(app.applied_at).toLocaleDateString("fr-FR")}
                   </p>
                 </div>
-                <span
-                  className={`rounded-full px-3 py-1 text-xs font-semibold ${STATUS_STYLES[app.status]}`}
-                >
-                  {STATUS_LABELS[app.status]}
-                </span>
+                <span className={STATUS_TAG_CLASS[app.status]}>{STATUS_LABELS[app.status]}</span>
               </Link>
             );
           })}

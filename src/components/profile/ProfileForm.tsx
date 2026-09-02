@@ -6,6 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { TagInput } from "@/components/ui/TagInput";
 import { ChipMultiSelect } from "@/components/ui/ChipMultiSelect";
+import { cn } from "@/lib/utils";
 import type { ContractType, Profile } from "@/types/database";
 
 const SECTORS = [
@@ -141,66 +142,37 @@ export function ProfileForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div>
-        <label className="block text-sm font-medium mb-1" htmlFor="fullName">
-          Prénom et nom
-        </label>
-        <input
-          id="fullName"
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          className="w-full rounded-lg border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
-        />
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+      <div className="field">
+        <label htmlFor="fullName">Prénom et nom</label>
+        <input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} className="input" />
+      </div>
+
+      <div className="field">
+        <label>Compétences</label>
+        <TagInput value={skills} onChange={setSkills} placeholder="Ajoute une compétence" />
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">Compétences</label>
-        <TagInput
-          value={skills}
-          onChange={setSkills}
-          placeholder="Ajoute une compétence"
-        />
-      </div>
-
-      <div>
-        <p className="mb-2 text-sm font-medium">Secteurs qui t&apos;intéressent</p>
+        <p style={{ fontFamily: "var(--font-heading)", fontSize: 15, margin: "0 0 9px" }}>
+          Secteurs qui t&apos;intéressent
+        </p>
         <ChipMultiSelect options={SECTORS} value={sectors} onChange={setSectors} />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium mb-1">
-          Métiers recherchés
-        </label>
-        <TagInput
-          value={targetJobs}
-          onChange={setTargetJobs}
-          placeholder="Ajoute un métier"
-        />
+      <div className="field">
+        <label>Métiers recherchés</label>
+        <TagInput value={targetJobs} onChange={setTargetJobs} placeholder="Ajoute un métier" />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium mb-1" htmlFor="city">
-          Ville
-        </label>
-        <input
-          id="city"
-          value={city}
-          onChange={(e) => setCity(e.target.value)}
-          className="w-full rounded-lg border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
-        />
+      <div className="field">
+        <label htmlFor="city">Ville</label>
+        <input id="city" value={city} onChange={(e) => setCity(e.target.value)} className="input" />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium mb-1" htmlFor="mobility">
-          Mobilité
-        </label>
-        <select
-          id="mobility"
-          value={mobility}
-          onChange={(e) => setMobility(e.target.value)}
-          className="w-full rounded-lg border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
-        >
+      <div className="field">
+        <label htmlFor="mobility">Mobilité</label>
+        <select id="mobility" value={mobility} onChange={(e) => setMobility(e.target.value)} className="input">
           <option value="">—</option>
           {MOBILITY_OPTIONS.map((opt) => (
             <option key={opt} value={opt}>
@@ -211,38 +183,34 @@ export function ProfileForm({
       </div>
 
       <div>
-        <p className="mb-2 text-sm font-medium">Tu cherches...</p>
-        <div className="flex gap-2">
+        <p style={{ fontFamily: "var(--font-heading)", fontSize: 15, margin: "0 0 9px" }}>Tu cherches...</p>
+        <div className="seg" style={{ width: "100%" }}>
           {(["alternance", "stage"] as ContractType[]).map((type) => (
-            <button
+            <label
               key={type}
-              type="button"
-              onClick={() => toggleLookingFor(type)}
-              className={`flex-1 rounded-lg border px-4 py-2.5 text-sm font-medium capitalize transition-colors ${
-                lookingFor.includes(type)
-                  ? "border-brand bg-brand text-white"
-                  : "border-border text-foreground/70"
-              }`}
+              className={cn("seg-opt", lookingFor.includes(type) && "is-active")}
+              style={{ flex: 1, justifyContent: "center" }}
             >
+              <input
+                type="checkbox"
+                checked={lookingFor.includes(type)}
+                onChange={() => toggleLookingFor(type)}
+                style={{ position: "absolute", opacity: 0, width: 0, height: 0 }}
+              />
               {type === "alternance" ? "Alternance" : "Stage"}
-            </button>
+            </label>
           ))}
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label
-            className="block text-sm font-medium mb-1"
-            htmlFor="educationLevel"
-          >
-            Niveau d&apos;études
-          </label>
+        <div className="field">
+          <label htmlFor="educationLevel">Niveau d&apos;études</label>
           <select
             id="educationLevel"
             value={educationLevel}
             onChange={(e) => setEducationLevel(e.target.value)}
-            className="w-full rounded-lg border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
+            className="input"
           >
             <option value="">—</option>
             {EDUCATION_LEVELS.map((opt) => (
@@ -252,18 +220,13 @@ export function ProfileForm({
             ))}
           </select>
         </div>
-        <div>
-          <label
-            className="block text-sm font-medium mb-1"
-            htmlFor="experienceLevel"
-          >
-            Expérience
-          </label>
+        <div className="field">
+          <label htmlFor="experienceLevel">Expérience</label>
           <select
             id="experienceLevel"
             value={experienceLevel}
             onChange={(e) => setExperienceLevel(e.target.value)}
-            className="w-full rounded-lg border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
+            className="input"
           >
             <option value="">—</option>
             {EXPERIENCE_LEVELS.map((opt) => (
@@ -275,100 +238,70 @@ export function ProfileForm({
         </div>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium mb-1" htmlFor="formation">
-          Formation / école
-        </label>
-        <input
-          id="formation"
-          value={formation}
-          onChange={(e) => setFormation(e.target.value)}
-          className="w-full rounded-lg border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
-        />
+      <div className="field">
+        <label htmlFor="formation">Formation / école</label>
+        <input id="formation" value={formation} onChange={(e) => setFormation(e.target.value)} className="input" />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium mb-1" htmlFor="bio">
-          Ton parcours
-        </label>
-        <textarea
-          id="bio"
-          rows={4}
-          value={bio}
-          onChange={(e) => setBio(e.target.value)}
-          className="w-full rounded-lg border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
-        />
+      <div className="field">
+        <label htmlFor="bio">Ton parcours</label>
+        <textarea id="bio" rows={4} value={bio} onChange={(e) => setBio(e.target.value)} className="input" />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-sm font-medium mb-1" htmlFor="birthDate">
-            Date de naissance
-          </label>
+        <div className="field">
+          <label htmlFor="birthDate">Date de naissance</label>
           <input
             id="birthDate"
             type="date"
             value={birthDate}
             onChange={(e) => setBirthDate(e.target.value)}
-            className="w-full rounded-lg border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
+            className="input"
           />
         </div>
-        <div>
-          <label
-            className="block text-sm font-medium mb-1"
-            htmlFor="availabilityDate"
-          >
-            Disponible à partir de
-          </label>
+        <div className="field">
+          <label htmlFor="availabilityDate">Disponible à partir de</label>
           <input
             id="availabilityDate"
             type="date"
             value={availabilityDate}
             onChange={(e) => setAvailabilityDate(e.target.value)}
-            className="w-full rounded-lg border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
+            className="input"
           />
         </div>
       </div>
 
       <div>
-        <p className="mb-1 text-sm font-medium">CV</p>
+        <p style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "0 0 6px" }}>
+          CV
+        </p>
         {cvSignedUrl && (
-          <a
-            href={cvSignedUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="text-sm text-brand font-medium"
-          >
+          <a href={cvSignedUrl} target="_blank" rel="noreferrer" style={{ fontSize: 13, display: "block", marginBottom: 8 }}>
             Voir mon CV actuel
           </a>
         )}
-        <label className="mt-2 flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border px-4 py-6 text-center cursor-pointer hover:border-brand/50">
+        <label
+          className="flex items-center justify-center gap-2 text-center cursor-pointer"
+          style={{ border: "2px dashed var(--color-divider)", borderRadius: "var(--radius-lg)", padding: "22px 16px" }}
+        >
           <input
             type="file"
             accept=".pdf,.doc,.docx"
             className="hidden"
             onChange={(e) => setCvFile(e.target.files?.[0] ?? null)}
           />
-          <span className="text-sm font-medium">
-            {cvFile ? cvFile.name : "Remplacer mon CV"}
-          </span>
+          <span style={{ fontSize: 13 }}>{cvFile ? cvFile.name : "Remplacer mon CV"}</span>
         </label>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      {success && (
-        <p className="text-sm text-green-600">Profil mis à jour ✓</p>
-      )}
+      {error && <p className="text-sm" style={{ color: "var(--color-accent-700)" }}>{error}</p>}
+      {success && <p className="text-sm" style={{ color: "var(--color-accent-2-700)" }}>Profil mis à jour ✓</p>}
 
-      <div className="flex items-center justify-between">
-        <Link href="/parrainage" className="text-sm text-brand font-medium">
+      <div className="flex items-center justify-between" style={{ paddingTop: 6 }}>
+        <Link href="/parrainage" style={{ fontSize: 13 }}>
           Voir mon lien de parrainage →
         </Link>
-        <button
-          type="submit"
-          disabled={saving}
-          className="rounded-full bg-brand px-6 py-2.5 font-semibold text-white hover:bg-brand-dark transition-colors disabled:opacity-60"
-        >
+        <button type="submit" disabled={saving} className="btn btn-primary">
           {saving ? "Enregistrement..." : "Enregistrer"}
         </button>
       </div>

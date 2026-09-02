@@ -22,20 +22,30 @@ export function ReferralLinkCard({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-brand/5 p-5">
-      <p className="text-xs font-semibold uppercase tracking-wide text-brand-dark">
+    <div className="card elev-sm" style={{ background: "var(--color-accent-100)", padding: "var(--space-6)" }}>
+      <p style={{ fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-accent-700)", margin: 0 }}>
         Ton code
       </p>
-      <p className="mt-1 text-2xl font-extrabold tracking-wide">{code}</p>
+      <p style={{ fontFamily: "var(--font-heading)", fontSize: 26, margin: "4px 0 0" }}>{code}</p>
 
-      <div className="mt-4 flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2">
-        <span className="flex-1 truncate text-sm text-foreground/70">
+      <div className="input flex items-center gap-2" style={{ marginTop: 16, background: "var(--color-bg)" }}>
+        <span
+          style={{
+            flex: 1,
+            fontSize: 13,
+            color: "color-mix(in srgb, var(--color-text) 70%, transparent)",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
           {referralLink}
         </span>
         <button
           type="button"
           onClick={copy}
-          className="shrink-0 rounded-full bg-brand px-3 py-1 text-xs font-semibold text-white hover:bg-brand-dark transition-colors"
+          className="btn btn-primary"
+          style={{ padding: "5px 14px", fontSize: 12, whiteSpace: "nowrap", flexShrink: 0 }}
         >
           {copied ? "Copié !" : "Copier"}
         </button>

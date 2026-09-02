@@ -12,36 +12,66 @@ const STATUS_LABELS: Record<ApplicationStatus, string> = {
 export function OfferListCard({
   offer,
   applicationStatus,
+  matchScore,
 }: {
   offer: Offer;
   applicationStatus?: ApplicationStatus | null;
+  matchScore?: number;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-surface p-5 flex flex-col">
-      <div className="flex items-center justify-between">
-        <span className="rounded-full bg-brand/10 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-brand-dark">
+    <div className="card">
+      <div className="flex items-center gap-2.5">
+        <div
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: "50%",
+            background: "var(--color-accent-100)",
+            color: "var(--color-accent-700)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontFamily: "var(--font-heading)",
+            fontSize: 13,
+            flexShrink: 0,
+          }}
+        >
+          {offer.company.charAt(0).toUpperCase()}
+        </div>
+        <span className="tag tag-accent ml-auto" style={{ whiteSpace: "nowrap" }}>
           {offer.contract_type === "alternance" ? "Alternance" : "Stage"}
         </span>
-        {offer.source === "demo" && (
-          <span className="text-[10px] text-foreground/40">démo</span>
-        )}
       </div>
-      <h3 className="mt-3 font-bold leading-snug">{offer.title}</h3>
-      <p className="mt-0.5 text-sm text-foreground/60">
+      <h3 className="card-title">{offer.title}</h3>
+      <p style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>
         {offer.company} · {offer.location}
+        {offer.source === "demo" && " · démo"}
       </p>
+      {typeof matchScore === "number" && (
+        <p style={{ fontFamily: "var(--font-heading)", fontSize: 13, color: "var(--color-accent-2-700)", margin: 0 }}>
+          {matchScore}% compatible
+        </p>
+      )}
+      {(offer.salary || offer.remote_policy) && (
+        <p className="card-body">
+          {[offer.salary, offer.remote_policy].filter(Boolean).join(" · ")}
+        </p>
+      )}
 
-      <div className="mt-4 flex items-center justify-between">
+      <div className="flex items-center justify-between">
         {applicationStatus ? (
-          <span className="text-xs font-medium text-brand-dark">
+          <span style={{ fontSize: 11, fontWeight: 600, color: "var(--color-accent-700)" }}>
             {STATUS_LABELS[applicationStatus]}
           </span>
         ) : (
-          <span className="text-xs text-foreground/40">Pas encore postulé</span>
+          <span style={{ fontSize: 11, color: "color-mix(in srgb, var(--color-text) 50%, transparent)" }}>
+            Pas encore postulé
+          </span>
         )}
         <Link
           href={`/candidature/${offer.id}`}
-          className="rounded-full bg-brand px-4 py-1.5 text-sm font-semibold text-white hover:bg-brand-dark transition-colors"
+          className="btn btn-primary"
+          style={{ padding: "6px 14px", fontSize: 12, whiteSpace: "nowrap" }}
         >
           {applicationStatus ? "Voir" : "Postuler"}
         </Link>

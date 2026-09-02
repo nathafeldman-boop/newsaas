@@ -1,7 +1,5 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-
 export function ChipMultiSelect({
   options,
   value,
@@ -28,12 +26,14 @@ export function ChipMultiSelect({
             key={option}
             type="button"
             onClick={() => toggle(option)}
-            className={cn(
-              "rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
-              selected
-                ? "border-brand bg-brand text-white"
-                : "border-border bg-surface text-foreground/70 hover:border-brand/50",
-            )}
+            className={selected ? "tag" : "tag tag-neutral"}
+            style={{
+              padding: "7px 14px",
+              fontSize: 13,
+              ...(selected
+                ? { background: "var(--color-accent)", color: "var(--color-bg)" }
+                : {}),
+            }}
           >
             {option}
           </button>

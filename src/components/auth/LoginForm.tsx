@@ -9,7 +9,7 @@ import { GoogleButton } from "@/components/auth/GoogleButton";
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") || "/swipe";
+  const next = searchParams.get("next") || "/accueil";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -43,58 +43,51 @@ export function LoginForm() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4">
       <GoogleButton next={next} />
 
-      <div className="flex items-center gap-3 text-xs text-foreground/40">
-        <div className="h-px flex-1 bg-border" />
+      <div className="flex items-center gap-3 text-xs" style={{ color: "color-mix(in srgb, var(--color-text) 45%, transparent)" }}>
+        <div className="h-px flex-1" style={{ background: "var(--color-divider)" }} />
         ou
-        <div className="h-px flex-1 bg-border" />
+        <div className="h-px flex-1" style={{ background: "var(--color-divider)" }} />
       </div>
 
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium mb-1" htmlFor="email">
-          Email
-        </label>
-        <input
-          id="email"
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-lg border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-1" htmlFor="password">
-          Mot de passe
-        </label>
-        <input
-          id="password"
-          type="password"
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded-lg border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand"
-        />
-      </div>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div className="field">
+          <label htmlFor="email">Email</label>
+          <input
+            id="email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="input"
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="password">Mot de passe</label>
+          <input
+            id="password"
+            type="password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="input"
+          />
+        </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm" style={{ color: "var(--color-accent-700)" }}>{error}</p>}
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full rounded-full bg-brand px-4 py-2.5 font-semibold text-white hover:bg-brand-dark transition-colors disabled:opacity-60"
-      >
-        {loading ? "Connexion..." : "Se connecter"}
-      </button>
+        <button type="submit" disabled={loading} className="btn btn-primary btn-block">
+          {loading ? "Connexion..." : "Se connecter"}
+        </button>
 
-        <p className="text-center text-sm text-foreground/60">
+        <p
+          className="text-center text-sm"
+          style={{ color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "4px 0 0" }}
+        >
           Pas encore de compte ?{" "}
-          <Link href="/inscription" className="text-brand font-medium">
-            Inscris-toi
-          </Link>
+          <Link href="/inscription">Inscris-toi</Link>
         </p>
       </form>
     </div>
