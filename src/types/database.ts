@@ -17,7 +17,7 @@ export type ApplicationStatus =
   | "entretien"
   | "acceptee"
   | "refusee";
-export type OfferSource = "demo" | "manuel" | "mistral_ingest";
+export type OfferSource = "demo" | "manuel" | "mistral_ingest" | "adzuna";
 
 export type Profile = {
   id: string;
@@ -67,6 +67,7 @@ export type Offer = {
   is_active: boolean;
   published_at: string;
   created_at: string;
+  last_seen_at: string;
 };
 
 export type Swipe = {
