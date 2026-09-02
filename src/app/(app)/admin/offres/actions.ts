@@ -4,11 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import { ingestOffer } from "@/lib/mistral/ingestOffer";
 import type { ContractType } from "@/types/database";
 
-// Ingestion en lot fait un fetch + un appel Mistral par URL, séquentiellement :
-// sans ceci la fonction tourne sur le défaut Vercel (10s), largement dépassé
-// dès qu'on colle plus de quelques URLs. 60s = plafond du plan Hobby.
-export const maxDuration = 60;
-
 async function assertAdmin() {
   const supabase = await createClient();
   const {

@@ -2,6 +2,11 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { IngestForm } from "@/components/admin/IngestForm";
 
+// L'ingestion en lot fait un fetch + un appel Mistral par URL, séquentiellement :
+// sans ceci la Server Action tourne sur le défaut Vercel (10s), largement
+// dépassé dès qu'on colle plus de quelques URLs. 60s = plafond du plan Hobby.
+export const maxDuration = 60;
+
 export default async function AdminOffresPage() {
   const supabase = await createClient();
   const {
