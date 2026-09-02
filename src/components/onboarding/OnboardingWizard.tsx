@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
+import { markReferralGrantedAction } from "@/app/onboarding/actions";
 import { ChipMultiSelectWithCustom } from "@/components/ui/ChipMultiSelectWithCustom";
 import type { ContractType, Profile } from "@/types/database";
 import {
@@ -243,6 +244,8 @@ export function OnboardingWizard({
       setError(updateError.message);
       return;
     }
+
+    void markReferralGrantedAction(userId);
 
     router.push("/swipe");
     router.refresh();
