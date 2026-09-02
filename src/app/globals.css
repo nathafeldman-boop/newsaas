@@ -171,6 +171,15 @@
 .btn-icon:not(:disabled):hover { transform: translateY(-1px) scale(1.05); }
 .btn-icon:not(:disabled):active { transform: scale(0.92); }
 .btn-block { width: 100%; margin-top: var(--space-2); }
+.btn-gradient {
+  background: linear-gradient(90deg, var(--color-accent), var(--color-accent-2));
+  color: var(--color-bg);
+  padding: var(--space-3) calc(var(--space-3) * 2.2);
+  font-size: 15px;
+  box-shadow: var(--shadow-md);
+}
+.btn-gradient:not(:disabled):hover { filter: brightness(1.06); box-shadow: var(--shadow-lg); }
+.btn-gradient:not(:disabled):active { filter: brightness(0.96); }
 
 /* — forms — */
 .field > label {

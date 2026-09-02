@@ -243,15 +243,33 @@ function SwipeDeckInner({
 
   if (quotaReached && !isPremium) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center text-center px-6 py-20">
-        <span className="tag tag-accent">🔓 Premium</span>
-        <h2 style={{ fontSize: 22, marginTop: 12 }}>4 offres découvertes cette semaine</h2>
+      <div className="flex flex-1 flex-col items-center justify-center text-center px-6 py-16">
+        <motion.div
+          initial={{ scale: 0.6, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 280, damping: 18 }}
+          aria-hidden
+          style={{
+            width: 72,
+            height: 72,
+            borderRadius: 20,
+            background: "var(--color-accent-100)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 32,
+          }}
+        >
+          🔒
+        </motion.div>
+        <h2 style={{ fontSize: 22, marginTop: 20 }}>Tu as utilisé tes swipes gratuits</h2>
         <p style={{ marginTop: 8, maxWidth: "34ch", color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
-          Passe Premium pour swiper en illimité, ou reviens la semaine
-          prochaine. Tu peux toujours candidater librement aux offres déjà vues.
+          Passe Premium pour swiper sans limite et générer tes lettres de
+          motivation à volonté. Tu peux toujours candidater librement aux
+          offres déjà vues.
         </p>
-        <Link href="/premium" className="btn btn-primary mt-5">
-          Votre avenir vaut bien 7,99€
+        <Link href="/premium" className="btn btn-gradient mt-6">
+          Passer en illimité
         </Link>
       </div>
     );
