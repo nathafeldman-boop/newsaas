@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AppNav } from "@/components/nav/AppNav";
 import { BottomNav } from "@/components/nav/BottomNav";
+import { PageTransition } from "@/components/nav/PageTransition";
 import { createClient } from "@/lib/supabase/server";
 import { computeQuotaStatus } from "@/lib/subscription/quota";
 import { isAdminEmail } from "@/lib/admin/assertAdmin";
@@ -45,7 +46,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="flex min-h-full flex-1 flex-col">
       <AppNav />
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 pb-24 sm:pb-8">
-        {children}
+        <PageTransition>{children}</PageTransition>
       </main>
       <BottomNav />
     </div>
