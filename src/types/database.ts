@@ -47,6 +47,9 @@ export type Profile = {
   stripe_subscription_id: string | null;
   subscription_status: string | null;
   current_period_end: string | null;
+  onboarding_completed_at: string | null;
+  premium_activated_at: string | null;
+  total_paid_cents: number;
   created_at: string;
   updated_at: string;
 };
@@ -128,6 +131,31 @@ export type Referral = {
   created_at: string;
 };
 
+export type AccessCode = {
+  id: string;
+  code: string;
+  note: string | null;
+  max_uses: number;
+  use_count: number;
+  created_by: string | null;
+  created_at: string;
+};
+
+export type AccessCodeRedemption = {
+  id: string;
+  code_id: string;
+  user_id: string;
+  redeemed_at: string;
+};
+
+export type UserEvent = {
+  id: string;
+  user_id: string;
+  event_type: string;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -194,9 +222,32 @@ export type Database = {
         Update: Partial<EmailReply>;
         Relationships: [];
       };
+      access_codes: {
+        Row: AccessCode;
+        Insert: Partial<AccessCode> & { code: string };
+        Update: Partial<AccessCode>;
+        Relationships: [];
+      };
+      access_code_redemptions: {
+        Row: AccessCodeRedemption;
+        Insert: Partial<AccessCodeRedemption> & { code_id: string; user_id: string };
+        Update: Partial<AccessCodeRedemption>;
+        Relationships: [];
+      };
+      user_events: {
+        Row: UserEvent;
+        Insert: Partial<UserEvent> & { user_id: string; event_type: string };
+        Update: Partial<UserEvent>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      increment_total_paid: {
+        Args: { p_stripe_customer_id: string; p_amount_cents: number };
+        Returns: undefined;
+      };
+    };
     Enums: {
       contract_type: ContractType;
       gender_type: GenderType;

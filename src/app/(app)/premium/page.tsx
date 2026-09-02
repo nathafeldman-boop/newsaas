@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isPremium } from "@/lib/subscription/isPremium";
 import { createCheckoutSessionAction, createPortalSessionAction } from "./actions";
+import { AccessCodeForm } from "@/components/premium/AccessCodeForm";
 
 const ERROR_MESSAGES: Record<string, string> = {
   not_configured: "Le paiement n'est pas encore configuré, réessaie plus tard.",
@@ -132,6 +133,7 @@ export default async function PremiumPage({
             >
               Continuer avec l&apos;offre gratuite
             </Link>
+            <AccessCodeForm />
           </>
         )}
       </div>

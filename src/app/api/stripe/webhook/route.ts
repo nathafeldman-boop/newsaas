@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
         const admin = createAdminClient();
         await admin
           .from("profiles")
-          .update({ stripe_customer_id: customerId })
+          .update({ stripe_customer_id: customerId, premium_activated_at: new Date().toISOString() })
           .eq("id", userId);
       }
 
@@ -74,6 +74,20 @@ export async function POST(request: NextRequest) {
     case "customer.subscription.deleted": {
       const subscription = event.data.object as Stripe.Subscription;
       await syncSubscription(subscription);
+      break;
+    }
+
+    case "invoice.paid": {
+      const invoice = event.data.object as Stripe.Invoice;
+      const customerId =
+        typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id;
+      if (customerId && invoice.amount_paid > 0) {
+        const admin = createAdminClient();
+        await admin.rpc("increment_total_paid", {
+          p_stripe_customer_id: customerId,
+          p_amount_cents: invoice.amount_paid,
+        });
+      }
       break;
     }
 

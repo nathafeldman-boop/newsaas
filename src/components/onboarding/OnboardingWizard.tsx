@@ -148,6 +148,7 @@ export function OnboardingWizard({
         cv_path: cvPath,
         cv_uploaded_at: cvUploadedAt,
         onboarding_completed: true,
+        onboarding_completed_at: new Date().toISOString(),
       })
       .eq("id", userId);
 

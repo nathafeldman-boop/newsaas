@@ -38,6 +38,13 @@ export function LoginForm() {
       return;
     }
 
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) {
+      void supabase.from("user_events").insert({ user_id: user.id, event_type: "login" });
+    }
+
     router.push(next);
     router.refresh();
   }

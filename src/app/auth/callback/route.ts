@@ -24,6 +24,11 @@ export async function GET(request: NextRequest) {
         } catch {
           // best-effort : un souci de parrainage/email ne doit pas casser la connexion
         }
+        try {
+          await supabase.from("user_events").insert({ user_id: data.user.id, event_type: "login" });
+        } catch {
+          // best-effort : le suivi de session ne doit jamais casser la connexion
+        }
       }
       return NextResponse.redirect(`${origin}${next}`);
     }
