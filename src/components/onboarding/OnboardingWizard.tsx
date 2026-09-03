@@ -13,7 +13,6 @@ import {
   TOP_CITIES,
   MOBILITY_OPTIONS,
   EDUCATION_LEVELS,
-  EXPERIENCE_LEVELS,
   AVAILABILITY_OPTIONS,
 } from "@/lib/onboarding/options";
 
@@ -21,35 +20,30 @@ import {
 // échappatoire texte optionnel là où une liste ne peut pas tout couvrir
 // (ville, compétences...). bio/formation/date de naissance restent éditables
 // plus tard depuis le profil — pas assez tap-friendly pour rester ici.
-const STEP_IDS = [
-  "intro",
-  "looking_for",
-  "sectors",
-  "how_it_works",
-  "skills",
-  "target_jobs",
-  "city",
-  "mobility",
-  "education",
-  "experience",
-  "value_props",
-  "availability",
-  "cv",
-  "outro",
-] as const;
+//
+// Condensé à 4 étapes de saisie (+ intro/outro) : les écrans "comment ça
+// marche" / "ce que tu gagnes" répétaient mot pour mot les 3 bullets déjà
+// sur l'intro sans rien demander -- supprimés. Les champs individuels
+// (secteurs, compétences, ville / métiers, mobilité, niveau d'études,
+// disponibilité) sont regroupés sur deux écrans combinés plutôt qu'un par
+// champ, pour rester proche de "quelques écrans" plutôt qu'une quinzaine de
+// taps avant de voir une seule offre. experience_level n'entre dans aucun
+// critère de computeMatchScore : retiré de l'onboarding (reste modifiable
+// depuis /profil), plutôt que de faire taper une info qui ne sert à rien
+// tant qu'on ne l'exploite pas réellement.
+const STEP_IDS = ["intro", "looking_for", "search", "refine", "cv", "outro"] as const;
 type StepId = (typeof STEP_IDS)[number];
 
 const PROGRESS_STEPS: StepId[] = STEP_IDS.filter((s) => s !== "intro" && s !== "outro");
-const SKIPPABLE: StepId[] = [
-  "sectors",
-  "skills",
-  "target_jobs",
-  "mobility",
-  "education",
-  "experience",
-  "availability",
-  "cv",
-];
+const SKIPPABLE: StepId[] = ["refine", "cv"];
+const STEP_LABELS: Record<StepId, string> = {
+  intro: "",
+  looking_for: "Toi",
+  search: "Ta recherche",
+  refine: "Affiner",
+  cv: "Ton CV",
+  outro: "",
+};
 
 const slideVariants: Variants = {
   enter: (direction: number) => ({ x: direction > 0 ? 48 : -48, opacity: 0 }),
@@ -147,7 +141,6 @@ export function OnboardingWizard({
   );
 
   const [educationLevel, setEducationLevel] = useState(initialProfile?.education_level ?? "");
-  const [experienceLevel, setExperienceLevel] = useState(initialProfile?.experience_level ?? "");
   const [availabilityLabel, setAvailabilityLabel] = useState<string | null>(null);
   const [availabilityDate, setAvailabilityDate] = useState<string | null>(
     initialProfile?.availability_date ?? null,
@@ -176,7 +169,7 @@ export function OnboardingWizard({
     if (stepId === "looking_for" && lookingFor.length === 0) {
       return "Sélectionne alternance et/ou stage.";
     }
-    if (stepId === "city" && !city.trim()) {
+    if (stepId === "search" && !city.trim()) {
       return "Indique au moins ta ville.";
     }
     return null;
@@ -233,7 +226,7 @@ export function OnboardingWizard({
         mobility: mobility || null,
         looking_for: lookingFor,
         education_level: educationLevel || null,
-        experience_level: experienceLevel || null,
+        experience_level: initialProfile?.experience_level ?? null,
         availability_date: availabilityDate,
         cv_path: cvPath,
         cv_uploaded_at: cvUploadedAt,
@@ -297,6 +290,18 @@ export function OnboardingWizard({
               />
             </div>
           </div>
+          <p
+            style={{
+              fontSize: 11,
+              fontFamily: "var(--font-heading)",
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              color: "var(--color-accent-700)",
+              margin: "14px 0 0",
+            }}
+          >
+            Étape {progressIndex + 1} sur {PROGRESS_STEPS.length} · {STEP_LABELS[stepId]}
+          </p>
         </div>
       )}
 
@@ -387,198 +392,146 @@ export function OnboardingWizard({
               </div>
             )}
 
-            {stepId === "sectors" && (
-              <div className="flex flex-col gap-5">
-                <StepHeader title="Quels secteurs t'intéressent ?" subtitle="Sélectionne-en un ou plusieurs." />
-                <ChipMultiSelectWithCustom options={SECTORS} value={sectors} onChange={setSectors} />
-              </div>
-            )}
+            {stepId === "search" && (
+              <div className="flex flex-col gap-7">
+                <StepHeader title="Ta recherche" subtitle="Dernière ligne droite, et tes offres sont prêtes." />
 
-            {stepId === "how_it_works" && (
-              <div className="flex flex-1 flex-col items-center justify-center text-center gap-6 px-2">
-                <h1 style={{ fontSize: 26, margin: 0 }}>Comment ça marche</h1>
-                <div className="flex flex-col gap-3 w-full" style={{ maxWidth: 320 }}>
-                  {[
-                    ["👆", "Swipe", "Découvre des offres triées selon ton profil"],
-                    ["⚡", "Postule", "Un geste suffit, ton CV part automatiquement"],
-                    ["📬", "Sois recontacté", "Suis chaque réponse recruteur en direct"],
-                  ].map(([icon, title, text]) => (
-                    <div
-                      key={title}
-                      className="flex items-center gap-3"
-                      style={{
-                        background: "var(--color-surface)",
-                        borderRadius: "var(--radius-md)",
-                        padding: "14px 16px",
-                        textAlign: "left",
-                      }}
-                    >
-                      <span aria-hidden style={{ fontSize: 24 }}>
-                        {icon}
-                      </span>
-                      <div>
-                        <p style={{ margin: 0, fontFamily: "var(--font-heading)", fontSize: 14 }}>{title}</p>
-                        <p style={{ margin: 0, fontSize: 12, opacity: 0.75 }}>{text}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {stepId === "skills" && (
-              <div className="flex flex-col gap-5">
-                <StepHeader title="Tes compétences" subtitle="Celles qui te représentent le mieux." />
-                <ChipMultiSelectWithCustom options={SKILLS} value={skills} onChange={setSkills} />
-              </div>
-            )}
-
-            {stepId === "target_jobs" && (
-              <div className="flex flex-col gap-5">
-                <StepHeader title="Des métiers en tête ?" subtitle="Optionnel — ça affine encore plus tes offres." />
-                <ChipMultiSelectWithCustom options={TARGET_JOBS} value={targetJobs} onChange={setTargetJobs} />
-              </div>
-            )}
-
-            {stepId === "city" && (
-              <div className="flex flex-col gap-5">
-                <StepHeader title="Où es-tu ?" subtitle="On te propose des offres proches ou compatibles." />
-                <div className="flex flex-wrap gap-2">
-                  {TOP_CITIES.map((c) => (
+                <div className="flex flex-col gap-3">
+                  <p style={{ fontSize: 13, fontFamily: "var(--font-heading)", margin: 0 }}>
+                    Ta ville <span style={{ color: "var(--color-accent-700)" }}>(obligatoire)</span>
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {TOP_CITIES.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => {
+                          setCity(c);
+                          setCityCustomOpen(false);
+                        }}
+                        className={city === c ? "tag" : "tag tag-neutral"}
+                        style={{
+                          padding: "7px 14px",
+                          fontSize: 13,
+                          ...(city === c ? { background: "var(--color-accent)", color: "var(--color-bg)" } : {}),
+                        }}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                  {cityCustomOpen || (city && !TOP_CITIES.includes(city)) ? (
+                    <input
+                      autoFocus
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      placeholder="Ta ville"
+                      className="input"
+                    />
+                  ) : (
                     <button
-                      key={c}
                       type="button"
-                      onClick={() => {
-                        setCity(c);
-                        setCityCustomOpen(false);
-                      }}
-                      className={city === c ? "tag" : "tag tag-neutral"}
-                      style={{
-                        padding: "7px 14px",
-                        fontSize: 13,
-                        ...(city === c ? { background: "var(--color-accent)", color: "var(--color-bg)" } : {}),
-                      }}
+                      onClick={() => setCityCustomOpen(true)}
+                      className="tag tag-outline"
+                      style={{ padding: "7px 14px", fontSize: 13, alignSelf: "flex-start" }}
                     >
-                      {c}
+                      + Autre ville
                     </button>
-                  ))}
+                  )}
                 </div>
-                {cityCustomOpen || (city && !TOP_CITIES.includes(city)) ? (
-                  <input
-                    autoFocus
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    placeholder="Ta ville"
-                    className="input"
-                  />
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setCityCustomOpen(true)}
-                    className="tag tag-outline"
-                    style={{ padding: "7px 14px", fontSize: 13, alignSelf: "flex-start" }}
-                  >
-                    + Autre ville
-                  </button>
-                )}
-              </div>
-            )}
 
-            {stepId === "mobility" && (
-              <div className="flex flex-col gap-5">
-                <StepHeader title="Tu es prêt·e à bouger ?" subtitle="Optionnel." />
-                <div className="flex flex-col gap-2.5">
-                  {MOBILITY_OPTIONS.map((opt) => (
-                    <TileOption
-                      key={opt.value}
-                      label={opt.value}
-                      icon={opt.icon}
-                      active={mobility === opt.value}
-                      onClick={() => setMobility(mobility === opt.value ? "" : opt.value)}
-                    />
-                  ))}
+                <div className="flex flex-col gap-3">
+                  <p style={{ fontSize: 13, fontFamily: "var(--font-heading)", margin: 0 }}>
+                    Secteurs recherchés <span style={{ opacity: 0.6 }}>(optionnel)</span>
+                  </p>
+                  <ChipMultiSelectWithCustom options={SECTORS} value={sectors} onChange={setSectors} />
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <p style={{ fontSize: 13, fontFamily: "var(--font-heading)", margin: 0 }}>
+                    Compétences <span style={{ opacity: 0.6 }}>(optionnel)</span>
+                  </p>
+                  <ChipMultiSelectWithCustom options={SKILLS} value={skills} onChange={setSkills} />
                 </div>
               </div>
             )}
 
-            {stepId === "education" && (
-              <div className="flex flex-col gap-5">
-                <StepHeader title="Ton niveau d'études" subtitle="Optionnel." />
-                <div className="flex flex-col gap-2.5">
-                  {EDUCATION_LEVELS.map((level) => (
-                    <TileOption
-                      key={level}
-                      label={level}
-                      icon="🎓"
-                      active={educationLevel === level}
-                      onClick={() => setEducationLevel(educationLevel === level ? "" : level)}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
+            {stepId === "refine" && (
+              <div className="flex flex-col gap-7">
+                <StepHeader title="Affiner (optionnel)" subtitle="Ça reste modifiable à tout moment depuis ton profil." />
 
-            {stepId === "experience" && (
-              <div className="flex flex-col gap-5">
-                <StepHeader title="Ton expérience" subtitle="Optionnel." />
-                <div className="flex flex-col gap-2.5">
-                  {EXPERIENCE_LEVELS.map((opt) => (
-                    <TileOption
-                      key={opt.value}
-                      label={opt.value}
-                      icon={opt.icon}
-                      active={experienceLevel === opt.value}
-                      onClick={() => setExperienceLevel(experienceLevel === opt.value ? "" : opt.value)}
-                    />
-                  ))}
+                <div className="flex flex-col gap-3">
+                  <p style={{ fontSize: 13, fontFamily: "var(--font-heading)", margin: 0 }}>Métiers visés</p>
+                  <ChipMultiSelectWithCustom options={TARGET_JOBS} value={targetJobs} onChange={setTargetJobs} />
                 </div>
-              </div>
-            )}
 
-            {stepId === "value_props" && (
-              <div className="flex flex-1 flex-col items-center justify-center text-center gap-6 px-2">
-                <h1 style={{ fontSize: 26, margin: 0 }}>Ce que tu gagnes avec Stageio</h1>
-                <div className="flex flex-col gap-3 w-full" style={{ maxWidth: 320 }}>
-                  {[
-                    ["🎯", "Offres triées par compatibilité avec ton profil"],
-                    ["⚡", "Candidature en un geste, pas de lettre à réécrire"],
-                    ["🔔", "Toutes tes réponses recruteurs au même endroit"],
-                  ].map(([icon, text]) => (
-                    <div
-                      key={text}
-                      className="flex items-center gap-3"
-                      style={{
-                        background: "var(--color-accent-100)",
-                        color: "var(--color-accent-800)",
-                        borderRadius: "var(--radius-md)",
-                        padding: "12px 16px",
-                        fontSize: 13,
-                        textAlign: "left",
-                      }}
-                    >
-                      <span aria-hidden style={{ fontSize: 20 }}>
-                        {icon}
-                      </span>
-                      {text}
-                    </div>
-                  ))}
+                <div className="flex flex-col gap-3">
+                  <p style={{ fontSize: 13, fontFamily: "var(--font-heading)", margin: 0 }}>Mobilité</p>
+                  <div className="flex flex-wrap gap-2">
+                    {MOBILITY_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setMobility(mobility === opt.value ? "" : opt.value)}
+                        className={mobility === opt.value ? "tag" : "tag tag-neutral"}
+                        style={{
+                          padding: "7px 14px",
+                          fontSize: 13,
+                          ...(mobility === opt.value
+                            ? { background: "var(--color-accent)", color: "var(--color-bg)" }
+                            : {}),
+                        }}
+                      >
+                        {opt.icon} {opt.value}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
 
-            {stepId === "availability" && (
-              <div className="flex flex-col gap-5">
-                <StepHeader title="Tu es dispo à partir de quand ?" subtitle="Optionnel." />
-                <div className="flex flex-col gap-2.5">
-                  {AVAILABILITY_OPTIONS.map((opt) => (
-                    <TileOption
-                      key={opt.label}
-                      label={opt.label}
-                      icon={opt.icon}
-                      active={availabilityLabel === opt.label}
-                      onClick={() => pickAvailability(opt)}
-                    />
-                  ))}
+                <div className="flex flex-col gap-3">
+                  <p style={{ fontSize: 13, fontFamily: "var(--font-heading)", margin: 0 }}>Niveau d&apos;études</p>
+                  <div className="flex flex-wrap gap-2">
+                    {EDUCATION_LEVELS.map((level) => (
+                      <button
+                        key={level}
+                        type="button"
+                        onClick={() => setEducationLevel(educationLevel === level ? "" : level)}
+                        className={educationLevel === level ? "tag" : "tag tag-neutral"}
+                        style={{
+                          padding: "7px 14px",
+                          fontSize: 13,
+                          ...(educationLevel === level
+                            ? { background: "var(--color-accent)", color: "var(--color-bg)" }
+                            : {}),
+                        }}
+                      >
+                        {level}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <p style={{ fontSize: 13, fontFamily: "var(--font-heading)", margin: 0 }}>Disponible à partir de</p>
+                  <div className="flex flex-wrap gap-2">
+                    {AVAILABILITY_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.label}
+                        type="button"
+                        onClick={() => pickAvailability(opt)}
+                        className={availabilityLabel === opt.label ? "tag" : "tag tag-neutral"}
+                        style={{
+                          padding: "7px 14px",
+                          fontSize: 13,
+                          ...(availabilityLabel === opt.label
+                            ? { background: "var(--color-accent)", color: "var(--color-bg)" }
+                            : {}),
+                        }}
+                      >
+                        {opt.icon} {opt.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
