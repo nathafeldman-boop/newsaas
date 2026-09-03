@@ -1,5 +1,7 @@
 "use client";
 
+import { motion } from "framer-motion";
+
 export function ChipMultiSelect({
   options,
   value,
@@ -22,10 +24,13 @@ export function ChipMultiSelect({
       {options.map((option) => {
         const selected = value.includes(option);
         return (
-          <button
+          <motion.button
             key={option}
             type="button"
             onClick={() => toggle(option)}
+            whileTap={{ scale: 0.9 }}
+            whileHover={{ scale: 1.04 }}
+            transition={{ type: "spring", stiffness: 500, damping: 25 }}
             className={selected ? "tag" : "tag tag-neutral"}
             style={{
               padding: "7px 14px",
@@ -36,7 +41,7 @@ export function ChipMultiSelect({
             }}
           >
             {option}
-          </button>
+          </motion.button>
         );
       })}
     </div>

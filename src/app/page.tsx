@@ -4,6 +4,8 @@ import type { Metadata } from "next";
 import { SITE_URL } from "@/lib/site";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { SwipeDemo } from "@/components/landing/SwipeDemo";
+import { Reveal } from "@/components/ui/Reveal";
+import { Highlight } from "@/components/ui/Highlight";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
@@ -152,7 +154,7 @@ export default function LandingPage() {
                 maxWidth: "14ch",
               }}
             >
-              Trouve ta prochaine expérience, en swipant.
+              Trouve ta prochaine expérience, <Highlight>en swipant</Highlight>.
             </h1>
             <p
               style={{
@@ -221,36 +223,40 @@ export default function LandingPage() {
         </section>
 
         <section className="py-8">
-          <div
-            className="card elev-sm grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-4 sm:gap-6"
-            style={{ padding: "var(--space-6)" }}
-          >
-            {STATS.map((stat) => (
-              <div key={stat.label}>
-                <p
-                  style={{
-                    fontFamily: "var(--font-heading)",
-                    fontSize: "clamp(26px,7vw,36px)",
-                    color: stat.color,
-                    margin: 0,
-                  }}
-                >
-                  {stat.value}
-                </p>
-                <p
-                  style={{
-                    fontSize: 12,
-                    letterSpacing: "0.06em",
-                    textTransform: "uppercase",
-                    color: "color-mix(in srgb, var(--color-text) 70%, transparent)",
-                    margin: "6px 0 0",
-                  }}
-                >
-                  {stat.label}
-                </p>
-              </div>
-            ))}
-          </div>
+          <Reveal>
+            <div
+              className="card elev-sm grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-4 sm:gap-6"
+              style={{ padding: "var(--space-6)" }}
+            >
+              {STATS.map((stat, i) => (
+                <Reveal key={stat.label} delay={i * 0.07}>
+                  <div>
+                    <p
+                      style={{
+                        fontFamily: "var(--font-heading)",
+                        fontSize: "clamp(26px,7vw,36px)",
+                        color: stat.color,
+                        margin: 0,
+                      }}
+                    >
+                      {stat.value}
+                    </p>
+                    <p
+                      style={{
+                        fontSize: 12,
+                        letterSpacing: "0.06em",
+                        textTransform: "uppercase",
+                        color: "color-mix(in srgb, var(--color-text) 70%, transparent)",
+                        margin: "6px 0 0",
+                      }}
+                    >
+                      {stat.label}
+                    </p>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
+          </Reveal>
         </section>
 
         <section className="py-8">
@@ -258,11 +264,13 @@ export default function LandingPage() {
             Le parcours
           </span>
           <div className="mt-4 grid gap-7 sm:grid-cols-3">
-            {STEPS.map((step) => (
-              <div key={step.title} className="card">
-                <h3 className="card-title">{step.title}</h3>
-                <p className="card-body">{step.text}</p>
-              </div>
+            {STEPS.map((step, i) => (
+              <Reveal key={step.title} delay={i * 0.08}>
+                <div className="card">
+                  <h3 className="card-title">{step.title}</h3>
+                  <p className="card-body">{step.text}</p>
+                </div>
+              </Reveal>
             ))}
           </div>
         </section>
@@ -272,27 +280,28 @@ export default function LandingPage() {
             Ils ont trouvé
           </span>
           <div className="mt-4 grid gap-6 sm:grid-cols-3">
-            {TESTIMONIALS.map((t) => (
-              <figure
-                key={t.author}
-                className="card elev-md m-0"
-                style={{ background: "var(--color-accent-2-100)", padding: "var(--space-6)" }}
-              >
-                <blockquote
-                  style={{
-                    fontFamily: "var(--font-heading)",
-                    fontSize: "clamp(17px,1.6vw,20px)",
-                    lineHeight: 1.4,
-                    margin: 0,
-                    color: "var(--color-accent-2-800)",
-                  }}
+            {TESTIMONIALS.map((t, i) => (
+              <Reveal key={t.author} delay={i * 0.08}>
+                <figure
+                  className="card elev-md m-0"
+                  style={{ background: "var(--color-accent-2-100)", padding: "var(--space-6)" }}
                 >
-                  « {t.quote} »
-                </blockquote>
-                <figcaption style={{ fontSize: 13, color: "var(--color-accent-2-700)", marginTop: 14 }}>
-                  — {t.author}, {t.role}
-                </figcaption>
-              </figure>
+                  <blockquote
+                    style={{
+                      fontFamily: "var(--font-heading)",
+                      fontSize: "clamp(17px,1.6vw,20px)",
+                      lineHeight: 1.4,
+                      margin: 0,
+                      color: "var(--color-accent-2-800)",
+                    }}
+                  >
+                    « {t.quote} »
+                  </blockquote>
+                  <figcaption style={{ fontSize: 13, color: "var(--color-accent-2-700)", marginTop: 14 }}>
+                    — {t.author}, {t.role}
+                  </figcaption>
+                </figure>
+              </Reveal>
             ))}
           </div>
         </section>
@@ -302,52 +311,56 @@ export default function LandingPage() {
             Questions fréquentes
           </span>
           <div className="mt-4 flex flex-col gap-3" style={{ maxWidth: "68ch" }}>
-            {FAQ.map((item) => (
-              <details key={item.question} className="card" style={{ padding: "var(--space-5)" }}>
-                <summary
-                  style={{
-                    cursor: "pointer",
-                    fontFamily: "var(--font-heading)",
-                    fontSize: 15,
-                  }}
-                >
-                  {item.question}
-                </summary>
-                <p
-                  style={{
-                    fontSize: 14,
-                    lineHeight: 1.6,
-                    margin: "10px 0 0",
-                    color: "color-mix(in srgb, var(--color-text) 78%, transparent)",
-                  }}
-                >
-                  {item.answer}
-                </p>
-              </details>
+            {FAQ.map((item, i) => (
+              <Reveal key={item.question} delay={i * 0.05}>
+                <details className="card" style={{ padding: "var(--space-5)" }}>
+                  <summary
+                    style={{
+                      cursor: "pointer",
+                      fontFamily: "var(--font-heading)",
+                      fontSize: 15,
+                    }}
+                  >
+                    {item.question}
+                  </summary>
+                  <p
+                    style={{
+                      fontSize: 14,
+                      lineHeight: 1.6,
+                      margin: "10px 0 0",
+                      color: "color-mix(in srgb, var(--color-text) 78%, transparent)",
+                    }}
+                  >
+                    {item.answer}
+                  </p>
+                </details>
+              </Reveal>
             ))}
           </div>
         </section>
 
         <section className="py-10 pb-20">
-          <h2 style={{ fontSize: 28, margin: 0, maxWidth: "24ch" }}>
-            Un pote te parraine ? Vous gagnez tous les deux.
-          </h2>
-          <p
-            style={{
-              fontSize: 15,
-              color: "color-mix(in srgb, var(--color-text) 78%, transparent)",
-              margin: "12px 0 0",
-              maxWidth: "50ch",
-            }}
-          >
-            Chaque compte a son lien de parrainage, disponible dans le profil
-            une fois inscrit.
-          </p>
-          <div className="mt-5 flex max-w-[420px] items-stretch gap-3">
-            <Link href="/inscription" className="btn btn-primary" style={{ whiteSpace: "nowrap" }}>
-              Créer mon compte
-            </Link>
-          </div>
+          <Reveal>
+            <h2 style={{ fontSize: 28, margin: 0, maxWidth: "24ch" }}>
+              Un pote te parraine ? Vous gagnez <Highlight color="var(--color-accent-100)">tous les deux</Highlight>.
+            </h2>
+            <p
+              style={{
+                fontSize: 15,
+                color: "color-mix(in srgb, var(--color-text) 78%, transparent)",
+                margin: "12px 0 0",
+                maxWidth: "50ch",
+              }}
+            >
+              Chaque compte a son lien de parrainage, disponible dans le profil
+              une fois inscrit.
+            </p>
+            <div className="mt-5 flex max-w-[420px] items-stretch gap-3">
+              <Link href="/inscription" className="btn btn-primary" style={{ whiteSpace: "nowrap" }}>
+                Créer mon compte
+              </Link>
+            </div>
+          </Reveal>
         </section>
 
         <footer

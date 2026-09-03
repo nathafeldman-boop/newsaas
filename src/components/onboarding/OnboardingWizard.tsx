@@ -5,6 +5,7 @@ import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { markReferralGrantedAction } from "@/app/onboarding/actions";
 import { ChipMultiSelectWithCustom } from "@/components/ui/ChipMultiSelectWithCustom";
+import { Highlight } from "@/components/ui/Highlight";
 import type { ContractType, Profile } from "@/types/database";
 import {
   SECTORS,
@@ -344,8 +345,8 @@ export function OnboardingWizard({
                       marginInline: "auto",
                     }}
                   >
-                    En 2 minutes, dis-nous ce que tu cherches. Zéro lettre de
-                    motivation à rédiger — juste des tuiles à taper.
+                    En <Highlight delay={0.4}>2 minutes</Highlight>, dis-nous ce que tu cherches. Zéro
+                    lettre de motivation à rédiger — juste des tuiles à taper.
                   </p>
                 </div>
                 <div className="flex flex-col gap-2.5 w-full" style={{ maxWidth: 300 }}>
@@ -405,9 +406,12 @@ export function OnboardingWizard({
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {TOP_CITIES.map((c) => (
-                      <button
+                      <motion.button
                         key={c}
                         type="button"
+                        whileTap={{ scale: 0.9 }}
+                        whileHover={{ scale: 1.04 }}
+                        transition={{ type: "spring", stiffness: 500, damping: 25 }}
                         onClick={() => {
                           setCity(c);
                           setCityCustomOpen(false);
@@ -420,7 +424,7 @@ export function OnboardingWizard({
                         }}
                       >
                         {c}
-                      </button>
+                      </motion.button>
                     ))}
                   </div>
                   {cityCustomOpen || (city && !TOP_CITIES.includes(city)) ? (
@@ -472,9 +476,12 @@ export function OnboardingWizard({
                   <p style={{ fontSize: 13, fontFamily: "var(--font-heading)", margin: 0 }}>Mobilité</p>
                   <div className="flex flex-wrap gap-2">
                     {MOBILITY_OPTIONS.map((opt) => (
-                      <button
+                      <motion.button
                         key={opt.value}
                         type="button"
+                        whileTap={{ scale: 0.9 }}
+                        whileHover={{ scale: 1.04 }}
+                        transition={{ type: "spring", stiffness: 500, damping: 25 }}
                         onClick={() => setMobility(mobility === opt.value ? "" : opt.value)}
                         className={mobility === opt.value ? "tag" : "tag tag-neutral"}
                         style={{
@@ -486,7 +493,7 @@ export function OnboardingWizard({
                         }}
                       >
                         {opt.icon} {opt.value}
-                      </button>
+                      </motion.button>
                     ))}
                   </div>
                 </div>
@@ -495,9 +502,12 @@ export function OnboardingWizard({
                   <p style={{ fontSize: 13, fontFamily: "var(--font-heading)", margin: 0 }}>Niveau d&apos;études</p>
                   <div className="flex flex-wrap gap-2">
                     {EDUCATION_LEVELS.map((level) => (
-                      <button
+                      <motion.button
                         key={level}
                         type="button"
+                        whileTap={{ scale: 0.9 }}
+                        whileHover={{ scale: 1.04 }}
+                        transition={{ type: "spring", stiffness: 500, damping: 25 }}
                         onClick={() => setEducationLevel(educationLevel === level ? "" : level)}
                         className={educationLevel === level ? "tag" : "tag tag-neutral"}
                         style={{
@@ -509,7 +519,7 @@ export function OnboardingWizard({
                         }}
                       >
                         {level}
-                      </button>
+                      </motion.button>
                     ))}
                   </div>
                 </div>
@@ -518,9 +528,12 @@ export function OnboardingWizard({
                   <p style={{ fontSize: 13, fontFamily: "var(--font-heading)", margin: 0 }}>Disponible à partir de</p>
                   <div className="flex flex-wrap gap-2">
                     {AVAILABILITY_OPTIONS.map((opt) => (
-                      <button
+                      <motion.button
                         key={opt.label}
                         type="button"
+                        whileTap={{ scale: 0.9 }}
+                        whileHover={{ scale: 1.04 }}
+                        transition={{ type: "spring", stiffness: 500, damping: 25 }}
                         onClick={() => pickAvailability(opt)}
                         className={availabilityLabel === opt.label ? "tag" : "tag tag-neutral"}
                         style={{
@@ -532,7 +545,7 @@ export function OnboardingWizard({
                         }}
                       >
                         {opt.icon} {opt.label}
-                      </button>
+                      </motion.button>
                     ))}
                   </div>
                 </div>
@@ -586,7 +599,7 @@ export function OnboardingWizard({
                       color: "color-mix(in srgb, var(--color-text) 70%, transparent)",
                     }}
                   >
-                    On a tout ce qu&apos;il faut pour te montrer les meilleures offres.
+                    On a tout ce qu&apos;il faut pour te montrer les <Highlight delay={0.35}>meilleures offres</Highlight>.
                   </p>
                 </div>
                 <div className="flex flex-wrap justify-center gap-2" style={{ maxWidth: 320 }}>
