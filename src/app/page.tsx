@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { SITE_URL } from "@/lib/site";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
+import { SwipeDemo } from "@/components/landing/SwipeDemo";
 
 const STEPS = [
   {
@@ -23,6 +24,27 @@ const STATS = [
   { value: "48h", label: "Délai moyen" },
   { value: "62%", label: "Alternances", color: "var(--color-accent-2)" },
   { value: "4.6★", label: "Note moyenne" },
+];
+
+const TESTIMONIALS = [
+  {
+    quote:
+      "Trois jours après mon inscription, j'avais déjà un entretien.",
+    author: "Léa",
+    role: "alternante en marketing digital",
+  },
+  {
+    quote:
+      "J'ai enfin arrêté de recopier la même lettre de motivation sur quinze sites différents.",
+    author: "Thomas",
+    role: "stagiaire développement web",
+  },
+  {
+    quote:
+      "Les offres qui remontent correspondent vraiment à ce que j'ai mis dans mon profil, ça change tout.",
+    author: "Inès",
+    role: "alternante ressources humaines",
+  },
 ];
 
 const organizationJsonLd = {
@@ -128,6 +150,29 @@ export default function LandingPage() {
           </figure>
         </section>
 
+        <section className="py-8 text-center">
+          <span className="tag tag-accent-2" style={{ marginBottom: 16 }}>
+            Essaie, là, tout de suite
+          </span>
+          <h2 style={{ fontSize: 26, margin: "14px auto 0", maxWidth: "22ch" }}>
+            Glisse la carte pour voir comment ça marche
+          </h2>
+          <p
+            style={{
+              fontSize: 14.5,
+              margin: "10px auto 0",
+              maxWidth: "40ch",
+              color: "color-mix(in srgb, var(--color-text) 70%, transparent)",
+            }}
+          >
+            À droite pour aimer, à gauche pour passer. Sur l&apos;appli, chaque
+            carte que tu vois est déjà triée pour ton profil.
+          </p>
+          <div className="mt-7 flex justify-center">
+            <SwipeDemo />
+          </div>
+        </section>
+
         <section className="py-8">
           <div
             className="card elev-sm grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-4 sm:gap-6"
@@ -176,26 +221,32 @@ export default function LandingPage() {
         </section>
 
         <section className="py-8">
-          <div
-            className="card elev-md"
-            style={{ background: "var(--color-accent-2-100)", padding: "var(--space-8)" }}
-          >
-            <blockquote
-              style={{
-                fontFamily: "var(--font-heading)",
-                fontSize: "clamp(22px,2.4vw,30px)",
-                lineHeight: 1.35,
-                maxWidth: "34ch",
-                margin: 0,
-                color: "var(--color-accent-2-800)",
-              }}
-            >
-              « Trois jours après mon inscription, j&apos;avais déjà un
-              entretien. »
-            </blockquote>
-            <figcaption style={{ fontSize: 14, color: "var(--color-accent-2-700)", marginTop: 16 }}>
-              — Léa, alternante en marketing digital
-            </figcaption>
+          <span className="tag tag-accent-2" style={{ marginBottom: 16 }}>
+            Ils ont trouvé
+          </span>
+          <div className="mt-4 grid gap-6 sm:grid-cols-3">
+            {TESTIMONIALS.map((t) => (
+              <figure
+                key={t.author}
+                className="card elev-md m-0"
+                style={{ background: "var(--color-accent-2-100)", padding: "var(--space-6)" }}
+              >
+                <blockquote
+                  style={{
+                    fontFamily: "var(--font-heading)",
+                    fontSize: "clamp(17px,1.6vw,20px)",
+                    lineHeight: 1.4,
+                    margin: 0,
+                    color: "var(--color-accent-2-800)",
+                  }}
+                >
+                  « {t.quote} »
+                </blockquote>
+                <figcaption style={{ fontSize: 13, color: "var(--color-accent-2-700)", marginTop: 14 }}>
+                  — {t.author}, {t.role}
+                </figcaption>
+              </figure>
+            ))}
           </div>
         </section>
 
