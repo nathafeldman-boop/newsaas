@@ -52,6 +52,7 @@ export type Profile = {
   total_paid_cents: number;
   notify_new_offers: boolean;
   last_offer_alert_sent_at: string | null;
+  last_active_at: string | null;
   created_at: string;
   updated_at: string;
 };

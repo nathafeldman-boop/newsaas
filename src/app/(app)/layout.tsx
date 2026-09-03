@@ -31,14 +31,24 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   let shouldRedirectToPaywall = false;
 
-  if (!isExempt(pathname)) {
-    try {
-      const supabase = await createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-      if (user && !isAdminEmail(user.email)) {
+    if (user) {
+      // Présence "en ligne" pour le dashboard admin : mise à jour à chaque
+      // navigation authentifiée (toutes pages confondues, pas juste les
+      // pages soumises au paywall), pas seulement au login -- sinon un
+      // compte resterait compté "en ligne" des heures après avoir fermé
+      // l'onglet.
+      await supabase
+        .from("profiles")
+        .update({ last_active_at: new Date().toISOString() })
+        .eq("id", user.id);
+
+      if (!isExempt(pathname) && !isAdminEmail(user.email)) {
         const [{ data: profile }, { data: swiped }, { data: applications }] = await Promise.all([
           supabase.from("profiles").select("subscription_status").eq("id", user.id).single(),
           supabase.from("swipes").select("offer_id, created_at").eq("user_id", user.id),
@@ -51,14 +61,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           applications ?? [],
         ).quotaReached;
       }
-    } catch (err) {
-      // Ce check tourne sur CHAQUE navigation de l'appli : un pépin
-      // transitoire (Supabase lent/indisponible un instant) ne doit jamais
-      // faire planter toute la page -- on laisse passer plutôt que
-      // d'afficher un écran blanc, quitte à revoir le paywall à la
-      // prochaine navigation si le quota est réellement dépassé.
-      console.error("AppLayout quota check failed", err);
     }
+  } catch (err) {
+    // Ce check tourne sur CHAQUE navigation de l'appli : un pépin
+    // transitoire (Supabase lent/indisponible un instant) ne doit jamais
+    // faire planter toute la page -- on laisse passer plutôt que
+    // d'afficher un écran blanc, quitte à revoir le paywall à la
+    // prochaine navigation si le quota est réellement dépassé.
+    console.error("AppLayout quota check failed", err);
   }
 
   if (shouldRedirectToPaywall) {

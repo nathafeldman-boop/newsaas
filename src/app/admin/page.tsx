@@ -35,11 +35,18 @@ export default async function AdminDashboardPage() {
   todayStart.setHours(0, 0, 0, 0);
   const weekAgo = new Date();
   weekAgo.setDate(weekAgo.getDate() - 7);
+  // Fenêtre "en ligne" : (app)/layout.tsx retape last_active_at à chaque
+  // navigation, donc quelques minutes suffisent à couvrir quelqu'un qui
+  // vient de charger une page et lit tranquillement sans re-naviguer tout
+  // de suite.
+  const onlineSince = new Date();
+  onlineSince.setMinutes(onlineSince.getMinutes() - 5);
 
   const [
     { count: totalUsers },
     { count: signupsToday },
     { count: signupsWeek },
+    { count: onlineNow },
     { data: subs },
     { count: activeOffers },
   ] = await Promise.all([
@@ -52,6 +59,10 @@ export default async function AdminDashboardPage() {
       .from("profiles")
       .select("id", { count: "exact", head: true })
       .gte("created_at", weekAgo.toISOString()),
+    admin
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .gte("last_active_at", onlineSince.toISOString()),
     admin.from("profiles").select("subscription_status, total_paid_cents"),
     admin.from("offers").select("id", { count: "exact", head: true }).eq("is_active", true),
   ]);
@@ -67,6 +78,7 @@ export default async function AdminDashboardPage() {
       <h1 style={{ fontSize: 26, margin: "0 0 20px" }}>Dashboard</h1>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+        <StatTile label="En ligne maintenant" value={String(onlineNow ?? 0)} accent />
         <StatTile label="Inscrits aujourd'hui" value={String(signupsToday ?? 0)} accent />
         <StatTile label="Inscrits (7 jours)" value={String(signupsWeek ?? 0)} />
         <StatTile label="Total utilisateurs" value={String(totalUsers ?? 0)} />
