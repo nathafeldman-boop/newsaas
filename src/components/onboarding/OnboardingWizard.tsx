@@ -136,8 +136,14 @@ export function OnboardingWizard({
   const [city, setCity] = useState(initialProfile?.city ?? "");
   const [cityCustomOpen, setCityCustomOpen] = useState(false);
   const [mobility, setMobility] = useState(initialProfile?.mobility ?? "");
+  // Aucune présélection par défaut : les deux tuiles pré-cochées piégeaient
+  // les nouveaux comptes (initialProfile null) qui tapaient sur celle
+  // qu'ils voulaient, la désélectionnant sans le savoir puisqu'elle était
+  // déjà active -- taper les deux vidait la sélection et bloquait l'étape
+  // avec une erreur sans qu'on comprenne pourquoi. Un profil existant garde
+  // sa vraie valeur.
   const [lookingFor, setLookingFor] = useState<ContractType[]>(
-    initialProfile?.looking_for ?? ["alternance", "stage"],
+    initialProfile?.looking_for ?? [],
   );
 
   const [educationLevel, setEducationLevel] = useState(initialProfile?.education_level ?? "");
