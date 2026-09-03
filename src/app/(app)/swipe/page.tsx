@@ -57,6 +57,15 @@ export default async function SwipePage() {
       query = query.not("id", "in", `(${excludeIds.join(",")})`);
     }
 
+    // Filtre dur par secteur : demandé explicitement à l'onboarding
+    // (obligatoire depuis peu), donc on ne montre que les offres dans le(s)
+    // secteur(s) choisi(s) plutôt que de le laisser peser juste sur le tri.
+    // Les comptes créés avant que ce champ soit obligatoire (sectors vide)
+    // ne sont pas filtrés, sinon leur deck se viderait d'un coup.
+    if (profile && profile.sectors.length > 0) {
+      query = query.in("sector", profile.sectors);
+    }
+
     // Pas de filtre dur par looking_for ici : le sélecteur Stage/Alternance/
     // Les deux dans SwipeDeck doit pouvoir montrer les deux types même si
     // l'utilisateur n'a coché qu'un seul lors de l'onboarding. La préférence

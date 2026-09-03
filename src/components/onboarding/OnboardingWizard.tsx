@@ -172,6 +172,9 @@ export function OnboardingWizard({
     if (stepId === "search" && !city.trim()) {
       return "Indique au moins ta ville.";
     }
+    if (stepId === "search" && sectors.length === 0) {
+      return "Sélectionne au moins un secteur.";
+    }
     return null;
   }
 
@@ -442,7 +445,7 @@ export function OnboardingWizard({
 
                 <div className="flex flex-col gap-3">
                   <p style={{ fontSize: 13, fontFamily: "var(--font-heading)", margin: 0 }}>
-                    Secteurs recherchés <span style={{ opacity: 0.6 }}>(optionnel)</span>
+                    Secteurs recherchés <span style={{ color: "var(--color-accent-700)" }}>(obligatoire)</span>
                   </p>
                   <ChipMultiSelectWithCustom options={SECTORS} value={sectors} onChange={setSectors} />
                 </div>
