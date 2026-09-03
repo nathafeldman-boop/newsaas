@@ -11,9 +11,13 @@ import { isAdminEmail } from "@/lib/admin/assertAdmin";
 // premium elle-même (boucle infinie sinon), et candidater (/candidature) qui
 // doit rester illimité même quota de swipe atteint — exactement comme le
 // trigger SQL enforce_swipe_quota l'autorise déjà côté base pour les mêmes
-// raisons. /admin vit hors de ce groupe de routes désormais, donc n'a plus
-// besoin d'exemption ici.
-const PAYWALL_EXEMPT_PATHS = ["/premium", "/candidature"];
+// raisons. /favoris et /mes-candidatures doivent l'être aussi : ce sont les
+// seuls chemins pour atteindre /candidature une fois le quota de swipe
+// atteint (impossible de retomber sur une offre déjà likée depuis /swipe,
+// qui affiche l'écran de blocage) -- sans eux, "candidater reste illimité"
+// n'avait en pratique aucun moyen d'être atteint. /admin vit hors de ce
+// groupe de routes désormais, donc n'a plus besoin d'exemption ici.
+const PAYWALL_EXEMPT_PATHS = ["/premium", "/candidature", "/favoris", "/mes-candidatures"];
 
 function isExempt(pathname: string) {
   return PAYWALL_EXEMPT_PATHS.some(

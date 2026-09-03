@@ -67,6 +67,13 @@ export function computeMatchScore(profile: Profile, offer: Offer): number {
     score += 8;
   } else if (profile.mobility === "Mobile dans la région") {
     score += 4;
+  } else if (cityLower) {
+    // Ville renseignée, offre ailleurs, aucune mobilité élargie déclarée
+    // (mobilité vide ou "Sur place uniquement") : sans pénalité, une offre
+    // à l'autre bout du pays scorait exactement pareil qu'une offre
+    // pertinente puisqu'aucun des bonus ci-dessus ne s'appliquait --
+    // d'où des offres à Strasbourg proposées à quelqu'un basé à Paris.
+    score -= 20;
   }
 
   // Compétences : proportion de compétences du profil retrouvées (mot entier)

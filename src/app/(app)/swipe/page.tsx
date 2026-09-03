@@ -88,7 +88,8 @@ export default async function SwipePage() {
     !!profile &&
     (profile.sectors.length > 0 ||
       profile.target_jobs.length > 0 ||
-      profile.skills.length > 0);
+      profile.skills.length > 0 ||
+      !!profile.city);
 
   const relevantOffers = hasPreferences
     ? rankedOffers.filter((o) => (scores[o.id] ?? 0) > 40)
