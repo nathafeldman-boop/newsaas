@@ -31,6 +31,50 @@ function daysBetween(a: string, b: string): number {
   return Math.abs(new Date(a).getTime() - new Date(b).getTime()) / msPerDay;
 }
 
+// offer.location est une chaîne libre ("Villeurbanne", "Lyon 3e", "Bron"...) :
+// une comparaison stricte par sous-chaîne sur le nom de ville du profil
+// traitait une offre dans la banlieue immédiate d'une métropole comme aussi
+// hors-sujet qu'une offre à l'autre bout du pays (pénalité -20 dans
+// computeMatchScore) -- alors que "Lyon" et "Villeurbanne", c'est le même
+// bassin d'emploi. Pas de données lat/long en base, donc pas de vraie
+// distance géographique possible : on retombe sur une liste des villes de
+// l'agglomération pour chacune des 12 métropoles proposées à l'onboarding
+// (TOP_CITIES).
+const METRO_CLUSTERS: string[][] = [
+  ["Paris", "Boulogne-Billancourt", "Neuilly-sur-Seine", "Levallois-Perret", "Saint-Denis", "Montreuil", "Issy-les-Moulineaux", "Vincennes", "Nanterre", "Créteil", "Aubervilliers", "Ivry-sur-Seine", "Clichy", "Courbevoie", "La Défense"],
+  ["Lyon", "Villeurbanne", "Vénissieux", "Bron", "Caluire-et-Cuire", "Vaulx-en-Velin", "Saint-Priest", "Écully", "Oullins", "Rillieux-la-Pape", "Meyzieu", "Décines-Charpieu"],
+  ["Marseille", "Aix-en-Provence", "Aubagne", "Marignane", "Vitrolles", "La Ciotat", "Salon-de-Provence"],
+  ["Toulouse", "Blagnac", "Colomiers", "Tournefeuille", "Balma", "Muret", "L'Union"],
+  ["Bordeaux", "Mérignac", "Pessac", "Talence", "Bègles", "Villenave-d'Ornon", "Le Bouscat"],
+  ["Lille", "Roubaix", "Tourcoing", "Villeneuve-d'Ascq", "Marcq-en-Barœul", "Wattrelos", "Lambersart"],
+  ["Nantes", "Saint-Herblain", "Rezé", "Orvault", "Vertou", "Carquefou", "Bouguenais"],
+  ["Strasbourg", "Schiltigheim", "Illkirch-Graffenstaden", "Lingolsheim", "Ostwald"],
+  ["Nice", "Cagnes-sur-Mer", "Antibes", "Cannes", "Saint-Laurent-du-Var", "Vence"],
+  ["Rennes", "Cesson-Sévigné", "Saint-Grégoire", "Bruz", "Chantepie"],
+  ["Montpellier", "Castelnau-le-Lez", "Lattes", "Juvignac", "Pérols"],
+  ["Grenoble", "Saint-Martin-d'Hères", "Échirolles", "Fontaine", "Meylan", "Eybens"],
+];
+
+function findMetroCluster(cityLower: string): string[] | null {
+  return (
+    METRO_CLUSTERS.find((cities) =>
+      cities.some((c) => c.toLowerCase() === cityLower),
+    ) ?? null
+  );
+}
+
+/**
+ * Vrai si l'offre est située dans la même agglomération que la ville du
+ * profil, sans être une correspondance exacte de chaîne (déjà testée avant
+ * l'appel). Utilisé pour un bonus de score intermédiaire et pour affiner le
+ * bandeau "X offres vers [ville]" côté /swipe.
+ */
+export function isNearbyCity(profileCityLower: string, offerLocationLower: string): boolean {
+  const cluster = findMetroCluster(profileCityLower);
+  if (!cluster) return false;
+  return cluster.some((c) => offerLocationLower.includes(c.toLowerCase()));
+}
+
 // Score heuristique (pas de ML) : part d'une base de 40 et ajoute des points
 // selon le recoupement secteur / métier / localisation / compétences / niveau
 // d'études / disponibilité. Plafonné à 99 pour ne jamais promettre un match
@@ -57,8 +101,13 @@ export function computeMatchScore(profile: Profile, offer: Offer): number {
 
   // Localisation / mobilité
   const cityLower = profile.city?.toLowerCase().trim();
-  if (cityLower && offer.location.toLowerCase().includes(cityLower)) {
+  const offerLocationLower = offer.location.toLowerCase();
+  if (cityLower && offerLocationLower.includes(cityLower)) {
     score += 14;
+  } else if (cityLower && isNearbyCity(cityLower, offerLocationLower)) {
+    // Même agglomération (ex: profil à "Lyon", offre à "Villeurbanne") sans
+    // être une correspondance exacte de chaîne : presque aussi pertinent.
+    score += 10;
   } else if (
     profile.mobility === "Mobile en France" ||
     profile.mobility === "Full remote" ||
@@ -128,8 +177,11 @@ export function computeMatchReasons(profile: Profile, offer: Offer): string[] {
   }
 
   const cityLower = profile.city?.toLowerCase().trim();
-  if (cityLower && offer.location.toLowerCase().includes(cityLower)) {
+  const offerLocationLower = offer.location.toLowerCase();
+  if (cityLower && offerLocationLower.includes(cityLower)) {
     reasons.push(`À ${profile.city}, comme toi`);
+  } else if (cityLower && isNearbyCity(cityLower, offerLocationLower)) {
+    reasons.push(`Près de ${profile.city}`);
   } else if (offer.remote_policy === "remote") {
     reasons.push("Télétravail possible");
   }

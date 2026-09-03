@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SwipeDeck } from "@/components/swipe/SwipeDeck";
-import { computeMatchScore, computeMatchReasons } from "@/lib/matching/score";
+import { computeMatchScore, computeMatchReasons, isNearbyCity } from "@/lib/matching/score";
 import { computeQuotaStatus, FREE_WEEKLY_SWIPE_QUOTA } from "@/lib/subscription/quota";
 import type { Offer } from "@/types/database";
 
@@ -150,12 +150,18 @@ export default async function SwipePage() {
   let cityBanner: string | null = null;
   if (profile?.city && sortedOffers.length > 0) {
     const cityLower = profile.city.toLowerCase().trim();
-    const inCityCount = sortedOffers.filter((o) =>
-      o.location.toLowerCase().includes(cityLower),
-    ).length;
+    // Compte aussi les offres de l'agglomération (ex: "Villeurbanne" pour un
+    // profil à "Lyon") comme "dans la ville" -- sinon le bandeau annonçait
+    // "puis d'autres villes" pour des offres en réalité toutes proches,
+    // ce qui donnait l'impression trompeuse que rien n'était proposé
+    // autour de la ville choisie.
+    const inCityCount = sortedOffers.filter((o) => {
+      const locationLower = o.location.toLowerCase();
+      return locationLower.includes(cityLower) || isNearbyCity(cityLower, locationLower);
+    }).length;
     cityBanner =
       inCityCount === sortedOffers.length
-        ? `${sortedOffers.length} offre${sortedOffers.length > 1 ? "s" : ""} à ${profile.city}.`
+        ? `${sortedOffers.length} offre${sortedOffers.length > 1 ? "s" : ""} à ${profile.city} et alentours.`
         : `${sortedOffers.length} offres vers ${profile.city}, puis d'autres villes.`;
   }
 
