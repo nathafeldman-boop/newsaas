@@ -7,41 +7,31 @@ import { markReferralGrantedAction } from "@/app/onboarding/actions";
 import { ChipMultiSelectWithCustom } from "@/components/ui/ChipMultiSelectWithCustom";
 import { Highlight } from "@/components/ui/Highlight";
 import type { ContractType, Profile } from "@/types/database";
-import {
-  SECTORS,
-  SKILLS,
-  TARGET_JOBS,
-  TOP_CITIES,
-  MOBILITY_OPTIONS,
-  EDUCATION_LEVELS,
-  AVAILABILITY_OPTIONS,
-} from "@/lib/onboarding/options";
+import { SECTORS, SKILLS, TOP_CITIES } from "@/lib/onboarding/options";
 
 // Onboarding "sans clavier" : tout se fait au tap (tuiles/chips), avec un
 // échappatoire texte optionnel là où une liste ne peut pas tout couvrir
 // (ville, compétences...). bio/formation/date de naissance restent éditables
 // plus tard depuis le profil — pas assez tap-friendly pour rester ici.
 //
-// Condensé à 4 étapes de saisie (+ intro/outro) : les écrans "comment ça
+// Réduit à 3 étapes de saisie (+ intro/outro) : les écrans "comment ça
 // marche" / "ce que tu gagnes" répétaient mot pour mot les 3 bullets déjà
-// sur l'intro sans rien demander -- supprimés. Les champs individuels
-// (secteurs, compétences, ville / métiers, mobilité, niveau d'études,
-// disponibilité) sont regroupés sur deux écrans combinés plutôt qu'un par
-// champ, pour rester proche de "quelques écrans" plutôt qu'une quinzaine de
-// taps avant de voir une seule offre. experience_level n'entre dans aucun
-// critère de computeMatchScore : retiré de l'onboarding (reste modifiable
-// depuis /profil), plutôt que de faire taper une info qui ne sert à rien
-// tant qu'on ne l'exploite pas réellement.
-const STEP_IDS = ["intro", "looking_for", "search", "refine", "cv", "outro"] as const;
+// sur l'intro sans rien demander -- supprimés. L'étape "Affiner" (métiers
+// visés, mobilité, niveau d'études, disponibilité) était entièrement
+// optionnelle et déjà éditable depuis /profil (ProfileForm couvre tous ces
+// champs) -- supprimée aussi plutôt que de faire défiler un écran à 4
+// sections facultatives avant la toute première offre. experience_level
+// n'entre dans aucun critère de computeMatchScore : jamais demandé à
+// l'onboarding non plus.
+const STEP_IDS = ["intro", "looking_for", "search", "cv", "outro"] as const;
 type StepId = (typeof STEP_IDS)[number];
 
 const PROGRESS_STEPS: StepId[] = STEP_IDS.filter((s) => s !== "intro" && s !== "outro");
-const SKIPPABLE: StepId[] = ["refine", "cv"];
+const SKIPPABLE: StepId[] = ["cv"];
 const STEP_LABELS: Record<StepId, string> = {
   intro: "",
   looking_for: "Toi",
   search: "Ta recherche",
-  refine: "Affiner",
   cv: "Ton CV",
   outro: "",
 };
@@ -126,11 +116,9 @@ export function OnboardingWizard({
 
   const [skills, setSkills] = useState<string[]>(initialProfile?.skills ?? []);
   const [sectors, setSectors] = useState<string[]>(initialProfile?.sectors ?? []);
-  const [targetJobs, setTargetJobs] = useState<string[]>(initialProfile?.target_jobs ?? []);
 
   const [city, setCity] = useState(initialProfile?.city ?? "");
   const [cityCustomOpen, setCityCustomOpen] = useState(false);
-  const [mobility, setMobility] = useState(initialProfile?.mobility ?? "");
   // Aucune présélection par défaut : les deux tuiles pré-cochées piégeaient
   // les nouveaux comptes (initialProfile null) qui tapaient sur celle
   // qu'ils voulaient, la désélectionnant sans le savoir puisqu'elle était
@@ -141,29 +129,12 @@ export function OnboardingWizard({
     initialProfile?.looking_for ?? [],
   );
 
-  const [educationLevel, setEducationLevel] = useState(initialProfile?.education_level ?? "");
-  const [availabilityLabel, setAvailabilityLabel] = useState<string | null>(null);
-  const [availabilityDate, setAvailabilityDate] = useState<string | null>(
-    initialProfile?.availability_date ?? null,
-  );
-
   const [cvFile, setCvFile] = useState<File | null>(null);
 
   function toggleLookingFor(type: ContractType) {
     setLookingFor((prev) =>
       prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type],
     );
-  }
-
-  function pickAvailability(opt: (typeof AVAILABILITY_OPTIONS)[number]) {
-    setAvailabilityLabel(opt.label);
-    if (opt.daysFromNow === null) {
-      setAvailabilityDate(null);
-      return;
-    }
-    const d = new Date();
-    d.setDate(d.getDate() + opt.daysFromNow);
-    setAvailabilityDate(d.toISOString().slice(0, 10));
   }
 
   function validateCurrentStep(): string | null {
@@ -225,13 +196,13 @@ export function OnboardingWizard({
       .update({
         skills,
         sectors,
-        target_jobs: targetJobs,
+        target_jobs: initialProfile?.target_jobs ?? [],
         city: city.trim(),
-        mobility: mobility || null,
+        mobility: initialProfile?.mobility ?? null,
         looking_for: lookingFor,
-        education_level: educationLevel || null,
+        education_level: initialProfile?.education_level ?? null,
         experience_level: initialProfile?.experience_level ?? null,
-        availability_date: availabilityDate,
+        availability_date: initialProfile?.availability_date ?? null,
         cv_path: cvPath,
         cv_uploaded_at: cvUploadedAt,
         onboarding_completed: true,
@@ -459,95 +430,6 @@ export function OnboardingWizard({
                     Compétences <span style={{ opacity: 0.6 }}>(optionnel)</span>
                   </p>
                   <ChipMultiSelectWithCustom options={SKILLS} value={skills} onChange={setSkills} />
-                </div>
-              </div>
-            )}
-
-            {stepId === "refine" && (
-              <div className="flex flex-col gap-7">
-                <StepHeader title="Affiner (optionnel)" subtitle="Ça reste modifiable à tout moment depuis ton profil." />
-
-                <div className="flex flex-col gap-3">
-                  <p style={{ fontSize: 13, fontFamily: "var(--font-heading)", margin: 0 }}>Métiers visés</p>
-                  <ChipMultiSelectWithCustom options={TARGET_JOBS} value={targetJobs} onChange={setTargetJobs} />
-                </div>
-
-                <div className="flex flex-col gap-3">
-                  <p style={{ fontSize: 13, fontFamily: "var(--font-heading)", margin: 0 }}>Mobilité</p>
-                  <div className="flex flex-wrap gap-2">
-                    {MOBILITY_OPTIONS.map((opt) => (
-                      <motion.button
-                        key={opt.value}
-                        type="button"
-                        whileTap={{ scale: 0.9 }}
-                        whileHover={{ scale: 1.04 }}
-                        transition={{ type: "spring", stiffness: 500, damping: 25 }}
-                        onClick={() => setMobility(mobility === opt.value ? "" : opt.value)}
-                        className={mobility === opt.value ? "tag" : "tag tag-neutral"}
-                        style={{
-                          padding: "7px 14px",
-                          fontSize: 13,
-                          ...(mobility === opt.value
-                            ? { background: "var(--color-accent)", color: "var(--color-bg)" }
-                            : {}),
-                        }}
-                      >
-                        {opt.icon} {opt.value}
-                      </motion.button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-3">
-                  <p style={{ fontSize: 13, fontFamily: "var(--font-heading)", margin: 0 }}>Niveau d&apos;études</p>
-                  <div className="flex flex-wrap gap-2">
-                    {EDUCATION_LEVELS.map((level) => (
-                      <motion.button
-                        key={level}
-                        type="button"
-                        whileTap={{ scale: 0.9 }}
-                        whileHover={{ scale: 1.04 }}
-                        transition={{ type: "spring", stiffness: 500, damping: 25 }}
-                        onClick={() => setEducationLevel(educationLevel === level ? "" : level)}
-                        className={educationLevel === level ? "tag" : "tag tag-neutral"}
-                        style={{
-                          padding: "7px 14px",
-                          fontSize: 13,
-                          ...(educationLevel === level
-                            ? { background: "var(--color-accent)", color: "var(--color-bg)" }
-                            : {}),
-                        }}
-                      >
-                        {level}
-                      </motion.button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-3">
-                  <p style={{ fontSize: 13, fontFamily: "var(--font-heading)", margin: 0 }}>Disponible à partir de</p>
-                  <div className="flex flex-wrap gap-2">
-                    {AVAILABILITY_OPTIONS.map((opt) => (
-                      <motion.button
-                        key={opt.label}
-                        type="button"
-                        whileTap={{ scale: 0.9 }}
-                        whileHover={{ scale: 1.04 }}
-                        transition={{ type: "spring", stiffness: 500, damping: 25 }}
-                        onClick={() => pickAvailability(opt)}
-                        className={availabilityLabel === opt.label ? "tag" : "tag tag-neutral"}
-                        style={{
-                          padding: "7px 14px",
-                          fontSize: 13,
-                          ...(availabilityLabel === opt.label
-                            ? { background: "var(--color-accent)", color: "var(--color-bg)" }
-                            : {}),
-                        }}
-                      >
-                        {opt.icon} {opt.label}
-                      </motion.button>
-                    ))}
-                  </div>
                 </div>
               </div>
             )}
