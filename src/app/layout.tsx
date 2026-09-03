@@ -1,16 +1,24 @@
 import type { Metadata } from "next";
-import { Poppins, Inter } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
-const poppins = Poppins({
-  variable: "--font-poppins",
-  weight: "600",
+// Même famille pour titres et corps (Plus Jakarta Sans), mais deux
+// instances à poids fixe distinct plutôt qu'une police variable : ~50
+// endroits dans l'app appliquent `fontFamily: var(--font-heading)` en
+// inline sans jamais déclarer de font-weight, en comptant sur le fait
+// qu'un seul poids est chargé pour que le navigateur l'utilise quel que
+// soit le poids hérité/par défaut (400). Une police variable casserait
+// silencieusement ce rendu sur tous ces endroits.
+const jakartaHeading = Plus_Jakarta_Sans({
+  variable: "--font-jakarta-heading",
+  weight: "700",
   subsets: ["latin"],
 });
 
-const inter = Inter({
-  variable: "--font-inter",
+const jakartaBody = Plus_Jakarta_Sans({
+  variable: "--font-jakarta-body",
+  weight: "400",
   subsets: ["latin"],
 });
 
@@ -38,7 +46,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="fr"
-      className={`${poppins.variable} ${inter.variable} h-full antialiased`}
+      className={`${jakartaHeading.variable} ${jakartaBody.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-bg text-text">
         {children}
