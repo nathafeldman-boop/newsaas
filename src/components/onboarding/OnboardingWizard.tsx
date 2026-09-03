@@ -422,7 +422,13 @@ export function OnboardingWizard({
                   <p style={{ fontSize: 13, fontFamily: "var(--font-heading)", margin: 0 }}>
                     Secteurs recherchés <span style={{ color: "var(--color-accent-700)" }}>(obligatoire)</span>
                   </p>
-                  <ChipMultiSelectWithCustom options={SECTORS} value={sectors} onChange={setSectors} />
+                  <ChipMultiSelectWithCustom
+                    options={SECTORS}
+                    value={sectors}
+                    onChange={setSectors}
+                    searchable
+                    searchPlaceholder="Rechercher un secteur..."
+                  />
                 </div>
 
                 <div className="flex flex-col gap-3">

@@ -6,21 +6,9 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { TagInput } from "@/components/ui/TagInput";
 import { ChipMultiSelect } from "@/components/ui/ChipMultiSelect";
+import { SECTORS } from "@/lib/onboarding/options";
 import { cn } from "@/lib/utils";
 import type { ContractType, Profile } from "@/types/database";
-
-const SECTORS = [
-  "Informatique",
-  "Marketing",
-  "Vente",
-  "Design",
-  "Data",
-  "Produit",
-  "RH",
-  "Finance",
-  "BTP",
-  "Autre",
-];
 
 const EDUCATION_LEVELS = ["Bac", "Bac+2", "Bac+3", "Bac+4", "Bac+5", "Bac+6 et plus"];
 
@@ -134,7 +122,13 @@ export function ProfileForm({
         <p style={{ fontFamily: "var(--font-heading)", fontSize: 15, margin: "0 0 9px" }}>
           Secteurs qui t&apos;intéressent
         </p>
-        <ChipMultiSelect options={SECTORS} value={sectors} onChange={setSectors} />
+        <ChipMultiSelect
+          options={SECTORS}
+          value={sectors}
+          onChange={setSectors}
+          searchable
+          searchPlaceholder="Rechercher un secteur..."
+        />
       </div>
 
       <div className="field">

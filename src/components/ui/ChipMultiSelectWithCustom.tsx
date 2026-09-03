@@ -10,11 +10,15 @@ export function ChipMultiSelectWithCustom({
   value,
   onChange,
   customPlaceholder = "Précise ici...",
+  searchable = false,
+  searchPlaceholder,
 }: {
   options: string[];
   value: string[];
   onChange: (next: string[]) => void;
   customPlaceholder?: string;
+  searchable?: boolean;
+  searchPlaceholder?: string;
 }) {
   const [customOpen, setCustomOpen] = useState(false);
   const [customValue, setCustomValue] = useState("");
@@ -33,7 +37,13 @@ export function ChipMultiSelectWithCustom({
 
   return (
     <div className="flex flex-col gap-3">
-      <ChipMultiSelect options={allOptions} value={value} onChange={onChange} />
+      <ChipMultiSelect
+        options={allOptions}
+        value={value}
+        onChange={onChange}
+        searchable={searchable}
+        searchPlaceholder={searchPlaceholder}
+      />
       {customOpen ? (
         <div className="flex gap-2">
           <input
