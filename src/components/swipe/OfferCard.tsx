@@ -59,26 +59,26 @@ export function MatchRing({ score }: { score: number }) {
 export function StatPill({ icon, label, value }: { icon: string; label: string; value: string }) {
   return (
     <div
-      className="flex items-center gap-2.5"
+      className="flex items-center gap-2"
       style={{
         background: "var(--color-surface)",
         border: "1px solid var(--color-divider)",
         borderRadius: "var(--radius-md)",
-        padding: "9px 12px",
+        padding: "8px 9px",
         minWidth: 0,
       }}
     >
       <span
         aria-hidden
         style={{
-          width: 26,
-          height: 26,
+          width: 22,
+          height: 22,
           borderRadius: "50%",
           background: "var(--color-accent-100)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: 13,
+          fontSize: 11,
           flexShrink: 0,
         }}
       >
@@ -87,8 +87,8 @@ export function StatPill({ icon, label, value }: { icon: string; label: string; 
       <div style={{ minWidth: 0 }}>
         <p
           style={{
-            fontSize: 10,
-            letterSpacing: "0.04em",
+            fontSize: 9.5,
+            letterSpacing: "0.03em",
             textTransform: "uppercase",
             color: "color-mix(in srgb, var(--color-text) 60%, transparent)",
             margin: 0,
@@ -98,12 +98,15 @@ export function StatPill({ icon, label, value }: { icon: string; label: string; 
         </p>
         <p
           style={{
-            fontSize: 12.5,
+            fontSize: 11.5,
+            lineHeight: 1.25,
             fontFamily: "var(--font-heading)",
             margin: "1px 0 0",
+            overflowWrap: "break-word",
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
             overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
           }}
         >
           {value}

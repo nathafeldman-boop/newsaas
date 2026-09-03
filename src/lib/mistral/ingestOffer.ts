@@ -70,6 +70,7 @@ export async function ingestOffer(
         requirements: extracted.requirements ?? null,
         duration: extracted.duration ?? null,
         salary: extracted.salary ?? null,
+        start_date: extracted.start_date ?? null,
         remote_policy: extracted.remote_policy ?? null,
         apply_url: extracted.apply_url ?? sourceUrl ?? null,
         source: "mistral_ingest",

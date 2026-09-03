@@ -24,6 +24,11 @@ export const extractedOfferSchema = z.object({
   requirements: z.string().nullable().optional(),
   duration: z.string().nullable().optional(),
   salary: z.string().nullable().optional(),
+  // Chaîne libre volontairement (pas de validation stricte AAAA-MM-JJ ici) :
+  // si Mistral s'écarte un peu du format demandé, on préfère normaliser vers
+  // null juste après le parse (voir plus bas) plutôt que faire échouer toute
+  // l'ingestion pour ce seul champ.
+  start_date: z.string().nullable().optional(),
   remote_policy: z.string().nullable().optional(),
   apply_url: z.string().url().nullable().optional(),
 });
@@ -46,9 +51,18 @@ champs :
   "requirements": string | null (profil recherché),
   "duration": string | null (ex: "12-24 mois", "6 mois"),
   "salary": string | null (ex: "900-1200€/mois"),
+  "start_date": string | null (date de début au format AAAA-MM-JJ ; si seulement un mois
+    ou une période est cité (ex: "à partir de janvier 2027" ou "Janvier/Mars 2027"), utilise
+    le 1er jour du mois le plus tôt cité (ici "2027-01-01") ; null si aucune date n'est donnée),
   "remote_policy": string | null ("sur site" | "hybride" | "remote"),
   "apply_url": string | null (lien direct de candidature si présent dans le texte)
 }
+
+Important : le titre/l'intitulé de poste contient parfois lui-même la durée, la
+rémunération ou la date de début (ex: "Stage 6 mois - 1700€/mois - à partir de janvier
+2027"). Dans ce cas, recopie quand même ces informations dans les champs dédiés
+(duration, salary, start_date) en plus du titre complet -- ne les laisse pas à null sous
+prétexte qu'elles apparaissent déjà dans le titre.
 
 Si une info est absente du texte, mets null plutôt que d'inventer. Ne fabrique jamais
 d'entreprise ou de lieu qui n'apparaît pas dans le texte fourni.`;
@@ -98,6 +112,13 @@ export async function extractOfferFromText(
   const offer = extractedOfferSchema.parse(parsed);
   if (offer.sector && !SECTOR_ENUM.includes(offer.sector)) {
     offer.sector = null;
+  }
+  // offer.start_date part en colonne Postgres `date` (voir ingestOffer.ts) :
+  // un format inattendu de la part de Mistral ferait échouer l'insertion de
+  // toute l'offre pour un simple champ d'affichage, donc on retombe sur null
+  // plutôt que de laisser passer une chaîne non conforme.
+  if (offer.start_date && !/^\d{4}-\d{2}-\d{2}$/.test(offer.start_date)) {
+    offer.start_date = null;
   }
   return offer;
 }
