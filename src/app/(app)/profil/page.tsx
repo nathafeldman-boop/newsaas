@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ProfileForm } from "@/components/profile/ProfileForm";
 import { GmailConnectionPanel } from "@/components/profile/GmailConnectionPanel";
+import { SettingsPanel } from "@/components/profile/SettingsPanel";
 import { isPremium } from "@/lib/subscription/isPremium";
 import type { ApplicationStatus } from "@/types/database";
 
@@ -125,6 +126,8 @@ export default async function ProfilPage({
       </div>
 
       <GmailConnectionPanel connection={gmailConnection ?? null} statusParam={gmail} />
+
+      <SettingsPanel userId={user.id} initialNotifyNewOffers={profile.notify_new_offers} />
 
       <div className="flex flex-col gap-2.5 mt-5">
         <Link

@@ -29,9 +29,24 @@ export default function CGVPage() {
         </p>
       </Section>
 
+      <Section title="Essai gratuit">
+        <p>
+          La souscription démarre par un <strong>essai gratuit de 7 jours</strong>,
+          sans engagement : aucun prélèvement n&apos;a lieu tant que
+          l&apos;essai est en cours. Si tu résilies avant la fin des 7 jours
+          (depuis la page &laquo; Premium &raquo;, bouton &laquo; Gérer mon
+          abonnement &raquo;), tu n&apos;es jamais facturé. Passé ce délai, si
+          l&apos;abonnement n&apos;a pas été résilié, le premier prélèvement
+          intervient automatiquement et l&apos;abonnement devient mensuel
+          payant (voir Prix ci-dessous). Un essai gratuit n&apos;est
+          proposé qu&apos;une fois par compte.
+        </p>
+      </Section>
+
       <Section title="Prix">
         <p>
-          L&apos;abonnement Premium est facturé <strong>7,99&nbsp;€ / mois</strong>
+          À l&apos;issue de l&apos;essai gratuit, l&apos;abonnement Premium est
+          facturé <strong>7,99&nbsp;€ / mois</strong>
           {" "}
           <ToComplete>TVA applicable (7,99&nbsp;€ TTC) ou &laquo; TVA non applicable, art. 293 B du CGI &raquo; selon ton statut fiscal — à préciser</ToComplete>
           , sans engagement de durée. Le prix affiché au moment de la
@@ -45,22 +60,26 @@ export default function CGVPage() {
       <Section title="Paiement">
         <p>
           Le paiement s&apos;effectue par carte bancaire, via notre
-          prestataire de paiement sécurisé Stripe. Stageio ne stocke à
-          aucun moment ton numéro de carte bancaire. L&apos;abonnement est à
-          <strong> renouvellement automatique mensuel</strong> : le montant
-          est prélevé chaque mois à la date anniversaire de la
-          souscription, tant que l&apos;abonnement n&apos;a pas été résilié.
+          prestataire de paiement sécurisé Stripe, renseignée dès la
+          souscription à l&apos;essai gratuit (nécessaire pour activer le
+          renouvellement automatique à l&apos;issue des 7 jours). Stageio ne
+          stocke à aucun moment ton numéro de carte bancaire.
+          L&apos;abonnement est à <strong>renouvellement automatique
+          mensuel</strong> une fois l&apos;essai terminé : le montant est
+          prélevé chaque mois à la date anniversaire, tant que
+          l&apos;abonnement n&apos;a pas été résilié.
         </p>
       </Section>
 
       <Section title="Résiliation">
         <p>
-          Tu peux résilier ton abonnement à tout moment, sans justification
-          ni frais, directement depuis la page &laquo; Premium &raquo; de ton
-          compte (bouton &laquo; Gérer mon abonnement &raquo;, qui ouvre le
-          portail de gestion Stripe). La résiliation prend effet à la fin
-          de la période déjà payée : tu conserves l&apos;accès Premium
-          jusqu&apos;à cette date, sans remboursement au prorata de la
+          Tu peux résilier ton abonnement (ou ton essai en cours) à tout
+          moment, sans justification ni frais, directement depuis la page
+          &laquo; Premium &raquo; de ton compte (bouton &laquo; Gérer mon
+          abonnement &raquo;, qui ouvre le portail de gestion Stripe). Une
+          résiliation pendant l&apos;essai gratuit évite tout prélèvement ;
+          une résiliation après le premier prélèvement prend effet à la fin
+          de la période déjà payée, sans remboursement au prorata de la
           période entamée.
         </p>
       </Section>
@@ -72,13 +91,13 @@ export default function CGVPage() {
           pas à un contenu numérique/service dont l&apos;exécution a
           commencé avec ton accord exprès avant la fin du délai de
           rétractation, et à condition d&apos;avoir reconnu perdre ainsi ton
-          droit de rétractation. En validant ta souscription, tu demandes
-          la fourniture immédiate du Service et reconnaît perdre ton droit
-          de rétractation une fois le Service pleinement exécuté (accès
-          Premium activé). Tant que le Service n&apos;a pas commencé à être
-          exécuté, tu peux contacter{" "}
-          <a href="mailto:contact@stageio.fr">contact@stageio.fr</a> pour
-          te rétracter.
+          droit de rétractation. En pratique, l&apos;essai gratuit de 7 jours
+          te permet déjà d&apos;annuler sans aucun frais avant tout
+          prélèvement ; en démarrant l&apos;essai, tu demandes la fourniture
+          immédiate du Service et reconnaît perdre ton droit de
+          rétractation une fois celui-ci pleinement exécuté (accès Premium
+          activé). Pour toute question, contacte{" "}
+          <a href="mailto:contact@stageio.fr">contact@stageio.fr</a>.
         </p>
       </Section>
 

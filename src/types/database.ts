@@ -50,6 +50,8 @@ export type Profile = {
   onboarding_completed_at: string | null;
   premium_activated_at: string | null;
   total_paid_cents: number;
+  notify_new_offers: boolean;
+  last_offer_alert_sent_at: string | null;
   created_at: string;
   updated_at: string;
 };

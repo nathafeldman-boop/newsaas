@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getResendClient } from "@/lib/resend/client";
+import { SITE_URL } from "@/lib/site";
 
 // Envoie un email au parrain quand son lien génère une inscription.
 // Idempotent : le update ... is('notified_at', null) garantit un envoi unique
@@ -31,7 +32,6 @@ export async function notifyReferrerOfNewSignup(referredUserId: string) {
 
   const resend = getResendClient();
   const fromEmail = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://stageio.fr";
 
   await resend.emails.send({
     from: `Stageio <${fromEmail}>`,
@@ -39,6 +39,6 @@ export async function notifyReferrerOfNewSignup(referredUserId: string) {
     subject: "Un pote vient de s'inscrire grâce à toi 🎉",
     html: `<p>Salut${referrer.full_name ? ` ${referrer.full_name}` : ""},</p>
 <p><strong>${referred?.full_name || "Quelqu'un"}</strong> vient de créer son compte sur Stageio avec ton lien de parrainage.</p>
-<p>Retrouve le suivi de tes filleuls sur ton <a href="${siteUrl}/parrainage">tableau de parrainage</a>.</p>`,
+<p>Retrouve le suivi de tes filleuls sur ton <a href="${SITE_URL}/parrainage">tableau de parrainage</a>.</p>`,
   });
 }

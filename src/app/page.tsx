@@ -1,8 +1,13 @@
 import Link from "next/link";
 import Image from "next/image";
+import type { Metadata } from "next";
 import { SITE_URL } from "@/lib/site";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { SwipeDemo } from "@/components/landing/SwipeDemo";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 const STEPS = [
   {

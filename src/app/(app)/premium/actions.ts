@@ -52,7 +52,10 @@ export async function createCheckoutSessionAction() {
     success_url: `${SITE_URL}/premium/success`,
     cancel_url: `${SITE_URL}/premium`,
     client_reference_id: user.id,
-    subscription_data: { metadata: { supabase_user_id: user.id } },
+    subscription_data: {
+      trial_period_days: 7,
+      metadata: { supabase_user_id: user.id },
+    },
   });
 
   if (!session.url) redirect("/premium?error=checkout_failed");
