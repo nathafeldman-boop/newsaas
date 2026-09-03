@@ -22,6 +22,10 @@ const QUERIES = ["alternance", "stage"] as const;
 // le plan/quota réel connu (page "Stats" du dashboard Adzuna).
 const PAGES_PER_QUERY = 4;
 const STALE_AFTER_DAYS = 10;
+// Filtre de sécurité en plus de max_days_old côté requête (searchAdzunaPage) :
+// une annonce alternance/stage de plusieurs mois est presque certainement
+// pourvue, on ne veut jamais la sauvegarder même si l'API la renvoie encore.
+const MAX_PUBLISHED_AGE_DAYS = 30;
 
 export async function GET(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -53,9 +57,13 @@ export async function GET(request: NextRequest) {
       if (jobs.length === 0) break; // plus de résultats pour cette requête
       fetched += jobs.length;
 
+      const ageCutoff = new Date();
+      ageCutoff.setDate(ageCutoff.getDate() - MAX_PUBLISHED_AGE_DAYS);
+
       const rows = jobs
         .map(mapAdzunaJob)
         .filter((o): o is NonNullable<typeof o> => o !== null)
+        .filter((o) => new Date(o.published_at) >= ageCutoff)
         .map((o) => ({ ...o, last_seen_at: syncStartedAt }));
       mapped += rows.length;
 

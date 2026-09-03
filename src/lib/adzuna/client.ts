@@ -25,6 +25,13 @@ interface AdzunaSearchResponse {
   count: number;
 }
 
+// Alternance/stage sont des annonces à courte durée de vie : au-delà de ça,
+// l'offre a de bonnes chances d'être déjà pourvue. Filtré ici côté requête
+// (économise le quota Adzuna sur des résultats qu'on rejetterait de toute
+// façon) ET revérifié après mapping dans le cron (sync-adzuna) au cas où
+// max_days_old ne serait pas honoré à 100% par l'API.
+const MAX_DAYS_OLD = 30;
+
 export async function searchAdzunaPage(
   what: string,
   page: number,
@@ -41,6 +48,7 @@ export async function searchAdzunaPage(
   url.searchParams.set("what", what);
   url.searchParams.set("results_per_page", String(RESULTS_PER_PAGE));
   url.searchParams.set("sort_by", "date");
+  url.searchParams.set("max_days_old", String(MAX_DAYS_OLD));
   url.searchParams.set("content-type", "application/json");
 
   const res = await fetch(url.toString());

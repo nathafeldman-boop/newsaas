@@ -7,7 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 // Déclenché par Vercel Cron, qui envoie automatiquement
 // "Authorization: Bearer $CRON_SECRET" quand cette variable est définie.
 
-const EXPIRY_DAYS = 45;
+const EXPIRY_DAYS = 30;
 
 export async function GET(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
