@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { generateCoverLetterAction } from "@/app/(app)/candidature/[offerId]/actions";
 
-type Status = "idle" | "loading" | "ready" | "error";
+type Status = "idle" | "loading" | "ready" | "premium_required" | "error";
 
 export function CoverLetterPanel({
   offerId,
@@ -29,6 +30,8 @@ export function CoverLetterPanel({
     if (result.status === "success") {
       setLetter(result.letter);
       setStatus("ready");
+    } else if (result.status === "premium_required") {
+      setStatus("premium_required");
     } else {
       setError(result.message);
       setStatus("error");
@@ -45,14 +48,18 @@ export function CoverLetterPanel({
 
   async function handleApplyOnSite() {
     if (!applyUrl) return;
-    try {
-      await navigator.clipboard.writeText(letter);
-      setCopied(true);
-    } catch {
-      // best-effort : le clic reste utile même si le presse-papier est refusé
+    if (letter) {
+      try {
+        await navigator.clipboard.writeText(letter);
+        setCopied(true);
+      } catch {
+        // best-effort : le clic reste utile même si le presse-papier est refusé
+      }
     }
     window.open(applyUrl, "_blank", "noopener,noreferrer");
   }
+
+  const applyDisabled = status !== "ready" && status !== "premium_required";
 
   return (
     <div className="mt-6 flex flex-col gap-3">
@@ -79,6 +86,27 @@ export function CoverLetterPanel({
             style={{ padding: 18, textAlign: "center", fontSize: 13 }}
           >
             ✨ Génération de ta lettre personnalisée...
+          </motion.div>
+        )}
+
+        {status === "premium_required" && (
+          <motion.div
+            key="premium"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="card elev-sm flex flex-col items-center gap-2"
+            style={{ padding: 20, textAlign: "center" }}
+          >
+            <span aria-hidden style={{ fontSize: 22 }}>
+              🔒
+            </span>
+            <p style={{ fontSize: 13, margin: 0 }}>
+              La lettre de motivation générée par IA est réservée aux membres Premium.
+            </p>
+            <Link href="/premium" className="btn btn-gradient mt-2">
+              Passer Premium
+            </Link>
           </motion.div>
         )}
 
@@ -130,7 +158,7 @@ export function CoverLetterPanel({
           <button
             type="button"
             onClick={handleApplyOnSite}
-            disabled={status !== "ready"}
+            disabled={applyDisabled}
             className="btn btn-primary btn-block"
           >
             Postuler sur le site ↗
@@ -143,16 +171,18 @@ export function CoverLetterPanel({
               color: "color-mix(in srgb, var(--color-text) 55%, transparent)",
             }}
           >
-            {copied
-              ? "Lettre copiée — colle-la sur le site qui vient de s'ouvrir pour finaliser."
-              : "On copie ta lettre et on ouvre la page de l'offre : colle-la pour finaliser."}
+            {status === "premium_required"
+              ? "On ouvre la page de l'offre — pas de lettre à coller cette fois."
+              : copied
+                ? "Lettre copiée — colle-la sur le site qui vient de s'ouvrir pour finaliser."
+                : "On copie ta lettre et on ouvre la page de l'offre : colle-la pour finaliser."}
           </p>
         </>
       ) : (
-        status === "ready" && (
+        (status === "ready" || status === "premium_required") && (
           <p className="tag tag-accent-2" style={{ padding: "8px 14px", fontSize: 13, display: "block" }}>
-            Ce recruteur n&apos;a pas de lien externe — ta candidature et ta lettre sont
-            enregistrées, on lui a noté ton intérêt.
+            Ce recruteur n&apos;a pas de lien externe — ta candidature est enregistrée, on lui a
+            noté ton intérêt.
           </p>
         )
       )}

@@ -107,7 +107,7 @@ export default async function PremiumPage({
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 18 }}>
               <p style={{ fontSize: 13, margin: 0 }}>✓ Swipes illimités</p>
-              <p style={{ fontSize: 13, margin: 0 }}>✓ Candidature 1-clic</p>
+              <p style={{ fontSize: 13, margin: 0 }}>✓ Lettre de motivation générée par IA</p>
               <p style={{ fontSize: 13, margin: 0 }}>✓ Audit CV sur 100</p>
             </div>
 
