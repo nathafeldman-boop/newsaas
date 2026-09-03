@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SwipeDeck } from "@/components/swipe/SwipeDeck";
 import { computeMatchScore, computeMatchReasons } from "@/lib/matching/score";
-import { computeQuotaStatus } from "@/lib/subscription/quota";
+import { computeQuotaStatus, FREE_WEEKLY_SWIPE_QUOTA } from "@/lib/subscription/quota";
 import type { Offer } from "@/types/database";
 
 export default async function SwipePage() {
@@ -32,7 +32,14 @@ export default async function SwipePage() {
     (s) => new Date(s.created_at) >= todayStart,
   ).length;
 
-  const { premium, quotaReached } = computeQuotaStatus(profile, swiped ?? [], applications ?? []);
+  const { premium, quotaReached, browseSwipesThisWeek } = computeQuotaStatus(
+    profile,
+    swiped ?? [],
+    applications ?? [],
+  );
+  const remainingSwipes = premium
+    ? null
+    : Math.max(0, FREE_WEEKLY_SWIPE_QUOTA - browseSwipesThisWeek);
 
   // Taille du deck réellement montré, une fois trié par pertinence.
   const DECK_SIZE = 30;
@@ -137,6 +144,28 @@ export default async function SwipePage() {
     }
   }
 
+  // Bandeau "X offres vers [ville], puis d'autres villes" : prévient plutôt
+  // que de laisser deviner pourquoi une offre à l'autre bout du pays
+  // apparaît dans le deck d'un profil basé quelque part de précis.
+  let cityBanner: string | null = null;
+  if (profile?.city && sortedOffers.length > 0) {
+    const cityLower = profile.city.toLowerCase().trim();
+    const inCityCount = sortedOffers.filter((o) =>
+      o.location.toLowerCase().includes(cityLower),
+    ).length;
+    cityBanner =
+      inCityCount === sortedOffers.length
+        ? `${sortedOffers.length} offre${sortedOffers.length > 1 ? "s" : ""} à ${profile.city}.`
+        : `${sortedOffers.length} offres vers ${profile.city}, puis d'autres villes.`;
+  }
+
+  const sectorLabel =
+    profile && profile.sectors.length === 1
+      ? profile.sectors[0]
+      : profile && profile.sectors.length > 1
+        ? `${profile.sectors.length} secteurs`
+        : null;
+
   return (
     <div className="flex flex-1 flex-col items-center">
       <SwipeDeck
@@ -147,6 +176,9 @@ export default async function SwipePage() {
         swipesToday={swipesToday}
         isPremium={premium}
         quotaReached={quotaReached}
+        remainingSwipes={remainingSwipes}
+        cityBanner={cityBanner}
+        sectorLabel={sectorLabel}
       />
     </div>
   );

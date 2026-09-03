@@ -158,6 +158,7 @@ function SwipeDeckInner({
   initialSwipesToday,
   isPremium,
   initialQuotaReached,
+  onBrowseSwipe,
 }: {
   offers: Offer[];
   scores: Record<string, number>;
@@ -166,11 +167,12 @@ function SwipeDeckInner({
   initialSwipesToday: number;
   isPremium: boolean;
   initialQuotaReached: boolean;
+  onBrowseSwipe?: () => void;
 }) {
   const router = useRouter();
   const [stack, setStack] = useState(offers);
   const [busy, setBusy] = useState(false);
-  const [swipesToday, setSwipesToday] = useState(initialSwipesToday);
+  const [, setSwipesToday] = useState(initialSwipesToday);
   const [celebrating, setCelebrating] = useState(false);
   const [quotaReached, setQuotaReached] = useState(initialQuotaReached);
   const topCardRef = useRef<SwipeCardHandle>(null);
@@ -207,6 +209,7 @@ function SwipeDeckInner({
     if (!offer) return;
     void recordSwipe(offer, direction);
     setSwipesToday((n) => n + 1);
+    onBrowseSwipe?.();
     if (direction === "like" && (scores[offer.id] ?? 0) >= CELEBRATION_THRESHOLD) {
       triggerCelebration();
     }
@@ -372,18 +375,6 @@ function SwipeDeckInner({
           ♥
         </button>
       </div>
-
-      <p
-        style={{
-          marginTop: 18,
-          fontSize: 12,
-          color: "color-mix(in srgb, var(--color-text) 55%, transparent)",
-        }}
-      >
-        {swipesToday > 0
-          ? `🔥 Série en cours · ${swipesToday} offre${swipesToday > 1 ? "s" : ""} vue${swipesToday > 1 ? "s" : ""} aujourd'hui`
-          : "Swipe ta première offre du jour !"}
-      </p>
     </div>
   );
 }
@@ -396,6 +387,9 @@ export function SwipeDeck({
   swipesToday = 0,
   isPremium = false,
   quotaReached = false,
+  remainingSwipes = null,
+  cityBanner = null,
+  sectorLabel = null,
 }: {
   offers: Offer[];
   scores: Record<string, number>;
@@ -404,8 +398,17 @@ export function SwipeDeck({
   swipesToday?: number;
   isPremium?: boolean;
   quotaReached?: boolean;
+  remainingSwipes?: number | null;
+  cityBanner?: string | null;
+  sectorLabel?: string | null;
 }) {
   const [contractFilter, setContractFilter] = useState<ContractType | "all">("all");
+  // Compteur de swipes restants affiché en haut de l'écran (pill "📱 3") :
+  // vit ici plutôt que dans SwipeDeckInner car ce dernier est remonté
+  // (key={contractFilter}) à chaque changement de filtre Stage/Alternance,
+  // ce qui réinitialiserait le compteur alors que le quota, lui, ne l'est
+  // pas.
+  const [remaining, setRemaining] = useState(remainingSwipes);
 
   const filteredOffers =
     contractFilter === "all"
@@ -414,6 +417,16 @@ export function SwipeDeck({
 
   return (
     <div className="flex flex-col items-center">
+      {(remaining !== null || sectorLabel) && (
+        <div className="mb-3 flex items-center gap-2">
+          {remaining !== null && (
+            <span className="tag tag-accent" style={{ fontVariantNumeric: "tabular-nums" }}>
+              📱 {remaining}
+            </span>
+          )}
+          {sectorLabel && <span className="tag tag-neutral">{sectorLabel}</span>}
+        </div>
+      )}
       <div className="seg mb-5">
         {(["stage", "alternance", "all"] as const).map((type) => (
           <label
@@ -431,6 +444,20 @@ export function SwipeDeck({
           </label>
         ))}
       </div>
+      {cityBanner && (
+        <p
+          style={{
+            marginTop: -8,
+            marginBottom: 16,
+            fontSize: 12,
+            textAlign: "center",
+            maxWidth: "34ch",
+            color: "color-mix(in srgb, var(--color-text) 60%, transparent)",
+          }}
+        >
+          📍 {cityBanner}
+        </p>
+      )}
       <SwipeDeckInner
         key={contractFilter}
         offers={filteredOffers}
@@ -440,6 +467,9 @@ export function SwipeDeck({
         initialSwipesToday={swipesToday}
         isPremium={isPremium}
         initialQuotaReached={quotaReached}
+        onBrowseSwipe={() =>
+          setRemaining((n) => (n === null ? n : Math.max(0, n - 1)))
+        }
       />
     </div>
   );
