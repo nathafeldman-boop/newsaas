@@ -79,20 +79,12 @@ export default async function PremiumPage({
           </>
         ) : (
           <>
-            <span
-              className="tag"
-              style={{
-                marginTop: 14,
-                background: "var(--color-bg)",
-                color: "var(--color-accent-700)",
-                fontFamily: "var(--font-heading)",
-              }}
-            >
-              ⭐ 7 jours d&apos;essai gratuit
-            </span>
-            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: 30, margin: "16px 0 0", lineHeight: 1.15 }}>
-              Décroche ton alternance, sans limites.
+            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: 30, margin: "18px 0 0", lineHeight: 1.15 }}>
+              Trouve ton stage 3x plus vite
             </h1>
+            <p style={{ fontSize: 13, opacity: 0.9, margin: "10px 0 0" }}>
+              Passe illimité, candidatures illimitées, audit CV inclus.
+            </p>
 
             {limite === "1" && (
               <p
@@ -109,22 +101,10 @@ export default async function PremiumPage({
               </p>
             )}
 
-            <div style={{ marginTop: 26 }}>
-              <span style={{ fontFamily: "var(--font-heading)", fontSize: 36 }}>Gratuit 7 jours</span>
-              <p style={{ fontSize: 13, opacity: 0.85, margin: "4px 0 0" }}>puis 7,99€/mois · sans engagement</p>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 26 }}>
+              <span style={{ fontFamily: "var(--font-heading)", fontSize: 44 }}>7,99€</span>
+              <span style={{ fontSize: 13, opacity: 0.85 }}>/mois</span>
             </div>
-
-            <span
-              className="tag"
-              style={{
-                marginTop: 14,
-                background: "rgba(255,255,255,0.18)",
-                color: "var(--color-bg)",
-              }}
-            >
-              ✓ Résiliable à tout moment
-            </span>
-
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 18 }}>
               <p style={{ fontSize: 13, margin: 0 }}>✓ Swipes illimités</p>
               <p style={{ fontSize: 13, margin: 0 }}>✓ Lettre de motivation générée par IA</p>
@@ -154,20 +134,14 @@ export default async function PremiumPage({
                   fontSize: 15,
                 }}
               >
-                Commencer l&apos;essai gratuit
+                Votre avenir vaut bien 7,99€
               </button>
             </form>
             <p style={{ fontSize: 11, textAlign: "center", opacity: 0.8, margin: "10px 0 0" }}>
-              🔒 Paiement sécurisé par Stripe
-            </p>
-            <p style={{ fontSize: 11, textAlign: "center", opacity: 0.8, margin: "6px 0 0" }}>
-              En continuant, tu acceptes nos{" "}
+              Sans engagement, résiliable à tout moment. En t&apos;abonnant,
+              tu acceptes les{" "}
               <Link href="/legal/cgv" style={{ textDecoration: "underline", color: "inherit" }}>
                 CGV
-              </Link>{" "}
-              et notre{" "}
-              <Link href="/legal/confidentialite" style={{ textDecoration: "underline", color: "inherit" }}>
-                confidentialité
               </Link>
               .
             </p>
