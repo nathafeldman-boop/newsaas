@@ -241,7 +241,10 @@ function SwipeDeckInner({
     router.push(`/candidature/${offer.id}`);
   }
 
-  if (quotaReached && !isPremium) {
+  // Quota atteint OU plus rien à swiper : pour un compte gratuit, dans les
+  // deux cas il n'y a plus rien à faire ici sans passer Premium — un
+  // "reviens plus tard" passif serait une impasse plutôt qu'une relance.
+  if (!isPremium && (quotaReached || visible.length === 0)) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center text-center px-6 py-16">
         <motion.div
@@ -262,11 +265,13 @@ function SwipeDeckInner({
         >
           🔒
         </motion.div>
-        <h2 style={{ fontSize: 22, marginTop: 20 }}>Tu as utilisé tes swipes gratuits</h2>
+        <h2 style={{ fontSize: 22, marginTop: 20 }}>
+          {quotaReached ? "Tu as utilisé tes swipes gratuits" : "Plus d'offres pour l'instant"}
+        </h2>
         <p style={{ marginTop: 8, maxWidth: "34ch", color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
-          Passe Premium pour swiper sans limite et générer tes lettres de
-          motivation à volonté. Tu peux toujours candidater librement aux
-          offres déjà vues.
+          {quotaReached
+            ? "Passe Premium pour swiper sans limite et générer tes lettres de motivation à volonté. Tu peux toujours candidater librement aux offres déjà vues."
+            : "On en ajoute régulièrement. Passe Premium pour swiper sans limite dès qu'elles arrivent, et débloquer les lettres de motivation générées par IA."}
         </p>
         <Link href="/premium" className="btn btn-gradient mt-6">
           Passer en illimité
