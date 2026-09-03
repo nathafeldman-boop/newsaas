@@ -243,11 +243,14 @@ export function OnboardingWizard({
       return;
     }
 
-    // Attendu (pas fire-and-forget) : un window.location juste après
-    // pourrait annuler la requête en vol. Navigation complète, pas
-    // router.push -- voir LoginForm pour le symptôme (cache client
-    // resservant l'état pré-connexion/pré-onboarding).
-    await markReferralGrantedAction(userId);
+    // Skip l'aller-retour réseau pour l'immense majorité des comptes qui
+    // n'ont pas de parrain -- seul ce cas a besoin d'être attendu (un
+    // window.location juste après pourrait sinon annuler la requête en
+    // vol). Navigation complète, pas router.push -- voir LoginForm pour le
+    // symptôme (cache client resservant l'état pré-connexion/pré-onboarding).
+    if (initialProfile?.referred_by) {
+      await markReferralGrantedAction(userId);
+    }
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = "/swipe";
   }
