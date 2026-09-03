@@ -1,11 +1,10 @@
 import type { Profile } from "@/types/database";
 import { isPremium } from "./isPremium";
 
-// Hard paywall dès le 2e swipe : un compte gratuit ne voit qu'une seule
-// offre avant d'être renvoyé vers /premium. Miroir du trigger SQL
+// Hard paywall après 3 swipes gratuits par semaine. Miroir du trigger SQL
 // enforce_swipe_quota (voir supabase/migrations), qui est la vraie limite
 // appliquée côté base -- ce nombre ne doit jamais diverger du sien.
-export const FREE_WEEKLY_SWIPE_QUOTA = 1;
+export const FREE_WEEKLY_SWIPE_QUOTA = 3;
 
 // Miroir du trigger SQL enforce_swipe_quota : seuls les swipes de pure
 // découverte (sans candidature associée) comptent dans le quota gratuit.
