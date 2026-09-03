@@ -25,25 +25,40 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const headersList = await headers();
   const pathname = headersList.get("x-pathname") ?? "";
 
+  let shouldRedirectToPaywall = false;
+
   if (!isExempt(pathname)) {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    try {
+      const supabase = await createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-    if (user && !isAdminEmail(user.email)) {
-      const [{ data: profile }, { data: swiped }, { data: applications }] = await Promise.all([
-        supabase.from("profiles").select("subscription_status").eq("id", user.id).single(),
-        supabase.from("swipes").select("offer_id, created_at").eq("user_id", user.id),
-        supabase.from("applications").select("offer_id").eq("user_id", user.id),
-      ]);
+      if (user && !isAdminEmail(user.email)) {
+        const [{ data: profile }, { data: swiped }, { data: applications }] = await Promise.all([
+          supabase.from("profiles").select("subscription_status").eq("id", user.id).single(),
+          supabase.from("swipes").select("offer_id, created_at").eq("user_id", user.id),
+          supabase.from("applications").select("offer_id").eq("user_id", user.id),
+        ]);
 
-      const { quotaReached } = computeQuotaStatus(profile, swiped ?? [], applications ?? []);
-
-      if (quotaReached) {
-        redirect("/premium?limite=1");
+        shouldRedirectToPaywall = computeQuotaStatus(
+          profile,
+          swiped ?? [],
+          applications ?? [],
+        ).quotaReached;
       }
+    } catch (err) {
+      // Ce check tourne sur CHAQUE navigation de l'appli : un pépin
+      // transitoire (Supabase lent/indisponible un instant) ne doit jamais
+      // faire planter toute la page -- on laisse passer plutôt que
+      // d'afficher un écran blanc, quitte à revoir le paywall à la
+      // prochaine navigation si le quota est réellement dépassé.
+      console.error("AppLayout quota check failed", err);
     }
+  }
+
+  if (shouldRedirectToPaywall) {
+    redirect("/premium?limite=1");
   }
 
   return (

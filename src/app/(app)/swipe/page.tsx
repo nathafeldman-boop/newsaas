@@ -48,10 +48,10 @@ export default async function SwipePage() {
       query = query.not("id", "in", `(${excludeIds.join(",")})`);
     }
 
-    if (profile?.looking_for && profile.looking_for.length > 0) {
-      query = query.in("contract_type", profile.looking_for);
-    }
-
+    // Pas de filtre dur par looking_for ici : le sélecteur Stage/Alternance/
+    // Les deux dans SwipeDeck doit pouvoir montrer les deux types même si
+    // l'utilisateur n'a coché qu'un seul lors de l'onboarding. La préférence
+    // continue de peser sur le tri via computeMatchScore.
     const { data: rawOffers } = await query;
     offers = rawOffers ?? [];
   }

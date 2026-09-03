@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { forwardRef, useImperativeHandle, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -185,6 +185,10 @@ function SwipeDeckInner({
       );
     if (error?.message.includes("SWIPE_QUOTA_REACHED")) {
       setQuotaReached(true);
+      // Direct vers la vraie page paywall plutôt que la carte de blocage
+      // inline : dès que le quota tombe, on est déjà censé y être (voir la
+      // redirection équivalente au niveau layout pour toute autre page).
+      router.push("/premium?limite=1");
     }
   }
 
@@ -395,14 +399,7 @@ export function SwipeDeck({
   isPremium?: boolean;
   quotaReached?: boolean;
 }) {
-  const availableTypes = useMemo(() => {
-    const types = new Set(offers.map((o) => o.contract_type));
-    return Array.from(types);
-  }, [offers]);
-
-  const [contractFilter, setContractFilter] = useState<ContractType | "all">(
-    availableTypes.length > 1 ? "all" : (availableTypes[0] ?? "all"),
-  );
+  const [contractFilter, setContractFilter] = useState<ContractType | "all">("all");
 
   const filteredOffers =
     contractFilter === "all"
@@ -411,26 +408,23 @@ export function SwipeDeck({
 
   return (
     <div className="flex flex-col items-center">
-      {availableTypes.length > 1 && (
-        <div className="seg mb-5">
-          {(["alternance", "stage"] as ContractType[]).map((type) => (
-            <label
-              key={type}
-              className={cn("seg-opt", contractFilter === type && "is-active")}
-            >
-              <input
-                type="checkbox"
-                checked={contractFilter === type}
-                onChange={() =>
-                  setContractFilter((prev) => (prev === type ? "all" : type))
-                }
-                style={{ position: "absolute", opacity: 0, width: 0, height: 0 }}
-              />
-              {type === "alternance" ? "Alternance" : "Stage"}
-            </label>
-          ))}
-        </div>
-      )}
+      <div className="seg mb-5">
+        {(["stage", "alternance", "all"] as const).map((type) => (
+          <label
+            key={type}
+            className={cn("seg-opt", contractFilter === type && "is-active")}
+          >
+            <input
+              type="radio"
+              name="contract-filter"
+              checked={contractFilter === type}
+              onChange={() => setContractFilter(type)}
+              style={{ position: "absolute", opacity: 0, width: 0, height: 0 }}
+            />
+            {type === "alternance" ? "Alternance" : type === "stage" ? "Stage" : "Les deux"}
+          </label>
+        ))}
+      </div>
       <SwipeDeckInner
         key={contractFilter}
         offers={filteredOffers}
