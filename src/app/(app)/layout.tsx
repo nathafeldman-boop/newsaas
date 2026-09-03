@@ -43,10 +43,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       // pages soumises au paywall), pas seulement au login -- sinon un
       // compte resterait compté "en ligne" des heures après avoir fermé
       // l'onglet.
-      await supabase
+      const { error: presenceError } = await supabase
         .from("profiles")
         .update({ last_active_at: new Date().toISOString() })
         .eq("id", user.id);
+      if (presenceError) {
+        // Ne jamais laisser passer une erreur silencieuse ici : supabase-js
+        // ne throw pas sur une erreur Postgres (ex: colonne manquante si la
+        // migration n'a pas encore été collée en base), donc sans ce log le
+        // dashboard admin afficherait "En ligne maintenant" à 0 en
+        // permanence sans aucune trace de pourquoi.
+        console.error("AppLayout presence update failed", presenceError);
+      }
 
       if (!isExempt(pathname) && !isAdminEmail(user.email)) {
         const [{ data: profile }, { data: swiped }, { data: applications }] = await Promise.all([
