@@ -153,9 +153,8 @@ export function OfferCardContent({
       </div>
 
       <div style={{ padding: "0 18px", marginTop: -26, position: "relative", zIndex: 2 }}>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <StatPill icon="💶" label="Rémunération" value={offer.salary ?? "Non précisé"} />
-          <StatPill icon="📍" label="Lieu" value={offer.location} />
           <StatPill icon="⏱" label="Durée" value={offer.duration ?? "Non précisé"} />
           <StatPill
             icon="📅"
