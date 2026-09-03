@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SwipeDeck } from "@/components/swipe/SwipeDeck";
-import { computeMatchScore } from "@/lib/matching/score";
+import { computeMatchScore, computeMatchReasons } from "@/lib/matching/score";
 import { computeQuotaStatus } from "@/lib/subscription/quota";
 import type { Offer } from "@/types/database";
 
@@ -106,11 +106,19 @@ export default async function SwipePage() {
 
   const sortedOffers = relevantOffers.slice(0, DECK_SIZE);
 
+  const reasons: Record<string, string[]> = {};
+  if (profile) {
+    for (const offer of sortedOffers) {
+      reasons[offer.id] = computeMatchReasons(profile, offer);
+    }
+  }
+
   return (
     <div className="flex flex-1 flex-col items-center">
       <SwipeDeck
         offers={sortedOffers}
         scores={scores}
+        reasons={reasons}
         userId={user.id}
         swipesToday={swipesToday}
         isPremium={premium}

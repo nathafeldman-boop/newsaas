@@ -111,3 +111,48 @@ export function computeMatchScore(profile: Profile, offer: Offer): number {
 
   return Math.max(30, Math.min(99, Math.round(score)));
 }
+
+// Petites raisons lisibles pour la section "Pourquoi toi" de la carte —
+// mêmes critères que computeMatchScore, mais formulés en phrases plutôt
+// qu'en points. Plafonné à 3 : au-delà ça devient une liste illisible.
+export function computeMatchReasons(profile: Profile, offer: Offer): string[] {
+  const reasons: string[] = [];
+
+  if (offer.sector && profile.sectors.includes(offer.sector)) {
+    reasons.push(`Secteur ${offer.sector} recherché`);
+  }
+
+  const matchedJob = profile.target_jobs.find((job) => containsWholeWord(offer.title, job));
+  if (matchedJob) {
+    reasons.push(`Correspond à "${matchedJob}"`);
+  }
+
+  const cityLower = profile.city?.toLowerCase().trim();
+  if (cityLower && offer.location.toLowerCase().includes(cityLower)) {
+    reasons.push(`À ${profile.city}, comme toi`);
+  } else if (offer.remote_policy === "remote") {
+    reasons.push("Télétravail possible");
+  }
+
+  if (profile.skills.length > 0) {
+    const offerText = `${offer.description} ${offer.requirements ?? ""}`;
+    const matchedSkills = profile.skills.filter((skill) => containsWholeWord(offerText, skill));
+    if (matchedSkills.length > 0) {
+      reasons.push(
+        matchedSkills.length === 1
+          ? `Compétence en commun : ${matchedSkills[0]}`
+          : `${matchedSkills.length} compétences en commun`,
+      );
+    }
+  }
+
+  if (profile.education_level && offer.education_level === profile.education_level) {
+    reasons.push(`Niveau ${offer.education_level} demandé`);
+  }
+
+  if (profile.looking_for.includes(offer.contract_type)) {
+    reasons.push(offer.contract_type === "alternance" ? "C'est une alternance" : "C'est un stage");
+  }
+
+  return reasons.slice(0, 3);
+}

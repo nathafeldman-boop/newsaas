@@ -9,6 +9,7 @@ import {
   useTransform,
   animate,
 } from "framer-motion";
+import { MatchRing, StatPill } from "@/components/swipe/OfferCard";
 
 const SWIPE_THRESHOLD = 100;
 const EXIT_DISTANCE = 500;
@@ -25,7 +26,12 @@ const DEMO_OFFERS = [
     contractType: "Alternance",
     title: "Chargé·e de marketing digital",
     location: "Paris",
-    tags: ["Bac+3", "12 mois", "Remote hybride"],
+    matchScore: 91,
+    salary: "1 100€/mois",
+    duration: "12 mois",
+    start: "Sept. 2026",
+    publishedLabel: "Publiée il y a 2 jours",
+    reasons: ["Secteur Marketing recherché", "À Paris, comme toi"],
   },
   {
     id: "demo-2",
@@ -33,7 +39,12 @@ const DEMO_OFFERS = [
     contractType: "Stage",
     title: "Développeur·se front-end",
     location: "Lyon",
-    tags: ["Bac+4", "6 mois", "1 200€/mois"],
+    matchScore: 87,
+    salary: "1 200€/mois",
+    duration: "6 mois",
+    start: "Flexible",
+    publishedLabel: "Publiée aujourd'hui",
+    reasons: ["Secteur Informatique recherché", "Compétence en commun : React"],
   },
   {
     id: "demo-3",
@@ -41,7 +52,12 @@ const DEMO_OFFERS = [
     contractType: "Alternance",
     title: "Assistant·e chef de projet",
     location: "Nantes",
-    tags: ["Bac+2", "24 mois", "Sur site"],
+    matchScore: 78,
+    salary: "Non précisé",
+    duration: "24 mois",
+    start: "Flexible",
+    publishedLabel: "Publiée il y a 5 jours",
+    reasons: ["C'est une alternance", "Niveau Bac+3 demandé"],
   },
   {
     id: "demo-4",
@@ -49,7 +65,12 @@ const DEMO_OFFERS = [
     contractType: "Stage",
     title: "Analyste data junior",
     location: "Bordeaux",
-    tags: ["Bac+5", "4 mois", "Télétravail"],
+    matchScore: 84,
+    salary: "1 000€/mois",
+    duration: "4 mois",
+    start: "Flexible",
+    publishedLabel: "Publiée il y a 1 jour",
+    reasons: ["Secteur Data recherché", "Télétravail possible"],
   },
 ] as const;
 
@@ -144,46 +165,58 @@ const DemoCard = forwardRef<
           </>
         )}
         <div className="flex h-full flex-col">
-          <div style={{ padding: "24px 24px 0" }} className="flex flex-col">
-            <div className="flex items-center gap-3">
-              <div
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: "50%",
-                  background: "var(--color-accent-100)",
-                  color: "var(--color-accent-700)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontFamily: "var(--font-heading)",
-                  fontSize: 17,
-                  flexShrink: 0,
-                }}
-              >
-                {offer.company.charAt(0)}
+          <div
+            style={{
+              background: "linear-gradient(135deg, var(--color-accent), var(--color-accent-2))",
+              color: "#fff",
+              padding: "20px 20px 34px",
+            }}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div style={{ minWidth: 0 }}>
+                <p style={{ fontFamily: "var(--font-heading)", fontSize: 13, margin: 0 }}>{offer.company}</p>
+                <p style={{ fontSize: 11.5, opacity: 0.85, margin: "2px 0 0" }}>{offer.location}</p>
               </div>
-              <span className="tag tag-accent ml-auto" style={{ whiteSpace: "nowrap" }}>
+              <MatchRing score={offer.matchScore} />
+            </div>
+            <h3 style={{ fontFamily: "var(--font-heading)", fontSize: 18, lineHeight: 1.25, margin: "14px 0 0" }}>
+              {offer.title}
+            </h3>
+            <div className="flex items-center gap-2" style={{ marginTop: 8 }}>
+              <span className="tag" style={{ background: "rgba(255,255,255,0.18)", color: "#fff", fontSize: 10.5 }}>
                 {offer.contractType}
               </span>
+              <span style={{ fontSize: 10.5, opacity: 0.75 }}>{offer.publishedLabel}</span>
             </div>
-            <h3 style={{ fontSize: 22, lineHeight: 1.2, margin: "16px 0 0" }}>{offer.title}</h3>
+          </div>
+
+          <div style={{ padding: "0 14px", marginTop: -20, position: "relative", zIndex: 2 }}>
+            <div className="grid grid-cols-2 gap-1.5">
+              <StatPill icon="💶" label="Rémunération" value={offer.salary} />
+              <StatPill icon="⏱" label="Durée" value={offer.duration} />
+            </div>
+          </div>
+
+          <div style={{ padding: "12px 16px 16px", marginTop: "auto" }}>
             <p
               style={{
-                fontSize: 14,
-                color: "color-mix(in srgb, var(--color-text) 70%, transparent)",
-                margin: "4px 0 0",
+                fontSize: 10,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                color: "color-mix(in srgb, var(--color-text) 60%, transparent)",
+                margin: 0,
               }}
             >
-              {offer.company} · {offer.location}
+              Pourquoi toi
             </p>
-          </div>
-          <div style={{ padding: "18px 24px 24px", marginTop: "auto" }} className="flex flex-wrap gap-2">
-            {offer.tags.map((tag) => (
-              <span key={tag} className="tag tag-neutral" style={{ whiteSpace: "nowrap" }}>
-                {tag}
-              </span>
-            ))}
+            <ul style={{ margin: "6px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 3 }}>
+              {offer.reasons.map((reason) => (
+                <li key={reason} style={{ fontSize: 12, display: "flex", gap: 5 }}>
+                  <span aria-hidden style={{ color: "var(--color-accent-2-700)" }}>✓</span>
+                  {reason}
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </div>
@@ -219,7 +252,7 @@ export function SwipeDemo() {
 
   return (
     <div className="flex flex-col items-center">
-      <div className="relative h-[340px] w-full max-w-[300px]">
+      <div className="relative h-[400px] w-full max-w-[300px]">
         <AnimatePresence>
           {done ? (
             <motion.div

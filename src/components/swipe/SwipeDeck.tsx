@@ -28,10 +28,11 @@ const SwipeCard = forwardRef<
   {
     offer: Offer;
     matchScore?: number;
+    reasons?: string[];
     isTop: boolean;
     onExited: (direction: SwipeDirection) => void;
   }
->(function SwipeCard({ offer, matchScore, isTop, onExited }, ref) {
+>(function SwipeCard({ offer, matchScore, reasons, isTop, onExited }, ref) {
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-300, 300], [-18, 18]);
   const likeOpacity = useTransform(x, [20, 140], [0, 1]);
@@ -110,7 +111,7 @@ const SwipeCard = forwardRef<
             </motion.span>
           </>
         )}
-        <OfferCardContent offer={offer} matchScore={matchScore} />
+        <OfferCardContent offer={offer} matchScore={matchScore} reasons={reasons} />
       </div>
     </motion.div>
   );
@@ -152,6 +153,7 @@ function MatchCelebration({ show }: { show: boolean }) {
 function SwipeDeckInner({
   offers,
   scores,
+  reasons,
   userId,
   initialSwipesToday,
   isPremium,
@@ -159,6 +161,7 @@ function SwipeDeckInner({
 }: {
   offers: Offer[];
   scores: Record<string, number>;
+  reasons: Record<string, string[]>;
   userId: string;
   initialSwipesToday: number;
   isPremium: boolean;
@@ -320,6 +323,7 @@ function SwipeDeckInner({
                   ref={isTop ? topCardRef : undefined}
                   offer={offer}
                   matchScore={scores[offer.id]}
+                  reasons={reasons[offer.id]}
                   isTop={isTop}
                   onExited={() => handleExited(offer.id)}
                 />
@@ -387,6 +391,7 @@ function SwipeDeckInner({
 export function SwipeDeck({
   offers,
   scores,
+  reasons = {},
   userId,
   swipesToday = 0,
   isPremium = false,
@@ -394,6 +399,7 @@ export function SwipeDeck({
 }: {
   offers: Offer[];
   scores: Record<string, number>;
+  reasons?: Record<string, string[]>;
   userId: string;
   swipesToday?: number;
   isPremium?: boolean;
@@ -429,6 +435,7 @@ export function SwipeDeck({
         key={contractFilter}
         offers={filteredOffers}
         scores={scores}
+        reasons={reasons}
         userId={userId}
         initialSwipesToday={swipesToday}
         isPremium={isPremium}
