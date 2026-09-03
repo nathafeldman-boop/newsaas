@@ -72,6 +72,26 @@ export default async function SwipePage() {
     // continue de peser sur le tri via computeMatchScore.
     const { data: rawOffers } = await query;
     offers = rawOffers ?? [];
+
+    // Filet de sécurité : si le filtre secteur ne renvoie rien (secteur trop
+    // niche, catalogue encore mince dessus...), un compte gratuit qui n'a
+    // pourtant pas encore atteint son quota se retrouvait avec un deck vide
+    // -- donc directement sur l'écran "Plus d'offres" au style paywall,
+    // sans avoir pu swiper une seule fois. On retente sans le filtre secteur
+    // plutôt que de bloquer sur un filtre qu'on a nous-même ajouté.
+    if (offers.length === 0 && profile && profile.sectors.length > 0) {
+      let fallbackQuery = supabase
+        .from("offers")
+        .select("*")
+        .eq("is_active", true)
+        .order("published_at", { ascending: false })
+        .limit(CANDIDATE_POOL_SIZE);
+      if (excludeIds.length > 0) {
+        fallbackQuery = fallbackQuery.not("id", "in", `(${excludeIds.join(",")})`);
+      }
+      const { data: fallbackOffers } = await fallbackQuery;
+      offers = fallbackOffers ?? [];
+    }
   }
 
   const scores: Record<string, number> = {};
@@ -100,9 +120,13 @@ export default async function SwipePage() {
       profile.skills.length > 0 ||
       !!profile.city);
 
-  const relevantOffers = hasPreferences
-    ? rankedOffers.filter((o) => (scores[o.id] ?? 0) > 40)
-    : rankedOffers;
+  // Même logique de filet de sécurité que ci-dessus : si ce filtre viderait
+  // un pool pourtant non vide, on préfère montrer les offres quand même
+  // (déjà triées par score, donc les moins hors-sujet en premier) plutôt que
+  // de renvoyer un compte gratuit vers l'écran de blocage sans un seul swipe.
+  const filteredByRelevance = rankedOffers.filter((o) => (scores[o.id] ?? 0) > 40);
+  const relevantOffers =
+    hasPreferences && filteredByRelevance.length > 0 ? filteredByRelevance : rankedOffers;
 
   const sortedOffers = relevantOffers.slice(0, DECK_SIZE);
 
