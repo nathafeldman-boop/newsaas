@@ -3,22 +3,34 @@ import type { ContractType, OfferSource } from "@/types/database";
 
 const SECTOR_KEYWORDS: Record<string, RegExp> = {
   Informatique: /\b(it|software|developer|développeur|informatique|tech)\b/i,
-  Marketing: /\b(marketing|communication|digital)\b/i,
-  Vente: /\b(sales|vente|commercial)\b/i,
-  Design: /\b(design|creative|ux|ui)\b/i,
   Data: /\b(data|analyst|analytics)\b/i,
+  Design: /\b(design|creative|ux|ui)\b/i,
+  Marketing: /\b(marketing)\b/i,
+  Communication: /\b(communication|community manager|relations presse)\b/i,
+  Vente: /\b(sales|vente|commercial)\b/i,
   Produit: /\b(product|produit)\b/i,
   RH: /\b(hr|human resources|ressources humaines|recrutement)\b/i,
   Finance: /\b(finance|accounting|comptab)\b/i,
   BTP: /\b(construction|btp|trade|bâtiment)\b/i,
+  Santé: /\b(santé|médical|infirmier|soignant|paramédical)\b/i,
 };
 
-function guessSector(categoryLabel?: string): string | null {
-  if (!categoryLabel) return null;
+// La catégorie Adzuna (job.category.label) est un intitulé générique et
+// grossier ("Emploi restauration/hôtellerie"...) qui ne recoupe presque
+// jamais nos 12 secteurs d'onboarding : s'y fier seul laissait la quasi-
+// totalité des offres sans secteur, donc sans aucun bonus/filtre de
+// pertinence côté matching. On tente d'abord la catégorie, puis on retombe
+// sur le titre + la description de l'annonce elle-même, bien plus
+// discriminants pour une alternance/stage donné.
+function matchSector(text: string): string | null {
   for (const [sector, pattern] of Object.entries(SECTOR_KEYWORDS)) {
-    if (pattern.test(categoryLabel)) return sector;
+    if (pattern.test(text)) return sector;
   }
   return null;
+}
+
+function guessSector(categoryLabel: string | undefined, title: string, description: string): string | null {
+  return (categoryLabel && matchSector(categoryLabel)) || matchSector(`${title} ${description}`);
 }
 
 const ALTERNANCE_PATTERN =
@@ -88,7 +100,7 @@ export function mapAdzunaJob(job: AdzunaJob): MappedOffer | null {
     company: job.company.display_name,
     location: job.location.display_name,
     contract_type: contractType,
-    sector: guessSector(job.category?.label),
+    sector: guessSector(job.category?.label, job.title, job.description),
     description: stripHtml(job.description).slice(0, 4000),
     requirements: null,
     duration: null,

@@ -72,9 +72,29 @@ export default async function SwipePage() {
     }
   }
 
-  const sortedOffers = (
-    profile ? [...offers].sort((a, b) => (scores[b.id] ?? 0) - (scores[a.id] ?? 0)) : offers
-  ).slice(0, DECK_SIZE);
+  const rankedOffers = profile
+    ? [...offers].sort((a, b) => (scores[b.id] ?? 0) - (scores[a.id] ?? 0))
+    : offers;
+
+  // Un profil qui a renseigné des préférences (secteur, métier visé ou
+  // compétences) attend des offres qui matchent réellement au moins un de
+  // ces critères. Sans ce filtre, dès que peu d'offres pertinentes
+  // existaient dans le pool, le deck se remplissait quand même jusqu'à
+  // DECK_SIZE avec du remplissage hors-sujet (le score de base à 40 suffit
+  // à faire apparaître n'importe quelle offre) — d'où par exemple un CAP
+  // pâtisserie proposé à quelqu'un qui vise la finance. Mieux vaut montrer
+  // un deck plus court (ou vide, déjà géré par SwipeDeck) que hors-sujet.
+  const hasPreferences =
+    !!profile &&
+    (profile.sectors.length > 0 ||
+      profile.target_jobs.length > 0 ||
+      profile.skills.length > 0);
+
+  const relevantOffers = hasPreferences
+    ? rankedOffers.filter((o) => (scores[o.id] ?? 0) > 40)
+    : rankedOffers;
+
+  const sortedOffers = relevantOffers.slice(0, DECK_SIZE);
 
   return (
     <div className="flex flex-1 flex-col items-center">
