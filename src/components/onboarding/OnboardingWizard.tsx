@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { markReferralGrantedAction } from "@/app/onboarding/actions";
@@ -124,7 +123,6 @@ export function OnboardingWizard({
   userId: string;
   initialProfile: Profile | null;
 }) {
-  const router = useRouter();
   const [stepIndex, setStepIndex] = useState(0);
   const [direction, setDirection] = useState(1);
   const [saving, setSaving] = useState(false);
@@ -245,10 +243,13 @@ export function OnboardingWizard({
       return;
     }
 
-    void markReferralGrantedAction(userId);
-
-    router.push("/swipe");
-    router.refresh();
+    // Attendu (pas fire-and-forget) : un window.location juste après
+    // pourrait annuler la requête en vol. Navigation complète, pas
+    // router.push -- voir LoginForm pour le symptôme (cache client
+    // resservant l'état pré-connexion/pré-onboarding).
+    await markReferralGrantedAction(userId);
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    window.location.href = "/swipe";
   }
 
   const progressIndex = PROGRESS_STEPS.indexOf(stepId);

@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { GoogleButton } from "@/components/auth/GoogleButton";
 
 export function RegisterForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const referredByCode = searchParams.get("ref");
 
@@ -56,8 +55,10 @@ export function RegisterForm() {
       if (referredByCode) {
         void fetch("/api/referrals/notify", { method: "POST", keepalive: true });
       }
-      router.push("/onboarding");
-      router.refresh();
+      // Navigation complète, pas router.push : voir LoginForm pour le
+      // symptôme (cache client resservant l'état "non connecté").
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+      window.location.href = "/onboarding";
       return;
     }
 
@@ -92,8 +93,10 @@ export function RegisterForm() {
       if (referredByCode) {
         void fetch("/api/referrals/notify", { method: "POST", keepalive: true });
       }
-      router.push("/onboarding");
-      router.refresh();
+      // Navigation complète, pas router.push : voir LoginForm pour le
+      // symptôme (cache client resservant l'état "non connecté").
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+      window.location.href = "/onboarding";
     }
   }
 

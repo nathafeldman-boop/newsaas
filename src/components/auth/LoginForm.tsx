@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { GoogleButton } from "@/components/auth/GoogleButton";
 
 export function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/swipe";
 
@@ -45,8 +44,13 @@ export function LoginForm() {
       void supabase.from("user_events").insert({ user_id: user.id, event_type: "login" });
     }
 
-    router.push(next);
-    router.refresh();
+    // Navigation complète (pas router.push) : juste après signInWithPassword,
+    // le cache client du routeur peut encore contenir la réponse "non
+    // connecté" de /swipe visitée avant login, et la resservir malgré
+    // router.refresh() -- symptôme observé : il fallait se connecter deux
+    // fois. Un rechargement complet repart avec les cookies de session à
+    // jour, sans passer par ce cache.
+    window.location.href = next;
   }
 
   return (
