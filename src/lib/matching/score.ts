@@ -39,6 +39,12 @@ function daysBetween(a: string, b: string): number {
 export function computeMatchScore(profile: Profile, offer: Offer): number {
   let score = 40;
 
+  // Type de contrat recherché (stage/alternance/les deux à l'onboarding) :
+  // un signal direct et sans ambiguïté, jamais pris en compte auparavant.
+  if (profile.looking_for.length > 0 && profile.looking_for.includes(offer.contract_type)) {
+    score += 8;
+  }
+
   // Secteur (le plus fort signal : c'est le domaine explicitement choisi)
   if (offer.sector && profile.sectors.includes(offer.sector)) {
     score += 18;

@@ -34,6 +34,15 @@ export default async function SwipePage() {
 
   const { premium, quotaReached } = computeQuotaStatus(profile, swiped ?? [], applications ?? []);
 
+  // Taille du deck réellement montré, une fois trié par pertinence.
+  const DECK_SIZE = 30;
+  // Bassin de candidats scoré AVANT tri : doit couvrir tout le volume actif
+  // réaliste, sinon le tri par score ne s'applique qu'aux offres les plus
+  // récentes (ce qu'on récupérait avant) et les meilleurs matchs d'un
+  // profil peuvent ne jamais apparaître s'ils ne sont pas parmi les toutes
+  // dernières publiées.
+  const CANDIDATE_POOL_SIZE = 400;
+
   let offers: Offer[] = [];
 
   if (!quotaReached) {
@@ -42,7 +51,7 @@ export default async function SwipePage() {
       .select("*")
       .eq("is_active", true)
       .order("published_at", { ascending: false })
-      .limit(30);
+      .limit(CANDIDATE_POOL_SIZE);
 
     if (excludeIds.length > 0) {
       query = query.not("id", "in", `(${excludeIds.join(",")})`);
@@ -63,9 +72,9 @@ export default async function SwipePage() {
     }
   }
 
-  const sortedOffers = profile
-    ? [...offers].sort((a, b) => (scores[b.id] ?? 0) - (scores[a.id] ?? 0))
-    : offers;
+  const sortedOffers = (
+    profile ? [...offers].sort((a, b) => (scores[b.id] ?? 0) - (scores[a.id] ?? 0)) : offers
+  ).slice(0, DECK_SIZE);
 
   return (
     <div className="flex flex-1 flex-col items-center">
