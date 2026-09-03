@@ -15,12 +15,24 @@ import { mapAdzunaJob } from "@/lib/adzuna/mapOffer";
 
 export const maxDuration = 60;
 
-const QUERIES = ["alternance", "stage"] as const;
+// Volume pondéré plutôt qu'égal entre les deux requêtes : les alternances
+// sont structurellement sous-représentées sur un agrégateur généraliste
+// comme Adzuna (le mot "stage" apparaît dans énormément plus d'annonces
+// -- stages courts, "stage" au sens formation, etc. -- que "alternance"),
+// donc un nombre de pages égal produisait mécaniquement moins d'offres
+// alternance que stage une fois classifyContractType appliqué. "apprentissage"
+// est une requête à part entière (pas juste un synonyme dans le regex de
+// classification) pour élargir le filet sur les annonces qui ne disent
+// jamais littéralement "alternance".
+const QUERIES: { what: string; pages: number }[] = [
+  { what: "alternance", pages: 5 },
+  { what: "apprentissage", pages: 3 },
+  { what: "stage", pages: 3 },
+];
 // Conservateur tant que le compte Adzuna est en plan "Trial Access" (quota
-// limité, souvent quelques centaines d'appels/mois). 2 requêtes x 4 pages x
-// 1 run/jour (vercel.json) = 8 appels/jour, ~240/mois. Augmenter une fois
-// le plan/quota réel connu (page "Stats" du dashboard Adzuna).
-const PAGES_PER_QUERY = 4;
+// limité, souvent quelques centaines d'appels/mois). 11 pages x 1 run/jour
+// (vercel.json) = 11 appels/jour, ~330/mois. Augmenter une fois le
+// plan/quota réel connu (page "Stats" du dashboard Adzuna).
 const STALE_AFTER_DAYS = 10;
 // Filtre de sécurité en plus de max_days_old côté requête (searchAdzunaPage) :
 // une annonce alternance/stage de plusieurs mois est presque certainement
@@ -44,8 +56,8 @@ export async function GET(request: NextRequest) {
   let upserted = 0;
   const errors: string[] = [];
 
-  for (const what of QUERIES) {
-    for (let page = 1; page <= PAGES_PER_QUERY; page++) {
+  for (const { what, pages } of QUERIES) {
+    for (let page = 1; page <= pages; page++) {
       let jobs;
       try {
         jobs = await searchAdzunaPage(what, page);

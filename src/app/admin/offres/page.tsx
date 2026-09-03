@@ -10,10 +10,20 @@ export default async function AdminOffresPage() {
   // Accès déjà vérifié par admin/layout.tsx (code d'accès, pas de session
   // Supabase requise) : cette page n'a plus besoin de son propre guard.
   const admin = createAdminClient();
-  const { count: activeOffersCount } = await admin
-    .from("offers")
-    .select("id", { count: "exact", head: true })
-    .eq("is_active", true);
+  const [{ count: activeOffersCount }, { count: alternanceCount }, { count: stageCount }] =
+    await Promise.all([
+      admin.from("offers").select("id", { count: "exact", head: true }).eq("is_active", true),
+      admin
+        .from("offers")
+        .select("id", { count: "exact", head: true })
+        .eq("is_active", true)
+        .eq("contract_type", "alternance"),
+      admin
+        .from("offers")
+        .select("id", { count: "exact", head: true })
+        .eq("is_active", true)
+        .eq("contract_type", "stage"),
+    ]);
 
   return (
     <div className="mx-auto max-w-xl">
@@ -23,7 +33,8 @@ export default async function AdminOffresPage() {
         structure les champs et l&apos;offre est ajoutée au deck de swipe.
       </p>
       <p style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 40%, transparent)", margin: "4px 0 0" }}>
-        {activeOffersCount ?? 0} offre(s) active(s) actuellement.
+        {activeOffersCount ?? 0} offre(s) active(s) actuellement ·{" "}
+        {alternanceCount ?? 0} alternance(s) · {stageCount ?? 0} stage(s).
       </p>
 
       <div className="card elev-sm mt-6" style={{ padding: "var(--space-6)" }}>
