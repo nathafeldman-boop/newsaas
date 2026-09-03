@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { startOfTodayParis } from "@/lib/date";
 
 function StatTile({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
@@ -31,8 +32,10 @@ function StatTile({ label, value, accent }: { label: string; value: string; acce
 export default async function AdminDashboardPage() {
   const admin = createAdminClient();
 
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
+  // Minuit heure de Paris, pas heure du serveur (UTC sur Vercel) : sinon
+  // "Inscrits aujourd'hui" bascule vers le jour suivant avec 1-2h d'avance
+  // par rapport à l'heure française.
+  const todayStart = startOfTodayParis();
   const weekAgo = new Date();
   weekAgo.setDate(weekAgo.getDate() - 7);
   // Fenêtre "en ligne" : (app)/layout.tsx retape last_active_at à chaque

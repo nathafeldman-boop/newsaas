@@ -12,7 +12,11 @@ const SUBSCRIPTION_LABEL: Record<string, string> = {
 
 function fmt(date: string | null | undefined): string {
   if (!date) return "—";
-  return new Date(date).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" });
+  return new Date(date).toLocaleString("fr-FR", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Europe/Paris",
+  });
 }
 
 export default async function AdminUserDetailPage({

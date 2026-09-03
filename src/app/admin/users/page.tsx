@@ -39,7 +39,7 @@ export default async function AdminUsersPage({
             <div>
               <p style={{ fontWeight: 600, margin: 0, fontSize: 14 }}>{u.full_name || "—"}</p>
               <p style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "2px 0 0" }}>
-                {u.email} · {new Date(u.created_at).toLocaleDateString("fr-FR")}
+                {u.email} · {new Date(u.created_at).toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" })}
               </p>
             </div>
             {isPremium(u) && <span className="tag tag-accent">Premium</span>}
