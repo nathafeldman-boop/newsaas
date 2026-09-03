@@ -1,0 +1,36 @@
+# Stageio
+
+> Stageio (stageio.fr) est une plateforme française qui aide les étudiant·e·s
+> à trouver une alternance ou un stage : les offres se consultent sous forme
+> de cartes façon "swipe" (à droite pour aimer, à gauche pour passer), triées
+> par pertinence selon le profil de l'utilisateur (secteur, métier visé,
+> ville/mobilité, compétences, niveau d'études). Candidater à une offre déjà
+> vue est toujours gratuit et illimité.
+
+## Le produit
+
+- Inscription gratuite, onboarding en quelques étapes (secteurs visés,
+  métiers recherchés, ville et mobilité, compétences, niveau d'études,
+  disponibilité, type de contrat recherché — alternance et/ou stage).
+- Le compte gratuit dispose d'un quota hebdomadaire de "swipes" ; candidater
+  à une offre déjà vue reste gratuit et illimité, sans quota.
+- L'abonnement Premium (7,99 €/mois, sans engagement, résiliable à tout
+  moment) débloque : swipes illimités, génération de lettre de motivation
+  par intelligence artificielle, et audit de CV noté sur 100.
+- Les offres proviennent de recruteurs, d'agrégateurs (Adzuna) et de
+  jobboards publics ; seules les annonces récentes et actives sont
+  affichées.
+
+## Pages clés
+
+- [Accueil](https://stageio.fr/) — présentation du produit, démo interactive du swipe, avis d'utilisateurs.
+- [Offres d'alternance et de stage](https://stageio.fr/offres) — catalogue public des offres actives, consultable sans compte.
+- [Créer un compte](https://stageio.fr/inscription)
+- [Mentions légales](https://stageio.fr/legal/mentions-legales)
+- [CGU](https://stageio.fr/legal/cgu)
+- [CGV](https://stageio.fr/legal/cgv)
+- [Politique de confidentialité](https://stageio.fr/legal/confidentialite)
+
+## À propos
+
+Stageio est édité en France. Contact : contact@stageio.fr

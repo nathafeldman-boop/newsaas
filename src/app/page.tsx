@@ -47,6 +47,44 @@ const TESTIMONIALS = [
   },
 ];
 
+const FAQ = [
+  {
+    question: "Stageio, c'est quoi ?",
+    answer:
+      "Stageio est une plateforme française qui aide les étudiant·e·s à trouver une alternance ou un stage. Les offres se consultent comme des cartes à swiper (à droite pour aimer, à gauche pour passer), triées selon ton profil : secteur, métier visé, ville, compétences et niveau d'études.",
+  },
+  {
+    question: "Est-ce que Stageio est gratuit ?",
+    answer:
+      "L'inscription et la création de profil sont gratuites. Le compte gratuit a un quota de swipes par semaine, mais candidater à une offre déjà vue reste toujours gratuit et illimité. L'abonnement Premium (7,99€/mois, sans engagement) débloque les swipes illimités, la lettre de motivation générée par IA et l'audit de CV.",
+  },
+  {
+    question: "Stageio propose des stages ou des alternances ?",
+    answer:
+      "Les deux. Tu choisis à l'inscription si tu cherches une alternance, un stage, ou les deux, et tu peux basculer entre les deux à tout moment depuis l'écran de swipe.",
+  },
+  {
+    question: "Comment Stageio choisit les offres qu'il me montre ?",
+    answer:
+      "Chaque offre reçoit un score de compatibilité calculé à partir de ton profil (secteur, métier recherché, ville et mobilité, compétences, niveau d'études, disponibilité) : les offres les plus pertinentes pour toi remontent en premier.",
+  },
+  {
+    question: "Comment résilier l'abonnement Premium ?",
+    answer:
+      "Depuis la page Premium de ton compte, en un clic sur \"Gérer mon abonnement\" — aucun engagement, aucune justification à donner.",
+  },
+];
+
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: FAQ.map((item) => ({
+    "@type": "Question",
+    name: item.question,
+    acceptedAnswer: { "@type": "Answer", text: item.answer },
+  })),
+};
+
 const organizationJsonLd = {
   "@context": "https://schema.org",
   "@type": "Organization",
@@ -80,6 +118,10 @@ export default function LandingPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLd(websiteJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(faqJsonLd) }}
       />
       <nav className="nav mx-auto max-w-[1200px]">
         <span className="nav-brand">Stageio</span>
@@ -250,6 +292,37 @@ export default function LandingPage() {
           </div>
         </section>
 
+        <section className="py-8">
+          <span className="tag tag-accent" style={{ marginBottom: 16 }}>
+            Questions fréquentes
+          </span>
+          <div className="mt-4 flex flex-col gap-3" style={{ maxWidth: "68ch" }}>
+            {FAQ.map((item) => (
+              <details key={item.question} className="card" style={{ padding: "var(--space-5)" }}>
+                <summary
+                  style={{
+                    cursor: "pointer",
+                    fontFamily: "var(--font-heading)",
+                    fontSize: 15,
+                  }}
+                >
+                  {item.question}
+                </summary>
+                <p
+                  style={{
+                    fontSize: 14,
+                    lineHeight: 1.6,
+                    margin: "10px 0 0",
+                    color: "color-mix(in srgb, var(--color-text) 78%, transparent)",
+                  }}
+                >
+                  {item.answer}
+                </p>
+              </details>
+            ))}
+          </div>
+        </section>
+
         <section className="py-10 pb-20">
           <h2 style={{ fontSize: 28, margin: 0, maxWidth: "24ch" }}>
             Un pote te parraine ? Vous gagnez tous les deux.
@@ -273,15 +346,23 @@ export default function LandingPage() {
         </section>
 
         <footer
-          className="py-6"
+          className="py-6 flex flex-wrap gap-x-5 gap-y-2"
           style={{ borderTop: "1px solid var(--color-divider)" }}
         >
-          <Link
-            href="/legal"
-            style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}
-          >
-            Politique de confidentialité
-          </Link>
+          {[
+            { href: "/legal/mentions-legales", label: "Mentions légales" },
+            { href: "/legal/cgu", label: "CGU" },
+            { href: "/legal/cgv", label: "CGV" },
+            { href: "/legal/confidentialite", label: "Confidentialité" },
+          ].map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}
+            >
+              {item.label}
+            </Link>
+          ))}
         </footer>
       </div>
     </div>

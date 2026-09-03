@@ -137,6 +137,14 @@ export default async function PremiumPage({
                 Votre avenir vaut bien 7,99€
               </button>
             </form>
+            <p style={{ fontSize: 11, textAlign: "center", opacity: 0.8, margin: "10px 0 0" }}>
+              Sans engagement, résiliable à tout moment. En t&apos;abonnant,
+              tu acceptes les{" "}
+              <Link href="/legal/cgv" style={{ textDecoration: "underline", color: "inherit" }}>
+                CGV
+              </Link>
+              .
+            </p>
             {limite !== "1" && (
               <Link
                 href="/swipe"

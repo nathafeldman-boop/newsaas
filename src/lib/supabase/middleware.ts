@@ -17,6 +17,7 @@ const PUBLIC_PATHS = [
   "/offres",
   "/robots.txt",
   "/sitemap.xml",
+  "/llms.txt",
   "/admin",
 ];
 const ONBOARDING_EXEMPT_PATHS = ["/onboarding", "/auth", "/admin"];

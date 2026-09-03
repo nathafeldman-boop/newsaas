@@ -224,6 +224,15 @@ export function RegisterForm() {
         </button>
 
         <p
+          className="text-center"
+          style={{ fontSize: 11.5, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", margin: "-6px 0 0" }}
+        >
+          En créant un compte, tu acceptes les{" "}
+          <Link href="/legal/cgu">CGU</Link> et la{" "}
+          <Link href="/legal/confidentialite">politique de confidentialité</Link>.
+        </p>
+
+        <p
           className="text-center text-sm"
           style={{ color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "4px 0 0" }}
         >
