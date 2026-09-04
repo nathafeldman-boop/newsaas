@@ -59,7 +59,12 @@ export function CoverLetterPanel({
     window.open(applyUrl, "_blank", "noopener,noreferrer");
   }
 
-  const applyDisabled = status !== "ready" && status !== "premium_required";
+  // La candidature elle-même est déjà enregistrée côté serveur dès l'ouverture
+  // de cette page (voir generateCoverLetterAction), indépendamment du succès
+  // de la génération -- ne jamais bloquer l'accès au lien de candidature
+  // externe à cause d'un échec IA (ex: rate limit Mistral en prod). Seul le
+  // court instant de chargement initial justifie de désactiver le bouton.
+  const applyDisabled = status === "loading" && !letter;
 
   return (
     <div className="mt-6 flex flex-col gap-3">
@@ -171,7 +176,7 @@ export function CoverLetterPanel({
               color: "color-mix(in srgb, var(--color-text) 55%, transparent)",
             }}
           >
-            {status === "premium_required"
+            {status === "premium_required" || status === "error" || !letter
               ? "On ouvre la page de l'offre — pas de lettre à coller cette fois."
               : copied
                 ? "Lettre copiée — colle-la sur le site qui vient de s'ouvrir pour finaliser."
@@ -179,7 +184,7 @@ export function CoverLetterPanel({
           </p>
         </>
       ) : (
-        (status === "ready" || status === "premium_required") && (
+        status !== "loading" && (
           <p className="tag tag-accent-2" style={{ padding: "8px 14px", fontSize: 13, display: "block" }}>
             Ce recruteur n&apos;a pas de lien externe — ta candidature est enregistrée, on lui a
             noté ton intérêt.

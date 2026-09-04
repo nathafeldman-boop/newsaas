@@ -46,6 +46,19 @@ function buildUserPrompt(offer: OfferInput, profile: ProfileInput, cvText: strin
   return lines.join("\n");
 }
 
+function isRateLimitError(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "statusCode" in err &&
+    (err as { statusCode?: number }).statusCode === 429
+  );
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export async function generateCoverLetter(
   offer: OfferInput,
   profile: ProfileInput,
@@ -53,16 +66,34 @@ export async function generateCoverLetter(
 ): Promise<string> {
   const client = getMistralClient();
   const model = getMistralModel();
+  const messages = [
+    { role: "system" as const, content: SYSTEM_PROMPT },
+    { role: "user" as const, content: buildUserPrompt(offer, profile, cvText) },
+  ];
 
-  const result = await client.chat.complete({
-    model,
-    temperature: 0.6,
-    messages: [
-      { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: buildUserPrompt(offer, profile, cvText) },
-    ],
-  });
+  // Un 429 "rate limited" en prod est en pratique quasi systématiquement une
+  // rafale passagère (le compte Mistral partage son quota par minute avec
+  // l'ingestion d'offres et l'audit CV) : un seul essai suffisait à bloquer
+  // toute génération de lettre le temps que le quota se libère, alors qu'un
+  // court retry suffit souvent à passer.
+  let lastErr: unknown;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const result = await client.chat.complete({ model, temperature: 0.6, messages });
+      return finalizeLetter(result);
+    } catch (err) {
+      lastErr = err;
+      if (isRateLimitError(err) && attempt < 2) {
+        await sleep(1500);
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastErr;
+}
 
+function finalizeLetter(result: Awaited<ReturnType<ReturnType<typeof getMistralClient>["chat"]["complete"]>>): string {
   const content = result.choices?.[0]?.message?.content;
   const text = Array.isArray(content)
     ? content.map((c) => ("text" in c ? c.text : "")).join("")
