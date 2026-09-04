@@ -15,14 +15,28 @@ async function syncSubscription(subscription: Stripe.Subscription) {
   const customerId =
     typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
 
-  await admin
+  const { error, count } = await admin
     .from("profiles")
-    .update({
-      stripe_subscription_id: subscription.id,
-      subscription_status: subscription.status,
-      current_period_end: periodEndOf(subscription),
-    })
+    .update(
+      {
+        stripe_subscription_id: subscription.id,
+        subscription_status: subscription.status,
+        current_period_end: periodEndOf(subscription),
+      },
+      { count: "exact" },
+    )
     .eq("stripe_customer_id", customerId);
+  // supabase-js ne throw jamais sur une erreur Postgres, et un update qui ne
+  // matche aucune ligne (ex: stripe_customer_id pas encore posé sur le
+  // profil au moment où l'event arrive) réussit silencieusement sans rien
+  // modifier -- dans les deux cas, sans ce log, un paiement réel resterait
+  // invisible sur le dashboard admin sans aucune trace pour comprendre
+  // pourquoi (voir la même mésaventure avec la présence "en ligne").
+  if (error) {
+    console.error("Stripe webhook: syncSubscription update failed", error, { customerId });
+  } else if (count === 0) {
+    console.error("Stripe webhook: syncSubscription matched no profile", { customerId });
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -57,10 +71,21 @@ export async function POST(request: NextRequest) {
 
       if (userId && customerId) {
         const admin = createAdminClient();
-        await admin
+        const { error } = await admin
           .from("profiles")
           .update({ stripe_customer_id: customerId, premium_activated_at: new Date().toISOString() })
           .eq("id", userId);
+        if (error) {
+          console.error("Stripe webhook: checkout.session.completed profile update failed", error, {
+            userId,
+            customerId,
+          });
+        }
+      } else {
+        console.error("Stripe webhook: checkout.session.completed missing userId or customerId", {
+          userId,
+          customerId,
+        });
       }
 
       if (subscriptionId) {
@@ -83,10 +108,16 @@ export async function POST(request: NextRequest) {
         typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id;
       if (customerId && invoice.amount_paid > 0) {
         const admin = createAdminClient();
-        await admin.rpc("increment_total_paid", {
+        const { error } = await admin.rpc("increment_total_paid", {
           p_stripe_customer_id: customerId,
           p_amount_cents: invoice.amount_paid,
         });
+        if (error) {
+          console.error("Stripe webhook: increment_total_paid failed", error, {
+            customerId,
+            amount: invoice.amount_paid,
+          });
+        }
       }
       break;
     }

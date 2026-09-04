@@ -1,9 +1,20 @@
+import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { startOfTodayParis } from "@/lib/date";
 
-function StatTile({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
-  return (
-    <div className="card elev-sm" style={{ padding: "var(--space-5)" }}>
+function StatTile({
+  label,
+  value,
+  accent,
+  href,
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+  href?: string;
+}) {
+  const content = (
+    <>
       <p
         style={{
           fontFamily: "var(--font-heading)",
@@ -24,7 +35,26 @@ function StatTile({ label, value, accent }: { label: string; value: string; acce
         }}
       >
         {label}
+        {href && " →"}
       </p>
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className="card elev-sm no-underline"
+        style={{ padding: "var(--space-5)", color: "inherit", display: "block" }}
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <div className="card elev-sm" style={{ padding: "var(--space-5)" }}>
+      {content}
     </div>
   );
 }
@@ -85,7 +115,7 @@ export default async function AdminDashboardPage() {
         <StatTile label="Inscrits aujourd'hui" value={String(signupsToday ?? 0)} accent />
         <StatTile label="Inscrits (7 jours)" value={String(signupsWeek ?? 0)} />
         <StatTile label="Total utilisateurs" value={String(totalUsers ?? 0)} />
-        <StatTile label="Premium payant" value={String(paidPremium)} accent />
+        <StatTile label="Premium payant" value={String(paidPremium)} accent href="/admin/premium" />
         <StatTile label="Premium offert (codes)" value={String(compPremium)} />
         <StatTile
           label="Revenu cumulé"
