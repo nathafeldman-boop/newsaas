@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { startOfTodayParis } from "@/lib/date";
 import { STEP_IDS, STEP_LABELS, type StepId } from "@/lib/onboarding/steps";
-import { StackedBarChart } from "@/components/admin/charts/StackedBarChart";
+import { LineAreaChart } from "@/components/admin/charts/LineAreaChart";
 import { WeekdayBarChart } from "@/components/admin/charts/WeekdayBarChart";
 import { bucketizeSignups, computeWeekdayAverages, periodStart, type Period } from "@/lib/admin/analytics";
 import { moderateReviewAction } from "./reviews-actions";
@@ -237,7 +237,7 @@ export default async function AdminDashboardPage({
             </Link>
           ))}
         </div>
-        <StackedBarChart data={chartData} />
+        <LineAreaChart data={chartData} total={periodProfiles.length} />
       </SectionCard>
 
       <SectionCard

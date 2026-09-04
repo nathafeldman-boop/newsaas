@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isPremium } from "@/lib/subscription/isPremium";
+import { grantPremiumAndNotifyAction } from "@/app/admin/users/actions";
 
 const SUBSCRIPTION_LABEL: Record<string, string> = {
   active: "Payant (actif)",
@@ -89,10 +90,18 @@ export default async function AdminUserDetailPage({
         </div>
       </div>
 
-      <div className="mt-4">
+      <div className="mt-4 flex items-center gap-3">
         <span className={isPremium(profile) ? "tag tag-accent" : "tag tag-neutral"}>
           {SUBSCRIPTION_LABEL[profile.subscription_status ?? ""] ?? "Gratuit"}
         </span>
+        {!isPremium(profile) && (
+          <form action={grantPremiumAndNotifyAction}>
+            <input type="hidden" name="userId" value={profile.id} />
+            <button type="submit" className="btn btn-secondary" style={{ padding: "6px 12px", fontSize: 12 }}>
+              A payé mais pas activé → Marquer Premium + prévenir
+            </button>
+          </form>
+        )}
       </div>
 
       <h2 style={{ fontSize: 16, margin: "28px 0 10px" }}>Funnel</h2>

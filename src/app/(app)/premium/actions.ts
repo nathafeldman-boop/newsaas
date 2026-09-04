@@ -49,7 +49,11 @@ export async function createCheckoutSessionAction() {
     mode: "subscription",
     customer: customerId,
     line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${SITE_URL}/premium/success`,
+    // session_id transmis à /premium/success : filet de secours qui
+    // resynchronise l'abonnement à la volée si le webhook Stripe n'est
+    // jamais arrivé ou a échoué (voir ce fichier pour le contexte -- un
+    // paiement réel resté sans effet, découvert en prod).
+    success_url: `${SITE_URL}/premium/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${SITE_URL}/premium`,
     client_reference_id: user.id,
     subscription_data: { metadata: { supabase_user_id: user.id } },

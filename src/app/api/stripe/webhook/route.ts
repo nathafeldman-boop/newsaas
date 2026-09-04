@@ -2,39 +2,25 @@ import { NextResponse, type NextRequest } from "next/server";
 import type Stripe from "stripe";
 import { getStripeClient } from "@/lib/stripe/client";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { syncSubscriptionToProfile } from "@/lib/stripe/syncSubscription";
 
 export const maxDuration = 30;
 
-function periodEndOf(subscription: Stripe.Subscription): string | null {
-  const ts = subscription.items.data[0]?.current_period_end;
-  return typeof ts === "number" ? new Date(ts * 1000).toISOString() : null;
-}
-
 async function syncSubscription(subscription: Stripe.Subscription) {
-  const admin = createAdminClient();
   const customerId =
     typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
-
-  const { error, count } = await admin
-    .from("profiles")
-    .update(
-      {
-        stripe_subscription_id: subscription.id,
-        subscription_status: subscription.status,
-        current_period_end: periodEndOf(subscription),
-      },
-      { count: "exact" },
-    )
-    .eq("stripe_customer_id", customerId);
+  const { matched, error } = await syncSubscriptionToProfile(subscription);
   // supabase-js ne throw jamais sur une erreur Postgres, et un update qui ne
   // matche aucune ligne (ex: stripe_customer_id pas encore posé sur le
   // profil au moment où l'event arrive) réussit silencieusement sans rien
   // modifier -- dans les deux cas, sans ce log, un paiement réel resterait
   // invisible sur le dashboard admin sans aucune trace pour comprendre
-  // pourquoi (voir la même mésaventure avec la présence "en ligne").
+  // pourquoi (voir la même mésaventure avec la présence "en ligne"). Filet
+  // de secours si malgré tout ce webhook échoue : /premium/success rejoue
+  // la même synchro juste après le paiement (voir ce fichier).
   if (error) {
     console.error("Stripe webhook: syncSubscription update failed", error, { customerId });
-  } else if (count === 0) {
+  } else if (!matched) {
     console.error("Stripe webhook: syncSubscription matched no profile", { customerId });
   }
 }
