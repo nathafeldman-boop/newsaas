@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { markReferralGrantedAction } from "@/app/onboarding/actions";
@@ -8,6 +8,7 @@ import { ChipMultiSelectWithCustom } from "@/components/ui/ChipMultiSelectWithCu
 import { Highlight } from "@/components/ui/Highlight";
 import type { ContractType, Profile } from "@/types/database";
 import { SECTORS, SKILLS, TOP_CITIES } from "@/lib/onboarding/options";
+import { STEP_IDS, STEP_LABELS, type StepId } from "@/lib/onboarding/steps";
 
 // Onboarding "sans clavier" : tout se fait au tap (tuiles/chips), avec un
 // échappatoire texte optionnel là où une liste ne peut pas tout couvrir
@@ -23,18 +24,8 @@ import { SECTORS, SKILLS, TOP_CITIES } from "@/lib/onboarding/options";
 // sections facultatives avant la toute première offre. experience_level
 // n'entre dans aucun critère de computeMatchScore : jamais demandé à
 // l'onboarding non plus.
-const STEP_IDS = ["intro", "looking_for", "search", "cv", "outro"] as const;
-type StepId = (typeof STEP_IDS)[number];
-
 const PROGRESS_STEPS: StepId[] = STEP_IDS.filter((s) => s !== "intro" && s !== "outro");
 const SKIPPABLE: StepId[] = ["cv"];
-const STEP_LABELS: Record<StepId, string> = {
-  intro: "",
-  looking_for: "Toi",
-  search: "Ta recherche",
-  cv: "Ton CV",
-  outro: "",
-};
 
 const slideVariants: Variants = {
   enter: (direction: number) => ({ x: direction > 0 ? 48 : -48, opacity: 0 }),
@@ -101,6 +92,25 @@ function TileOption({
   );
 }
 
+// Funnel onboarding (dashboard admin, "Vus / Terminés / Abandon" par écran) :
+// un événement par étape vue/terminée, écrit dans user_events (déjà
+// accessible en écriture à l'utilisateur pour ses propres lignes via RLS).
+// /onboarding exige déjà une session (voir proxy.ts) : pas de bruit robot à
+// filtrer côté client, contrairement au tracking de visites site entier.
+async function logOnboardingEvent(
+  userId: string,
+  type: "onboarding_step_viewed" | "onboarding_step_completed",
+  step: StepId,
+) {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("user_events")
+    .insert({ user_id: userId, event_type: type, metadata: { step } });
+  if (error) {
+    console.error("onboarding funnel event failed", error, { type, step });
+  }
+}
+
 export function OnboardingWizard({
   userId,
   initialProfile,
@@ -131,6 +141,11 @@ export function OnboardingWizard({
 
   const [cvFile, setCvFile] = useState<File | null>(null);
 
+  useEffect(() => {
+    void logOnboardingEvent(userId, "onboarding_step_viewed", stepId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stepId]);
+
   function toggleLookingFor(type: ContractType) {
     setLookingFor((prev) =>
       prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type],
@@ -157,6 +172,7 @@ export function OnboardingWizard({
       return;
     }
     setError(null);
+    void logOnboardingEvent(userId, "onboarding_step_completed", stepId);
     setDirection(1);
     setStepIndex((i) => Math.min(i + 1, STEP_IDS.length - 1));
   }
@@ -216,6 +232,8 @@ export function OnboardingWizard({
       setError(updateError.message);
       return;
     }
+
+    void logOnboardingEvent(userId, "onboarding_step_completed", "outro");
 
     // Skip l'aller-retour réseau pour l'immense majorité des comptes qui
     // n'ont pas de parrain -- seul ce cas a besoin d'être attendu (un

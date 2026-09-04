@@ -159,6 +159,24 @@ export type UserEvent = {
   created_at: string;
 };
 
+export type SiteVisit = {
+  id: string;
+  visitor_id: string;
+  path: string;
+  created_at: string;
+};
+
+export type ReviewStatus = "pending" | "approved" | "rejected";
+
+export type Review = {
+  id: string;
+  user_id: string;
+  rating: number;
+  comment: string | null;
+  status: ReviewStatus;
+  created_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -241,6 +259,18 @@ export type Database = {
         Row: UserEvent;
         Insert: Partial<UserEvent> & { user_id: string; event_type: string };
         Update: Partial<UserEvent>;
+        Relationships: [];
+      };
+      site_visits: {
+        Row: SiteVisit;
+        Insert: Partial<SiteVisit> & { visitor_id: string; path: string };
+        Update: Partial<SiteVisit>;
+        Relationships: [];
+      };
+      reviews: {
+        Row: Review;
+        Insert: Partial<Review> & { user_id: string; rating: number };
+        Update: Partial<Review>;
         Relationships: [];
       };
     };

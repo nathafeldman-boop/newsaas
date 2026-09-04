@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ProfileForm } from "@/components/profile/ProfileForm";
 import { GmailConnectionPanel } from "@/components/profile/GmailConnectionPanel";
 import { SettingsPanel } from "@/components/profile/SettingsPanel";
+import { ReviewPanel } from "@/components/profile/ReviewPanel";
 import { isPremium } from "@/lib/subscription/isPremium";
 import type { ApplicationStatus } from "@/types/database";
 
@@ -36,7 +37,7 @@ export default async function ProfilPage({
   const initial = (profile.full_name || user.email || "?").charAt(0).toUpperCase();
   const premium = isPremium(profile);
 
-  const [{ data: gmailConnection }, { data: applications }] = await Promise.all([
+  const [{ data: gmailConnection }, { data: applications }, { data: review }] = await Promise.all([
     supabase
       .from("email_connections")
       .select("*")
@@ -44,6 +45,7 @@ export default async function ProfilPage({
       .eq("provider", "gmail")
       .maybeSingle(),
     supabase.from("applications").select("status").eq("user_id", user.id),
+    supabase.from("reviews").select("rating, comment").eq("user_id", user.id).maybeSingle(),
   ]);
 
   const statCounts: Record<"total" | ApplicationStatus, number> = {
@@ -128,6 +130,8 @@ export default async function ProfilPage({
       <GmailConnectionPanel connection={gmailConnection ?? null} statusParam={gmail} />
 
       <SettingsPanel userId={user.id} initialNotifyNewOffers={profile.notify_new_offers} />
+
+      <ReviewPanel userId={user.id} initialReview={review ?? null} />
 
       <div className="flex flex-col gap-2.5 mt-5">
         <Link
