@@ -43,3 +43,31 @@ export async function grantPremiumAndNotifyAction(formData: FormData) {
 
   revalidatePath(`/admin/users/${userId}`);
 }
+
+// Recours pour les comptes déjà passés Premium (statut correct) mais dont le
+// LTV est resté à 0 -- invoice.paid s'avère systémiquement en échec en prod
+// (3+ paiements réels confirmés, un seul reflété avant correction manuelle) :
+// /premium/success crédite maintenant le paiement à la volée pour toute
+// NOUVELLE conversion, mais les comptes déjà touchés avant ce correctif
+// restent à corriger une fois à la main. 799 = 7,99€, le seul prix pratiqué.
+const CURRENT_PRICE_CENTS = 799;
+
+export async function fixMissingLtvAction(formData: FormData) {
+  await assertAdminSession();
+  const userId = formData.get("userId") as string;
+  if (!userId) return;
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("profiles")
+    .update({ total_paid_cents: CURRENT_PRICE_CENTS })
+    .eq("id", userId)
+    .eq("total_paid_cents", 0);
+
+  if (error) {
+    console.error("fixMissingLtvAction: update failed", error, { userId });
+  }
+
+  revalidatePath("/admin/premium");
+  revalidatePath(`/admin/users/${userId}`);
+}

@@ -167,6 +167,13 @@ export type SiteVisit = {
   created_at: string;
 };
 
+export type StripeProcessedInvoice = {
+  invoice_id: string;
+  stripe_customer_id: string;
+  amount_cents: number;
+  created_at: string;
+};
+
 export type ReviewStatus = "pending" | "approved" | "rejected";
 
 export type Review = {
@@ -274,11 +281,25 @@ export type Database = {
         Update: Partial<Review>;
         Relationships: [];
       };
+      stripe_processed_invoices: {
+        Row: StripeProcessedInvoice;
+        Insert: Partial<StripeProcessedInvoice> & {
+          invoice_id: string;
+          stripe_customer_id: string;
+          amount_cents: number;
+        };
+        Update: Partial<StripeProcessedInvoice>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
       increment_total_paid: {
         Args: { p_stripe_customer_id: string; p_amount_cents: number };
+        Returns: undefined;
+      };
+      credit_invoice_payment: {
+        Args: { p_invoice_id: string; p_stripe_customer_id: string; p_amount_cents: number };
         Returns: undefined;
       };
     };

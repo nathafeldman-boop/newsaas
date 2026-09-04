@@ -3,6 +3,7 @@ import type Stripe from "stripe";
 import { getStripeClient } from "@/lib/stripe/client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { syncSubscriptionToProfile } from "@/lib/stripe/syncSubscription";
+import { creditInvoicePayment } from "@/lib/stripe/creditInvoicePayment";
 
 export const maxDuration = 30;
 
@@ -93,14 +94,11 @@ export async function POST(request: NextRequest) {
       const customerId =
         typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id;
       if (customerId && invoice.amount_paid > 0) {
-        const admin = createAdminClient();
-        const { error } = await admin.rpc("increment_total_paid", {
-          p_stripe_customer_id: customerId,
-          p_amount_cents: invoice.amount_paid,
-        });
+        const { error } = await creditInvoicePayment(invoice.id, customerId, invoice.amount_paid);
         if (error) {
-          console.error("Stripe webhook: increment_total_paid failed", error, {
+          console.error("Stripe webhook: creditInvoicePayment failed", error, {
             customerId,
+            invoiceId: invoice.id,
             amount: invoice.amount_paid,
           });
         }

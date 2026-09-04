@@ -2,25 +2,28 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getStripeClient } from "@/lib/stripe/client";
 import { syncSubscriptionToProfile } from "@/lib/stripe/syncSubscription";
+import { creditInvoicePayment } from "@/lib/stripe/creditInvoicePayment";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type Stripe from "stripe";
 
 // Filet de secours : le webhook Stripe (/api/stripe/webhook) est la voie
-// normale d'activation du Premium, mais un paiement réel s'est retrouvé sans
-// aucun effet côté profil (ni statut, ni date d'activation) alors que le
-// client avait bien payé -- webhook jamais arrivé ou signature refusée,
-// aucun moyen de le confirmer depuis ce fichier. Plutôt que de dépendre
-// uniquement d'un event asynchrone qu'on ne peut pas garantir, on
-// resynchronise ici, à la volée, dès que l'utilisateur revient sur cette
-// page après un paiement réussi -- Stripe garantit que la session de
-// checkout est déjà "complete" et l'abonnement déjà créé à ce moment-là.
-// Idempotent (voir syncSubscriptionToProfile) : sans risque si le webhook a
-// entre-temps déjà fait le travail.
+// normale d'activation du Premium, mais plusieurs paiements réels se sont
+// retrouvés sans aucun effet côté profil (statut, date d'activation, ET
+// revenu suivi -- total_paid_cents restait à 0 malgré 3+ paiements réels
+// confirmés) -- webhook jamais arrivé ou signature refusée, aucun moyen de
+// le confirmer depuis ce fichier. Plutôt que de dépendre uniquement d'un
+// event asynchrone qu'on ne peut pas garantir, on resynchronise ici, à la
+// volée, dès que l'utilisateur revient sur cette page après un paiement
+// réussi -- Stripe garantit que la session de checkout est déjà "complete"
+// et l'abonnement (+ sa première facture) déjà créés à ce moment-là.
+// Idempotent (voir syncSubscriptionToProfile et creditInvoicePayment) :
+// sans risque si le webhook a entre-temps déjà fait le travail, dans un
+// sens comme dans l'autre.
 async function reconcileFromSession(sessionId: string, userId: string) {
   try {
     const stripe = getStripeClient();
     const session = await stripe.checkout.sessions.retrieve(sessionId, {
-      expand: ["subscription"],
+      expand: ["subscription", "invoice"],
     });
 
     if (session.client_reference_id !== userId) {
@@ -66,6 +69,17 @@ async function reconcileFromSession(sessionId: string, userId: string) {
         console.error("premium/success: syncSubscriptionToProfile failed", error, { userId });
       } else if (!matched) {
         console.error("premium/success: syncSubscriptionToProfile matched no profile", { userId });
+      }
+    }
+
+    const invoice = session.invoice as Stripe.Invoice | null;
+    if (invoice && customerId && invoice.amount_paid > 0) {
+      const { error } = await creditInvoicePayment(invoice.id, customerId, invoice.amount_paid);
+      if (error) {
+        console.error("premium/success: creditInvoicePayment failed", error, {
+          userId,
+          invoiceId: invoice.id,
+        });
       }
     }
   } catch (err) {
