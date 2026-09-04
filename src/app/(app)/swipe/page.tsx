@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SwipeDeck } from "@/components/swipe/SwipeDeck";
 import { computeMatchScore, computeMatchReasons, isNearbyCity } from "@/lib/matching/score";
+import { buildLearnedAffinity, type SwipeHistoryEntry } from "@/lib/matching/learning";
 import { computeQuotaStatus, FREE_WEEKLY_SWIPE_QUOTA } from "@/lib/subscription/quota";
 import type { Offer } from "@/types/database";
 
@@ -20,11 +21,38 @@ export default async function SwipePage() {
     .single();
 
   const [{ data: swiped }, { data: applications }] = await Promise.all([
-    supabase.from("swipes").select("offer_id, created_at").eq("user_id", user.id),
+    supabase
+      .from("swipes")
+      .select("offer_id, direction, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(500),
     supabase.from("applications").select("offer_id").eq("user_id", user.id),
   ]);
 
   const excludeIds = (swiped ?? []).map((s) => s.offer_id);
+  const appliedOfferIds = new Set((applications ?? []).map((a) => a.offer_id));
+
+  // Apprend des vrais likes/passes/candidatures passés (pas seulement des
+  // réponses figées de l'onboarding) : voir src/lib/matching/learning.ts.
+  // Les offres déjà swipées ne sont jamais dans `offers` (exclues ci-dessous
+  // pour ne pas les remontrer), donc il faut aller chercher leurs attributs
+  // séparément pour reconstruire ce que le profil a réellement aimé/passé.
+  let swipeHistory: SwipeHistoryEntry[] = [];
+  if (excludeIds.length > 0) {
+    const { data: swipedOffersData } = await supabase
+      .from("offers")
+      .select("id, sector, title, remote_policy")
+      .in("id", excludeIds);
+    const swipedOffersById = new Map((swipedOffersData ?? []).map((o) => [o.id, o]));
+
+    swipeHistory = (swiped ?? []).flatMap((s) => {
+      const offer = swipedOffersById.get(s.offer_id);
+      if (!offer) return [];
+      return [{ direction: s.direction, applied: appliedOfferIds.has(s.offer_id), offer }];
+    });
+  }
+  const affinity = buildLearnedAffinity(swipeHistory);
 
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
@@ -48,7 +76,7 @@ export default async function SwipePage() {
   // récentes (ce qu'on récupérait avant) et les meilleurs matchs d'un
   // profil peuvent ne jamais apparaître s'ils ne sont pas parmi les toutes
   // dernières publiées.
-  const CANDIDATE_POOL_SIZE = 400;
+  const CANDIDATE_POOL_SIZE = 600;
 
   let offers: Offer[] = [];
 
@@ -101,10 +129,19 @@ export default async function SwipePage() {
     }
   }
 
+  // Score de base (réponses onboarding) + bonus appris de l'historique réel
+  // de swipes/candidatures (voir src/lib/matching/learning.ts) -- ce dernier
+  // reste à 0 pour un profil qui n'a encore rien swipé, donc n'affecte
+  // jamais un tout nouveau compte.
   const scores: Record<string, number> = {};
   if (profile) {
     for (const offer of offers) {
-      scores[offer.id] = computeMatchScore(profile, offer);
+      const base = computeMatchScore(profile, offer);
+      const learnedBonus =
+        affinity.sectorBonus(offer.sector) +
+        affinity.remoteBonus(offer.remote_policy) +
+        affinity.keywordBonus(offer.title);
+      scores[offer.id] = Math.max(30, Math.min(99, Math.round(base + learnedBonus)));
     }
   }
 
@@ -127,11 +164,18 @@ export default async function SwipePage() {
       profile.skills.length > 0 ||
       !!profile.city);
 
+  // Le seuil monte une fois qu'on a assez d'historique pour lui faire
+  // confiance : "trop de swipes, pas assez de candidatures" -- un deck qui
+  // reste en permanence rempli à ras le score de base (40) laisse passer du
+  // remplissage correct-mais-pas-motivant. Passé un peu d'historique réel,
+  // on ne montre plus que ce qui ressort vraiment.
+  const relevanceThreshold = affinity.sampleSize >= 15 ? 55 : 40;
+
   // Même logique de filet de sécurité que ci-dessus : si ce filtre viderait
   // un pool pourtant non vide, on préfère montrer les offres quand même
   // (déjà triées par score, donc les moins hors-sujet en premier) plutôt que
   // de renvoyer un compte gratuit vers l'écran de blocage sans un seul swipe.
-  const filteredByRelevance = rankedOffers.filter((o) => (scores[o.id] ?? 0) > 40);
+  const filteredByRelevance = rankedOffers.filter((o) => (scores[o.id] ?? 0) > relevanceThreshold);
   const relevantOffers =
     hasPreferences && filteredByRelevance.length > 0 ? filteredByRelevance : rankedOffers;
 
@@ -140,7 +184,11 @@ export default async function SwipePage() {
   const reasons: Record<string, string[]> = {};
   if (profile) {
     for (const offer of sortedOffers) {
-      reasons[offer.id] = computeMatchReasons(profile, offer);
+      const offerReasons = computeMatchReasons(profile, offer);
+      if (offerReasons.length < 3 && affinity.isStrongContentMatch(offer)) {
+        offerReasons.push("Proche d'offres que tu as aimées");
+      }
+      reasons[offer.id] = offerReasons;
     }
   }
 
