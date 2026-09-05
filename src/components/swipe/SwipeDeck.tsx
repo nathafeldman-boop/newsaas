@@ -157,7 +157,8 @@ function SwipeDeckInner({
   userId,
   initialSwipesToday,
   isPremium,
-  initialQuotaReached,
+  quotaReached,
+  onQuotaReached,
   onBrowseSwipe,
 }: {
   offers: Offer[];
@@ -166,7 +167,8 @@ function SwipeDeckInner({
   userId: string;
   initialSwipesToday: number;
   isPremium: boolean;
-  initialQuotaReached: boolean;
+  quotaReached: boolean;
+  onQuotaReached: () => void;
   onBrowseSwipe?: () => void;
 }) {
   const router = useRouter();
@@ -174,7 +176,12 @@ function SwipeDeckInner({
   const [busy, setBusy] = useState(false);
   const [, setSwipesToday] = useState(initialSwipesToday);
   const [celebrating, setCelebrating] = useState(false);
-  const [quotaReached, setQuotaReached] = useState(initialQuotaReached);
+  // Un swipe à la fois pour un compte gratuit : le quota est vérifié côté
+  // serveur à chaque insertion (trigger enforce_swipe_quota), donc tant que
+  // la réponse du swipe en cours n'est pas revenue, on ne sait pas encore
+  // s'il a été accepté -- sans ce verrou, dragguer/cliquer vite permettait
+  // d'enchaîner plusieurs cartes avant que le blocage ne soit détecté.
+  const swipeInFlight = useRef(false);
   const topCardRef = useRef<SwipeCardHandle>(null);
   const celebrationTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -188,8 +195,9 @@ function SwipeDeckInner({
         { user_id: userId, offer_id: offer.id, direction },
         { onConflict: "user_id,offer_id" },
       );
+    swipeInFlight.current = false;
     if (error?.message.includes("SWIPE_QUOTA_REACHED")) {
-      setQuotaReached(true);
+      onQuotaReached();
       // Direct vers la vraie page paywall plutôt que la carte de blocage
       // inline : dès que le quota tombe, on est déjà censé y être (voir la
       // redirection équivalente au niveau layout pour toute autre page).
@@ -205,8 +213,10 @@ function SwipeDeckInner({
 
   function handleSwipeIntent(direction: SwipeDirection) {
     if (quotaReached && !isPremium) return;
+    if (!isPremium && swipeInFlight.current) return;
     const offer = stack[0];
     if (!offer) return;
+    if (!isPremium) swipeInFlight.current = true;
     void recordSwipe(offer, direction);
     setSwipesToday((n) => n + 1);
     onBrowseSwipe?.();
@@ -409,6 +419,13 @@ export function SwipeDeck({
   // ce qui réinitialiserait le compteur alors que le quota, lui, ne l'est
   // pas.
   const [remaining, setRemaining] = useState(remainingSwipes);
+  // Même raison que `remaining` ci-dessus : si ce flag vivait dans
+  // SwipeDeckInner (comme avant), changer de filtre une fois le quota
+  // atteint le remontait avec sa valeur initiale (donc "non atteint") et
+  // débloquait le swipe -- bug réel signalé en prod ("plus de 10 swipes
+  // gratuits"). Hissé ici, il ne peut plus être remis à zéro par un simple
+  // changement de filtre.
+  const [quotaHit, setQuotaHit] = useState(quotaReached);
 
   const filteredOffers =
     contractFilter === "all"
@@ -466,7 +483,8 @@ export function SwipeDeck({
         userId={userId}
         initialSwipesToday={swipesToday}
         isPremium={isPremium}
-        initialQuotaReached={quotaReached}
+        quotaReached={quotaHit}
+        onQuotaReached={() => setQuotaHit(true)}
         onBrowseSwipe={() =>
           setRemaining((n) => (n === null ? n : Math.max(0, n - 1)))
         }
