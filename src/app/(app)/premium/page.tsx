@@ -105,11 +105,27 @@ export default async function PremiumPage({
               <span style={{ fontFamily: "var(--font-heading)", fontSize: 44 }}>7,99€</span>
               <span style={{ fontSize: 13, opacity: 0.85 }}>/mois</span>
             </div>
+            <p style={{ fontSize: 12, opacity: 0.85, margin: "4px 0 0" }}>
+              Soit 0,27€ par jour — moins qu&apos;un café, pour décrocher l&apos;alternance qui va lancer ta
+              carrière.
+            </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 18 }}>
               <p style={{ fontSize: 13, margin: 0 }}>✓ Swipes illimités</p>
               <p style={{ fontSize: 13, margin: 0 }}>✓ Lettre de motivation générée par IA</p>
               <p style={{ fontSize: 13, margin: 0 }}>✓ Audit CV sur 100</p>
             </div>
+            <p
+              style={{
+                fontSize: 12,
+                marginTop: 16,
+                background: "rgba(0,0,0,0.15)",
+                padding: 10,
+                borderRadius: 8,
+              }}
+            >
+              💡 Moins cher qu&apos;un abonnement Netflix, et bien plus rentable : un seul entretien décroché
+              plus tôt grâce à Premium peut te faire gagner des mois de salaire.
+            </p>
 
             {error && (
               <p style={{ fontSize: 12, marginTop: 16, background: "rgba(0,0,0,0.15)", padding: 10, borderRadius: 8 }}>

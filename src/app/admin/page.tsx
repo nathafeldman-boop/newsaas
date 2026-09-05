@@ -207,7 +207,7 @@ export default async function AdminDashboardPage({
       <h1 style={{ fontSize: 26, margin: "0 0 20px" }}>Dashboard</h1>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-        <StatTile label="En ligne maintenant" value={String(onlineNow ?? 0)} accent />
+        <StatTile label="En ligne maintenant" value={String(onlineNow ?? 0)} accent href="/admin/online" />
         <StatTile label="Inscrits aujourd'hui" value={String(signupsToday ?? 0)} accent />
         <StatTile label="Inscrits (7 jours)" value={String(signupsWeek ?? 0)} />
         <StatTile label="Total utilisateurs" value={String(totalUsers ?? 0)} />
