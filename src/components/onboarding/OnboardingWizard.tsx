@@ -5,12 +5,13 @@ import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { markReferralGrantedAction } from "@/app/onboarding/actions";
 import { ChipMultiSelectWithCustom } from "@/components/ui/ChipMultiSelectWithCustom";
+import { LocationSearchSelect } from "@/components/ui/LocationSearchSelect";
 import { Highlight } from "@/components/ui/Highlight";
 import type { ContractType, Profile } from "@/types/database";
 import {
   SECTORS,
   SKILLS,
-  TOP_CITIES,
+  LOCATION_OPTIONS,
   TARGET_JOBS,
   MOBILITY_OPTIONS,
   EDUCATION_LEVELS,
@@ -461,30 +462,19 @@ export function OnboardingWizard({
                   <p style={{ fontSize: 13, fontFamily: "var(--font-heading)", margin: 0 }}>
                     Ta ville <span style={{ color: "var(--color-accent-700)" }}>(obligatoire)</span>
                   </p>
-                  <div className="flex flex-wrap gap-2">
-                    {TOP_CITIES.map((c) => (
-                      <motion.button
-                        key={c}
-                        type="button"
-                        whileTap={{ scale: 0.9 }}
-                        whileHover={{ scale: 1.04 }}
-                        transition={{ type: "spring", stiffness: 500, damping: 25 }}
-                        onClick={() => {
-                          setCity(c);
-                          setCityCustomOpen(false);
-                        }}
-                        className={city === c ? "tag" : "tag tag-neutral"}
-                        style={{
-                          padding: "7px 14px",
-                          fontSize: 13,
-                          ...(city === c ? { background: "var(--color-accent)", color: "var(--color-bg)" } : {}),
-                        }}
-                      >
-                        {c}
-                      </motion.button>
-                    ))}
-                  </div>
-                  {cityCustomOpen || (city && !TOP_CITIES.includes(city)) ? (
+                  <p style={{ fontSize: 12, margin: 0, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+                    Une ville précise, ou tout un département si tu es mobile plus large.
+                  </p>
+                  <LocationSearchSelect
+                    options={LOCATION_OPTIONS}
+                    value={city}
+                    onChange={(c) => {
+                      setCity(c);
+                      setCityCustomOpen(false);
+                    }}
+                    placeholder="Rechercher une ville ou un département..."
+                  />
+                  {cityCustomOpen || (city && !LOCATION_OPTIONS.includes(city)) ? (
                     <input
                       autoFocus
                       value={city}

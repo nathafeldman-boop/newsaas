@@ -1,4 +1,5 @@
 import type { Offer, Profile } from "@/types/database";
+import { isDepartmentLocation } from "@/lib/onboarding/options";
 
 const EDUCATION_RANK: Record<string, number> = {
   Bac: 1,
@@ -102,9 +103,15 @@ export function computeMatchScore(profile: Profile, offer: Offer): number {
   // Localisation / mobilité
   const cityLower = profile.city?.toLowerCase().trim();
   const offerLocationLower = offer.location.toLowerCase();
-  if (cityLower && offerLocationLower.includes(cityLower)) {
+  // Un profil peut choisir tout un département plutôt qu'une ville précise
+  // (voir LOCATION_OPTIONS) : le nom d'un département n'a quasiment aucune
+  // chance d'apparaître littéralement dans offer.location, donc la
+  // correspondance de sous-chaîne / agglomération n'a pas de sens ici --
+  // on traite ce choix comme une mobilité régionale déclarée.
+  const isDepartmentSelection = !!profile.city && isDepartmentLocation(profile.city);
+  if (!isDepartmentSelection && cityLower && offerLocationLower.includes(cityLower)) {
     score += 14;
-  } else if (cityLower && isNearbyCity(cityLower, offerLocationLower)) {
+  } else if (!isDepartmentSelection && cityLower && isNearbyCity(cityLower, offerLocationLower)) {
     // Même agglomération (ex: profil à "Lyon", offre à "Villeurbanne") sans
     // être une correspondance exacte de chaîne : presque aussi pertinent.
     score += 10;
@@ -114,7 +121,7 @@ export function computeMatchScore(profile: Profile, offer: Offer): number {
     offer.remote_policy === "remote"
   ) {
     score += 8;
-  } else if (profile.mobility === "Mobile dans la région") {
+  } else if (profile.mobility === "Mobile dans la région" || isDepartmentSelection) {
     score += 4;
   } else if (cityLower) {
     // Ville renseignée, offre ailleurs, aucune mobilité élargie déclarée
@@ -183,9 +190,10 @@ export function computeMatchReasons(profile: Profile, offer: Offer): string[] {
 
   const cityLower = profile.city?.toLowerCase().trim();
   const offerLocationLower = offer.location.toLowerCase();
-  if (cityLower && offerLocationLower.includes(cityLower)) {
+  const isDepartmentSelection = !!profile.city && isDepartmentLocation(profile.city);
+  if (!isDepartmentSelection && cityLower && offerLocationLower.includes(cityLower)) {
     reasons.push(`À ${profile.city}, comme toi`);
-  } else if (cityLower && isNearbyCity(cityLower, offerLocationLower)) {
+  } else if (!isDepartmentSelection && cityLower && isNearbyCity(cityLower, offerLocationLower)) {
     reasons.push(`Près de ${profile.city}`);
   } else if (offer.remote_policy === "remote") {
     reasons.push("Télétravail possible");
