@@ -118,11 +118,16 @@ export function computeMatchScore(profile: Profile, offer: Offer): number {
     score += 4;
   } else if (cityLower) {
     // Ville renseignée, offre ailleurs, aucune mobilité élargie déclarée
-    // (mobilité vide ou "Sur place uniquement") : sans pénalité, une offre
-    // à l'autre bout du pays scorait exactement pareil qu'une offre
-    // pertinente puisqu'aucun des bonus ci-dessus ne s'appliquait --
-    // d'où des offres à Strasbourg proposées à quelqu'un basé à Paris.
-    score -= 20;
+    // (mobilité vide ou "Sur place uniquement") : -20 laissait un match
+    // secteur+contrat parfait (40+8+18=66) retomber à 46 -- un score qui a
+    // l'air "correct" alors que le poste est à l'autre bout du pays pour un
+    // profil qui n'a déclaré aucune mobilité, souvent un métier de terrain
+    // (BTP, restauration...) impossible à distance. -30 fait mieux
+    // correspondre le score à la vraie pertinence : ce genre d'offre repasse
+    // sous le seuil de pertinence du deck (/swipe) au lieu de sembler
+    // "passable", et ne reste visible que si aucune meilleure offre
+    // n'existe (filet de sécurité déjà en place côté /swipe).
+    score -= 30;
   }
 
   // Compétences : proportion de compétences du profil retrouvées (mot entier)
