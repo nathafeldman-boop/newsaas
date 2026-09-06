@@ -4,6 +4,7 @@ import { getStripeClient } from "@/lib/stripe/client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { syncSubscriptionToProfile } from "@/lib/stripe/syncSubscription";
 import { creditInvoicePayment } from "@/lib/stripe/creditInvoicePayment";
+import { notifyIncompletePaymentByCustomerId } from "@/lib/stripe/notifyIncompletePayment";
 
 export const maxDuration = 30;
 
@@ -23,6 +24,17 @@ async function syncSubscription(subscription: Stripe.Subscription) {
     console.error("Stripe webhook: syncSubscription update failed", error, { customerId });
   } else if (!matched) {
     console.error("Stripe webhook: syncSubscription matched no profile", { customerId });
+  }
+
+  // Abonnement bloqué en 'incomplete' (3D Secure jamais confirmé, carte
+  // refusée au premier essai...) : le client n'est jamais devenu Premium et
+  // ne le saura pas tout seul -- on le relance dès qu'on voit ce statut,
+  // sans attendre un cron (idempotent, voir notifyIncompletePaymentOnce).
+  if (matched && subscription.status === "incomplete") {
+    const { error: notifyError } = await notifyIncompletePaymentByCustomerId(customerId);
+    if (notifyError) {
+      console.error("Stripe webhook: notifyIncompletePayment failed", notifyError, { customerId });
+    }
   }
 }
 

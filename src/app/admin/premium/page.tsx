@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { fixMissingLtvAction } from "@/app/admin/users/actions";
+import { fixMissingLtvAction, sendIncompletePaymentReminderAction } from "@/app/admin/users/actions";
 
 const STATUS_LABEL: Record<string, string> = {
   active: "Actif",
@@ -54,6 +54,32 @@ export default async function AdminPremiumPage() {
       <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "0 0 20px" }}>
         {rows.length} abonné(s) payant(s) (statut actif ou essai, hors codes offerts).
       </p>
+
+      <form
+        action={sendIncompletePaymentReminderAction}
+        className="card"
+        style={{ padding: "var(--space-4)", marginBottom: 20, gap: 10 }}
+      >
+        <p style={{ fontWeight: 600, margin: 0, fontSize: 14 }}>Relancer un paiement incomplet</p>
+        <p style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>
+          Pour un cas vu directement dans le dashboard Stripe (statut &quot;Incomplet&quot;) : envoie le mail de
+          relance tout de suite, sans attendre un nouvel événement Stripe. Sans effet si déjà envoyé à ce
+          compte.
+        </p>
+        <div className="flex gap-2" style={{ marginTop: 4 }}>
+          <input
+            type="email"
+            name="email"
+            required
+            placeholder="email@exemple.com"
+            className="input"
+            style={{ flex: 1 }}
+          />
+          <button type="submit" className="btn btn-secondary" style={{ whiteSpace: "nowrap" }}>
+            Envoyer la relance
+          </button>
+        </div>
+      </form>
 
       <div className="flex flex-col gap-2.5">
         {rows.map((p, i) => {

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { assertAdminSession } from "@/lib/admin/accessCode";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notifyPremiumFixed } from "@/lib/resend/notifyPremiumFixed";
+import { notifyIncompletePaymentOnce } from "@/lib/stripe/notifyIncompletePayment";
 
 // Recours manuel pour exactement le scénario rencontré en prod : un client a
 // payé (Stripe l'a bien débité) mais l'activation Premium n'a pas suivi
@@ -70,4 +71,37 @@ export async function fixMissingLtvAction(formData: FormData) {
 
   revalidatePath("/admin/premium");
   revalidatePath(`/admin/users/${userId}`);
+}
+
+// Déclenchement manuel pour un cas repéré à la main dans le dashboard
+// Stripe (paiement "Incomplet") : le webhook envoie déjà ce mail
+// automatiquement dès qu'un abonnement passe en 'incomplete' (voir
+// src/app/api/stripe/webhook/route.ts), mais ce bouton permet de relancer
+// tout de suite sans attendre/dépendre d'un nouvel event Stripe -- utile
+// pour les cas déjà en base avant que cet automatisme n'existe. Recherche
+// par email : c'est l'info directement disponible depuis le dashboard
+// Stripe, pas d'obligation de retrouver l'utilisateur dans /admin/users.
+export async function sendIncompletePaymentReminderAction(formData: FormData) {
+  await assertAdminSession();
+  const email = (formData.get("email") as string)?.trim();
+  if (!email) return;
+
+  const admin = createAdminClient();
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("email", email)
+    .single();
+
+  if (!profile) {
+    console.error("sendIncompletePaymentReminderAction: aucun profil pour cet email", { email });
+    return;
+  }
+
+  const { error } = await notifyIncompletePaymentOnce(profile.id);
+  if (error) {
+    console.error("sendIncompletePaymentReminderAction failed", error, { email });
+  }
+
+  revalidatePath("/admin/premium");
 }
