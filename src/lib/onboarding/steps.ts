@@ -11,7 +11,7 @@ export type StepId = (typeof STEP_IDS)[number];
 
 export const STEP_LABELS: Record<StepId, string> = {
   intro: "Bienvenue",
-  looking_for: "Toi",
+  looking_for: "Ton projet",
   search: "Ta recherche",
   profile: "Ton profil",
   cv: "Ton CV",

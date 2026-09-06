@@ -67,33 +67,38 @@ function TileOption({
   icon,
   active,
   onClick,
+  size = "sm",
 }: {
   label: string;
   icon?: string;
   active: boolean;
   onClick: () => void;
+  size?: "sm" | "lg";
 }) {
+  const isLg = size === "lg";
   return (
     <motion.button
       type="button"
-      whileTap={{ scale: 0.97 }}
+      whileTap={{ scale: 0.96 }}
       onClick={onClick}
-      className="flex items-center gap-3"
+      className="flex flex-col items-center"
       style={{
-        textAlign: "left",
+        textAlign: "center",
         width: "100%",
-        padding: "14px 16px",
-        borderRadius: "var(--radius-md)",
+        padding: isLg ? "26px 22px" : "14px 10px",
+        borderRadius: isLg ? "var(--radius-lg)" : "var(--radius-md)",
         border: `2px solid ${active ? "var(--color-accent)" : "var(--color-divider)"}`,
-        background: active ? "var(--color-accent-100)" : "var(--color-surface)",
+        background: active ? "var(--color-accent)" : "var(--color-surface)",
         fontFamily: "var(--font-heading)",
-        fontSize: 15,
-        color: active ? "var(--color-accent-800)" : "var(--color-text)",
-        transition: "border-color 0.15s ease, background-color 0.15s ease",
+        fontWeight: isLg ? 800 : 700,
+        fontSize: isLg ? 18 : 12.5,
+        lineHeight: 1.25,
+        color: active ? "var(--color-bg)" : "var(--color-text)",
+        transition: "border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease",
       }}
     >
       {icon && (
-        <span aria-hidden style={{ fontSize: 20 }}>
+        <span aria-hidden style={{ fontSize: isLg ? 30 : 22, marginBottom: isLg ? 10 : 6 }}>
           {icon}
         </span>
       )}
@@ -311,24 +316,29 @@ export function OnboardingWizard({
             <button
               type="button"
               onClick={goBack}
-              className="btn btn-icon btn-secondary"
+              className="btn btn-icon"
               aria-label="Retour"
+              style={{ borderRadius: 12, background: "var(--color-surface)", border: "none" }}
             >
               ←
             </button>
             <div
               style={{
                 flex: 1,
-                height: 8,
+                height: 6,
                 borderRadius: 999,
-                background: "var(--color-neutral-200)",
+                background: "var(--color-surface)",
                 overflow: "hidden",
               }}
             >
               <motion.div
                 animate={{ width: `${((progressIndex + 1) / PROGRESS_STEPS.length) * 100}%` }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                style={{ height: "100%", background: "var(--color-accent)", borderRadius: 999 }}
+                style={{
+                  height: "100%",
+                  background: "linear-gradient(90deg, var(--color-accent), var(--color-accent-2))",
+                  borderRadius: 999,
+                }}
               />
             </div>
           </div>
@@ -336,9 +346,10 @@ export function OnboardingWizard({
             style={{
               fontSize: 11,
               fontFamily: "var(--font-heading)",
-              letterSpacing: "0.06em",
+              fontWeight: 800,
+              letterSpacing: "0.09em",
               textTransform: "uppercase",
-              color: "var(--color-accent-700)",
+              color: "var(--color-accent-2)",
               margin: "14px 0 0",
             }}
           >
@@ -360,34 +371,38 @@ export function OnboardingWizard({
             style={{ display: "flex", flexDirection: "column", flex: 1 }}
           >
             {stepId === "intro" && (
-              <div className="flex flex-1 flex-col items-center justify-center text-center gap-6 px-2">
-                <motion.div
-                  initial={{ scale: 0.7, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ type: "spring", stiffness: 260, damping: 18, delay: 0.05 }}
-                  style={{ fontSize: 56 }}
+              <div className="flex flex-1 flex-col px-2" style={{ position: "relative", overflow: "hidden" }}>
+                <div
                   aria-hidden
-                >
-                  🚀
-                </motion.div>
-                <div>
-                  <h1 style={{ fontSize: 30, margin: 0, lineHeight: 1.15 }}>
+                  style={{
+                    position: "absolute",
+                    top: -60,
+                    right: -60,
+                    width: 180,
+                    height: 180,
+                    borderRadius: "50%",
+                    background: "radial-gradient(circle, color-mix(in srgb, var(--color-accent-2) 25%, transparent), transparent 70%)",
+                    pointerEvents: "none",
+                  }}
+                />
+                <div style={{ position: "relative", marginTop: 24 }}>
+                  <h1 style={{ fontSize: 30, margin: 0, lineHeight: 1.15, letterSpacing: "-0.01em" }}>
                     Bienvenue sur Stageio
                   </h1>
                   <p
                     style={{
                       fontSize: 15,
                       marginTop: 10,
-                      color: "color-mix(in srgb, var(--color-text) 70%, transparent)",
-                      maxWidth: "32ch",
-                      marginInline: "auto",
+                      lineHeight: 1.55,
+                      color: "color-mix(in srgb, var(--color-text) 68%, transparent)",
+                      maxWidth: "34ch",
                     }}
                   >
                     En <Highlight delay={0.4}>2 minutes</Highlight>, dis-nous ce que tu cherches. Zéro
                     lettre de motivation à rédiger — juste des tuiles à taper.
                   </p>
                 </div>
-                <div className="flex flex-col gap-2.5 w-full" style={{ maxWidth: 300 }}>
+                <div className="flex flex-col gap-3.5" style={{ position: "relative", marginTop: 28 }}>
                   {[
                     ["👆", "Swipe les offres qui te correspondent"],
                     ["⚡", "Postule en un geste, sans paperasse"],
@@ -395,23 +410,26 @@ export function OnboardingWizard({
                   ].map(([icon, text]) => (
                     <div
                       key={text}
-                      className="flex items-center gap-3"
+                      className="flex items-center gap-3.5"
                       style={{
                         background: "var(--color-surface)",
-                        borderRadius: "var(--radius-md)",
-                        padding: "10px 14px",
-                        fontSize: 13,
+                        borderRadius: 18,
+                        padding: 16,
+                        fontSize: 14.5,
+                        fontWeight: 600,
+                        lineHeight: 1.4,
                         textAlign: "left",
                       }}
                     >
-                      <span aria-hidden style={{ fontSize: 18 }}>
+                      <span aria-hidden style={{ fontSize: 22, flexShrink: 0 }}>
                         {icon}
                       </span>
                       {text}
                     </div>
                   ))}
                 </div>
-                <button type="button" onClick={goNext} className="btn btn-primary btn-block" style={{ maxWidth: 300 }}>
+                <div className="flex-1" style={{ minHeight: 20 }} />
+                <button type="button" onClick={goNext} className="btn btn-primary btn-block">
                   Commencer
                 </button>
               </div>
@@ -420,10 +438,11 @@ export function OnboardingWizard({
             {stepId === "looking_for" && (
               <div className="flex flex-col gap-5">
                 <StepHeader title="Tu cherches quoi ?" subtitle="Tu peux sélectionner les deux." />
-                <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-3.5">
                   {(["alternance", "stage"] as ContractType[]).map((type) => (
                     <TileOption
                       key={type}
+                      size="lg"
                       label={type === "alternance" ? "Alternance" : "Stage"}
                       icon={type === "alternance" ? "🎯" : "🌱"}
                       active={lookingFor.includes(type)}
@@ -600,14 +619,15 @@ export function OnboardingWizard({
             )}
 
             {stepId === "cv" && (
-              <div className="flex flex-col gap-5">
+              <div className="flex flex-1 flex-col gap-5">
                 <StepHeader title="Ajoute ton CV" subtitle="Améliore tes recommandations. Modifiable plus tard depuis ton profil." />
                 <label
-                  className="flex flex-col items-center justify-center gap-2 text-center cursor-pointer"
+                  className="flex flex-1 flex-col items-center justify-center gap-2.5 text-center cursor-pointer"
                   style={{
-                    border: "2px dashed var(--color-divider)",
+                    border: `2.5px dashed ${cvFile ? "var(--color-accent)" : "var(--color-divider)"}`,
                     borderRadius: "var(--radius-lg)",
-                    padding: "40px 16px",
+                    background: cvFile ? "var(--color-accent-100)" : "var(--color-surface)",
+                    padding: "30px 20px",
                   }}
                 >
                   <input
@@ -616,10 +636,13 @@ export function OnboardingWizard({
                     className="hidden"
                     onChange={(e) => setCvFile(e.target.files?.[0] ?? null)}
                   />
-                  <span style={{ fontFamily: "var(--font-heading)", fontSize: 16 }}>
+                  <span aria-hidden style={{ fontSize: 34 }}>
+                    {cvFile ? "✅" : "📄"}
+                  </span>
+                  <span style={{ fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700 }}>
                     {cvFile ? cvFile.name : "Clique pour choisir ton CV"}
                   </span>
-                  <span style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
+                  <span style={{ fontSize: 12.5, fontWeight: 600, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
                     PDF, DOC ou DOCX
                   </span>
                 </label>
@@ -627,43 +650,117 @@ export function OnboardingWizard({
             )}
 
             {stepId === "outro" && (
-              <div className="flex flex-1 flex-col items-center justify-center text-center gap-6 px-2">
-                <motion.div
-                  initial={{ scale: 0.7, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ type: "spring", stiffness: 260, damping: 18 }}
-                  style={{ fontSize: 52 }}
+              <div className="flex flex-1 flex-col px-2" style={{ position: "relative", overflow: "hidden" }}>
+                <div
                   aria-hidden
-                >
-                  🎉
-                </motion.div>
-                <div>
-                  <h1 style={{ fontSize: 28, margin: 0 }}>Tout est prêt !</h1>
+                  style={{
+                    position: "absolute",
+                    top: -40,
+                    left: -40,
+                    width: 160,
+                    height: 160,
+                    borderRadius: "50%",
+                    background: "radial-gradient(circle, color-mix(in srgb, var(--color-accent) 22%, transparent), transparent 70%)",
+                    pointerEvents: "none",
+                  }}
+                />
+                <div style={{ position: "relative", textAlign: "center", marginTop: 24 }}>
+                  <motion.div
+                    initial={{ scale: 0.7, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: "spring", stiffness: 260, damping: 18 }}
+                    style={{ fontSize: 52 }}
+                    aria-hidden
+                  >
+                    🎉
+                  </motion.div>
+                  <h1 style={{ fontSize: 26, margin: "12px 0 0" }}>Tout est prêt !</h1>
                   <p
                     style={{
-                      fontSize: 14,
+                      fontSize: 14.5,
+                      lineHeight: 1.5,
                       marginTop: 8,
-                      color: "color-mix(in srgb, var(--color-text) 70%, transparent)",
+                      color: "color-mix(in srgb, var(--color-text) 65%, transparent)",
                     }}
                   >
-                    On a tout ce qu&apos;il faut pour te montrer les <Highlight delay={0.35}>meilleures offres</Highlight>.
+                    On a tout ce qu&apos;il faut pour te montrer les{" "}
+                    <Highlight delay={0.35}>meilleures offres</Highlight>.
                   </p>
                 </div>
-                <div className="flex flex-wrap justify-center gap-2" style={{ maxWidth: 320 }}>
-                  {lookingFor.map((t) => (
-                    <span key={t} className="tag tag-accent">
-                      {t === "alternance" ? "Alternance" : "Stage"}
-                    </span>
-                  ))}
-                  {city && <span className="tag tag-neutral">📍 {city}</span>}
-                  {sectors.slice(0, 3).map((s) => (
-                    <span key={s} className="tag tag-accent-2">
-                      {s}
-                    </span>
-                  ))}
+
+                <div
+                  className="flex flex-col gap-3.5"
+                  style={{
+                    position: "relative",
+                    marginTop: 20,
+                    background: "var(--color-surface)",
+                    borderRadius: 22,
+                    padding: 18,
+                  }}
+                >
+                  <div>
+                    <p
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 800,
+                        letterSpacing: "0.06em",
+                        textTransform: "uppercase",
+                        color: "color-mix(in srgb, var(--color-text) 50%, transparent)",
+                        margin: "0 0 8px",
+                      }}
+                    >
+                      Type de contrat
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {lookingFor.map((t) => (
+                        <span key={t} className="tag tag-accent">
+                          {t === "alternance" ? "🎯 Alternance" : "🌱 Stage"}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 800,
+                        letterSpacing: "0.06em",
+                        textTransform: "uppercase",
+                        color: "color-mix(in srgb, var(--color-text) 50%, transparent)",
+                        margin: "0 0 8px",
+                      }}
+                    >
+                      Ville
+                    </p>
+                    <span className="tag tag-neutral">{city || "—"}</span>
+                  </div>
+                  <div>
+                    <p
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 800,
+                        letterSpacing: "0.06em",
+                        textTransform: "uppercase",
+                        color: "color-mix(in srgb, var(--color-text) 50%, transparent)",
+                        margin: "0 0 8px",
+                      }}
+                    >
+                      Secteurs
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {sectors.slice(0, 6).map((s) => (
+                        <span key={s} className="tag tag-neutral">
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
+
+                <div className="flex-1" style={{ minHeight: 20 }} />
+
                 {error && (
-                  <p className="text-sm" style={{ color: "var(--color-accent-700)" }}>
+                  <p className="text-sm" style={{ color: "var(--color-accent-700)", textAlign: "center" }}>
                     {error}
                   </p>
                 )}
@@ -672,7 +769,7 @@ export function OnboardingWizard({
                   disabled={saving}
                   onClick={finish}
                   className="btn btn-primary btn-block"
-                  style={{ maxWidth: 300 }}
+                  style={{ position: "relative" }}
                 >
                   {saving ? "Enregistrement..." : "Voir mes offres"}
                 </button>

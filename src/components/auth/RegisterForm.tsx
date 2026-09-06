@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { GoogleButton } from "@/components/auth/GoogleButton";
 
@@ -21,6 +22,8 @@ export function RegisterForm() {
   const [verifying, setVerifying] = useState(false);
   const [resending, setResending] = useState(false);
   const [resent, setResent] = useState(false);
+
+  const canSubmit = fullName.trim().length > 0 && email.includes("@") && password.length >= 8;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -116,17 +119,28 @@ export function RegisterForm() {
   }
 
   if (awaitingCode) {
+    const canVerify = code.length === 6;
     return (
-      <form onSubmit={handleVerify} className="flex flex-col gap-4">
-        <div className="card" style={{ fontSize: 14 }}>
-          <p style={{ fontFamily: "var(--font-heading)", margin: 0 }}>Vérifie ta boîte mail 📬</p>
-          <p style={{ margin: "4px 0 0", color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
-            On a envoyé un code à 6 chiffres à <b>{email}</b>.
+      <form onSubmit={handleVerify} className="flex flex-col">
+        <div
+          className="flex flex-col items-center text-center"
+          style={{ background: "var(--color-surface)", borderRadius: "var(--radius-lg)", padding: "32px 24px", boxShadow: "var(--shadow-lg)" }}
+        >
+          <motion.div
+            animate={{ y: [0, -8, 0] }}
+            transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+            aria-hidden
+            style={{ fontSize: 40, marginBottom: 14 }}
+          >
+            📬
+          </motion.div>
+          <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0 }}>Vérifie ta boîte mail</h1>
+          <p style={{ fontSize: 14.5, lineHeight: 1.5, margin: "8px 0 26px", color: "color-mix(in srgb, var(--color-text) 65%, transparent)" }}>
+            On a envoyé un code à 6 chiffres à
+            <br />
+            <strong style={{ color: "var(--color-text)" }}>{email}</strong>
           </p>
-        </div>
 
-        <div className="field">
-          <label htmlFor="code">Code de vérification</label>
           <input
             id="code"
             type="text"
@@ -136,28 +150,42 @@ export function RegisterForm() {
             required
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-            placeholder="123456"
+            placeholder="000000"
             className="input"
-            style={{ textAlign: "center", fontSize: 18, letterSpacing: "0.5em" }}
+            style={{ textAlign: "center", fontSize: 30, fontWeight: 800, letterSpacing: "0.4em", padding: "14px 0 14px 16px", marginBottom: 20 }}
           />
+
+          {error && (
+            <p className="text-sm" style={{ color: "var(--color-accent-700)", marginBottom: 12 }}>
+              {error}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={verifying || !canVerify}
+            className="btn btn-block"
+            style={{
+              height: 50,
+              border: "none",
+              background: canVerify ? "var(--color-accent)" : "var(--color-text)",
+              color: "var(--color-bg)",
+              opacity: canVerify ? 1 : 0.35,
+              fontWeight: 700,
+            }}
+          >
+            {verifying ? "Vérification..." : "Valider le code"}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleResend}
+            disabled={resending}
+            style={{ background: "none", border: "none", marginTop: 16, fontSize: 13.5, fontWeight: 700, color: "var(--color-accent-700)", cursor: "pointer" }}
+          >
+            {resending ? "Envoi..." : resent ? "Nouveau code envoyé ✓" : "Renvoyer le code"}
+          </button>
         </div>
-
-        {error && <p className="text-sm" style={{ color: "var(--color-accent-700)" }}>{error}</p>}
-        {resent && <p className="text-sm" style={{ color: "var(--color-accent-2-700)" }}>Nouveau code envoyé.</p>}
-
-        <button type="submit" disabled={verifying || code.length !== 6} className="btn btn-primary btn-block">
-          {verifying ? "Vérification..." : "Valider le code"}
-        </button>
-
-        <button
-          type="button"
-          onClick={handleResend}
-          disabled={resending}
-          className="btn btn-ghost"
-          style={{ width: "100%" }}
-        >
-          {resending ? "Envoi..." : "Renvoyer le code"}
-        </button>
       </form>
     );
   }
@@ -219,7 +247,18 @@ export function RegisterForm() {
 
         {error && <p className="text-sm" style={{ color: "var(--color-accent-700)" }}>{error}</p>}
 
-        <button type="submit" disabled={loading} className="btn btn-primary btn-block">
+        <button
+          type="submit"
+          disabled={loading || !canSubmit}
+          className="btn btn-block"
+          style={{
+            border: "none",
+            background: canSubmit ? "var(--color-accent)" : "var(--color-text)",
+            color: "var(--color-bg)",
+            opacity: canSubmit ? 1 : 0.35,
+            fontWeight: 700,
+          }}
+        >
           {loading ? "Création..." : "Créer mon compte"}
         </button>
 
