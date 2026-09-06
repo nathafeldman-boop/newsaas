@@ -286,6 +286,50 @@ export default async function PremiumPage({
                 Résiliable à tout moment.
               </div>
             </div>
+
+            {process.env.STRIPE_PRICE_ID_WEEKLY && (
+              <div
+                className="animate-in"
+                style={{
+                  marginTop: 12,
+                  background: "var(--color-surface)",
+                  borderRadius: 20,
+                  border: "1.5px solid var(--color-divider)",
+                  padding: 20,
+                }}
+              >
+                <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: "0.06em", color: "color-mix(in srgb, var(--color-text) 55%, transparent)", textTransform: "uppercase" }}>
+                  Formule hebdomadaire
+                </div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 6 }}>
+                  <span style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.02em" }}>3,50 €</span>
+                  <span style={{ fontSize: 13.5, fontWeight: 500, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+                    / semaine
+                  </span>
+                </div>
+                <div style={{ fontSize: 12, marginTop: 4, marginBottom: 14, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+                  Idéal pour tester Premium sur une candidature urgente.
+                </div>
+                <form action={createCheckoutSessionAction}>
+                  <input type="hidden" name="plan" value="weekly" />
+                  <button
+                    type="submit"
+                    className="btn btn-block"
+                    style={{
+                      height: 46,
+                      border: "1.5px solid var(--color-accent)",
+                      borderRadius: 999,
+                      background: "transparent",
+                      color: "var(--color-accent-700)",
+                      fontSize: 14,
+                      fontWeight: 700,
+                    }}
+                  >
+                    Choisir l&apos;hebdomadaire
+                  </button>
+                </form>
+              </div>
+            )}
           </div>
 
           <div style={{ paddingTop: 20 }}>
@@ -305,6 +349,7 @@ export default async function PremiumPage({
             )}
 
             <form action={createCheckoutSessionAction}>
+              <input type="hidden" name="plan" value="monthly" />
               <button
                 type="submit"
                 className="btn btn-block"

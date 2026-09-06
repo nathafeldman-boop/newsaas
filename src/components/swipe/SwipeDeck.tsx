@@ -444,6 +444,17 @@ export function SwipeDeck({
   // gratuits"). Hissé ici, il ne peut plus être remis à zéro par un simple
   // changement de filtre.
   const [quotaHit, setQuotaHit] = useState(quotaReached);
+  // `quotaHit` ne devient vrai qu'après un swipe REJETÉ par le serveur --
+  // mais le compteur `remaining` touche déjà 0 sur le DERNIER swipe accepté,
+  // avant tout rejet. Si le pool d'offres restant est petit, cette dernière
+  // carte swipée peut aussi vider `stack` en même temps : l'écran de blocage
+  // s'affichait alors quand même (via visible.length===0) mais avec le
+  // mauvais message ("Plus d'offres" au lieu de "Tu as utilisé tes swipes
+  // gratuits"), puisque `quotaHit` seul ne reflète pas encore la réalité --
+  // bug réel signalé en prod. `remaining === 0` est un signal tout aussi
+  // fiable (décrémenté en miroir exact des vrais swipes de découverte) et
+  // disponible immédiatement, sans attendre un rejet.
+  const quotaReallyReached = quotaHit || remaining === 0;
 
   const filteredOffers =
     contractFilter === "all"
@@ -524,7 +535,7 @@ export function SwipeDeck({
         userId={userId}
         initialSwipesToday={swipesToday}
         isPremium={isPremium}
-        quotaReached={quotaHit}
+        quotaReached={quotaReallyReached}
         onQuotaReached={() => setQuotaHit(true)}
         onBrowseSwipe={() =>
           setRemaining((n) => (n === null ? n : Math.max(0, n - 1)))

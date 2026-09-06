@@ -29,7 +29,7 @@ async function getOrCreateStripeCustomer(userId: string, email: string | null) {
   return customer.id;
 }
 
-export async function createCheckoutSessionAction() {
+export async function createCheckoutSessionAction(formData: FormData) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -37,7 +37,13 @@ export async function createCheckoutSessionAction() {
 
   if (!user) redirect("/login?next=/premium");
 
-  const priceId = process.env.STRIPE_PRICE_ID;
+  // "plan" est posé par un input hidden dans chaque carte de prix (voir
+  // /premium) -- weekly reste optionnel : tant que STRIPE_PRICE_ID_WEEKLY
+  // n'est pas configuré, seule l'offre mensuelle (comportement historique,
+  // sans ce champ) reste disponible.
+  const plan = formData.get("plan");
+  const priceId =
+    plan === "weekly" ? process.env.STRIPE_PRICE_ID_WEEKLY : process.env.STRIPE_PRICE_ID;
   if (!priceId) {
     redirect("/premium?error=not_configured");
   }
