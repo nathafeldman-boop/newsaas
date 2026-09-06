@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { fixMissingLtvAction, sendIncompletePaymentReminderAction } from "@/app/admin/users/actions";
+import {
+  fixMissingLtvAction,
+  sendIncompletePaymentReminderAction,
+  sendWeeklyOfferAnnouncementAction,
+} from "@/app/admin/users/actions";
 
 const STATUS_LABEL: Record<string, string> = {
   active: "Actif",
@@ -38,6 +42,22 @@ export default async function AdminPremiumPage() {
 
   const rows = profiles ?? [];
 
+  // Borne haute : mêmes filtres de premier niveau que l'action d'envoi,
+  // sans le raffinement "≥ FREE_WEEKLY_SWIPE_QUOTA swipes" (qui nécessite
+  // une requête par profil) -- affichée comme "jusqu'à N" plutôt qu'un
+  // compte exact pour ne pas alourdir le chargement de la page. Le gros
+  // des profils gratuits ont subscription_status = null (jamais souscrit) :
+  // un simple ".not(...in...)" les exclurait à tort, puisque NULL NOT IN
+  // (...) ne vaut jamais "vrai" en SQL -- d'où le ".or" qui traite le null
+  // explicitement comme non-Premium.
+  const { count: weeklyOfferCandidatesUpperBound } = await admin
+    .from("profiles")
+    .select("id", { count: "exact", head: true })
+    .eq("onboarding_completed", true)
+    .is("weekly_offer_announced_at", null)
+    .not("email", "is", null)
+    .or("subscription_status.is.null,subscription_status.not.in.(active,trialing,comp)");
+
   const sessionCounts = await Promise.all(
     rows.map((p) =>
       admin
@@ -54,6 +74,23 @@ export default async function AdminPremiumPage() {
       <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "0 0 20px" }}>
         {rows.length} abonné(s) payant(s) (statut actif ou essai, hors codes offerts).
       </p>
+
+      <form
+        action={sendWeeklyOfferAnnouncementAction}
+        className="card"
+        style={{ padding: "var(--space-4)", marginBottom: 12, gap: 10 }}
+      >
+        <p style={{ fontWeight: 600, margin: 0, fontSize: 14 }}>Annoncer l&apos;offre hebdomadaire</p>
+        <p style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>
+          Envoie un email annonçant Premium à 3,50€/semaine à tous les inscrits non-Premium ayant déjà
+          épuisé leurs swipes gratuits (jusqu&apos;à {weeklyOfferCandidatesUpperBound ?? 0} candidat(s), le
+          nombre réel de destinataires peut être plus bas). Sans effet sur un compte déjà notifié — si
+          l&apos;envoi s&apos;interrompt (gros volume), relancer reprend juste là où ça s&apos;est arrêté.
+        </p>
+        <button type="submit" className="btn btn-secondary" style={{ alignSelf: "flex-start" }}>
+          Envoyer l&apos;annonce à tous
+        </button>
+      </form>
 
       <form
         action={sendIncompletePaymentReminderAction}

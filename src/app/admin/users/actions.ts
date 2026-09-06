@@ -5,6 +5,9 @@ import { assertAdminSession } from "@/lib/admin/accessCode";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notifyPremiumFixed } from "@/lib/resend/notifyPremiumFixed";
 import { notifyIncompletePaymentOnce } from "@/lib/stripe/notifyIncompletePayment";
+import { notifyWeeklyOffer } from "@/lib/resend/notifyWeeklyOffer";
+import { isPremium } from "@/lib/subscription/isPremium";
+import { FREE_WEEKLY_SWIPE_QUOTA } from "@/lib/subscription/quota";
 
 // Recours manuel pour exactement le scénario rencontré en prod : un client a
 // payé (Stripe l'a bien débité) mais l'activation Premium n'a pas suivi
@@ -103,5 +106,60 @@ export async function sendIncompletePaymentReminderAction(formData: FormData) {
     console.error("sendIncompletePaymentReminderAction failed", error, { email });
   }
 
+  revalidatePath("/admin/premium");
+}
+
+// Relance en masse au lancement de l'offre hebdomadaire (3,50€/semaine,
+// voir /premium) : prévient tous les inscrits déjà passés par le mur
+// payant sans avoir pris Premium. "Passé par le mur" n'a pas de tracking
+// dédié (site_visits n'est pas fiable pour ça, voir ailleurs) -- on
+// retombe sur le signal le plus proche disponible en base : au moins
+// FREE_WEEKLY_SWIPE_QUOTA swipes de découverte au compteur, ce qui suffit
+// en pratique à avoir buté sur le quota gratuit au moins une fois.
+// Idempotent via weekly_offer_announced_at : renvoyer l'action (ex: après
+// un timeout sur un gros volume) ne réenvoie jamais deux fois le même
+// compte, elle reprend juste là où elle s'est arrêtée.
+export async function sendWeeklyOfferAnnouncementAction() {
+  await assertAdminSession();
+  const admin = createAdminClient();
+
+  const { data: profiles, error } = await admin
+    .from("profiles")
+    .select("id, email, full_name, subscription_status")
+    .eq("onboarding_completed", true)
+    .is("weekly_offer_announced_at", null)
+    .not("email", "is", null);
+
+  if (error) {
+    console.error("sendWeeklyOfferAnnouncementAction: query failed", error);
+    return;
+  }
+
+  const candidates = (profiles ?? []).filter((p) => !isPremium(p));
+
+  let sent = 0;
+  for (const profile of candidates) {
+    if (!profile.email) continue;
+
+    const { count } = await admin
+      .from("swipes")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", profile.id);
+
+    if ((count ?? 0) < FREE_WEEKLY_SWIPE_QUOTA) continue;
+
+    try {
+      await notifyWeeklyOffer(profile.email, profile.full_name);
+      await admin
+        .from("profiles")
+        .update({ weekly_offer_announced_at: new Date().toISOString() })
+        .eq("id", profile.id);
+      sent += 1;
+    } catch (sendError) {
+      console.error("sendWeeklyOfferAnnouncementAction: failed for", profile.id, sendError);
+    }
+  }
+
+  console.log(`sendWeeklyOfferAnnouncementAction: envoyé à ${sent}/${candidates.length} candidat(s)`);
   revalidatePath("/admin/premium");
 }

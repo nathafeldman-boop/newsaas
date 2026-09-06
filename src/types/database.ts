@@ -55,6 +55,7 @@ export type Profile = {
   last_active_at: string | null;
   no_swipe_reminder_sent_at: string | null;
   incomplete_payment_reminder_sent_at: string | null;
+  weekly_offer_announced_at: string | null;
   created_at: string;
   updated_at: string;
 };
