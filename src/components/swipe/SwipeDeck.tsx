@@ -312,8 +312,12 @@ function SwipeDeckInner({
     );
   }
 
+  // Garanti non-null ici : les deux branches ci-dessus renvoient déjà tôt
+  // dès que `visible` (donc `stack`) est vide.
+  const topOffer = stack[0];
+
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex w-full flex-col items-center">
       <div className="relative h-[clamp(360px,66dvh,520px)] w-full max-w-sm">
         <MatchCelebration show={celebrating} />
         {visible
@@ -345,46 +349,60 @@ function SwipeDeckInner({
           })}
       </div>
 
-      <div className="mt-7 flex items-center gap-6">
+      <div className="mt-5 flex w-full max-w-sm items-center gap-3">
         <button
           type="button"
           onClick={() => handleSwipeIntent("pass")}
           aria-label="Passer"
           className="btn btn-icon btn-secondary"
-          style={{ width: 52, height: 52, borderRadius: "50%", fontSize: 20 }}
+          style={{ width: 52, height: 52, borderRadius: "50%", fontSize: 19, flexShrink: 0 }}
         >
           ✕
         </button>
-        <button
-          type="button"
-          onClick={handleApplyNow}
-          disabled={busy}
-          className="btn btn-secondary"
-          style={{
-            whiteSpace: "nowrap",
-            color: "var(--color-accent)",
-            borderColor: "var(--color-accent)",
-          }}
-        >
-          Postuler direct
-        </button>
+        {topOffer.apply_url ? (
+          <a
+            href={topOffer.apply_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-secondary"
+            style={{
+              flex: 1,
+              height: 44,
+              whiteSpace: "nowrap",
+              color: "var(--color-accent)",
+              borderColor: "var(--color-accent)",
+            }}
+          >
+            Voir l&apos;offre ↗
+          </a>
+        ) : (
+          <span
+            className="btn btn-secondary"
+            style={{ flex: 1, height: 44, opacity: 0.45, cursor: "default" }}
+          >
+            Voir l&apos;offre ↗
+          </span>
+        )}
         <button
           type="button"
           onClick={() => handleSwipeIntent("like")}
           aria-label="Aimer"
-          className="btn btn-icon"
-          style={{
-            width: 60,
-            height: 60,
-            borderRadius: "50%",
-            fontSize: 24,
-            background: "var(--color-accent)",
-            color: "var(--color-bg)",
-          }}
+          className="btn btn-icon btn-secondary"
+          style={{ width: 52, height: 52, borderRadius: "50%", fontSize: 19, flexShrink: 0 }}
         >
-          ♥
+          🤍
         </button>
       </div>
+
+      <button
+        type="button"
+        onClick={handleApplyNow}
+        disabled={busy}
+        className="btn btn-gradient btn-block"
+        style={{ maxWidth: "24rem" /* max-w-sm */, height: 54, fontSize: 15.5, fontWeight: 700 }}
+      >
+        🚀 Postuler
+      </button>
     </div>
   );
 }
@@ -433,9 +451,32 @@ export function SwipeDeck({
       : offers.filter((o) => o.contract_type === contractFilter);
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex w-full flex-col items-center">
+      <div className="w-full max-w-sm">
+        {/* Le wordmark Stageio est déjà dans AppNav sur desktop (sm:flex) --
+            répété ici seulement en mobile, seul endroit où AppNav est masqué. */}
+        <div className="flex items-center gap-1.5 sm:hidden">
+          <span aria-hidden style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--color-accent)" }} />
+          <span style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontWeight: 800, letterSpacing: "-0.02em" }}>
+            Stageio
+          </span>
+        </div>
+        <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: "-0.01em", margin: "14px 0 4px" }}>
+          Tes opportunités du jour
+        </h1>
+        {offers.length > 0 && (
+          <p
+            className="flex items-center gap-1.5"
+            style={{ margin: 0, fontSize: 13.5, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}
+          >
+            <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--color-accent)" }} />
+            {offers.length} offre{offers.length > 1 ? "s" : ""} disponible{offers.length > 1 ? "s" : ""}
+          </p>
+        )}
+      </div>
+
       {(remaining !== null || sectorLabel) && (
-        <div className="mb-3 flex items-center gap-2">
+        <div className="mt-4 mb-1 flex items-center gap-2">
           {remaining !== null && (
             <span className="tag tag-accent" style={{ fontVariantNumeric: "tabular-nums" }}>
               📱 {remaining}
@@ -444,8 +485,8 @@ export function SwipeDeck({
           {sectorLabel && <span className="tag tag-neutral">{sectorLabel}</span>}
         </div>
       )}
-      <div className="seg mb-5">
-        {(["stage", "alternance", "all"] as const).map((type) => (
+      <div className="seg mt-4 mb-5">
+        {(["all", "stage", "alternance"] as const).map((type) => (
           <label
             key={type}
             className={cn("seg-opt", contractFilter === type && "is-active")}

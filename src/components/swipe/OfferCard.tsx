@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import type { Offer } from "@/types/database";
 
 function formatStartDate(dateStr: string): string {
@@ -5,16 +8,9 @@ function formatStartDate(dateStr: string): string {
   return date.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
 }
 
-function daysAgo(dateStr: string): string {
-  const days = Math.max(
-    0,
-    Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24)),
-  );
-  if (days === 0) return "Publiée aujourd'hui";
-  if (days === 1) return "Publiée il y a 1 jour";
-  return `Publiée il y a ${days} jours`;
-}
-
+// Toujours utilisés par la démo publique de la landing (SwipeDemo.tsx), qui
+// a ses propres offres fictives et son propre balisage de carte -- gardés
+// exportés même si OfferCardContent ci-dessous ne les utilise plus.
 export function MatchRing({ score }: { score: number }) {
   const size = 46;
   const stroke = 4;
@@ -116,6 +112,40 @@ export function StatPill({ icon, label, value }: { icon: string; label: string; 
   );
 }
 
+function companyInitials(company: string): string {
+  const words = company.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return "?";
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return (words[0][0] + words[1][0]).toUpperCase();
+}
+
+const mutedText = "color-mix(in srgb, var(--color-text) 60%, transparent)";
+
+function InfoCell({ icon, label, value }: { icon: string; label: string; value: string }) {
+  return (
+    <div style={{ minWidth: 0 }}>
+      <p style={{ margin: 0, fontSize: 11, color: mutedText }}>
+        {icon} {label}
+      </p>
+      <p
+        style={{
+          margin: "3px 0 0",
+          fontSize: 13,
+          fontWeight: 600,
+          lineHeight: 1.25,
+          overflowWrap: "break-word",
+          display: "-webkit-box",
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: "vertical",
+          overflow: "hidden",
+        }}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
 export function OfferCardContent({
   offer,
   matchScore,
@@ -125,84 +155,135 @@ export function OfferCardContent({
   matchScore?: number;
   reasons?: string[];
 }) {
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const typeLabel = offer.contract_type === "alternance" ? "Alternance" : "Stage";
+  const tags = [offer.sector, offer.remote_policy].filter(
+    (t): t is string => Boolean(t),
+  );
+
   return (
-    <div className="flex h-full flex-col">
-      <div
-        style={{
-          background: "linear-gradient(135deg, var(--color-accent), var(--color-accent-2))",
-          color: "#fff",
-          padding: "22px 22px 42px",
-        }}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div style={{ minWidth: 0 }}>
-            <p style={{ fontFamily: "var(--font-heading)", fontSize: 14, margin: 0 }}>{offer.company}</p>
-            <p style={{ fontSize: 12, opacity: 0.85, margin: "2px 0 0" }}>{offer.location}</p>
-          </div>
-          {typeof matchScore === "number" && <MatchRing score={matchScore} />}
-        </div>
-        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 21, lineHeight: 1.25, margin: "18px 0 0" }}>
-          {offer.title}
-        </h2>
-        <div className="flex items-center gap-2" style={{ marginTop: 10 }}>
-          <span
-            className="tag"
-            style={{ background: "rgba(255,255,255,0.18)", color: "#fff", fontSize: 11 }}
-          >
-            {offer.contract_type === "alternance" ? "Alternance" : "Stage"}
-          </span>
-          <span style={{ fontSize: 11, opacity: 0.75 }}>{daysAgo(offer.published_at)}</span>
-        </div>
-      </div>
-
-      <div style={{ padding: "0 18px", marginTop: -26, position: "relative", zIndex: 2 }}>
-        <div className="grid grid-cols-3 gap-2">
-          <StatPill icon="💶" label="Rémunération" value={offer.salary ?? "Non précisé"} />
-          <StatPill icon="⏱" label="Durée" value={offer.duration ?? "Non précisé"} />
-          <StatPill
-            icon="📅"
-            label="Début"
-            value={offer.start_date ? formatStartDate(offer.start_date) : "Flexible"}
-          />
-        </div>
-      </div>
-
-      {reasons && reasons.length > 0 && (
-        <div style={{ padding: "16px 18px 0" }}>
-          <p
+    <div className="flex h-full flex-col overflow-y-auto" style={{ padding: "20px 20px 18px" }}>
+      <div className="flex items-start justify-between gap-2.5">
+        <div className="flex items-center gap-2.5" style={{ minWidth: 0 }}>
+          <div
+            aria-hidden
             style={{
-              fontSize: 11,
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-              color: "color-mix(in srgb, var(--color-text) 60%, transparent)",
-              margin: 0,
+              width: 42,
+              height: 42,
+              borderRadius: 14,
+              flexShrink: 0,
+              background: "var(--color-accent-100)",
+              color: "var(--color-accent-700)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontWeight: 700,
+              fontSize: 14,
+              fontFamily: "var(--font-heading)",
             }}
           >
-            Pourquoi toi
-          </p>
-          <ul style={{ margin: "8px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 5 }}>
-            {reasons.map((reason) => (
-              <li key={reason} style={{ fontSize: 13, display: "flex", gap: 6 }}>
-                <span aria-hidden style={{ color: "var(--color-accent-2-700)" }}>✓</span>
-                {reason}
-              </li>
-            ))}
-          </ul>
+            {companyInitials(offer.company)}
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ margin: 0, fontSize: 13.5, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {offer.company}
+            </p>
+            <p style={{ margin: "1px 0 0", fontSize: 12, color: mutedText }}>{offer.location}</p>
+          </div>
+        </div>
+        {typeof matchScore === "number" && (
+          <span
+            className="tag tag-accent"
+            style={{ flexShrink: 0, gap: 5, whiteSpace: "nowrap", fontWeight: 600 }}
+          >
+            <span aria-hidden style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--color-accent)" }} />
+            {matchScore}% compatible
+          </span>
+        )}
+      </div>
+
+      <h2 style={{ margin: "16px 0 0", fontSize: 20, fontWeight: 700, lineHeight: 1.28, letterSpacing: "-0.01em" }}>
+        {offer.title}
+      </h2>
+      <p style={{ margin: "5px 0 0", fontSize: 13.5, fontWeight: 500, color: mutedText }}>
+        {typeLabel} • {offer.location}
+      </p>
+
+      {tags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5" style={{ marginTop: 12 }}>
+          {tags.map((tag) => (
+            <span key={tag} className="tag tag-neutral">
+              {tag}
+            </span>
+          ))}
         </div>
       )}
 
-      <p
-        className="flex-1 overflow-y-auto"
-        style={{
-          margin: "14px 0 0",
-          padding: "0 18px 18px",
-          fontSize: 13,
-          lineHeight: 1.6,
-          color: "color-mix(in srgb, var(--color-text) 78%, transparent)",
-        }}
-      >
-        {offer.description}
-      </p>
+      <div style={{ height: 1, background: "var(--color-divider)", margin: "16px 0" }} />
+
+      <div className="grid grid-cols-3 gap-2">
+        <InfoCell icon="🗓" label="Début" value={offer.start_date ? formatStartDate(offer.start_date) : "Flexible"} />
+        <InfoCell icon="⏱" label="Durée" value={offer.duration ?? "Non précisé"} />
+        <InfoCell icon="💰" label="Salaire" value={offer.salary ?? "Non précisé"} />
+      </div>
+
+      {reasons && reasons.length > 0 && (
+        <div style={{ marginTop: 16 }}>
+          <p style={{ margin: 0, fontSize: 12.5, fontWeight: 700 }}>✨ Pourquoi cette offre pour toi</p>
+          <div className="flex flex-col gap-1.5" style={{ marginTop: 8 }}>
+            {reasons.map((reason) => (
+              <p
+                key={reason}
+                style={{ margin: 0, fontSize: 13, display: "flex", gap: 6, alignItems: "flex-start", color: "color-mix(in srgb, var(--color-text) 82%, transparent)" }}
+              >
+                <span aria-hidden style={{ color: "var(--color-accent-700)", fontWeight: 700, flexShrink: 0 }}>
+                  ✓
+                </span>
+                {reason}
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div style={{ marginTop: 14, paddingBottom: 4 }}>
+        <p
+          style={{
+            margin: 0,
+            fontSize: 13,
+            lineHeight: 1.55,
+            color: "color-mix(in srgb, var(--color-text) 78%, transparent)",
+            ...(detailsOpen
+              ? {}
+              : {
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical" as const,
+                  overflow: "hidden",
+                }),
+          }}
+        >
+          {offer.description}
+        </p>
+        {!detailsOpen && (
+          <button
+            type="button"
+            onClick={() => setDetailsOpen(true)}
+            style={{
+              marginTop: 6,
+              background: "none",
+              border: "none",
+              padding: 0,
+              fontSize: 12.5,
+              fontWeight: 600,
+              color: "var(--color-accent)",
+              cursor: "pointer",
+            }}
+          >
+            Voir les détails →
+          </button>
+        )}
+      </div>
     </div>
   );
 }
