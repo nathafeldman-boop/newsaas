@@ -7,23 +7,33 @@ import { markReferralGrantedAction } from "@/app/onboarding/actions";
 import { ChipMultiSelectWithCustom } from "@/components/ui/ChipMultiSelectWithCustom";
 import { Highlight } from "@/components/ui/Highlight";
 import type { ContractType, Profile } from "@/types/database";
-import { SECTORS, SKILLS, TOP_CITIES } from "@/lib/onboarding/options";
+import {
+  SECTORS,
+  SKILLS,
+  TOP_CITIES,
+  TARGET_JOBS,
+  MOBILITY_OPTIONS,
+  EDUCATION_LEVELS,
+  EXPERIENCE_LEVELS,
+  AVAILABILITY_OPTIONS,
+} from "@/lib/onboarding/options";
 import { STEP_IDS, STEP_LABELS, type StepId } from "@/lib/onboarding/steps";
 
 // Onboarding "sans clavier" : tout se fait au tap (tuiles/chips), avec un
 // échappatoire texte optionnel là où une liste ne peut pas tout couvrir
 // (ville, compétences...). bio/formation/date de naissance restent éditables
-// plus tard depuis le profil — pas assez tap-friendly pour rester ici.
+// plus tard depuis le profil — pas assez tap-friendly (texte libre) pour
+// rester ici.
 //
-// Réduit à 3 étapes de saisie (+ intro/outro) : les écrans "comment ça
-// marche" / "ce que tu gagnes" répétaient mot pour mot les 3 bullets déjà
-// sur l'intro sans rien demander -- supprimés. L'étape "Affiner" (métiers
-// visés, mobilité, niveau d'études, disponibilité) était entièrement
-// optionnelle et déjà éditable depuis /profil (ProfileForm couvre tous ces
-// champs) -- supprimée aussi plutôt que de faire défiler un écran à 4
-// sections facultatives avant la toute première offre. experience_level
-// n'entre dans aucun critère de computeMatchScore : jamais demandé à
-// l'onboarding non plus.
+// L'étape "profile" (métiers visés, mobilité, niveau d'études, expérience,
+// disponibilité) avait été retirée un temps car jugée facultative -- mais
+// mobilité en particulier pèse lourd dans computeMatchScore (pénalité de
+// localisation), et un profil qui ne la renseigne jamais se fait pénaliser
+// par défaut comme s'il n'était mobile pour rien, même quand ce n'est pas
+// vrai. Toute donnée qui sert réellement le matching (ou les lettres de
+// motivation générées) est désormais redemandée ici et rendue obligatoire,
+// plutôt que de laisser un compte fonctionner avec des colonnes vides que
+// l'algorithme interprète par défaut de la pire des façons.
 const PROGRESS_STEPS: StepId[] = STEP_IDS.filter((s) => s !== "intro" && s !== "outro");
 const SKIPPABLE: StepId[] = ["cv"];
 
@@ -139,6 +149,19 @@ export function OnboardingWizard({
     initialProfile?.looking_for ?? [],
   );
 
+  const [targetJobs, setTargetJobs] = useState<string[]>(initialProfile?.target_jobs ?? []);
+  const [mobility, setMobility] = useState(initialProfile?.mobility ?? "");
+  const [educationLevel, setEducationLevel] = useState(initialProfile?.education_level ?? "");
+  const [experienceLevel, setExperienceLevel] = useState(initialProfile?.experience_level ?? "");
+  // On retient le libellé de la tuile tapée (pas directement une date) : une
+  // des options ("Je ne sais pas encore") ne correspond à aucune date réelle
+  // -- stocker le libellé permet de distinguer "rien tapé" de "a tapé cette
+  // option-là", et de recalculer la date au moment d'enregistrer. Pas de
+  // pré-remplissage depuis un availability_date existant : cette étape n'est
+  // vue qu'avant la fin de l'onboarding, où ce champ n'a normalement encore
+  // jamais été renseigné.
+  const [availabilityLabel, setAvailabilityLabel] = useState<string | null>(null);
+
   const [cvFile, setCvFile] = useState<File | null>(null);
 
   useEffect(() => {
@@ -161,6 +184,24 @@ export function OnboardingWizard({
     }
     if (stepId === "search" && sectors.length === 0) {
       return "Sélectionne au moins un secteur.";
+    }
+    if (stepId === "search" && skills.length === 0) {
+      return "Sélectionne au moins une compétence.";
+    }
+    if (stepId === "profile" && targetJobs.length === 0) {
+      return "Sélectionne au moins un métier visé.";
+    }
+    if (stepId === "profile" && !mobility) {
+      return "Indique ta mobilité.";
+    }
+    if (stepId === "profile" && !educationLevel) {
+      return "Indique ton niveau d'études.";
+    }
+    if (stepId === "profile" && !experienceLevel) {
+      return "Indique ton niveau d'expérience.";
+    }
+    if (stepId === "profile" && !availabilityLabel) {
+      return "Indique ta disponibilité.";
     }
     return null;
   }
@@ -207,18 +248,26 @@ export function OnboardingWizard({
       cvUploadedAt = new Date().toISOString();
     }
 
+    const availabilityOption = AVAILABILITY_OPTIONS.find((o) => o.label === availabilityLabel);
+    let availabilityDate: string | null = null;
+    if (availabilityOption && availabilityOption.daysFromNow !== null) {
+      const date = new Date();
+      date.setDate(date.getDate() + availabilityOption.daysFromNow);
+      availabilityDate = date.toISOString().slice(0, 10);
+    }
+
     const { error: updateError } = await supabase
       .from("profiles")
       .update({
         skills,
         sectors,
-        target_jobs: initialProfile?.target_jobs ?? [],
+        target_jobs: targetJobs,
         city: city.trim(),
-        mobility: initialProfile?.mobility ?? null,
+        mobility: mobility || null,
         looking_for: lookingFor,
-        education_level: initialProfile?.education_level ?? null,
-        experience_level: initialProfile?.experience_level ?? null,
-        availability_date: initialProfile?.availability_date ?? null,
+        education_level: educationLevel || null,
+        experience_level: experienceLevel || null,
+        availability_date: availabilityDate,
         cv_path: cvPath,
         cv_uploaded_at: cvUploadedAt,
         onboarding_completed: true,
@@ -451,9 +500,101 @@ export function OnboardingWizard({
 
                 <div className="flex flex-col gap-3">
                   <p style={{ fontSize: 13, fontFamily: "var(--font-heading)", margin: 0 }}>
-                    Compétences <span style={{ opacity: 0.6 }}>(optionnel)</span>
+                    Compétences <span style={{ color: "var(--color-accent-700)" }}>(obligatoire)</span>
                   </p>
                   <ChipMultiSelectWithCustom options={SKILLS} value={skills} onChange={setSkills} />
+                </div>
+              </div>
+            )}
+
+            {stepId === "profile" && (
+              <div className="flex flex-col gap-7">
+                <StepHeader
+                  title="Précise ton profil"
+                  subtitle="Ça change vraiment le calcul de compatibilité de chaque offre."
+                />
+
+                <div className="flex flex-col gap-3">
+                  <p style={{ fontSize: 13, fontFamily: "var(--font-heading)", margin: 0 }}>
+                    Métiers visés <span style={{ color: "var(--color-accent-700)" }}>(obligatoire)</span>
+                  </p>
+                  <ChipMultiSelectWithCustom options={TARGET_JOBS} value={targetJobs} onChange={setTargetJobs} />
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <p style={{ fontSize: 13, fontFamily: "var(--font-heading)", margin: 0 }}>
+                    Mobilité <span style={{ color: "var(--color-accent-700)" }}>(obligatoire)</span>
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {MOBILITY_OPTIONS.map((opt) => (
+                      <TileOption
+                        key={opt.value}
+                        label={opt.value}
+                        icon={opt.icon}
+                        active={mobility === opt.value}
+                        onClick={() => setMobility(opt.value)}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <p style={{ fontSize: 13, fontFamily: "var(--font-heading)", margin: 0 }}>
+                    Niveau d&apos;études <span style={{ color: "var(--color-accent-700)" }}>(obligatoire)</span>
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {EDUCATION_LEVELS.map((level) => (
+                      <button
+                        key={level}
+                        type="button"
+                        onClick={() => setEducationLevel(level)}
+                        className={educationLevel === level ? "tag" : "tag tag-neutral"}
+                        style={{
+                          padding: "7px 14px",
+                          fontSize: 13,
+                          ...(educationLevel === level
+                            ? { background: "var(--color-accent)", color: "var(--color-bg)" }
+                            : {}),
+                        }}
+                      >
+                        {level}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <p style={{ fontSize: 13, fontFamily: "var(--font-heading)", margin: 0 }}>
+                    Expérience <span style={{ color: "var(--color-accent-700)" }}>(obligatoire)</span>
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {EXPERIENCE_LEVELS.map((opt) => (
+                      <TileOption
+                        key={opt.value}
+                        label={opt.value}
+                        icon={opt.icon}
+                        active={experienceLevel === opt.value}
+                        onClick={() => setExperienceLevel(opt.value)}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <p style={{ fontSize: 13, fontFamily: "var(--font-heading)", margin: 0 }}>
+                    Disponibilité <span style={{ color: "var(--color-accent-700)" }}>(obligatoire)</span>
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {AVAILABILITY_OPTIONS.map((opt) => (
+                      <TileOption
+                        key={opt.label}
+                        label={opt.label}
+                        icon={opt.icon}
+                        active={availabilityLabel === opt.label}
+                        onClick={() => setAvailabilityLabel(opt.label)}
+                      />
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
