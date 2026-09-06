@@ -173,7 +173,6 @@ function SwipeDeckInner({
 }) {
   const router = useRouter();
   const [stack, setStack] = useState(offers);
-  const [busy, setBusy] = useState(false);
   const [, setSwipesToday] = useState(initialSwipesToday);
   const [celebrating, setCelebrating] = useState(false);
   // Un swipe à la fois pour un compte gratuit : le quota est vérifié côté
@@ -230,37 +229,6 @@ function SwipeDeckInner({
     setStack((prev) => prev.filter((o) => o.id !== offerId));
   }
 
-  async function handleApplyNow() {
-    const offer = stack[0];
-    if (!offer || busy) return;
-    setBusy(true);
-
-    const supabase = createClient();
-    // Candidater doit rester illimité même quota de swipe atteint : on
-    // insère la candidature AVANT le swipe, pour que le trigger de quota
-    // (enforce_swipe_quota) voie déjà l'application et laisse passer.
-    await supabase
-      .from("applications")
-      .upsert(
-        { user_id: userId, offer_id: offer.id, status: "envoyee" },
-        { onConflict: "user_id,offer_id" },
-      );
-    await supabase
-      .from("swipes")
-      .upsert(
-        { user_id: userId, offer_id: offer.id, direction: "like" },
-        { onConflict: "user_id,offer_id" },
-      );
-
-    setBusy(false);
-
-    // La page /candidature génère une lettre de motivation personnalisée
-    // puis propose "Postuler sur le site" (copie la lettre + ouvre
-    // l'annonce réelle) : c'est elle qui amène vers l'annonce, pas ce
-    // bouton de raccourci.
-    router.push(`/candidature/${offer.id}`);
-  }
-
   // Quota atteint OU plus rien à swiper : pour un compte gratuit, dans les
   // deux cas il n'y a plus rien à faire ici sans passer Premium — un
   // "reviens plus tard" passif serait une impasse plutôt qu'une relance.
@@ -312,10 +280,6 @@ function SwipeDeckInner({
     );
   }
 
-  // Garanti non-null ici : les deux branches ci-dessus renvoient déjà tôt
-  // dès que `visible` (donc `stack`) est vide.
-  const topOffer = stack[0];
-
   return (
     <div className="flex w-full flex-col items-center">
       <div className="relative h-[clamp(360px,66dvh,520px)] w-full max-w-sm">
@@ -349,60 +313,29 @@ function SwipeDeckInner({
           })}
       </div>
 
-      <div className="mt-5 flex w-full max-w-sm items-center gap-3">
+      {/* Juste passer/aimer ici : postuler et voir l'offre externe vivent sur
+          /favoris une fois l'offre likée, pas sur l'écran de swipe lui-même
+          -- swipe reste le geste rapide, candidater est une décision à part. */}
+      <div className="mt-7 flex items-center gap-6">
         <button
           type="button"
           onClick={() => handleSwipeIntent("pass")}
           aria-label="Passer"
           className="btn btn-icon btn-secondary"
-          style={{ width: 52, height: 52, borderRadius: "50%", fontSize: 19, flexShrink: 0 }}
+          style={{ width: 56, height: 56, borderRadius: "50%", fontSize: 22 }}
         >
           ✕
         </button>
-        {topOffer.apply_url ? (
-          <a
-            href={topOffer.apply_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn btn-secondary"
-            style={{
-              flex: 1,
-              height: 44,
-              whiteSpace: "nowrap",
-              color: "var(--color-accent)",
-              borderColor: "var(--color-accent)",
-            }}
-          >
-            Voir l&apos;offre ↗
-          </a>
-        ) : (
-          <span
-            className="btn btn-secondary"
-            style={{ flex: 1, height: 44, opacity: 0.45, cursor: "default" }}
-          >
-            Voir l&apos;offre ↗
-          </span>
-        )}
         <button
           type="button"
           onClick={() => handleSwipeIntent("like")}
           aria-label="Aimer"
           className="btn btn-icon btn-secondary"
-          style={{ width: 52, height: 52, borderRadius: "50%", fontSize: 19, flexShrink: 0 }}
+          style={{ width: 56, height: 56, borderRadius: "50%", fontSize: 22 }}
         >
           🤍
         </button>
       </div>
-
-      <button
-        type="button"
-        onClick={handleApplyNow}
-        disabled={busy}
-        className="btn btn-gradient btn-block"
-        style={{ maxWidth: "24rem" /* max-w-sm */, height: 54, fontSize: 15.5, fontWeight: 700 }}
-      >
-        🚀 Postuler
-      </button>
     </div>
   );
 }
