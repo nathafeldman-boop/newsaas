@@ -58,6 +58,7 @@ export type Profile = {
   no_swipe_reminder_sent_at: string | null;
   incomplete_payment_reminder_sent_at: string | null;
   weekly_offer_announced_at: string | null;
+  swipe_relance_sent_at: string | null;
   created_at: string;
   updated_at: string;
 };

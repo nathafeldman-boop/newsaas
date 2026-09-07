@@ -23,6 +23,10 @@
     {
       "path": "/api/cron/notify-no-swipe",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/send-swipe-relance",
+      "schedule": "0 9 * * *"
     }
   ]
 }
