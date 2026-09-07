@@ -13,7 +13,10 @@ import type { Profile } from "@/types/database";
 
 export const maxDuration = 60;
 
-const MIN_SCORE = 55;
+// Aligné sur le seuil de pertinence strict de /swipe (voir relevanceThreshold
+// dans src/app/(app)/swipe/page.tsx) : n'annoncer par email que ce qui
+// vaudrait aussi sa place dans le deck une fois assez d'historique accumulé.
+const MIN_SCORE = 58;
 const MAX_OFFERS_PER_EMAIL = 5;
 // Un premier run n'annonce que les offres publiées récemment plutôt que tout
 // l'historique du catalogue -- sinon un compte qui active juste la préférence

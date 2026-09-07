@@ -73,8 +73,10 @@ export function buildLearnedAffinity(history: SwipeHistoryEntry[]): LearnedAffin
   for (const entry of history) {
     // Une candidature réelle est le signal le plus fort qu'on ait -- un like
     // peut être impulsif pendant que candidater est un vrai engagement.
-    // pass = signal négatif clair.
-    const weight = entry.applied ? 3 : entry.direction === "like" ? 1 : -1;
+    // pass = signal négatif clair. Poids relevé (3 -> 4) pour que quelques
+    // vraies candidatures dominent plus vite un historique mêlé de likes
+    // impulsifs, plutôt que d'être noyées dedans.
+    const weight = entry.applied ? 4 : entry.direction === "like" ? 1 : -1;
     if (entry.offer.sector) bump(sectorStats, entry.offer.sector, weight);
     if (entry.offer.remote_policy) bump(remoteStats, entry.offer.remote_policy, weight);
     for (const kw of extractKeywords(entry.offer.title)) bump(keywordStats, kw, weight);

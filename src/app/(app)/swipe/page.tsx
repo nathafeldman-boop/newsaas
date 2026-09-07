@@ -4,6 +4,7 @@ import { SwipeDeck } from "@/components/swipe/SwipeDeck";
 import { computeMatchScore, computeMatchReasons, isNearbyCity } from "@/lib/matching/score";
 import { buildLearnedAffinity, type SwipeHistoryEntry } from "@/lib/matching/learning";
 import { computeQuotaStatus, FREE_WEEKLY_SWIPE_QUOTA } from "@/lib/subscription/quota";
+import { computeApplicationStreak } from "@/lib/engagement/applicationStreak";
 import type { Offer } from "@/types/database";
 
 export default async function SwipePage() {
@@ -27,11 +28,19 @@ export default async function SwipePage() {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(500),
-    supabase.from("applications").select("offer_id").eq("user_id", user.id),
+    supabase.from("applications").select("offer_id, applied_at").eq("user_id", user.id),
   ]);
 
   const excludeIds = (swiped ?? []).map((s) => s.offer_id);
   const appliedOfferIds = new Set((applications ?? []).map((a) => a.offer_id));
+
+  // Série de jours consécutifs avec au moins une candidature réelle -- voir
+  // src/lib/engagement/applicationStreak.ts. Affichée sur le deck pour
+  // donner une vraie raison de revenir candidater chaque jour, pas juste
+  // parcourir les offres.
+  const applicationStreak = computeApplicationStreak(
+    (applications ?? []).map((a) => a.applied_at),
+  );
 
   // Apprend des vrais likes/passes/candidatures passés (pas seulement des
   // réponses figées de l'onboarding) : voir src/lib/matching/learning.ts.
@@ -168,8 +177,11 @@ export default async function SwipePage() {
   // confiance : "trop de swipes, pas assez de candidatures" -- un deck qui
   // reste en permanence rempli à ras le score de base (40) laisse passer du
   // remplissage correct-mais-pas-motivant. Passé un peu d'historique réel,
-  // on ne montre plus que ce qui ressort vraiment.
-  const relevanceThreshold = affinity.sampleSize >= 15 ? 55 : 40;
+  // on ne montre plus que ce qui ressort vraiment. Seuil relevé (55 -> 58)
+  // et déclenché plus tôt (15 -> 8 swipes) : l'objectif n'est plus juste de
+  // faire swiper, mais de ne montrer que des offres pour lesquelles
+  // postuler semble évident.
+  const relevanceThreshold = affinity.sampleSize >= 8 ? 58 : 40;
 
   // Même logique de filet de sécurité que ci-dessus : si ce filtre viderait
   // un pool pourtant non vide, on préfère montrer les offres quand même
@@ -233,6 +245,7 @@ export default async function SwipePage() {
         remainingSwipes={remainingSwipes}
         cityBanner={cityBanner}
         sectorLabel={sectorLabel}
+        applicationStreak={applicationStreak}
       />
     </div>
   );

@@ -349,6 +349,7 @@ export function SwipeDeck({
   remainingSwipes = null,
   cityBanner = null,
   sectorLabel = null,
+  applicationStreak = 0,
 }: {
   offers: Offer[];
   scores: Record<string, number>;
@@ -360,6 +361,7 @@ export function SwipeDeck({
   remainingSwipes?: number | null;
   cityBanner?: string | null;
   sectorLabel?: string | null;
+  applicationStreak?: number;
 }) {
   const [contractFilter, setContractFilter] = useState<ContractType | "all">("all");
   // Compteur de swipes restants affiché en haut de l'écran (pill "📱 3") :
@@ -417,7 +419,7 @@ export function SwipeDeck({
         )}
       </div>
 
-      {(remaining !== null || sectorLabel) && (
+      {(remaining !== null || sectorLabel || applicationStreak > 0) && (
         <div className="mt-4 mb-1 flex items-center gap-2">
           {remaining !== null && (
             <span className="tag tag-accent" style={{ fontVariantNumeric: "tabular-nums" }}>
@@ -425,7 +427,27 @@ export function SwipeDeck({
             </span>
           )}
           {sectorLabel && <span className="tag tag-neutral">{sectorLabel}</span>}
+          {applicationStreak > 0 && (
+            <span className="tag tag-accent" style={{ fontVariantNumeric: "tabular-nums" }}>
+              🔥 {applicationStreak} j
+            </span>
+          )}
         </div>
+      )}
+      {applicationStreak > 0 && (
+        <p
+          style={{
+            marginTop: 2,
+            marginBottom: 4,
+            fontSize: 12,
+            textAlign: "center",
+            maxWidth: "34ch",
+            color: "color-mix(in srgb, var(--color-text) 60%, transparent)",
+          }}
+        >
+          Série de {applicationStreak} jour{applicationStreak > 1 ? "s" : ""} avec une candidature —
+          postule aujourd&apos;hui pour la faire durer.
+        </p>
       )}
       <div className="seg mt-4 mb-5">
         {(["all", "stage", "alternance"] as const).map((type) => (

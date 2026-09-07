@@ -95,9 +95,12 @@ export function computeMatchScore(profile: Profile, offer: Offer): number {
     score += 18;
   }
 
-  // Métier recherché : mot entier dans le titre, pas une simple sous-chaîne
+  // Métier recherché : mot entier dans le titre, pas une simple sous-chaîne.
+  // Poids relevé (10 -> 14) : c'est le signal le plus direct qu'on ait de
+  // "c'est exactement le poste que je veux", donc ce qui pousse le plus à
+  // vouloir vraiment postuler -- pas juste liker par curiosité.
   if (profile.target_jobs.some((job) => containsWholeWord(offer.title, job))) {
-    score += 10;
+    score += 14;
   }
 
   // Localisation / mobilité
