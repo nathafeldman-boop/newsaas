@@ -146,7 +146,9 @@ export default async function AdminDashboardPage({
     admin.from("profiles").select("id", { count: "exact", head: true }).gte("last_active_at", onlineSince.toISOString()),
     admin
       .from("profiles")
-      .select("id, email, full_name, created_at, subscription_status, total_paid_cents")
+      .select(
+        "id, email, full_name, created_at, subscription_status, total_paid_cents, subscription_price_cents, subscription_interval",
+      )
       .order("created_at", { ascending: false }),
     admin.from("offers").select("id", { count: "exact", head: true }).eq("is_active", true),
     admin.from("swipes").select("id", { count: "exact", head: true }),
@@ -160,13 +162,30 @@ export default async function AdminDashboardPage({
   ]);
 
   const allProfiles = profiles ?? [];
-  const paidPremium = allProfiles.filter(
+  const activeSubscribers = allProfiles.filter(
     (p) => p.subscription_status === "active" || p.subscription_status === "trialing",
-  ).length;
+  );
+  const paidPremium = activeSubscribers.length;
   const compPremium = allProfiles.filter((p) => p.subscription_status === "comp").length;
   const premiumTotal = paidPremium + compPremium;
   const freePct = allProfiles.length > 0 ? Math.round(((allProfiles.length - premiumTotal) / allProfiles.length) * 100) : 0;
   const totalRevenueCents = allProfiles.reduce((sum, p) => sum + (p.total_paid_cents ?? 0), 0);
+
+  // ARR = somme des abonnements actifs/essai annualisés selon leur vraie
+  // cadence Stripe (subscription_price_cents/interval, posés par le
+  // webhook -- voir syncSubscription.ts). "comp" (codes offerts) exclu :
+  // aucun revenu réel derrière. Un abonné actif depuis avant l'ajout de ces
+  // deux colonnes n'a encore ni l'un ni l'autre en base tant qu'aucun
+  // nouvel event Stripe n'est arrivé sur son abonnement -- fallback sur le
+  // prix mensuel (799 = 7,99€), seule offre qui existait jusqu'ici, plutôt
+  // que de sous-compter silencieusement ces comptes.
+  const ANNUALIZATION_BY_INTERVAL: Record<string, number> = { day: 365, week: 52, month: 12, year: 1 };
+  const DEFAULT_MONTHLY_PRICE_CENTS = 799;
+  const arrCents = activeSubscribers.reduce((sum, p) => {
+    const priceCents = p.subscription_price_cents ?? DEFAULT_MONTHLY_PRICE_CENTS;
+    const multiplier = ANNUALIZATION_BY_INTERVAL[p.subscription_interval ?? "month"] ?? 12;
+    return sum + priceCents * multiplier;
+  }, 0);
 
   const periodCutoff = periodStart(period);
   const periodProfiles = periodCutoff
@@ -218,10 +237,16 @@ export default async function AdminDashboardPage({
           label="Revenu cumulé"
           value={`${(totalRevenueCents / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €`}
         />
+        <StatTile
+          label="ARR"
+          value={`${(arrCents / 100).toLocaleString("fr-FR", { minimumFractionDigits: 0 })} €`}
+          accent
+        />
         <StatTile label="Offres actives" value={String(activeOffers ?? 0)} />
       </div>
       <p style={{ fontSize: 11, marginTop: 10, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
         « Dont payant réel » = abonnement Stripe actif ou en essai uniquement — exclut les codes d&apos;accès offerts.
+        « ARR » = abonnements actifs/essai annualisés selon leur vraie cadence (mensuel/hebdo), hors codes offerts.
       </p>
 
       <SectionCard title="Inscriptions">

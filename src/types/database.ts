@@ -46,6 +46,8 @@ export type Profile = {
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
   subscription_status: string | null;
+  subscription_price_cents: number | null;
+  subscription_interval: string | null;
   current_period_end: string | null;
   onboarding_completed_at: string | null;
   premium_activated_at: string | null;
