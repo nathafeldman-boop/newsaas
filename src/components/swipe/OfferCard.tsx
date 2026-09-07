@@ -148,11 +148,9 @@ function InfoCell({ icon, label, value }: { icon: string; label: string; value: 
 
 export function OfferCardContent({
   offer,
-  matchScore,
   reasons,
 }: {
   offer: Offer;
-  matchScore?: number;
   reasons?: string[];
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -191,15 +189,6 @@ export function OfferCardContent({
             <p style={{ margin: "1px 0 0", fontSize: 12, color: mutedText }}>{offer.location}</p>
           </div>
         </div>
-        {typeof matchScore === "number" && (
-          <span
-            className="tag tag-accent"
-            style={{ flexShrink: 0, gap: 5, whiteSpace: "nowrap", fontWeight: 600 }}
-          >
-            <span aria-hidden style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--color-accent)" }} />
-            {matchScore}% compatible
-          </span>
-        )}
       </div>
 
       <h2 style={{ margin: "16px 0 0", fontSize: 20, fontWeight: 700, lineHeight: 1.28, letterSpacing: "-0.01em" }}>
