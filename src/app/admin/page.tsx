@@ -144,11 +144,13 @@ export default async function AdminDashboardPage({
     admin.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", todayStart.toISOString()),
     admin.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", weekAgo.toISOString()),
     admin.from("profiles").select("id", { count: "exact", head: true }).gte("last_active_at", onlineSince.toISOString()),
+    // Colonnes historiques uniquement : Premium/Revenu cumulé/Gratuit ne
+    // doivent plus jamais pouvoir retomber à 0 à cause d'une colonne ARR
+    // pas encore migrée en base -- vu en prod juste après l'ajout de l'ARR
+    // (voir requête séparée subscriptionPricing plus bas).
     admin
       .from("profiles")
-      .select(
-        "id, email, full_name, created_at, subscription_status, total_paid_cents, subscription_price_cents, subscription_interval",
-      )
+      .select("id, email, full_name, created_at, subscription_status, total_paid_cents")
       .order("created_at", { ascending: false }),
     admin.from("offers").select("id", { count: "exact", head: true }).eq("is_active", true),
     admin.from("swipes").select("id", { count: "exact", head: true }),
@@ -183,16 +185,34 @@ export default async function AdminDashboardPage({
   // ARR = somme des abonnements actifs/essai annualisés selon leur vraie
   // cadence Stripe (subscription_price_cents/interval, posés par le
   // webhook -- voir syncSubscription.ts). "comp" (codes offerts) exclu :
-  // aucun revenu réel derrière. Un abonné actif depuis avant l'ajout de ces
-  // deux colonnes n'a encore ni l'un ni l'autre en base tant qu'aucun
-  // nouvel event Stripe n'est arrivé sur son abonnement -- fallback sur le
-  // prix mensuel (799 = 7,99€), seule offre qui existait jusqu'ici, plutôt
-  // que de sous-compter silencieusement ces comptes.
+  // aucun revenu réel derrière. Requête à part et volontairement isolée du
+  // reste : ces deux colonnes sont récentes, et si jamais elles manquent
+  // encore en base (migration pas collée) ou que la requête échoue pour
+  // toute autre raison, ça ne doit affecter QUE l'ARR -- jamais Premium/
+  // Revenu cumulé/Gratuit, qui viennent de la requête profiles ci-dessus,
+  // inchangée depuis avant l'ajout de l'ARR.
   const ANNUALIZATION_BY_INTERVAL: Record<string, number> = { day: 365, week: 52, month: 12, year: 1 };
   const DEFAULT_MONTHLY_PRICE_CENTS = 799;
+  const pricingById = new Map<string, { subscription_price_cents: number | null; subscription_interval: string | null }>();
+  if (activeSubscribers.length > 0) {
+    const { data: pricingRows, error: pricingError } = await admin
+      .from("profiles")
+      .select("id, subscription_price_cents, subscription_interval")
+      .in("id", activeSubscribers.map((p) => p.id));
+    if (pricingError) {
+      console.error("AdminDashboardPage: ARR pricing query failed", pricingError);
+    } else {
+      for (const row of pricingRows ?? []) pricingById.set(row.id, row);
+    }
+  }
+  // Un abonné actif depuis avant l'ajout de ces deux colonnes (ou si la
+  // requête ci-dessus a échoué) n'a encore ni l'un ni l'autre -- fallback
+  // sur le prix mensuel (799 = 7,99€), seule offre qui existait jusqu'ici,
+  // plutôt que de sous-compter silencieusement ces comptes.
   const arrCents = activeSubscribers.reduce((sum, p) => {
-    const priceCents = p.subscription_price_cents ?? DEFAULT_MONTHLY_PRICE_CENTS;
-    const multiplier = ANNUALIZATION_BY_INTERVAL[p.subscription_interval ?? "month"] ?? 12;
+    const pricing = pricingById.get(p.id);
+    const priceCents = pricing?.subscription_price_cents ?? DEFAULT_MONTHLY_PRICE_CENTS;
+    const multiplier = ANNUALIZATION_BY_INTERVAL[pricing?.subscription_interval ?? "month"] ?? 12;
     return sum + priceCents * multiplier;
   }, 0);
 
