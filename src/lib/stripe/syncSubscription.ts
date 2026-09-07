@@ -35,7 +35,17 @@ export async function syncSubscriptionToProfile(
   const customerId =
     typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
 
-  const { priceCents, interval } = priceInfoOf(subscription);
+  // Écriture critique isolée à part : stripe_subscription_id/
+  // subscription_status/current_period_end sont ce qui active réellement
+  // le Premium (isPremium() ne lit que subscription_status) -- ça ne doit
+  // JAMAIS pouvoir échouer à cause d'une colonne annexe qui n'existerait
+  // pas encore en base. C'est très exactement ce qui s'est produit en
+  // prod : un paiement réel confirmé côté Stripe, mais subscription_status
+  // resté à son ancienne valeur parce que ce même UPDATE incluait aussi
+  // subscription_price_cents/subscription_interval (ajoutés pour l'ARR de
+  // /admin) avant que la migration correspondante ne soit collée en base
+  // -- un UPDATE avec une colonne inconnue échoue en bloc côté Postgres,
+  // pas juste sur le champ fautif.
   const { error, count } = await admin
     .from("profiles")
     .update(
@@ -43,13 +53,30 @@ export async function syncSubscriptionToProfile(
         stripe_subscription_id: subscription.id,
         subscription_status: subscription.status,
         current_period_end: periodEndOf(subscription),
-        subscription_price_cents: priceCents,
-        subscription_interval: interval,
       },
       { count: "exact" },
     )
     .eq("stripe_customer_id", customerId);
 
   if (error) return { matched: false, error: error.message };
-  return { matched: (count ?? 0) > 0 };
+  const matched = (count ?? 0) > 0;
+
+  // Best-effort, à part : sert uniquement à affiner l'ARR affiché sur
+  // /admin (voir src/app/admin/page.tsx) -- un échec ici (colonnes pas
+  // encore migrées, ou tout autre souci) ne doit jamais remettre en cause
+  // l'activation Premium elle-même, déjà actée ci-dessus.
+  if (matched) {
+    const { priceCents, interval } = priceInfoOf(subscription);
+    const { error: pricingError } = await admin
+      .from("profiles")
+      .update({ subscription_price_cents: priceCents, subscription_interval: interval })
+      .eq("stripe_customer_id", customerId);
+    if (pricingError) {
+      console.error("syncSubscriptionToProfile: pricing update failed (non-bloquant)", pricingError, {
+        customerId,
+      });
+    }
+  }
+
+  return { matched };
 }
