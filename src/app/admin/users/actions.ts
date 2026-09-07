@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { assertAdminSession } from "@/lib/admin/accessCode";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notifyPremiumFixed } from "@/lib/resend/notifyPremiumFixed";
@@ -116,9 +117,19 @@ export async function sendIncompletePaymentReminderAction(formData: FormData) {
 // retombe sur le signal le plus proche disponible en base : au moins
 // FREE_WEEKLY_SWIPE_QUOTA swipes de découverte au compteur, ce qui suffit
 // en pratique à avoir buté sur le quota gratuit au moins une fois.
-// Idempotent via weekly_offer_announced_at : renvoyer l'action (ex: après
-// un timeout sur un gros volume) ne réenvoie jamais deux fois le même
-// compte, elle reprend juste là où elle s'est arrêtée.
+//
+// Idempotence : "vérifier puis envoyer puis marquer" n'est PAS sûr en
+// concurrence -- deux clics rapprochés (le bouton ne montre aucun retour
+// visuel pendant l'envoi, ce qui invite justement à recliquer) lancent
+// deux exécutions qui liraient toutes les deux "pas encore annoncé" avant
+// que l'une ou l'autre n'ait eu le temps d'écrire sa marque, et
+// enverraient donc le mail deux fois au même compte -- exactement ce qui
+// s'est produit en prod (deux clics à 8s d'écart, 163 puis 153 envoyés,
+// le pool de candidats n'ayant quasiment pas bougé entre les deux). Le
+// correctif : la marque est posée par un UPDATE conditionnel (WHERE ...
+// IS NULL) AVANT l'envoi, et seule l'exécution qui a réellement gagné la
+// course (la ligne a été affectée) envoie le mail -- l'autre voit 0 ligne
+// affectée et passe au suivant, sans jamais doublonner un envoi.
 export async function sendWeeklyOfferAnnouncementAction() {
   await assertAdminSession();
   const admin = createAdminClient();
@@ -148,18 +159,42 @@ export async function sendWeeklyOfferAnnouncementAction() {
 
     if ((count ?? 0) < FREE_WEEKLY_SWIPE_QUOTA) continue;
 
+    const { data: claimed, error: claimError } = await admin
+      .from("profiles")
+      .update({ weekly_offer_announced_at: new Date().toISOString() })
+      .eq("id", profile.id)
+      .is("weekly_offer_announced_at", null)
+      .select("id");
+
+    if (claimError) {
+      console.error("sendWeeklyOfferAnnouncementAction: claim failed for", profile.id, claimError);
+      continue;
+    }
+    // 0 ligne affectée = une autre exécution (ou un clic précédent) a déjà
+    // pris ce compte entre le SELECT ci-dessus et cet UPDATE -- on ne
+    // renvoie surtout pas le mail.
+    if (!claimed || claimed.length === 0) continue;
+
     try {
       await notifyWeeklyOffer(profile.email, profile.full_name);
-      await admin
-        .from("profiles")
-        .update({ weekly_offer_announced_at: new Date().toISOString() })
-        .eq("id", profile.id);
       sent += 1;
     } catch (sendError) {
-      console.error("sendWeeklyOfferAnnouncementAction: failed for", profile.id, sendError);
+      console.error("sendWeeklyOfferAnnouncementAction: envoi échoué pour", profile.id, sendError);
+      // Le mail n'est pas parti mais la marque est déjà posée -- on la
+      // relâche pour qu'un prochain déclenchement retente ce compte
+      // plutôt que de le considérer notifié à tort.
+      await admin
+        .from("profiles")
+        .update({ weekly_offer_announced_at: null })
+        .eq("id", profile.id);
     }
   }
 
   console.log(`sendWeeklyOfferAnnouncementAction: envoyé à ${sent}/${candidates.length} candidat(s)`);
   revalidatePath("/admin/premium");
+  // Le formulaire ne montrait jusqu'ici aucun retour après le clic (juste
+  // un revalidatePath invisible) -- exactement ce qui a mené à cliquer
+  // deux fois de suite en pensant que rien ne s'était passé. Un résultat
+  // visible via l'URL règle ça, en plus du fix d'idempotence ci-dessus.
+  redirect(`/admin/premium?weekly_sent=${sent}&weekly_total=${candidates.length}`);
 }

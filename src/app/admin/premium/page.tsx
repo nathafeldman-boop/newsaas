@@ -29,7 +29,12 @@ function daysSince(date: string | null | undefined): number | null {
 // reconstruit le signal le plus honnête possible à partir de ce qu'on a déjà
 // (ancienneté du compte, dernière activité via last_active_at, nombre de
 // connexions via user_events) plutôt que d'inventer une métrique.
-export default async function AdminPremiumPage() {
+export default async function AdminPremiumPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ weekly_sent?: string; weekly_total?: string }>;
+}) {
+  const { weekly_sent: weeklySent, weekly_total: weeklyTotal } = await searchParams;
   const admin = createAdminClient();
 
   const { data: profiles } = await admin
@@ -74,6 +79,22 @@ export default async function AdminPremiumPage() {
       <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "0 0 20px" }}>
         {rows.length} abonné(s) payant(s) (statut actif ou essai, hors codes offerts).
       </p>
+
+      {weeklySent !== undefined && (
+        <div
+          className="card"
+          style={{
+            padding: "var(--space-4)",
+            marginBottom: 12,
+            background: "var(--color-accent-100)",
+            color: "var(--color-accent-700)",
+          }}
+        >
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>
+            Envoyé à {weeklySent}/{weeklyTotal} candidat(s).
+          </p>
+        </div>
+      )}
 
       <form
         action={sendWeeklyOfferAnnouncementAction}
