@@ -12,8 +12,9 @@ export type CvAudit = z.infer<typeof cvAuditSchema>;
 
 const SYSTEM_PROMPT = `Tu es un expert RH qui aide des étudiants et jeunes diplômés français à
 préparer leur candidature à une alternance ou un stage. On te donne le texte brut extrait
-d'un CV. Évalue-le et réponds UNIQUEMENT avec un objet JSON valide, sans texte autour,
-avec exactement ces champs :
+d'un CV, et si disponible le contexte de ce que le candidat vise réellement (secteur(s),
+métier(s), niveau d'études, expérience). Évalue-le et réponds UNIQUEMENT avec un objet JSON
+valide, sans texte autour, avec exactement ces champs :
 
 {
   "score": number (0 à 100, note globale du CV pour candidater à une alternance/stage en France),
@@ -22,14 +23,41 @@ avec exactement ces champs :
   "missing_sections": string[] (sections/informations importantes manquantes ou incomplètes, en français ; liste vide si rien à signaler)
 }
 
-Sois bienveillant mais honnête et concret. Base la note sur : clarté de présentation,
-pertinence du contenu pour une alternance/un stage, mise en avant des compétences et
-projets, structure, et absence de fautes ou d'incohérences évidentes. Ne mets jamais
-100 si tu identifies au moins une amélioration possible.`;
+Si le contexte cible (secteur/métier visé) est fourni, évalue et formule CHAQUE point en
+fonction de cette cible précise plutôt qu'en langage générique -- ex: "Pour une alternance en
+marketing digital, il manque une section projets avec des résultats chiffrés" plutôt que
+"Il manque une section projets". Sans ce contexte, reste générique mais toujours concret.
 
-export async function auditCvText(cvText: string): Promise<CvAudit> {
+Sois bienveillant mais honnête et concret. Base la note sur : clarté de présentation,
+pertinence du contenu pour la cible visée, mise en avant des compétences et projets,
+structure, et absence de fautes ou d'incohérences évidentes. Ne mets jamais 100 si tu
+identifies au moins une amélioration possible.`;
+
+export type CvAuditContext = {
+  sectors?: string[];
+  targetJobs?: string[];
+  educationLevel?: string | null;
+  experienceLevel?: string | null;
+};
+
+function buildContextLine(context?: CvAuditContext): string | null {
+  if (!context) return null;
+  const parts: string[] = [];
+  if (context.sectors?.length) parts.push(`Secteur(s) visé(s) : ${context.sectors.join(", ")}`);
+  if (context.targetJobs?.length) parts.push(`Métier(s) visé(s) : ${context.targetJobs.join(", ")}`);
+  if (context.educationLevel) parts.push(`Niveau d'études : ${context.educationLevel}`);
+  if (context.experienceLevel) parts.push(`Expérience : ${context.experienceLevel}`);
+  return parts.length > 0 ? parts.join(" · ") : null;
+}
+
+export async function auditCvText(cvText: string, context?: CvAuditContext): Promise<CvAudit> {
   const client = getMistralClient();
   const model = getMistralModel();
+
+  const contextLine = buildContextLine(context);
+  const userContent = contextLine
+    ? `Ce que le candidat vise : ${contextLine}\n\nTexte du CV :\n\n${cvText.slice(0, 15000)}`
+    : `Texte du CV :\n\n${cvText.slice(0, 15000)}`;
 
   const result = await client.chat.complete({
     model,
@@ -37,7 +65,7 @@ export async function auditCvText(cvText: string): Promise<CvAudit> {
     responseFormat: { type: "json_object" },
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: `Texte du CV :\n\n${cvText.slice(0, 15000)}` },
+      { role: "user", content: userContent },
     ],
   });
 

@@ -5,17 +5,32 @@ const SYSTEM_PROMPT = `Tu es un conseiller carrière qui rédige, pour des étud
 diplômés français, une lettre de motivation courte et percutante pour candidater à une
 alternance ou un stage. Réponds UNIQUEMENT avec le texte de la lettre, en français, prêt à
 être collé dans un formulaire de candidature ou un email -- pas de formule d'en-tête du type
-"Objet :" ni de placeholders entre crochets. 150 à 220 mots, concret (pas de généralités
-vides), qui s'appuie sur les informations réelles fournies sur le candidat et l'offre. Termine
-par une formule de politesse simple.`;
+"Objet :" ni de placeholders entre crochets.
 
-type OfferInput = Pick<Offer, "title" | "company" | "description" | "location">;
+Règle la plus importante : choisis 2 à 3 exigences ou mots-clés concrets tirés de la
+description/des prérequis de l'offre, et relie CHACUN explicitement à un élément réel et
+précis du candidat (une compétence listée, une ligne du CV, sa formation ou son expérience) --
+jamais une affirmation générique non justifiée. Bannis les formules creuses type "je suis
+très motivé(e) et rigoureux(se)" ou "cette offre correspond parfaitement à mon projet" si rien
+de concret ne vient les étayer juste après. La première phrase doit référencer précisément
+l'intitulé du poste et l'entreprise, jamais une accroche interchangeable d'une lettre à
+l'autre. Mentionne explicitement s'il s'agit d'un stage ou d'une alternance, avec le bon mot.
+
+170 à 240 mots. Termine par une formule de politesse simple. S'il manque des informations
+sur le candidat pour étayer un point, n'invente rien : appuie-toi uniquement sur ce qui est
+réellement fourni ci-dessous.`;
+
+type OfferInput = Pick<
+  Offer,
+  "title" | "company" | "description" | "location" | "requirements" | "contract_type"
+>;
 type ProfileInput = Pick<
   Profile,
   | "full_name"
   | "city"
   | "skills"
   | "sectors"
+  | "target_jobs"
   | "education_level"
   | "formation"
   | "experience_level"
@@ -25,8 +40,13 @@ type ProfileInput = Pick<
 function buildUserPrompt(offer: OfferInput, profile: ProfileInput, cvText: string | null) {
   const lines = [
     `Offre : ${offer.title} chez ${offer.company} (${offer.location}).`,
+    `Type de contrat : ${offer.contract_type === "alternance" ? "alternance" : "stage"}.`,
     `Description de l'offre : ${offer.description.slice(0, 1500)}`,
   ];
+
+  if (offer.requirements) {
+    lines.push(`Prérequis/compétences demandées par l'offre : ${offer.requirements.slice(0, 800)}`);
+  }
 
   if (profile) {
     const identity = [profile.full_name, profile.education_level, profile.formation]
@@ -35,6 +55,7 @@ function buildUserPrompt(offer: OfferInput, profile: ProfileInput, cvText: strin
     if (identity) lines.push(`Profil du candidat : ${identity}.`);
     if (profile.skills?.length) lines.push(`Compétences : ${profile.skills.join(", ")}.`);
     if (profile.sectors?.length) lines.push(`Secteurs visés : ${profile.sectors.join(", ")}.`);
+    if (profile.target_jobs?.length) lines.push(`Métiers visés : ${profile.target_jobs.join(", ")}.`);
     if (profile.experience_level) lines.push(`Expérience : ${profile.experience_level}.`);
     if (profile.bio) lines.push(`À propos du candidat : ${profile.bio}`);
   }

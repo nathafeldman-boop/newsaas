@@ -26,7 +26,7 @@ export async function auditCvAction(
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("cv_path, subscription_status")
+    .select("cv_path, subscription_status, sectors, target_jobs, education_level, experience_level")
     .eq("id", user.id)
     .single();
 
@@ -67,7 +67,12 @@ export async function auditCvAction(
       };
     }
 
-    const audit = await auditCvText(text);
+    const audit = await auditCvText(text, {
+      sectors: profile.sectors,
+      targetJobs: profile.target_jobs,
+      educationLevel: profile.education_level,
+      experienceLevel: profile.experience_level,
+    });
     return { status: "success", ...audit };
   } catch (err) {
     console.error("auditCvAction", err);

@@ -27,13 +27,13 @@ export async function generateCoverLetterAction(offerId: string): Promise<Genera
   const [{ data: offer }, { data: profile }] = await Promise.all([
     supabase
       .from("offers")
-      .select("title, company, description, location")
+      .select("title, company, description, location, requirements, contract_type")
       .eq("id", offerId)
       .single(),
     supabase
       .from("profiles")
       .select(
-        "full_name, city, skills, sectors, education_level, formation, experience_level, bio, cv_path, subscription_status",
+        "full_name, city, skills, sectors, target_jobs, education_level, formation, experience_level, bio, cv_path, subscription_status",
       )
       .eq("id", user.id)
       .single(),
