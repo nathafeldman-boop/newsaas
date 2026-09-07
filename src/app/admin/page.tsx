@@ -132,7 +132,7 @@ export default async function AdminDashboardPage({
     { count: signupsToday },
     { count: signupsWeek },
     { count: onlineNow },
-    { data: profiles },
+    { data: profiles, error: profilesError },
     { count: activeOffers },
     { count: swipesTotal },
     { count: applicationsTotal },
@@ -160,6 +160,15 @@ export default async function AdminDashboardPage({
       .in("event_type", ["onboarding_step_viewed", "onboarding_step_completed"]),
     admin.from("reviews").select("*").order("created_at", { ascending: false }),
   ]);
+
+  // supabase-js ne throw jamais sur une erreur Postgres (ex: colonne pas
+  // encore migrée en base) -- sans ce log, une requête qui échoue ici
+  // retombe silencieusement sur `[]`, et Premium/Revenu/ARR affichent tous
+  // 0 sans aucune trace pour comprendre pourquoi (déjà vu avec site_visits
+  // et la synchro Stripe -- même mésaventure, cause différente).
+  if (profilesError) {
+    console.error("AdminDashboardPage: profiles query failed", profilesError);
+  }
 
   const allProfiles = profiles ?? [];
   const activeSubscribers = allProfiles.filter(
