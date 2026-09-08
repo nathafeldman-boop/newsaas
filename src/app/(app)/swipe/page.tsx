@@ -78,8 +78,11 @@ export default async function SwipePage() {
     ? null
     : Math.max(0, FREE_WEEKLY_SWIPE_QUOTA - browseSwipesThisWeek);
 
-  // Taille du deck réellement montré, une fois trié par pertinence.
-  const DECK_SIZE = 30;
+  // Taille du deck réellement montré, une fois trié par pertinence. Réduit
+  // (30 -> 20) : un tas de 30 cartes encourage à swiper en pilote
+  // automatique plutôt que de vraiment regarder chaque offre -- un lot
+  // plus court, mais mieux trié, doit sembler plus délibérément choisi.
+  const DECK_SIZE = 20;
   // Bassin de candidats scoré AVANT tri : doit couvrir tout le volume actif
   // réaliste, sinon le tri par score ne s'applique qu'aux offres les plus
   // récentes (ce qu'on récupérait avant) et les meilleurs matchs d'un
@@ -181,7 +184,18 @@ export default async function SwipePage() {
   // et déclenché plus tôt (15 -> 8 swipes) : l'objectif n'est plus juste de
   // faire swiper, mais de ne montrer que des offres pour lesquelles
   // postuler semble évident.
-  const relevanceThreshold = affinity.sampleSize >= 8 ? 58 : 40;
+  //
+  // Le seuil "à froid" (avant tout historique appris) reste distinct et a
+  // aussi été relevé (40 -> 48) : cas réel observé en prod -- un tout
+  // nouveau compte peut swiper des dizaines d'offres avant même d'atteindre
+  // les 8 swipes qui déclenchent le seuil strict, et restait jusqu'ici
+  // filtré presque uniquement par le score de base (40), qui laisse passer
+  // une offre sans aucun rapport sectoriel dès qu'un petit bonus de
+  // mobilité la pousse au-dessus. Les champs secteur/métier/compétences
+  // sont obligatoires à l'onboarding désormais, donc ce seuil plus strict
+  // dès la première carte ne devrait pas vider le deck d'un profil
+  // correctement rempli -- le filet de sécurité plus bas s'en charge sinon.
+  const relevanceThreshold = affinity.sampleSize >= 8 ? 58 : 48;
 
   // Même logique de filet de sécurité que ci-dessus : si ce filtre viderait
   // un pool pourtant non vide, on préfère montrer les offres quand même
