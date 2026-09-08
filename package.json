@@ -12,6 +12,7 @@
     "@mistralai/mistralai": "^2.6.4",
     "@supabase/ssr": "^0.12.5",
     "@supabase/supabase-js": "^2.112.4",
+    "@thednp/dommatrix": "^3.1.2",
     "clsx": "^2.1.1",
     "framer-motion": "^13.1.1",
     "mammoth": "^1.12.2",

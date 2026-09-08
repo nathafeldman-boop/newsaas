@@ -2,8 +2,20 @@ import mammoth from "mammoth";
 
 // pdfjs-dist "legacy" build en pur JS : pas de dépendance native (contrairement
 // à pdf-parse v2, qui embarque @napi-rs/canvas — fragile sur les fonctions
-// serverless Vercel). getTextContent() n'a pas besoin de canvas.
+// serverless Vercel). getTextContent() n'a pas besoin de canvas, mais
+// certains PDF (police Type3, texte avec matrice de transformation...)
+// font quand même référence à `DOMMatrix`, une API navigateur absente de
+// Node -- crash réel en prod ("DOMMatrix is not defined") sur des CV qui
+// déclenchent ce chemin, sans lien avec le contenu du texte lui-même.
+// Polyfill pur JS (même contrainte que pdfjs-dist : zéro dépendance native).
+async function ensureDomMatrixPolyfill() {
+  if (typeof globalThis.DOMMatrix !== "undefined") return;
+  const { default: CSSMatrix } = await import("@thednp/dommatrix");
+  globalThis.DOMMatrix = CSSMatrix as unknown as typeof DOMMatrix;
+}
+
 async function extractPdfText(buffer: Buffer): Promise<string> {
+  await ensureDomMatrixPolyfill();
   const { getDocument } = await import("pdfjs-dist/legacy/build/pdf.mjs");
   const doc = await getDocument({ data: new Uint8Array(buffer) }).promise;
 
