@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -388,6 +388,22 @@ export function SwipeDeck({
   // fiable (décrémenté en miroir exact des vrais swipes de découverte) et
   // disponible immédiatement, sans attendre un rejet.
   const quotaReallyReached = quotaHit || remaining === 0;
+
+  const router = useRouter();
+  // Dès que le quota est réellement atteint côté client, on pousse tout de
+  // suite vers le vrai paywall (/premium) au lieu d'attendre soit un swipe
+  // rejeté par le serveur (impossible en pratique : l'écran de blocage
+  // inline ci-dessous masque déjà les boutons de swipe une fois le quota
+  // atteint, donc aucun nouveau swipe ne peut être tenté pour déclencher ce
+  // rejet), soit un rafraîchissement de page qui relance le check serveur
+  // dans AppLayout -- sans ça l'utilisateur restait coincé sur l'écran de
+  // blocage "léger" de /swipe au lieu du paywall direct, bug réel signalé
+  // en prod.
+  useEffect(() => {
+    if (quotaReallyReached && !isPremium) {
+      router.push("/premium?limite=1");
+    }
+  }, [quotaReallyReached, isPremium, router]);
 
   const filteredOffers =
     contractFilter === "all"
