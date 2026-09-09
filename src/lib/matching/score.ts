@@ -224,3 +224,66 @@ export function computeMatchReasons(profile: Profile, offer: Offer): string[] {
 
   return reasons.slice(0, 3);
 }
+
+const CV_STOPWORDS = new Set([
+  "dans", "avec", "pour", "sans", "sous", "vers", "chez", "entre", "depuis", "pendant",
+  "cette", "celui", "celle", "leurs", "notre", "votre", "nos", "vos", "les", "des",
+  "aux", "que", "qui", "quoi", "dont", "mais", "donc", "alors", "ainsi", "plus", "moins",
+  "tres", "bien", "tout", "tous", "toute", "toutes", "autre", "autres", "meme", "aussi",
+  "avoir", "etre", "faire", "fait", "faits", "annee", "annees", "mois", "jour", "jours",
+  "france", "francais", "francaise", "poste", "stage", "alternance", "cdi", "cdd", "diplome",
+  "niveau", "formation", "ecole", "universite", "master", "licence", "bachelor", "etudiant",
+  "etudiante", "recherche", "developpement", "projet", "projets", "equipe", "gestion",
+  "email", "telephone", "adresse", "curriculum", "vitae", "nom", "prenom",
+]);
+
+function normalizeCvToken(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase();
+}
+
+// Signature de mots-clés extraits du texte brut du CV -- va bien au-delà des
+// champs figés de l'onboarding (skills choisies dans une liste fermée) en
+// puisant dans le contenu réel (missions, outils, projets décrits). Les mots
+// les plus FRÉQUENTS dans le CV sont retenus en priorité (plus susceptibles
+// d'être des compétences/outils réellement centraux qu'une mention isolée),
+// et la liste est plafonnée pour rester rapide à comparer contre des
+// centaines d'offres candidates.
+const MAX_CV_KEYWORDS = 50;
+
+function extractCvKeywords(cvText: string): string[] {
+  const counts = new Map<string, number>();
+  for (const raw of cvText.split(/[^\p{L}\p{N}]+/u)) {
+    const token = normalizeCvToken(raw);
+    if (token.length < 5 || CV_STOPWORDS.has(token)) continue;
+    counts.set(token, (counts.get(token) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, MAX_CV_KEYWORDS)
+    .map(([token]) => token);
+}
+
+// Bonus premium : va chercher dans le texte réel du CV (pas seulement les
+// champs onboarding) des recoupements avec l'offre -- réservé aux
+// utilisateurs Premium ayant un CV exploitable (voir swipe/page.tsx),
+// puisque ça suppose d'avoir déjà extrait et mis en cache ce texte
+// (profiles.cv_text, posé à l'upload). Plafonné comme les autres bonus,
+// jamais assez fort à lui seul pour dominer le score de base.
+export function computeCvMatchBonus(
+  cvText: string | null,
+  offer: Pick<Offer, "title" | "description" | "requirements">,
+  cap = 10,
+): number {
+  if (!cvText) return 0;
+  const keywords = extractCvKeywords(cvText);
+  if (keywords.length === 0) return 0;
+
+  const offerText = `${offer.title} ${offer.description} ${offer.requirements ?? ""}`;
+  const matched = keywords.filter((kw) => containsWholeWord(offerText, kw));
+  if (matched.length === 0) return 0;
+
+  return Math.min(cap, matched.length * 1.5);
+}

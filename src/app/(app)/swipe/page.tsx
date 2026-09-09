@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SwipeDeck } from "@/components/swipe/SwipeDeck";
-import { computeMatchScore, computeMatchReasons, isNearbyCity } from "@/lib/matching/score";
+import { computeMatchScore, computeMatchReasons, computeCvMatchBonus, isNearbyCity } from "@/lib/matching/score";
 import { buildLearnedAffinity, type SwipeHistoryEntry } from "@/lib/matching/learning";
 import { computeQuotaStatus, FREE_WEEKLY_SWIPE_QUOTA } from "@/lib/subscription/quota";
 import { computeApplicationStreak } from "@/lib/engagement/applicationStreak";
@@ -147,13 +147,20 @@ export default async function SwipePage() {
   // jamais un tout nouveau compte.
   const scores: Record<string, number> = {};
   if (profile) {
+    // Bonus supplémentaire réservé aux Premium : va chercher dans le texte
+    // réel du CV (profiles.cv_text, mis en cache à l'upload -- voir
+    // src/app/(app)/cv/actions.ts) des recoupements avec l'offre, au-delà
+    // des champs figés de l'onboarding. Reste à 0 pour un compte gratuit ou
+    // sans CV exploitable, donc sans effet sur le deck des non-abonnés.
+    const cvText = premium ? (profile.cv_text ?? null) : null;
     for (const offer of offers) {
       const base = computeMatchScore(profile, offer);
       const learnedBonus =
         affinity.sectorBonus(offer.sector) +
         affinity.remoteBonus(offer.remote_policy) +
         affinity.keywordBonus(offer.title);
-      scores[offer.id] = Math.max(30, Math.min(99, Math.round(base + learnedBonus)));
+      const cvBonus = computeCvMatchBonus(cvText, offer);
+      scores[offer.id] = Math.max(30, Math.min(99, Math.round(base + learnedBonus + cvBonus)));
     }
   }
 
@@ -186,14 +193,19 @@ export default async function SwipePage() {
   // postuler semble évident.
   //
   // Le seuil "à froid" (avant tout historique appris) était brièvement
-  // passé à 48 (au lieu de 40) le 8 septembre, dans l'idée de filtrer plus
-  // fort dès la toute première carte -- revenu à 40 par précaution le
-  // lendemain : chute des paiements observée précisément sur la première
-  // cohorte d'inscrits entièrement passée par ce seuil plus strict,
-  // corrélation temporelle trop nette pour l'ignorer. Cause réelle non
-  // confirmée (faute de données d'usage détaillées), mais mieux vaut
-  // revenir à la valeur qui marchait plutôt que d'insister sans preuve.
-  const relevanceThreshold = affinity.sampleSize >= 8 ? 58 : 40;
+  // passé à 48 (au lieu de 40) le 8 septembre pour TOUS les comptes, dans
+  // l'idée de filtrer plus fort dès la toute première carte -- revenu à 40
+  // par précaution le lendemain : chute des paiements observée précisément
+  // sur la première cohorte d'inscrits (donc gratuits) entièrement passée
+  // par ce seuil plus strict, corrélation temporelle trop nette pour
+  // l'ignorer. Cause réelle non confirmée, mais mieux vaut ne plus jamais
+  // resserrer l'entrée gratuite sans preuve.
+  //
+  // Réintroduit ici en le réservant aux Premium (déjà payé -- resserrer
+  // leur deck ne peut plus faire baisser une conversion qui a déjà eu
+  // lieu) : matching plus exigeant dès leur première carte post-paiement,
+  // sans reprendre le risque écarté ci-dessus pour les comptes gratuits.
+  const relevanceThreshold = affinity.sampleSize >= 8 ? 58 : premium ? 48 : 40;
 
   // Même logique de filet de sécurité que ci-dessus : si ce filtre viderait
   // un pool pourtant non vide, on préfère montrer les offres quand même

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { cacheCvTextAction } from "@/app/(app)/cv/actions";
 
 export function CvUploadPanel({
   userId,
@@ -53,6 +54,12 @@ export function CvUploadPanel({
     setSuccess(true);
     setCvFile(null);
     router.refresh();
+
+    // Best-effort, jamais bloquant pour l'UI (déjà "success" ci-dessus) :
+    // met en cache le texte du CV pour le bonus de matching Premium (voir
+    // src/lib/matching/score.ts). Aucun retour visible si ça échoue -- le
+    // CV reste utilisable partout ailleurs sans ce bonus.
+    void cacheCvTextAction();
   }
 
   return (

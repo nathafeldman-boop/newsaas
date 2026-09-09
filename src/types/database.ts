@@ -40,6 +40,7 @@ export type Profile = {
   availability_date: string | null;
   cv_path: string | null;
   cv_uploaded_at: string | null;
+  cv_text: string | null;
   onboarding_completed: boolean;
   referral_code: string;
   referred_by: string | null;
