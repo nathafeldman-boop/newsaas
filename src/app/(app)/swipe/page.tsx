@@ -185,17 +185,15 @@ export default async function SwipePage() {
   // faire swiper, mais de ne montrer que des offres pour lesquelles
   // postuler semble évident.
   //
-  // Le seuil "à froid" (avant tout historique appris) reste distinct et a
-  // aussi été relevé (40 -> 48) : cas réel observé en prod -- un tout
-  // nouveau compte peut swiper des dizaines d'offres avant même d'atteindre
-  // les 8 swipes qui déclenchent le seuil strict, et restait jusqu'ici
-  // filtré presque uniquement par le score de base (40), qui laisse passer
-  // une offre sans aucun rapport sectoriel dès qu'un petit bonus de
-  // mobilité la pousse au-dessus. Les champs secteur/métier/compétences
-  // sont obligatoires à l'onboarding désormais, donc ce seuil plus strict
-  // dès la première carte ne devrait pas vider le deck d'un profil
-  // correctement rempli -- le filet de sécurité plus bas s'en charge sinon.
-  const relevanceThreshold = affinity.sampleSize >= 8 ? 58 : 48;
+  // Le seuil "à froid" (avant tout historique appris) était brièvement
+  // passé à 48 (au lieu de 40) le 8 septembre, dans l'idée de filtrer plus
+  // fort dès la toute première carte -- revenu à 40 par précaution le
+  // lendemain : chute des paiements observée précisément sur la première
+  // cohorte d'inscrits entièrement passée par ce seuil plus strict,
+  // corrélation temporelle trop nette pour l'ignorer. Cause réelle non
+  // confirmée (faute de données d'usage détaillées), mais mieux vaut
+  // revenir à la valeur qui marchait plutôt que d'insister sans preuve.
+  const relevanceThreshold = affinity.sampleSize >= 8 ? 58 : 40;
 
   // Même logique de filet de sécurité que ci-dessus : si ce filtre viderait
   // un pool pourtant non vide, on préfère montrer les offres quand même
