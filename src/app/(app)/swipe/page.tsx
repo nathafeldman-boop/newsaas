@@ -78,11 +78,11 @@ export default async function SwipePage() {
     ? null
     : Math.max(0, FREE_WEEKLY_SWIPE_QUOTA - browseSwipesThisWeek);
 
-  // Taille du deck réellement montré, une fois trié par pertinence. Réduit
-  // (30 -> 20) : un tas de 30 cartes encourage à swiper en pilote
-  // automatique plutôt que de vraiment regarder chaque offre -- un lot
-  // plus court, mais mieux trié, doit sembler plus délibérément choisi.
-  const DECK_SIZE = 20;
+  // Taille du deck réellement montré, une fois trié par pertinence. Remis à
+  // 30 (revert du 8/09 -> 20, jamais concluant) : remise à l'identique de
+  // l'état du 8/09 10h-12h à la demande explicite, en attendant une
+  // décision produit plus posée plutôt qu'une nouvelle expérimentation.
+  const DECK_SIZE = 30;
   // Bassin de candidats scoré AVANT tri : doit couvrir tout le volume actif
   // réaliste, sinon le tri par score ne s'applique qu'aux offres les plus
   // récentes (ce qu'on récupérait avant) et les meilleurs matchs d'un
