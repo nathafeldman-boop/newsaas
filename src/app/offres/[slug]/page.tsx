@@ -84,6 +84,18 @@ function jobPostingJsonLd(offer: Offer) {
   };
 }
 
+function breadcrumbJsonLd(offer: Offer) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Accueil", item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: "Offres", item: `${SITE_URL}/offres` },
+      { "@type": "ListItem", position: 3, name: offer.title, item: `${SITE_URL}${offerPath(offer)}` },
+    ],
+  };
+}
+
 const CONTRACT_LABEL: Record<Offer["contract_type"], string> = {
   alternance: "Alternance",
   stage: "Stage",
@@ -103,6 +115,10 @@ export default async function PublicOfferPage({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLd(jobPostingJsonLd(offer)) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbJsonLd(offer)) }}
       />
 
       <Link href="/offres" style={{ fontSize: 13 }}>

@@ -1,8 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { SITE_URL } from "@/lib/site";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
+import { getPublicReviewStats, getPublicTestimonials, type PublicTestimonial } from "@/lib/reviews/publicStats";
 import { SwipeDemo } from "@/components/landing/SwipeDemo";
 import { Reveal } from "@/components/ui/Reveal";
 import { Highlight } from "@/components/ui/Highlight";
@@ -10,6 +12,12 @@ import { Highlight } from "@/components/ui/Highlight";
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
+
+// Chiffres réels (offres actives, avis) désormais lus en base -- revalidate
+// plutôt que fully dynamic : la home reste servie depuis le cache (vitesse =
+// signal SEO) et se régénère au plus une fois par heure, largement assez
+// frais pour des stats qui bougent lentement.
+export const revalidate = 3600;
 
 const STEPS = [
   {
@@ -26,31 +34,23 @@ const STEPS = [
   },
 ];
 
-const STATS = [
-  { value: "1 400", label: "Offres actives", color: "var(--color-accent)" },
-  { value: "48h", label: "Délai moyen" },
-  { value: "62%", label: "Alternances", color: "var(--color-accent-2)" },
-  { value: "4.6★", label: "Note moyenne" },
-];
-
-const TESTIMONIALS = [
+// Utilisés seulement si la base ne compte pas encore assez d'avis publiés
+// avec commentaire (voir getPublicTestimonials) -- jamais mélangés avec de
+// vrais avis pour ne pas donner l'impression que ce sont les mêmes.
+const FALLBACK_TESTIMONIALS: PublicTestimonial[] = [
   {
-    quote:
-      "Trois jours après mon inscription, j'avais déjà un entretien.",
-    author: "Léa",
-    role: "alternante en marketing digital",
+    quote: "Trois jours après mon inscription, j'avais déjà un entretien.",
+    author: "Léa, alternante en marketing digital",
   },
   {
     quote:
       "J'ai enfin arrêté de recopier la même lettre de motivation sur quinze sites différents.",
-    author: "Thomas",
-    role: "stagiaire développement web",
+    author: "Thomas, stagiaire développement web",
   },
   {
     quote:
       "Les offres qui remontent correspondent vraiment à ce que j'ai mis dans mon profil, ça change tout.",
-    author: "Inès",
-    role: "alternante ressources humaines",
+    author: "Inès, alternante ressources humaines",
   },
 ];
 
@@ -79,6 +79,21 @@ const FAQ = [
     question: "Comment résilier l'abonnement Premium ?",
     answer:
       "Depuis la page Premium de ton compte, en un clic sur \"Gérer mon abonnement\" — aucun engagement, aucune justification à donner.",
+  },
+  {
+    question: "Stageio propose-t-il des offres partout en France ?",
+    answer:
+      "Oui. Tu peux chercher par ville ou par département à l'inscription, et filtrer les offres selon ta mobilité (présentiel, hybride, télétravail) — Stageio référence des offres dans toute la France, pas seulement dans les grandes métropoles.",
+  },
+  {
+    question: "Faut-il un CV pour s'inscrire sur Stageio ?",
+    answer:
+      "Non, le CV est facultatif à l'inscription. Tu peux l'ajouter à tout moment depuis ton profil ; les utilisateurs Premium en profitent pour affiner encore le matching et débloquer l'audit de CV noté sur 100.",
+  },
+  {
+    question: "Stageio couvre-t-il tous les secteurs (informatique, marketing, RH, commerce...) ?",
+    answer:
+      "Oui, tous les secteurs sont représentés. Tu choisis tes secteurs et les métiers que tu vises à l'inscription, et Stageio priorise les offres qui correspondent, quel que soit le domaine.",
   },
 ];
 
@@ -114,7 +129,77 @@ const websiteJsonLd = {
   },
 };
 
-export default function LandingPage() {
+// Google affiche des étoiles directement dans les résultats de recherche
+// pour ce type (SoftwareApplication) quand un aggregateRating réel est
+// présent -- on ne l'inclut que si des avis approuvés existent, jamais avec
+// une note inventée (une note affichée sans avis réels viole les consignes
+// Google sur les extraits d'avis).
+function buildWebApplicationJsonLd(reviewStats: { count: number; average: number | null }) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "Stageio",
+    url: SITE_URL,
+    applicationCategory: "BusinessApplication",
+    operatingSystem: "Web",
+    offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" },
+    ...(reviewStats.count > 0 && reviewStats.average !== null
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: reviewStats.average,
+            reviewCount: reviewStats.count,
+          },
+        }
+      : {}),
+  };
+}
+
+export default async function LandingPage() {
+  // Client admin plutôt que le client lié aux cookies (@/lib/supabase/server) :
+  // cette page n'affiche rien de spécifique au visiteur, et cookies() forcerait
+  // un rendu dynamique par requête, rendant `revalidate` ci-dessus inopérant --
+  // exactement le genre de lenteur que ce passage SEO cherche à éviter.
+  const admin = createAdminClient();
+  const [{ count: activeOffersCount }, { count: alternanceCount }, reviewStats, realTestimonials] =
+    await Promise.all([
+      admin.from("offers").select("id", { count: "exact", head: true }).eq("is_active", true),
+      admin
+        .from("offers")
+        .select("id", { count: "exact", head: true })
+        .eq("is_active", true)
+        .eq("contract_type", "alternance"),
+      getPublicReviewStats(),
+      getPublicTestimonials(3),
+    ]);
+
+  const alternanceShare =
+    activeOffersCount && activeOffersCount > 0
+      ? Math.round(((alternanceCount ?? 0) / activeOffersCount) * 100)
+      : null;
+
+  // Toujours 4 chiffres réels affichés, jamais de valeur inventée : la note
+  // moyenne cède la place à un fait produit vérifiable (sans engagement) tant
+  // qu'il n'y a pas assez d'avis publiés pour l'afficher honnêtement.
+  const STATS = [
+    {
+      value: activeOffersCount ? activeOffersCount.toLocaleString("fr-FR") : "—",
+      label: "Offres actives",
+      color: "var(--color-accent)",
+    },
+    { value: "100%", label: "Gratuit à l'inscription" },
+    {
+      value: alternanceShare !== null ? `${alternanceShare}%` : "—",
+      label: "Alternances",
+      color: "var(--color-accent-2)",
+    },
+    reviewStats.count > 0
+      ? { value: `${reviewStats.average}★`, label: `Note moyenne (${reviewStats.count} avis)` }
+      : { value: "0€", label: "Sans engagement" },
+  ];
+
+  const testimonials = realTestimonials.length >= 3 ? realTestimonials : FALLBACK_TESTIMONIALS;
+  const webApplicationJsonLd = buildWebApplicationJsonLd(reviewStats);
 
   return (
     <div className="flex-1">
@@ -125,6 +210,10 @@ export default function LandingPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLd(websiteJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(webApplicationJsonLd) }}
       />
       <script
         type="application/ld+json"
@@ -280,8 +369,8 @@ export default function LandingPage() {
             Ils ont trouvé
           </span>
           <div className="mt-4 grid gap-6 sm:grid-cols-3">
-            {TESTIMONIALS.map((t, i) => (
-              <Reveal key={t.author} delay={i * 0.08}>
+            {testimonials.map((t, i) => (
+              <Reveal key={`${t.author}-${i}`} delay={i * 0.08}>
                 <figure
                   className="card elev-md m-0"
                   style={{ background: "var(--color-accent-2-100)", padding: "var(--space-6)" }}
@@ -298,7 +387,7 @@ export default function LandingPage() {
                     « {t.quote} »
                   </blockquote>
                   <figcaption style={{ fontSize: 13, color: "var(--color-accent-2-700)", marginTop: 14 }}>
-                    — {t.author}, {t.role}
+                    — {t.author}
                   </figcaption>
                 </figure>
               </Reveal>
