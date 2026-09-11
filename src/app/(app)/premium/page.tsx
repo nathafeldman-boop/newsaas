@@ -200,6 +200,31 @@ export default async function PremiumPage({
               </div>
             )}
 
+            {/* Bandeau temporaire (rentrée) : une hausse de prix est prévue
+                prochainement, ceci annonce honnêtement que le tarif actuel
+                ne tient qu'un temps limité -- jamais de faux prix barré
+                ("avant/après" jamais réellement pratiqué), ce qui serait
+                interdit (arrêté du 11 mars 2015 sur les annonces de
+                réduction de prix). À retirer quand la hausse sera actée. */}
+            <div
+              className="animate-in flex items-center gap-2"
+              style={{
+                background: "var(--color-accent-2-100)",
+                border: "1px solid var(--color-accent-2-300)",
+                borderRadius: 12,
+                padding: "9px 12px",
+                marginBottom: 14,
+              }}
+            >
+              <span aria-hidden style={{ fontSize: 16, lineHeight: 1 }}>
+                🎒
+              </span>
+              <div style={{ fontSize: 12, lineHeight: 1.4, color: "var(--color-accent-2-800)" }}>
+                <strong>Offre spéciale rentrée</strong> — tarifs actuels garantis encore 1 mois,
+                augmentation prévue ensuite.
+              </div>
+            </div>
+
             <span
               className="tag animate-in"
               style={{
