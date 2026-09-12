@@ -275,7 +275,7 @@ function extractCvKeywords(cvText: string): string[] {
 export function computeCvMatchBonus(
   cvText: string | null,
   offer: Pick<Offer, "title" | "description" | "requirements">,
-  cap = 10,
+  cap = 16,
 ): number {
   if (!cvText) return 0;
   const keywords = extractCvKeywords(cvText);

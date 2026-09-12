@@ -112,6 +112,20 @@ export function StatPill({ icon, label, value }: { icon: string; label: string; 
   );
 }
 
+// Petit message d'incitation, calé sur le score de matching -- l'objectif
+// est qu'une carte à très haut score se ressente comme "évidemment je veux
+// postuler", pas juste comme une offre parmi d'autres. Volontairement
+// silencieux sous 72 : un score moyen (deck gratuit à froid, ex. 40-55) ne
+// doit jamais recevoir un message enthousiaste qui sonnerait faux et
+// entamerait la confiance dans le score affiché ailleurs sur la carte.
+function matchHypeMessage(score: number | undefined): string | null {
+  if (score === undefined) return null;
+  if (score >= 92) return "🔥 Pépite pour ton profil — fonce !";
+  if (score >= 82) return "✨ Un des meilleurs matchs de ton deck";
+  if (score >= 72) return "👍 Bon match, ça vaut le coup d'œil";
+  return null;
+}
+
 function companyInitials(company: string): string {
   const words = company.trim().split(/\s+/).filter(Boolean);
   if (words.length === 0) return "?";
@@ -149,15 +163,18 @@ function InfoCell({ icon, label, value }: { icon: string; label: string; value: 
 export function OfferCardContent({
   offer,
   reasons,
+  score,
 }: {
   offer: Offer;
   reasons?: string[];
+  score?: number;
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const typeLabel = offer.contract_type === "alternance" ? "Alternance" : "Stage";
   const tags = [offer.sector, offer.remote_policy].filter(
     (t): t is string => Boolean(t),
   );
+  const hypeMessage = matchHypeMessage(score);
 
   return (
     <div className="flex h-full flex-col overflow-y-auto" style={{ padding: "20px 20px 18px" }}>
@@ -197,6 +214,23 @@ export function OfferCardContent({
       <p style={{ margin: "5px 0 0", fontSize: 13.5, fontWeight: 500, color: mutedText }}>
         {typeLabel} • {offer.location}
       </p>
+
+      {hypeMessage && (
+        <p
+          style={{
+            margin: "10px 0 0",
+            fontSize: 12.5,
+            fontWeight: 700,
+            color: "var(--color-accent-700)",
+            background: "var(--color-accent-100)",
+            display: "inline-block",
+            padding: "5px 10px",
+            borderRadius: 999,
+          }}
+        >
+          {hypeMessage}
+        </p>
+      )}
 
       {tags.length > 0 && (
         <div className="flex flex-wrap gap-1.5" style={{ marginTop: 12 }}>

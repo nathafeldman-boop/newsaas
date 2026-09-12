@@ -28,10 +28,11 @@ const SwipeCard = forwardRef<
   {
     offer: Offer;
     reasons?: string[];
+    score?: number;
     isTop: boolean;
     onExited: (direction: SwipeDirection) => void;
   }
->(function SwipeCard({ offer, reasons, isTop, onExited }, ref) {
+>(function SwipeCard({ offer, reasons, score, isTop, onExited }, ref) {
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-300, 300], [-18, 18]);
   const likeOpacity = useTransform(x, [20, 140], [0, 1]);
@@ -110,7 +111,7 @@ const SwipeCard = forwardRef<
             </motion.span>
           </>
         )}
-        <OfferCardContent offer={offer} reasons={reasons} />
+        <OfferCardContent offer={offer} reasons={reasons} score={score} />
       </div>
     </motion.div>
   );
@@ -303,6 +304,7 @@ function SwipeDeckInner({
                   ref={isTop ? topCardRef : undefined}
                   offer={offer}
                   reasons={reasons[offer.id]}
+                  score={scores[offer.id]}
                   isTop={isTop}
                   onExited={() => handleExited(offer.id)}
                 />

@@ -187,25 +187,26 @@ export default async function SwipePage() {
   // confiance : "trop de swipes, pas assez de candidatures" -- un deck qui
   // reste en permanence rempli à ras le score de base (40) laisse passer du
   // remplissage correct-mais-pas-motivant. Passé un peu d'historique réel,
-  // on ne montre plus que ce qui ressort vraiment. Seuil relevé (55 -> 58)
-  // et déclenché plus tôt (15 -> 8 swipes) : l'objectif n'est plus juste de
-  // faire swiper, mais de ne montrer que des offres pour lesquelles
-  // postuler semble évident.
+  // on ne montre plus que ce qui ressort vraiment (déclenché à 8 swipes).
   //
-  // Le seuil "à froid" (avant tout historique appris) était brièvement
-  // passé à 48 (au lieu de 40) le 8 septembre pour TOUS les comptes, dans
-  // l'idée de filtrer plus fort dès la toute première carte -- revenu à 40
-  // par précaution le lendemain : chute des paiements observée précisément
-  // sur la première cohorte d'inscrits (donc gratuits) entièrement passée
-  // par ce seuil plus strict, corrélation temporelle trop nette pour
-  // l'ignorer. Cause réelle non confirmée, mais mieux vaut ne plus jamais
-  // resserrer l'entrée gratuite sans preuve.
+  // Le seuil "à froid" pour les comptes GRATUITS reste à 40, sans y
+  // retoucher : il était brièvement passé à 48 le 8 septembre pour TOUS les
+  // comptes, dans l'idée de filtrer plus fort dès la toute première carte
+  // -- revenu à 40 par précaution le lendemain : chute des paiements
+  // observée précisément sur la première cohorte d'inscrits (donc
+  // gratuits) entièrement passée par ce seuil plus strict, corrélation
+  // temporelle trop nette pour l'ignorer. Cause réelle non confirmée, mais
+  // mieux vaut ne plus jamais resserrer l'entrée gratuite sans preuve.
   //
-  // Réintroduit ici en le réservant aux Premium (déjà payé -- resserrer
-  // leur deck ne peut plus faire baisser une conversion qui a déjà eu
-  // lieu) : matching plus exigeant dès leur première carte post-paiement,
-  // sans reprendre le risque écarté ci-dessus pour les comptes gratuits.
-  const relevanceThreshold = affinity.sampleSize >= 8 ? 58 : premium ? 48 : 40;
+  // Les PREMIUM ont leurs propres seuils, nettement plus stricts (déjà
+  // payé -- resserrer leur deck ne peut plus faire baisser une conversion
+  // qui a déjà eu lieu) : l'objectif devient "chaque carte donne envie de
+  // candidater", pas juste "assez pertinente pour ne pas être hors-sujet".
+  // Filet de sécurité inchangé plus bas : si ce seuil viderait le deck, on
+  // retombe sur les offres les mieux classées quand même.
+  const relevanceThreshold = premium
+    ? (affinity.sampleSize >= 8 ? 68 : 60)
+    : (affinity.sampleSize >= 8 ? 58 : 40);
 
   // Même logique de filet de sécurité que ci-dessus : si ce filtre viderait
   // un pool pourtant non vide, on préfère montrer les offres quand même
