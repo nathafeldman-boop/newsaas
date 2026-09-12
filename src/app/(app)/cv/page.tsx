@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CvUploadPanel } from "@/components/profile/CvUploadPanel";
 import { CvAuditPanel } from "@/components/profile/CvAuditPanel";
+import { CvGuideModule } from "@/components/profile/CvGuideModule";
 import { isPremium } from "@/lib/subscription/isPremium";
 
 export default async function CvPage() {
@@ -13,7 +14,7 @@ export default async function CvPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("cv_path, subscription_status")
+    .select("cv_path, subscription_status, sectors, target_jobs")
     .eq("id", user.id)
     .single();
 
@@ -39,6 +40,8 @@ export default async function CvPage() {
       </div>
 
       <CvAuditPanel hasCv={Boolean(profile.cv_path)} isPremium={isPremium(profile)} />
+
+      <CvGuideModule targetLabel={profile.target_jobs?.[0] || profile.sectors?.[0] || null} />
     </div>
   );
 }
