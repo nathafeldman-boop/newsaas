@@ -51,37 +51,35 @@ export async function GET(request: NextRequest) {
   }
 
   const queries = pickQueriesForToday();
-  const results: { query: string; url: string; ok: boolean; error?: string }[] =
-    [];
+  type Result = { query: string; url: string; ok: boolean; error?: string };
 
-  for (const query of queries) {
-    let urls: string[];
-    try {
-      urls = await discoverOfferUrls(query, URLS_PER_QUERY);
-    } catch (err) {
-      results.push({
-        query,
-        url: "",
-        ok: false,
-        error: err instanceof Error ? err.message : String(err),
-      });
-      continue;
-    }
-
-    for (const url of urls) {
+  // Les pipelines par requête (découverte + ingestion) tournent en
+  // parallèle, au lieu d'un enchaînement 100% séquentiel -- jusqu'à 20
+  // appels réseau (Mistral + fetch de pages tierces) l'un après l'autre
+  // faisaient régulièrement dépasser les 60s (maxDuration, plafond Vercel
+  // Hobby), perdant tout le run et les offres du jour restantes (vu en
+  // prod plusieurs fois, y compris avant toute panne Mistral). Le volume
+  // total de requêtes Mistral ne change pas, seule leur simultanéité augmente.
+  const perQueryResults = await Promise.all(
+    queries.map(async (query): Promise<Result[]> => {
+      let urls: string[];
       try {
-        await ingestOffer({ sourceUrl: url });
-        results.push({ query, url, ok: true });
+        urls = await discoverOfferUrls(query, URLS_PER_QUERY);
       } catch (err) {
-        results.push({
-          query,
-          url,
-          ok: false,
-          error: err instanceof Error ? err.message : String(err),
-        });
+        return [{ query, url: "", ok: false, error: err instanceof Error ? err.message : String(err) }];
       }
-    }
-  }
+
+      const ingestions = await Promise.allSettled(urls.map((url) => ingestOffer({ sourceUrl: url })));
+      return ingestions.map((settled, i) => {
+        const url = urls[i];
+        if (settled.status === "fulfilled") return { query, url, ok: true };
+        const err = settled.reason;
+        return { query, url, ok: false, error: err instanceof Error ? err.message : String(err) };
+      });
+    }),
+  );
+
+  const results = perQueryResults.flat();
 
   return NextResponse.json({
     queries,
