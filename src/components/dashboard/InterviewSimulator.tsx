@@ -2,59 +2,47 @@
 
 import { useState } from "react";
 import {
-  generateInterviewQuizAction,
-  type GenerateQuizResult,
-} from "@/app/(app)/dashboard/actions";
-import {
+  INTERVIEW_DOMAINS,
   QUESTION_COUNT_BY_LEVEL,
+  getInterviewQuestions,
   type InterviewLevel,
   type InterviewQuestion,
-} from "@/lib/groq/generateInterviewQuiz";
+} from "@/lib/interview/questionBank";
 
 const LEVELS: { value: InterviewLevel; label: string; hint: string }[] = [
-  { value: "facile", label: "Facile", hint: `${QUESTION_COUNT_BY_LEVEL.facile} questions · débutant` },
-  { value: "medium", label: "Médium", hint: `${QUESTION_COUNT_BY_LEVEL.medium} questions · intermédiaire` },
-  { value: "difficile", label: "Difficile", hint: `${QUESTION_COUNT_BY_LEVEL.difficile} questions · avancé` },
+  { value: "facile", label: "Facile", hint: `${QUESTION_COUNT_BY_LEVEL.facile} questions` },
+  { value: "medium", label: "Médium", hint: `${QUESTION_COUNT_BY_LEVEL.medium} questions` },
+  { value: "difficile", label: "Difficile", hint: `${QUESTION_COUNT_BY_LEVEL.difficile} questions` },
 ];
 
-// Pool de secours pour "🎲 Aléatoire" : volontairement générique (pas lié au
-// profil) plutôt qu'une vraie génération IA d'un métier au hasard -- ça
-// suffit à varier l'entraînement sans coût ni latence supplémentaire.
-const RANDOM_JOB_POOL = [
-  "Développeur web",
-  "Chargé de marketing digital",
-  "Assistant ressources humaines",
-  "Chargé de communication",
-  "Commercial B2B",
-  "Assistant comptable",
-  "Chef de projet junior",
-  "Community manager",
-  "Data analyst",
-  "Designer UX/UI",
-  "Assistant achats",
-  "Technicien support informatique",
-  "Chargé de clientèle",
-  "Assistant marketing",
-  "Gestionnaire de paie",
-];
+// Trouve le domaine le plus proche du métier/secteur visé du profil (simple
+// correspondance sous-chaîne, insensible à la casse) -- à défaut, premier
+// domaine de la liste. Banque de questions statique, écrite à la main
+// (voir src/lib/interview/questionBank.ts) : zéro dépendance IA/API pour
+// cette fonctionnalité, donc zéro risque de panne externe.
+function findClosestDomain(hint: string): string {
+  const lower = hint.toLowerCase();
+  const match = INTERVIEW_DOMAINS.find(
+    (d) => lower.includes(d.id) || d.label.toLowerCase().includes(lower) || lower.includes(d.label.toLowerCase()),
+  );
+  return match?.id ?? INTERVIEW_DOMAINS[0].id;
+}
 
 type Phase = "setup" | "quiz" | "results";
 
 export function InterviewSimulator({
   isPremium,
-  defaultJob,
+  defaultJobHint,
 }: {
   isPremium: boolean;
-  defaultJob: string;
+  defaultJobHint: string;
 }) {
+  const [domainId, setDomainId] = useState(() => findClosestDomain(defaultJobHint));
   const [level, setLevel] = useState<InterviewLevel | null>(null);
-  const [job, setJob] = useState(defaultJob);
   const [phase, setPhase] = useState<Phase>("setup");
   const [questions, setQuestions] = useState<InterviewQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<(number | null)[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   if (!isPremium) {
     return (
@@ -70,8 +58,8 @@ export function InterviewSimulator({
             color: "color-mix(in srgb, var(--color-text) 65%, transparent)",
           }}
         >
-          Entraîne-toi avec un entretien à choix multiples adapté à ton métier visé, sur 3
-          niveaux de difficulté, avec un score et des explications à la fin.
+          Entraîne-toi avec un entretien à choix multiples adapté à ton domaine, sur 3 niveaux de
+          difficulté, avec un score et des explications à la fin.
         </p>
         <a href="/premium" className="btn btn-primary mt-4" style={{ whiteSpace: "nowrap" }}>
           🔓 Débloquer avec Premium (7,99€/mois)
@@ -80,23 +68,12 @@ export function InterviewSimulator({
     );
   }
 
-  async function startQuiz() {
+  function startQuiz() {
     if (!level) return;
-    setLoading(true);
-    setError(null);
-    const result: GenerateQuizResult = await generateInterviewQuizAction(job, level);
-    setLoading(false);
-
-    if (result.status === "success") {
-      setQuestions(result.questions);
-      setAnswers(new Array(result.questions.length).fill(null));
-      setCurrentIndex(0);
-      setPhase("quiz");
-    } else if (result.status === "premium_required") {
-      setError("Cette fonctionnalité est réservée aux membres Premium.");
-    } else {
-      setError(result.message);
-    }
+    setQuestions(getInterviewQuestions(domainId, level));
+    setAnswers(new Array(QUESTION_COUNT_BY_LEVEL[level]).fill(null));
+    setCurrentIndex(0);
+    setPhase("quiz");
   }
 
   function selectAnswer(optionIndex: number) {
@@ -120,7 +97,6 @@ export function InterviewSimulator({
     setQuestions([]);
     setAnswers([]);
     setCurrentIndex(0);
-    setError(null);
   }
 
   if (phase === "quiz") {
@@ -209,6 +185,7 @@ export function InterviewSimulator({
     const wrongOnes = questions
       .map((q, i) => ({ q, i }))
       .filter(({ q, i }) => answers[i] !== q.correctIndex);
+    const domainLabel = INTERVIEW_DOMAINS.find((d) => d.id === domainId)?.label ?? domainId;
 
     return (
       <div className="card elev-sm" style={{ padding: "var(--space-6)" }}>
@@ -253,7 +230,7 @@ export function InterviewSimulator({
                 color: "color-mix(in srgb, var(--color-text) 65%, transparent)",
               }}
             >
-              Entretien {level} · {job}
+              Entretien {level} · {domainLabel}
             </p>
           </div>
         </div>
@@ -310,38 +287,30 @@ export function InterviewSimulator({
           color: "color-mix(in srgb, var(--color-text) 65%, transparent)",
         }}
       >
-        Choisis un niveau et un métier, réponds au quiz, et découvre ton score avec des
+        Choisis un domaine et un niveau, réponds au quiz, et découvre ton score avec des
         explications pour progresser.
       </p>
 
       <div className="mt-4">
-        <label style={{ fontSize: 12, fontWeight: 600 }}>Métier ciblé</label>
-        <div className="mt-1.5 flex gap-2">
-          <input
-            type="text"
-            value={job}
-            onChange={(e) => setJob(e.target.value)}
-            placeholder="ex : Développeur web"
-            className="flex-1"
-            style={{
-              padding: "10px 12px",
-              borderRadius: 10,
-              border: "1px solid var(--color-divider)",
-              fontSize: 13.5,
-            }}
-          />
-          <button
-            type="button"
-            onClick={() =>
-              setJob(RANDOM_JOB_POOL[Math.floor(Math.random() * RANDOM_JOB_POOL.length)])
-            }
-            className="btn btn-secondary"
-            style={{ whiteSpace: "nowrap" }}
-            title="Métier aléatoire"
-          >
-            🎲
-          </button>
-        </div>
+        <label style={{ fontSize: 12, fontWeight: 600 }}>Domaine</label>
+        <select
+          value={domainId}
+          onChange={(e) => setDomainId(e.target.value)}
+          className="mt-1.5 w-full"
+          style={{
+            padding: "10px 12px",
+            borderRadius: 10,
+            border: "1px solid var(--color-divider)",
+            fontSize: 13.5,
+            background: "var(--color-surface)",
+          }}
+        >
+          {INTERVIEW_DOMAINS.map((d) => (
+            <option key={d.id} value={d.id}>
+              {d.label}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="mt-4">
@@ -371,18 +340,14 @@ export function InterviewSimulator({
         </div>
       </div>
 
-      {error && (
-        <p style={{ fontSize: 12.5, marginTop: 12, color: "var(--color-accent-700)" }}>{error}</p>
-      )}
-
       <button
         type="button"
         onClick={startQuiz}
-        disabled={!level || !job.trim() || loading}
+        disabled={!level}
         className="btn btn-primary mt-5"
         style={{ whiteSpace: "nowrap" }}
       >
-        {loading ? "Génération en cours..." : "Démarrer l'entretien"}
+        Démarrer l&apos;entretien
       </button>
     </div>
   );

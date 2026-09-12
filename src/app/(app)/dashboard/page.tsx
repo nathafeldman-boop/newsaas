@@ -62,7 +62,7 @@ export default async function DashboardPage() {
   }
   const totalApplications = applications?.length ?? 0;
 
-  const defaultJob = profile?.target_jobs?.[0] || profile?.sectors?.[0] || "";
+  const defaultJobHint = profile?.target_jobs?.[0] || profile?.sectors?.[0] || "";
   const cvSignedUrl = cvSignedUrlResult.data?.signedUrl ?? null;
 
   return (
@@ -73,7 +73,7 @@ export default async function DashboardPage() {
       </p>
 
       <div className="mt-6">
-        <InterviewSimulator isPremium={premium} defaultJob={defaultJob} />
+        <InterviewSimulator isPremium={premium} defaultJobHint={defaultJobHint} />
       </div>
 
       <div className="card elev-sm mt-5" style={{ padding: "var(--space-6)" }}>
