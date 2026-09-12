@@ -114,16 +114,77 @@ export function StatPill({ icon, label, value }: { icon: string; label: string; 
 
 // Petit message d'incitation, calé sur le score de matching -- l'objectif
 // est qu'une carte à très haut score se ressente comme "évidemment je veux
-// postuler", pas juste comme une offre parmi d'autres. Volontairement
-// silencieux sous 72 : un score moyen (deck gratuit à froid, ex. 40-55) ne
-// doit jamais recevoir un message enthousiaste qui sonnerait faux et
-// entamerait la confiance dans le score affiché ailleurs sur la carte.
-function matchHypeMessage(score: number | undefined): string | null {
+// postuler", pas juste comme une offre parmi d'autres. Plusieurs variantes
+// par palier (même logique que les lettres de motivation, voir
+// src/lib/coverLetter/staticGenerator.ts) pour éviter de revoir le même
+// texte à chaque carte à score équivalent. Le ton descend volontairement
+// en intensité avec le score -- très enthousiaste en haut, simple constat
+// factuel dès 60 -- mais reste toujours silencieux sous 60 : un score
+// faible ne doit jamais recevoir de message, qu'il soit hyped ou
+// décourageant, pour ne pas entamer la confiance dans le score affiché
+// ailleurs sur la carte.
+function seededHashForHype(str: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+const HYPE_MESSAGES: { min: number; variants: string[] }[] = [
+  {
+    min: 92,
+    variants: [
+      "🔥 Pépite pour ton profil — fonce !",
+      "🔥 Rarissime : un match à ce niveau-là, ne le laisse pas filer",
+      "🏆 Le meilleur match de ton deck en ce moment",
+      "🔥 Ton profil colle presque parfaitement à cette offre",
+      "⚡ Un match aussi fort, ça se joue à quelques clics",
+      "🔥 Ce genre d'offre, tu la retrouveras rarement aussi bien alignée",
+    ],
+  },
+  {
+    min: 82,
+    variants: [
+      "✨ Un des meilleurs matchs de ton deck",
+      "✨ Ton profil correspond vraiment bien ici",
+      "✨ Une des offres les plus alignées avec ton parcours",
+      "💫 Ce match sort clairement du lot",
+      "✨ Ça vaut clairement plus qu'un simple coup d'œil",
+      "💫 Un très bon niveau de compatibilité sur cette offre",
+    ],
+  },
+  {
+    min: 72,
+    variants: [
+      "👍 Bon match, ça vaut le coup d'œil",
+      "👍 Une offre solide par rapport à ton profil",
+      "👍 De bonnes chances que ça matche des deux côtés",
+      "👍 Un profil qui colle plutôt bien à cette offre",
+      "👍 Ça mérite clairement d'être regardé de plus près",
+      "👍 Un match au-dessus de la moyenne de ton deck",
+    ],
+  },
+  {
+    min: 60,
+    variants: [
+      "Un match correct pour ton profil",
+      "Une offre qui reste dans tes critères",
+      "Compatibilité correcte, à voir selon tes envies",
+      "Ça peut valoir le coup selon ce que tu recherches",
+      "Un match dans la moyenne, à toi de juger",
+      "Une offre raisonnablement alignée avec ton profil",
+    ],
+  },
+];
+
+function matchHypeMessage(score: number | undefined, seedKey: string): string | null {
   if (score === undefined) return null;
-  if (score >= 92) return "🔥 Pépite pour ton profil — fonce !";
-  if (score >= 82) return "✨ Un des meilleurs matchs de ton deck";
-  if (score >= 72) return "👍 Bon match, ça vaut le coup d'œil";
-  return null;
+  const tier = HYPE_MESSAGES.find((t) => score >= t.min);
+  if (!tier) return null;
+  const hash = seededHashForHype(`${seedKey}::${tier.min}`);
+  return tier.variants[hash % tier.variants.length];
 }
 
 function companyInitials(company: string): string {
@@ -174,7 +235,7 @@ export function OfferCardContent({
   const tags = [offer.sector, offer.remote_policy].filter(
     (t): t is string => Boolean(t),
   );
-  const hypeMessage = matchHypeMessage(score);
+  const hypeMessage = matchHypeMessage(score, offer.id);
 
   return (
     <div className="flex h-full flex-col overflow-y-auto" style={{ padding: "20px 20px 18px" }}>

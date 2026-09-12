@@ -8,6 +8,7 @@ import {
   type InterviewLevel,
   type InterviewQuestion,
 } from "@/lib/interview/questionBank";
+import { getInterviewResultMessage } from "@/lib/interview/resultMessages";
 
 const LEVELS: { value: InterviewLevel; label: string; hint: string }[] = [
   { value: "facile", label: "Facile", hint: `${QUESTION_COUNT_BY_LEVEL.facile} questions` },
@@ -43,6 +44,7 @@ export function InterviewSimulator({
   const [questions, setQuestions] = useState<InterviewQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<(number | null)[]>([]);
+  const [attemptCount, setAttemptCount] = useState(0);
 
   if (!isPremium) {
     return (
@@ -88,6 +90,7 @@ export function InterviewSimulator({
     if (currentIndex + 1 < questions.length) {
       setCurrentIndex((i) => i + 1);
     } else {
+      setAttemptCount((c) => c + 1);
       setPhase("results");
     }
   }
@@ -186,6 +189,7 @@ export function InterviewSimulator({
       .map((q, i) => ({ q, i }))
       .filter(({ q, i }) => answers[i] !== q.correctIndex);
     const domainLabel = INTERVIEW_DOMAINS.find((d) => d.id === domainId)?.label ?? domainId;
+    const resultMessage = getInterviewResultMessage(score, attemptCount, `${domainId}::${level}`);
 
     return (
       <div className="card elev-sm" style={{ padding: "var(--space-6)" }}>
@@ -236,14 +240,10 @@ export function InterviewSimulator({
         </div>
 
         {wrongOnes.length === 0 ? (
-          <p style={{ fontSize: 13.5, marginTop: 18 }}>
-            Score parfait, aucune question ratée. 🎉
-          </p>
+          <p style={{ fontSize: 13.5, marginTop: 18 }}>{resultMessage}</p>
         ) : (
           <div className="mt-5 flex flex-col gap-4">
-            <p style={{ fontSize: 13, fontWeight: 600, margin: 0 }}>
-              Pourquoi tu n&apos;as pas 100 — et comment t&apos;améliorer :
-            </p>
+            <p style={{ fontSize: 13, fontWeight: 600, margin: 0 }}>{resultMessage}</p>
             {wrongOnes.map(({ q, i }) => (
               <div
                 key={i}

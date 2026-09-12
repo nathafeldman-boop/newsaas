@@ -232,9 +232,25 @@ function seededShuffle<T>(arr: T[], seed: number): T[] {
 
 function pickNoRepeat<T>(arr: T[], seedKey: string, attempt: number): T {
   if (arr.length === 1) return arr[0];
-  const cycle = Math.floor(attempt / arr.length);
-  const posInCycle = attempt % arr.length;
+  const n = arr.length;
+  const cycle = Math.floor(attempt / n);
+  const posInCycle = attempt % n;
   const shuffled = seededShuffle(arr, seededHash(seedKey) + cycle * 7919);
+  // Deux cycles mélangés indépendamment peuvent, par coïncidence, placer le
+  // même élément en dernière position du cycle précédent et en première
+  // position de celui-ci -- un vrai bug de répétition à la frontière entre
+  // deux cycles, découvert en validant le module homologue
+  // src/lib/interview/resultMessages.ts. On le neutralise en permutant les
+  // deux premières positions du nouveau cycle dans ce cas -- fait à chaque
+  // appel (pas seulement quand posInCycle === 0) pour que le tableau
+  // "shuffled" reste identique quelle que soit la position demandée dans
+  // ce cycle.
+  if (cycle > 0) {
+    const prevShuffled = seededShuffle(arr, seededHash(seedKey) + (cycle - 1) * 7919);
+    if (shuffled[0] === prevShuffled[n - 1]) {
+      [shuffled[0], shuffled[1]] = [shuffled[1], shuffled[0]];
+    }
+  }
   return shuffled[posInCycle];
 }
 
