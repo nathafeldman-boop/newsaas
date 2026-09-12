@@ -35,8 +35,38 @@ import { STEP_IDS, STEP_LABELS, type StepId } from "@/lib/onboarding/steps";
 // motivation générées) est désormais redemandée ici et rendue obligatoire,
 // plutôt que de laisser un compte fonctionner avec des colonnes vides que
 // l'algorithme interprète par défaut de la pire des façons.
-const PROGRESS_STEPS: StepId[] = STEP_IDS.filter((s) => s !== "intro" && s !== "outro");
+const PROGRESS_STEPS: StepId[] = STEP_IDS.filter(
+  (s) => s !== "intro" && s !== "outro" && s !== "trust",
+);
 const SKIPPABLE: StepId[] = ["cv"];
+
+// Écran de réassurance sociale juste après le choix stage/alternance/les
+// deux -- traité comme "intro"/"outro" (pas de chrome, pas de progression
+// dans la barre) puisqu'il ne demande aucune donnée, juste une transition.
+function trustContractLabel(lookingFor: ContractType[]): string {
+  const hasAlternance = lookingFor.includes("alternance");
+  const hasStage = lookingFor.includes("stage");
+  if (hasAlternance && !hasStage) return "leur alternance";
+  if (hasStage && !hasAlternance) return "leur stage";
+  return "leur alternance ou leur stage";
+}
+
+function AnimatedCount({ target, durationMs }: { target: number; durationMs: number }) {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    let raf: number;
+    const startTime = performance.now();
+    function tick(now: number) {
+      const progress = Math.min((now - startTime) / durationMs, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setValue(Math.round(eased * target));
+      if (progress < 1) raf = requestAnimationFrame(tick);
+    }
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, durationMs]);
+  return <>{value.toLocaleString("fr-FR")}</>;
+}
 
 const slideVariants: Variants = {
   enter: (direction: number) => ({ x: direction > 0 ? 48 : -48, opacity: 0 }),
@@ -303,7 +333,7 @@ export function OnboardingWizard({
   }
 
   const progressIndex = PROGRESS_STEPS.indexOf(stepId);
-  const showChrome = stepId !== "intro" && stepId !== "outro";
+  const showChrome = stepId !== "intro" && stepId !== "outro" && stepId !== "trust";
   const skippable = SKIPPABLE.includes(stepId);
 
   return (
@@ -451,6 +481,84 @@ export function OnboardingWizard({
                     />
                   ))}
                 </div>
+              </div>
+            )}
+
+            {stepId === "trust" && (
+              <div className="flex flex-1 flex-col px-2" style={{ position: "relative", overflow: "hidden" }}>
+                <div
+                  aria-hidden
+                  style={{
+                    position: "absolute",
+                    top: -50,
+                    left: -50,
+                    width: 170,
+                    height: 170,
+                    borderRadius: "50%",
+                    background: "radial-gradient(circle, color-mix(in srgb, var(--color-accent) 25%, transparent), transparent 70%)",
+                    pointerEvents: "none",
+                  }}
+                />
+                <div
+                  aria-hidden
+                  style={{
+                    position: "absolute",
+                    bottom: -60,
+                    right: -60,
+                    width: 190,
+                    height: 190,
+                    borderRadius: "50%",
+                    background: "radial-gradient(circle, color-mix(in srgb, var(--color-accent-2) 22%, transparent), transparent 70%)",
+                    pointerEvents: "none",
+                  }}
+                />
+                <div
+                  className="flex flex-1 flex-col items-center justify-center text-center"
+                  style={{ position: "relative" }}
+                >
+                  <motion.div
+                    initial={{ scale: 0.6, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: "spring", stiffness: 260, damping: 18 }}
+                    style={{ fontSize: 46 }}
+                    aria-hidden
+                  >
+                    🤝
+                  </motion.div>
+                  <p
+                    style={{
+                      fontFamily: "var(--font-heading)",
+                      fontSize: 40,
+                      fontWeight: 800,
+                      margin: "16px 0 0",
+                      letterSpacing: "-0.01em",
+                    }}
+                  >
+                    +<AnimatedCount target={10000} durationMs={1400} />
+                  </p>
+                  <p style={{ fontSize: 16, fontWeight: 700, margin: "6px 0 0", lineHeight: 1.4, maxWidth: "28ch" }}>
+                    personnes nous ont fait confiance pour trouver {trustContractLabel(lookingFor)}
+                  </p>
+                  <motion.p
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5, duration: 0.4 }}
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 700,
+                      margin: "18px 0 0",
+                      padding: "8px 16px",
+                      borderRadius: 999,
+                      background: "var(--color-accent-100)",
+                      color: "var(--color-accent-700)",
+                    }}
+                  >
+                    ✨ Tu as fait le bon choix
+                  </motion.p>
+                </div>
+                <button type="button" onClick={goNext} className="btn btn-primary btn-block">
+                  Continuer
+                </button>
               </div>
             )}
 
