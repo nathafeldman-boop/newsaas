@@ -127,12 +127,32 @@ export default async function AdminDashboardPage({
   visitsFallback.setDate(visitsFallback.getDate() - 180);
   const visitsSince = periodStart(period) ?? visitsFallback;
 
+  // ARR = somme des abonnements actifs/essai annualisés selon leur vraie
+  // cadence Stripe (subscription_price_cents/interval, posés par le webhook
+  // -- voir syncSubscription.ts). "comp" (codes offerts) exclu : aucun
+  // revenu réel derrière.
+  const ANNUALIZATION_BY_INTERVAL: Record<string, number> = { day: 365, week: 52, month: 12, year: 1 };
+  const DEFAULT_MONTHLY_PRICE_CENTS = 799;
+
+  const periodCutoff = periodStart(period);
+
+  // Chaque stat vient désormais d'une requête ciblée (count exact côté
+  // Postgres, ou colonnes minimales + filtre de date) plutôt que d'un seul
+  // SELECT * sans limite sur toute la table profiles -- cette dernière
+  // grossit indéfiniment et a fini par déclencher des Gateway Timeout sur
+  // /admin en prod (vu le 11-12/09). Aucune des requêtes ci-dessous ne
+  // ramène plus de lignes que nécessaire pour la stat qu'elle sert.
   const [
     { count: totalUsers },
     { count: signupsToday },
     { count: signupsWeek },
     { count: onlineNow },
-    { data: profiles, error: profilesError },
+    { count: paidPremiumCount },
+    { count: compPremiumCount },
+    { data: revenueRows, error: revenueError },
+    { data: periodSignups, error: periodSignupsError },
+    { data: recentProfiles, error: recentProfilesError },
+    { data: pricingRows, error: pricingError },
     { count: activeOffers },
     { count: swipesTotal },
     { count: applicationsTotal },
@@ -144,14 +164,30 @@ export default async function AdminDashboardPage({
     admin.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", todayStart.toISOString()),
     admin.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", weekAgo.toISOString()),
     admin.from("profiles").select("id", { count: "exact", head: true }).gte("last_active_at", onlineSince.toISOString()),
-    // Colonnes historiques uniquement : Premium/Revenu cumulé/Gratuit ne
-    // doivent plus jamais pouvoir retomber à 0 à cause d'une colonne ARR
-    // pas encore migrée en base -- vu en prod juste après l'ajout de l'ARR
-    // (voir requête séparée subscriptionPricing plus bas).
+    admin.from("profiles").select("id", { count: "exact", head: true }).in("subscription_status", ["active", "trialing"]),
+    admin.from("profiles").select("id", { count: "exact", head: true }).eq("subscription_status", "comp"),
+    // Une seule colonne, sans tri : suffisant pour la somme du revenu
+    // cumulé, bien plus léger qu'un SELECT multi-colonnes trié.
+    admin.from("profiles").select("total_paid_cents"),
+    // Bornée à la période choisie (sauf "tout") : le graphe n'a jamais
+    // besoin de l'historique complet pour "7 jours" ou "30 jours".
+    periodCutoff
+      ? admin.from("profiles").select("created_at, subscription_status").gte("created_at", periodCutoff.toISOString())
+      : admin.from("profiles").select("created_at, subscription_status"),
+    // Table "derniers inscrits" : seulement les 25 affichés, jamais toute
+    // la base.
     admin
       .from("profiles")
       .select("id, email, full_name, created_at, subscription_status, total_paid_cents")
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .limit(25),
+    // Colonnes ARR récentes : si jamais elles manquent encore en base
+    // (migration pas collée) ou que la requête échoue, ça ne doit affecter
+    // QUE l'ARR -- jamais Premium/Revenu cumulé/Gratuit, calculés à part.
+    admin
+      .from("profiles")
+      .select("subscription_price_cents, subscription_interval")
+      .in("subscription_status", ["active", "trialing"]),
     admin.from("offers").select("id", { count: "exact", head: true }).eq("is_active", true),
     admin.from("swipes").select("id", { count: "exact", head: true }),
     admin.from("applications").select("id", { count: "exact", head: true }),
@@ -164,62 +200,32 @@ export default async function AdminDashboardPage({
   ]);
 
   // supabase-js ne throw jamais sur une erreur Postgres (ex: colonne pas
-  // encore migrée en base) -- sans ce log, une requête qui échoue ici
-  // retombe silencieusement sur `[]`, et Premium/Revenu/ARR affichent tous
-  // 0 sans aucune trace pour comprendre pourquoi (déjà vu avec site_visits
-  // et la synchro Stripe -- même mésaventure, cause différente).
-  if (profilesError) {
-    console.error("AdminDashboardPage: profiles query failed", profilesError);
-  }
+  // encore migrée en base) -- sans ces logs, une requête qui échoue ici
+  // retombe silencieusement sur `[]`/0, et les stats concernées affichent
+  // tout sans aucune trace pour comprendre pourquoi (déjà vu avec
+  // site_visits et la synchro Stripe -- même mésaventure, cause différente).
+  if (revenueError) console.error("AdminDashboardPage: revenue query failed", revenueError);
+  if (periodSignupsError) console.error("AdminDashboardPage: period signups query failed", periodSignupsError);
+  if (recentProfilesError) console.error("AdminDashboardPage: recent profiles query failed", recentProfilesError);
+  if (pricingError) console.error("AdminDashboardPage: ARR pricing query failed", pricingError);
 
-  const allProfiles = profiles ?? [];
-  const activeSubscribers = allProfiles.filter(
-    (p) => p.subscription_status === "active" || p.subscription_status === "trialing",
-  );
-  const paidPremium = activeSubscribers.length;
-  const compPremium = allProfiles.filter((p) => p.subscription_status === "comp").length;
+  const paidPremium = paidPremiumCount ?? 0;
+  const compPremium = compPremiumCount ?? 0;
   const premiumTotal = paidPremium + compPremium;
-  const freePct = allProfiles.length > 0 ? Math.round(((allProfiles.length - premiumTotal) / allProfiles.length) * 100) : 0;
-  const totalRevenueCents = allProfiles.reduce((sum, p) => sum + (p.total_paid_cents ?? 0), 0);
+  const freePct = totalUsers && totalUsers > 0 ? Math.round(((totalUsers - premiumTotal) / totalUsers) * 100) : 0;
+  const totalRevenueCents = (revenueRows ?? []).reduce((sum, p) => sum + (p.total_paid_cents ?? 0), 0);
 
-  // ARR = somme des abonnements actifs/essai annualisés selon leur vraie
-  // cadence Stripe (subscription_price_cents/interval, posés par le
-  // webhook -- voir syncSubscription.ts). "comp" (codes offerts) exclu :
-  // aucun revenu réel derrière. Requête à part et volontairement isolée du
-  // reste : ces deux colonnes sont récentes, et si jamais elles manquent
-  // encore en base (migration pas collée) ou que la requête échoue pour
-  // toute autre raison, ça ne doit affecter QUE l'ARR -- jamais Premium/
-  // Revenu cumulé/Gratuit, qui viennent de la requête profiles ci-dessus,
-  // inchangée depuis avant l'ajout de l'ARR.
-  const ANNUALIZATION_BY_INTERVAL: Record<string, number> = { day: 365, week: 52, month: 12, year: 1 };
-  const DEFAULT_MONTHLY_PRICE_CENTS = 799;
-  const pricingById = new Map<string, { subscription_price_cents: number | null; subscription_interval: string | null }>();
-  if (activeSubscribers.length > 0) {
-    const { data: pricingRows, error: pricingError } = await admin
-      .from("profiles")
-      .select("id, subscription_price_cents, subscription_interval")
-      .in("id", activeSubscribers.map((p) => p.id));
-    if (pricingError) {
-      console.error("AdminDashboardPage: ARR pricing query failed", pricingError);
-    } else {
-      for (const row of pricingRows ?? []) pricingById.set(row.id, row);
-    }
-  }
   // Un abonné actif depuis avant l'ajout de ces deux colonnes (ou si la
   // requête ci-dessus a échoué) n'a encore ni l'un ni l'autre -- fallback
   // sur le prix mensuel (799 = 7,99€), seule offre qui existait jusqu'ici,
   // plutôt que de sous-compter silencieusement ces comptes.
-  const arrCents = activeSubscribers.reduce((sum, p) => {
-    const pricing = pricingById.get(p.id);
-    const priceCents = pricing?.subscription_price_cents ?? DEFAULT_MONTHLY_PRICE_CENTS;
-    const multiplier = ANNUALIZATION_BY_INTERVAL[pricing?.subscription_interval ?? "month"] ?? 12;
+  const arrCents = (pricingRows ?? []).reduce((sum, p) => {
+    const priceCents = p.subscription_price_cents ?? DEFAULT_MONTHLY_PRICE_CENTS;
+    const multiplier = ANNUALIZATION_BY_INTERVAL[p.subscription_interval ?? "month"] ?? 12;
     return sum + priceCents * multiplier;
   }, 0);
 
-  const periodCutoff = periodStart(period);
-  const periodProfiles = periodCutoff
-    ? allProfiles.filter((p) => new Date(p.created_at) >= periodCutoff)
-    : allProfiles;
+  const periodProfiles = periodSignups ?? [];
   const chartData = bucketizeSignups(
     periodProfiles.map((p) => ({
       created_at: p.created_at,
@@ -248,7 +254,22 @@ export default async function AdminDashboardPage({
     allReviews.length > 0 ? allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length : 0;
   const goodReviews = allReviews.filter((r) => r.rating >= 4).length;
   const pendingReviews = allReviews.filter((r) => r.status === "pending");
-  const profileById = new Map(allProfiles.map((p) => [p.id, p]));
+
+  // Auteurs des avis en attente uniquement (quelques lignes au plus),
+  // plutôt qu'un lookup dans toute la table profiles.
+  const pendingReviewUserIds = [...new Set(pendingReviews.map((r) => r.user_id))];
+  const profileById = new Map<string, { full_name: string | null; email: string | null }>();
+  if (pendingReviewUserIds.length > 0) {
+    const { data: reviewAuthors, error: reviewAuthorsError } = await admin
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", pendingReviewUserIds);
+    if (reviewAuthorsError) {
+      console.error("AdminDashboardPage: review authors query failed", reviewAuthorsError);
+    } else {
+      for (const p of reviewAuthors ?? []) profileById.set(p.id, p);
+    }
+  }
 
   return (
     <div>
@@ -259,7 +280,7 @@ export default async function AdminDashboardPage({
         <StatTile label="Inscrits aujourd'hui" value={String(signupsToday ?? 0)} accent />
         <StatTile label="Inscrits (7 jours)" value={String(signupsWeek ?? 0)} />
         <StatTile label="Total utilisateurs" value={String(totalUsers ?? 0)} />
-        <StatTile label="Premium (avec bonus)" value={`${premiumTotal} (${allProfiles.length > 0 ? Math.round((premiumTotal / allProfiles.length) * 100) : 0}%)`} accent />
+        <StatTile label="Premium (avec bonus)" value={`${premiumTotal} (${totalUsers && totalUsers > 0 ? Math.round((premiumTotal / totalUsers) * 100) : 0}%)`} accent />
         <StatTile label="Dont payant réel" value={String(paidPremium)} accent href="/admin/premium" />
         <StatTile label="Gratuit" value={`${freePct}%`} />
         <StatTile
@@ -434,7 +455,7 @@ export default async function AdminDashboardPage({
         </div>
       </SectionCard>
 
-      <SectionCard title={`Visiteurs (${Math.min(25, allProfiles.length)} derniers inscrits)`}>
+      <SectionCard title={`Visiteurs (${Math.min(25, totalUsers ?? 0)} derniers inscrits)`}>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
@@ -446,7 +467,7 @@ export default async function AdminDashboardPage({
               </tr>
             </thead>
             <tbody>
-              {allProfiles.slice(0, 25).map((p) => (
+              {(recentProfiles ?? []).map((p) => (
                 <tr key={p.id} style={{ borderTop: "1px solid var(--color-divider)" }}>
                   <td style={{ padding: "8px 8px 8px 0" }}>
                     <Link href={`/admin/users/${p.id}`}>{p.email}</Link>
