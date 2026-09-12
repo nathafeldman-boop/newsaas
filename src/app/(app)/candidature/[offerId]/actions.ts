@@ -1,8 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { extractCvText } from "@/lib/cv/extractText";
-import { generateCoverLetter } from "@/lib/mistral/generateCoverLetter";
+import { generateStaticCoverLetter, type CoverLetterExtra } from "@/lib/coverLetter/staticGenerator";
 import { isPremium } from "@/lib/subscription/isPremium";
 
 export type GenerateCoverLetterResult =
@@ -13,8 +12,17 @@ export type GenerateCoverLetterResult =
 // Déclenché à l'ouverture de /candidature/[offerId] (et sur "Régénérer").
 // Candidater reste illimité même sans Premium : la candidature (+ le swipe
 // qui l'accompagne, pour le quota) est toujours enregistrée -- seule la
-// lettre générée par IA est réservée aux membres Premium.
-export async function generateCoverLetterAction(offerId: string): Promise<GenerateCoverLetterResult> {
+// lettre est réservée aux membres Premium.
+//
+// Génération 100% statique (voir staticGenerator.ts), plus aucun appel
+// Mistral : la version IA plantait pour tous les Premium depuis le 4
+// septembre (quota Mistral à 0 req/min, hors de notre contrôle), et une
+// fonctionnalité Premium phare indisponible pendant des jours a été
+// identifiée comme cause directe de mauvais avis et de churn.
+export async function generateCoverLetterAction(
+  offerId: string,
+  extra?: CoverLetterExtra,
+): Promise<GenerateCoverLetterResult> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -33,7 +41,7 @@ export async function generateCoverLetterAction(offerId: string): Promise<Genera
     supabase
       .from("profiles")
       .select(
-        "full_name, city, skills, sectors, target_jobs, education_level, formation, experience_level, bio, cv_path, subscription_status",
+        "full_name, city, skills, sectors, target_jobs, education_level, formation, experience_level, subscription_status",
       )
       .eq("id", user.id)
       .single(),
@@ -67,37 +75,23 @@ export async function generateCoverLetterAction(offerId: string): Promise<Genera
     return { status: "premium_required" };
   }
 
-  let cvText: string | null = null;
-  if (profile?.cv_path) {
-    try {
-      const { data: file } = await supabase.storage.from("cvs").download(profile.cv_path);
-      if (file) {
-        const buffer = Buffer.from(await file.arrayBuffer());
-        cvText = await extractCvText(buffer, profile.cv_path);
-      }
-    } catch {
-      cvText = null; // best-effort : la lettre reste utile même sans CV exploitable
-    }
+  const letter = generateStaticCoverLetter(offer, profile, extra);
+
+  // Ne touche jamais au statut ici : une candidature déjà en cours
+  // d'entretien ne doit pas retomber à "envoyee" à cause d'une
+  // régénération de lettre.
+  const { error: updateError } = await supabase
+    .from("applications")
+    .update({ cover_note: letter })
+    .eq("user_id", user.id)
+    .eq("offer_id", offerId);
+
+  if (updateError) {
+    console.error("generateCoverLetterAction: cover_note update failed", updateError);
+    // Best-effort : la lettre reste affichée/copiable même si la sauvegarde
+    // en base a échoué -- ne jamais bloquer l'utilisateur pour un problème
+    // de persistance, la génération elle-même n'a rien d'aléatoire.
   }
 
-  try {
-    const letter = await generateCoverLetter(offer, profile, cvText);
-
-    // Ne touche jamais au statut ici : une candidature déjà en cours
-    // d'entretien ne doit pas retomber à "envoyee" à cause d'une
-    // régénération de lettre.
-    await supabase
-      .from("applications")
-      .update({ cover_note: letter })
-      .eq("user_id", user.id)
-      .eq("offer_id", offerId);
-
-    return { status: "success", letter };
-  } catch (err) {
-    console.error("generateCoverLetterAction", err);
-    return {
-      status: "error",
-      message: "La génération de ta lettre a échoué, réessaie dans un instant.",
-    };
-  }
+  return { status: "success", letter };
 }

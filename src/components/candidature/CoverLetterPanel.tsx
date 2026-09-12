@@ -20,13 +20,15 @@ export function CoverLetterPanel({
   const [status, setStatus] = useState<Status>(initialLetter ? "ready" : "idle");
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [achievement, setAchievement] = useState("");
+  const [whyCompany, setWhyCompany] = useState("");
   const triggered = useRef(false);
 
-  async function generate() {
+  async function generate(extra?: { achievement?: string; whyCompany?: string }) {
     setStatus("loading");
     setError(null);
     setCopied(false);
-    const result = await generateCoverLetterAction(offerId);
+    const result = await generateCoverLetterAction(offerId, extra);
     if (result.status === "success") {
       setLetter(result.letter);
       setStatus("ready");
@@ -62,8 +64,8 @@ export function CoverLetterPanel({
   // La candidature elle-même est déjà enregistrée côté serveur dès l'ouverture
   // de cette page (voir generateCoverLetterAction), indépendamment du succès
   // de la génération -- ne jamais bloquer l'accès au lien de candidature
-  // externe à cause d'un échec IA (ex: rate limit Mistral en prod). Seul le
-  // court instant de chargement initial justifie de désactiver le bouton.
+  // externe à cause d'un échec de sauvegarde de la lettre. Seul le court
+  // instant de chargement initial justifie de désactiver le bouton.
   const applyDisabled = status === "loading" && !letter;
 
   return (
@@ -107,7 +109,7 @@ export function CoverLetterPanel({
               🔒
             </span>
             <p style={{ fontSize: 13, margin: 0 }}>
-              La lettre de motivation générée par IA est réservée aux membres Premium.
+              La lettre de motivation personnalisée est réservée aux membres Premium.
             </p>
             <Link href="/premium" className="btn btn-gradient mt-2">
               Passer Premium
@@ -125,7 +127,7 @@ export function CoverLetterPanel({
             style={{ padding: 16, fontSize: 13, color: "var(--color-accent-700)" }}
           >
             {error}
-            <button type="button" onClick={generate} className="btn btn-secondary mt-3">
+            <button type="button" onClick={() => generate()} className="btn btn-secondary mt-3">
               Réessayer
             </button>
           </motion.div>
@@ -148,12 +150,43 @@ export function CoverLetterPanel({
             />
             <button
               type="button"
-              onClick={generate}
+              onClick={() => generate({ achievement, whyCompany })}
               className="btn btn-ghost"
               style={{ alignSelf: "flex-start" }}
             >
               ↻ Régénérer
             </button>
+
+            <div className="card" style={{ padding: 12, marginTop: 4 }}>
+              <p style={{ fontSize: 11.5, fontWeight: 600, margin: 0 }}>
+                Envie d&apos;une lettre encore plus personnalisée ? (optionnel)
+              </p>
+              <input
+                type="text"
+                value={achievement}
+                onChange={(e) => setAchievement(e.target.value)}
+                placeholder="Une réalisation concrète à mettre en avant"
+                className="input mt-2"
+                style={{ fontSize: 12.5 }}
+              />
+              <input
+                type="text"
+                value={whyCompany}
+                onChange={(e) => setWhyCompany(e.target.value)}
+                placeholder="Pourquoi cette entreprise en particulier ?"
+                className="input mt-2"
+                style={{ fontSize: 12.5 }}
+              />
+              <button
+                type="button"
+                onClick={() => generate({ achievement, whyCompany })}
+                disabled={!achievement.trim() && !whyCompany.trim()}
+                className="btn btn-secondary mt-2"
+                style={{ fontSize: 12.5 }}
+              >
+                Personnaliser ma lettre
+              </button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
