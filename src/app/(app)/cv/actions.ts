@@ -32,10 +32,14 @@ export async function cacheCvTextAction(): Promise<void> {
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const text = await extractCvText(buffer, profile.cv_path);
+    // Postgres "text" refuse le caractere NUL, qu'une extraction PDF
+    // malformee peut produire -- vu en prod (code 22P05), ce qui cassait
+    // silencieusement le cache pour ce CV precis.
+    const sanitizedText = text.replace(/\x00/g, "");
 
     const { error } = await supabase
       .from("profiles")
-      .update({ cv_text: text.slice(0, 20000) })
+      .update({ cv_text: sanitizedText.slice(0, 20000) })
       .eq("id", user.id);
 
     if (error) {
