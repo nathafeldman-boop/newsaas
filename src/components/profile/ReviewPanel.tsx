@@ -3,6 +3,21 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
+// En dessous de ce seuil, on demande une raison précise plutôt qu'un simple
+// commentaire libre optionnel : ça évite les avis du style "Nul" ou une
+// insulte sans aucune info exploitable pour corriger le vrai problème.
+const LOW_RATING_THRESHOLD = 3;
+const MIN_LOW_RATING_COMMENT_LENGTH = 8;
+
+const LOW_RATING_REASONS = [
+  "Pas assez d'offres pertinentes",
+  "Bug ou erreur technique",
+  "Prix de l'abonnement",
+  "Algorithme de matching",
+  "Génération de lettre/CV en échec",
+  "Autre",
+];
+
 export function ReviewPanel({
   userId,
   initialReview,
@@ -13,11 +28,15 @@ export function ReviewPanel({
   const [rating, setRating] = useState(initialReview?.rating ?? 0);
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState(initialReview?.comment ?? "");
+  const [reason, setReason] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  const isLowRating = rating > 0 && rating <= LOW_RATING_THRESHOLD;
+  const commentTooShort = isLowRating && comment.trim().length < MIN_LOW_RATING_COMMENT_LENGTH;
+
   async function submit() {
-    if (rating === 0 || saving) return;
+    if (rating === 0 || saving || commentTooShort) return;
     setSaving(true);
     setSaved(false);
     const supabase = createClient();
@@ -27,6 +46,12 @@ export function ReviewPanel({
     );
     setSaving(false);
     if (!error) setSaved(true);
+  }
+
+  function selectReason(r: string) {
+    setReason(r);
+    setSaved(false);
+    if (!comment.trim()) setComment(`${r} : `);
   }
 
   const displayRating = hoverRating || rating;
@@ -66,6 +91,33 @@ export function ReviewPanel({
         ))}
       </div>
 
+      {isLowRating && (
+        <div className="mt-3">
+          <p style={{ fontSize: 12.5, fontWeight: 600, margin: 0 }}>
+            Qu&apos;est-ce qui ne va pas ? Dis-nous-en un peu plus pour qu&apos;on puisse corriger le vrai problème.
+          </p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {LOW_RATING_REASONS.map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => selectReason(r)}
+                style={{
+                  padding: "5px 10px",
+                  borderRadius: 999,
+                  border: `1.5px solid ${reason === r ? "var(--color-accent)" : "var(--color-divider)"}`,
+                  background: reason === r ? "var(--color-accent-100)" : "var(--color-surface)",
+                  fontSize: 11.5,
+                  cursor: "pointer",
+                }}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {rating > 0 && (
         <>
           <textarea
@@ -74,15 +126,20 @@ export function ReviewPanel({
               setComment(e.target.value);
               setSaved(false);
             }}
-            placeholder="Un commentaire (optionnel)"
+            placeholder={isLowRating ? "Explique-nous ce qui s'est passé (obligatoire)" : "Un commentaire (optionnel)"}
             rows={2}
             className="input mt-3"
             style={{ width: "100%", resize: "vertical" }}
           />
+          {commentTooShort && (
+            <p style={{ fontSize: 11.5, color: "var(--color-accent-700)", margin: "4px 0 0" }}>
+              Ajoute quelques mots sur ce qui t&apos;a déçu -- on veut vraiment comprendre et corriger.
+            </p>
+          )}
           <button
             type="button"
             onClick={submit}
-            disabled={saving}
+            disabled={saving || commentTooShort}
             className="btn btn-secondary mt-3"
           >
             {saving ? "Envoi..." : saved ? "Merci !" : initialReview ? "Modifier mon avis" : "Envoyer mon avis"}
