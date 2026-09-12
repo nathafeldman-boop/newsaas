@@ -1251,6 +1251,7 @@ import { EXTRA_DOMAINS, EXTRA_BANK } from "./questionBankExtra";
 import { EXTRA_DOMAINS_2, EXTRA_BANK_2 } from "./questionBankExtra2";
 import { EXTRA_DOMAINS_3, EXTRA_BANK_3 } from "./questionBankExtra3";
 import { EXTRA_DOMAINS_4, EXTRA_BANK_4 } from "./questionBankExtra4";
+import { EXTRA_DOMAINS_5, EXTRA_BANK_5 } from "./questionBankExtra5";
 
 export const INTERVIEW_DOMAINS: InterviewDomain[] = [
   ...CORE_DOMAINS,
@@ -1258,8 +1259,16 @@ export const INTERVIEW_DOMAINS: InterviewDomain[] = [
   ...EXTRA_DOMAINS_2,
   ...EXTRA_DOMAINS_3,
   ...EXTRA_DOMAINS_4,
+  ...EXTRA_DOMAINS_5,
 ];
-const BANK: Bank = { ...CORE_BANK, ...EXTRA_BANK, ...EXTRA_BANK_2, ...EXTRA_BANK_3, ...EXTRA_BANK_4 };
+const BANK: Bank = {
+  ...CORE_BANK,
+  ...EXTRA_BANK,
+  ...EXTRA_BANK_2,
+  ...EXTRA_BANK_3,
+  ...EXTRA_BANK_4,
+  ...EXTRA_BANK_5,
+};
 
 export function getInterviewQuestions(domainId: string, level: InterviewLevel): InterviewQuestion[] {
   const domain = BANK[domainId] ?? BANK[INTERVIEW_DOMAINS[0].id];
