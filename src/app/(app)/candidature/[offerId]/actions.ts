@@ -22,6 +22,7 @@ export type GenerateCoverLetterResult =
 export async function generateCoverLetterAction(
   offerId: string,
   extra?: CoverLetterExtra,
+  attempt = 0,
 ): Promise<GenerateCoverLetterResult> {
   const supabase = await createClient();
   const {
@@ -75,7 +76,7 @@ export async function generateCoverLetterAction(
     return { status: "premium_required" };
   }
 
-  const letter = generateStaticCoverLetter(offer, profile, extra);
+  const letter = generateStaticCoverLetter(offer, profile, extra, attempt);
 
   // Ne touche jamais au statut ici : une candidature déjà en cours
   // d'entretien ne doit pas retomber à "envoyee" à cause d'une

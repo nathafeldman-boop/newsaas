@@ -23,12 +23,17 @@ export function CoverLetterPanel({
   const [achievement, setAchievement] = useState("");
   const [whyCompany, setWhyCompany] = useState("");
   const triggered = useRef(false);
+  // Compte les générations réelles (pas juste les rendus) pour que le
+  // générateur ne répète jamais un bloc déjà vu tant que le pool de
+  // variantes n'est pas épuisé -- voir pickNoRepeat dans staticGenerator.ts.
+  const attemptCount = useRef(0);
 
   async function generate(extra?: { achievement?: string; whyCompany?: string }) {
     setStatus("loading");
     setError(null);
     setCopied(false);
-    const result = await generateCoverLetterAction(offerId, extra);
+    const result = await generateCoverLetterAction(offerId, extra, attemptCount.current);
+    attemptCount.current += 1;
     if (result.status === "success") {
       setLetter(result.letter);
       setStatus("ready");
@@ -89,10 +94,17 @@ export function CoverLetterPanel({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="card elev-sm"
+            className="card elev-sm flex items-center justify-center gap-2"
             style={{ padding: 18, textAlign: "center", fontSize: 13 }}
           >
-            ✨ Génération de ta lettre personnalisée...
+            <motion.span
+              aria-hidden
+              animate={{ scale: [1, 1.25, 1], rotate: [0, 8, -8, 0] }}
+              transition={{ duration: 1.1, repeat: Infinity, ease: "easeInOut" }}
+            >
+              ✨
+            </motion.span>
+            Génération de ta lettre personnalisée...
           </motion.div>
         )}
 
