@@ -1245,12 +1245,13 @@ const CORE_BANK: Bank = {
   },
 };
 
-// Domaines/questions supplémentaires dans un fichier séparé pour garder
+// Domaines/questions supplémentaires dans des fichiers séparés pour garder
 // celui-ci lisible -- fusionnés ici, transparent pour le reste de l'app.
 import { EXTRA_DOMAINS, EXTRA_BANK } from "./questionBankExtra";
+import { EXTRA_DOMAINS_2, EXTRA_BANK_2 } from "./questionBankExtra2";
 
-export const INTERVIEW_DOMAINS: InterviewDomain[] = [...CORE_DOMAINS, ...EXTRA_DOMAINS];
-const BANK: Bank = { ...CORE_BANK, ...EXTRA_BANK };
+export const INTERVIEW_DOMAINS: InterviewDomain[] = [...CORE_DOMAINS, ...EXTRA_DOMAINS, ...EXTRA_DOMAINS_2];
+const BANK: Bank = { ...CORE_BANK, ...EXTRA_BANK, ...EXTRA_BANK_2 };
 
 export function getInterviewQuestions(domainId: string, level: InterviewLevel): InterviewQuestion[] {
   const domain = BANK[domainId] ?? BANK[INTERVIEW_DOMAINS[0].id];
