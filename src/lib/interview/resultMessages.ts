@@ -4,10 +4,11 @@
 // corrigé sur les lettres de motivation (voir
 // src/lib/coverLetter/staticGenerator.ts) : quelqu'un qui repasse le quiz
 // une quinzième fois ne doit jamais retomber sur le texte identique avant
-// d'avoir vu toutes les variantes du palier. Les paliers bas ("moyen",
-// "difficile") sont volontairement encourageants -- jamais moralisateurs ni
-// décourageants -- pour ne pas casser l'envie de retenter juste après un
-// mauvais score.
+// d'avoir vu toutes les variantes du palier. AUCUN palier, même sur un
+// score bas, ne doit sonner comme un jugement ou une démotivation -- le mot
+// "score", "difficile" ou toute allusion au niveau ne doit jamais
+// apparaître dans les paliers bas : uniquement des messages de motivation
+// tournés vers la prochaine tentative, jamais un constat d'échec.
 
 function seededHash(str: string): number {
   let h = 2166136261;
@@ -98,20 +99,20 @@ const MESSAGES: Record<ResultTier, string[]> = {
     "Un bon niveau général, avec quelques angles morts à combler.",
   ],
   moyen: [
-    "Score moyen, mais c'est justement fait pour repérer ce qu'il te reste à travailler.",
-    "Ne te décourage pas : chaque question ratée ici t'évite une vraie erreur en entretien.",
-    "C'est un entraînement, pas un examen — regarde les explications et retente.",
-    "Résultat mitigé, mais tu sais maintenant précisément où concentrer tes révisions.",
-    "Ce n'est qu'un point de départ : reprends les explications et relance un essai.",
-    "Encore du travail, mais rien d'insurmontable — les explications ci-dessous sont là pour ça.",
+    "Chaque explication ci-dessous te rapproche un peu plus d'un entretien réussi — continue sur cette lancée.",
+    "Tu progresses à chaque tentative : regarde les explications et repars pour un nouvel essai.",
+    "C'est exactement à ça que sert ce simulateur : t'entraîner sans pression avant le vrai jour J.",
+    "Garde ce rythme d'entraînement, la régularité paie toujours en entretien.",
+    "Continue à t'exercer : c'est en répétant qu'on prend confiance pour de bon.",
+    "Chaque nouvel essai te rend plus à l'aise — reprends les explications et retente quand tu veux.",
   ],
   difficile: [
-    "Ce niveau était corsé — c'est normal de ne pas tout avoir du premier coup, regarde les explications et retente.",
-    "Ne te décourage surtout pas : ce quiz sert justement à repérer ce qui manque avant le vrai entretien.",
-    "Un score bas ici n'a rien de grave, c'est un entraînement sans enjeu — relis les explications et refais un essai.",
-    "Beaucoup de points à revoir, mais chaque explication ci-dessous est une vraie occasion de progresser.",
-    "C'était clairement difficile pour toi sur ce coup — commence peut-être par le niveau facile pour construire les bases.",
-    "Pas le résultat espéré, mais rien n'est perdu : reprends calmement chaque explication avant de retenter.",
+    "Ce simulateur est fait pour t'entraîner librement — continue, tu progresses à chaque session.",
+    "Garde le cap : c'est en s'entraînant régulièrement qu'on arrive prêt(e) le jour de l'entretien.",
+    "Chaque tentative ici te rend plus solide pour le vrai entretien — recommence quand tu veux.",
+    "Tu es exactement là où il faut être : en train de t'entraîner activement.",
+    "Continue sur cette lancée, la pratique régulière est la clé pour progresser sur ce sujet.",
+    "Retente dès que tu veux : c'est en répétant qu'on prend confiance pour de bon.",
   ],
 };
 
