@@ -182,7 +182,13 @@ function buildModules(targetLabel: string | null): Module[] {
 
 const STORAGE_KEY = "stageio_cv_guide_seen";
 
-export function CvGuideModule({ targetLabel }: { targetLabel: string | null }) {
+export function CvGuideModule({
+  targetLabel,
+  isPremium,
+}: {
+  targetLabel: string | null;
+  isPremium: boolean;
+}) {
   const modules = buildModules(targetLabel);
   const [openId, setOpenId] = useState<string | null>(null);
   const [seen, setSeen] = useState<Set<string>>(new Set());
@@ -200,6 +206,33 @@ export function CvGuideModule({ targetLabel }: { targetLabel: string | null }) {
       // best-effort : simple confort visuel, jamais bloquant si indisponible
     }
   }, []);
+
+  // Réservé aux Premium comme le reste de l'audit CV -- rien de nouveau
+  // n'est offert gratuitement en dehors du swipe tant que le compte n'a
+  // pas payé.
+  if (!isPremium) {
+    return (
+      <div className="card elev-sm mt-5" style={{ padding: "var(--space-6)", textAlign: "center" }}>
+        <p style={{ fontSize: 32, margin: 0 }}>📚</p>
+        <p style={{ fontFamily: "var(--font-heading)", fontSize: 17, margin: "10px 0 0" }}>
+          Comment écrire un CV qui décroche des entretiens
+        </p>
+        <p
+          style={{
+            fontSize: 13,
+            margin: "6px 0 0",
+            color: "color-mix(in srgb, var(--color-text) 65%, transparent)",
+          }}
+        >
+          6 modules courts et concrets, personnalisés selon le métier que tu vises. Réservé aux membres
+          Premium.
+        </p>
+        <a href="/premium" className="btn btn-primary mt-4" style={{ whiteSpace: "nowrap" }}>
+          🔓 Débloquer avec Premium (7,99€/mois)
+        </a>
+      </div>
+    );
+  }
 
   function toggle(id: string) {
     const opening = openId !== id;

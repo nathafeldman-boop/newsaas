@@ -41,7 +41,10 @@ export default async function CvPage() {
 
       <CvAuditPanel hasCv={Boolean(profile.cv_path)} isPremium={isPremium(profile)} />
 
-      <CvGuideModule targetLabel={profile.target_jobs?.[0] || profile.sectors?.[0] || null} />
+      <CvGuideModule
+        targetLabel={profile.target_jobs?.[0] || profile.sectors?.[0] || null}
+        isPremium={isPremium(profile)}
+      />
     </div>
   );
 }
