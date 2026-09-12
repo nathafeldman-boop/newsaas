@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { extractCvText } from "@/lib/cv/extractText";
-import { auditCvText } from "@/lib/mistral/auditCv";
+import { auditCvTextStatic } from "@/lib/cvAudit/staticAudit";
 import { isPremium } from "@/lib/subscription/isPremium";
 import type { CvAudit } from "@/lib/mistral/auditCv";
 
@@ -11,6 +11,10 @@ export type CvAuditState =
   | { status: "error"; message: string }
   | ({ status: "success" } & CvAudit);
 
+// Analyse 100% heuristique (voir staticAudit.ts), plus aucun appel Mistral :
+// même contrainte de fiabilité que la lettre de motivation (voir actions.ts
+// du dossier candidature) -- une fonctionnalité Premium ne doit jamais
+// dépendre d'un quota tiers hors de notre contrôle.
 export async function auditCvAction(
   _prevState: CvAuditState,
   _formData: FormData,
@@ -67,7 +71,7 @@ export async function auditCvAction(
       };
     }
 
-    const audit = await auditCvText(text, {
+    const audit = auditCvTextStatic(text, {
       sectors: profile.sectors,
       targetJobs: profile.target_jobs,
       educationLevel: profile.education_level,

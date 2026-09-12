@@ -23,7 +23,7 @@ export function CvAuditPanel({ hasCv, isPremium }: { hasCv: boolean; isPremium: 
         Améliore ton CV
       </p>
       <p style={{ fontSize: 13, color: "var(--color-accent-2-800)", opacity: 0.85, margin: "6px 0 0" }}>
-        Mistral analyse ton CV et te donne une note sur 100, avec des pistes
+        Analyse ton CV et obtiens une note sur 100, avec des pistes
         concrètes pour convaincre plus de recruteurs.
       </p>
 
