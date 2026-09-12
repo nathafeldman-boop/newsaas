@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { getMistralClient, getMistralModel } from "@/lib/mistral/client";
+import { getGroqClient, getGroqModel } from "@/lib/groq/client";
 
 export const cvAuditSchema = z.object({
   score: z.number().min(0).max(100),
@@ -51,34 +51,31 @@ function buildContextLine(context?: CvAuditContext): string | null {
 }
 
 export async function auditCvText(cvText: string, context?: CvAuditContext): Promise<CvAudit> {
-  const client = getMistralClient();
-  const model = getMistralModel();
+  const client = getGroqClient();
+  const model = getGroqModel();
 
   const contextLine = buildContextLine(context);
   const userContent = contextLine
     ? `Ce que le candidat vise : ${contextLine}\n\nTexte du CV :\n\n${cvText.slice(0, 15000)}`
     : `Texte du CV :\n\n${cvText.slice(0, 15000)}`;
 
-  const result = await client.chat.complete({
+  const result = await client.chat.completions.create({
     model,
     temperature: 0.2,
-    responseFormat: { type: "json_object" },
+    response_format: { type: "json_object" },
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: userContent },
     ],
   });
 
-  const content = result.choices?.[0]?.message?.content;
-  const text = Array.isArray(content)
-    ? content.map((c) => ("text" in c ? c.text : "")).join("")
-    : (content ?? "");
+  const text = result.choices?.[0]?.message?.content ?? "";
 
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
   } catch {
-    throw new Error("Mistral n'a pas renvoyé de JSON exploitable.");
+    throw new Error("L'IA n'a pas renvoyé de JSON exploitable.");
   }
 
   return cvAuditSchema.parse(parsed);

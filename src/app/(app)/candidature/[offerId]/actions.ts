@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { extractCvText } from "@/lib/cv/extractText";
-import { generateCoverLetter } from "@/lib/mistral/generateCoverLetter";
+import { generateCoverLetter } from "@/lib/groq/generateCoverLetter";
 import { isPremium } from "@/lib/subscription/isPremium";
 
 export type GenerateCoverLetterResult =

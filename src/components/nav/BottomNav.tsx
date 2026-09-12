@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 const ITEMS = [
   { href: "/swipe", label: "Swipe", icon: "🔥" },
   { href: "/favoris", label: "Favoris", icon: "♥" },
+  { href: "/dashboard", label: "Dashboard", icon: "🎯" },
   { href: "/cv", label: "CV", icon: "📄" },
   { href: "/profil", label: "Profil", icon: "👤" },
 ];

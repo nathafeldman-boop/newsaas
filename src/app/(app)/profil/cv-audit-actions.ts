@@ -2,9 +2,9 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { extractCvText } from "@/lib/cv/extractText";
-import { auditCvText } from "@/lib/mistral/auditCv";
+import { auditCvText } from "@/lib/groq/auditCv";
 import { isPremium } from "@/lib/subscription/isPremium";
-import type { CvAudit } from "@/lib/mistral/auditCv";
+import type { CvAudit } from "@/lib/groq/auditCv";
 
 export type CvAuditState =
   | { status: "idle" }

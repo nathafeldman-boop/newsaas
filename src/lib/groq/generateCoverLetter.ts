@@ -1,4 +1,4 @@
-import { getMistralClient, getMistralModel } from "@/lib/mistral/client";
+import { getGroqClient, getGroqModel } from "@/lib/groq/client";
 import type { Offer, Profile } from "@/types/database";
 
 const SYSTEM_PROMPT = `Tu es un conseiller carrière qui rédige, pour des étudiants et jeunes
@@ -71,8 +71,8 @@ function isRateLimitError(err: unknown): boolean {
   return (
     typeof err === "object" &&
     err !== null &&
-    "statusCode" in err &&
-    (err as { statusCode?: number }).statusCode === 429
+    "status" in err &&
+    (err as { status?: number }).status === 429
   );
 }
 
@@ -85,22 +85,19 @@ export async function generateCoverLetter(
   profile: ProfileInput,
   cvText: string | null,
 ): Promise<string> {
-  const client = getMistralClient();
-  const model = getMistralModel();
+  const client = getGroqClient();
+  const model = getGroqModel();
   const messages = [
     { role: "system" as const, content: SYSTEM_PROMPT },
     { role: "user" as const, content: buildUserPrompt(offer, profile, cvText) },
   ];
 
-  // Un 429 "rate limited" en prod est en pratique quasi systématiquement une
-  // rafale passagère (le compte Mistral partage son quota par minute avec
-  // l'ingestion d'offres et l'audit CV) : un seul essai suffisait à bloquer
-  // toute génération de lettre le temps que le quota se libère, alors qu'un
-  // court retry suffit souvent à passer.
+  // Retry court sur 429 : le palier gratuit Groq est largement plus large que
+  // l'ancien quota Mistral, mais une rafale ponctuelle reste possible.
   let lastErr: unknown;
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
-      const result = await client.chat.complete({ model, temperature: 0.6, messages });
+      const result = await client.chat.completions.create({ model, temperature: 0.6, messages });
       return finalizeLetter(result);
     } catch (err) {
       lastErr = err;
@@ -114,14 +111,11 @@ export async function generateCoverLetter(
   throw lastErr;
 }
 
-function finalizeLetter(result: Awaited<ReturnType<ReturnType<typeof getMistralClient>["chat"]["complete"]>>): string {
-  const content = result.choices?.[0]?.message?.content;
-  const text = Array.isArray(content)
-    ? content.map((c) => ("text" in c ? c.text : "")).join("")
-    : (content ?? "");
+function finalizeLetter(result: { choices: { message: { content: string | null } }[] }): string {
+  const text = result.choices?.[0]?.message?.content ?? "";
 
   if (!text.trim()) {
-    throw new Error("Mistral n'a pas renvoyé de lettre exploitable.");
+    throw new Error("L'IA n'a pas renvoyé de lettre exploitable.");
   }
 
   return text.trim();
