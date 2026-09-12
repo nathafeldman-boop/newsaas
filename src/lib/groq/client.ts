@@ -19,9 +19,12 @@ export function getGroqClient() {
   return cached;
 }
 
-// llama-3.3-70b-versatile : modèle généraliste le plus capable du palier
-// gratuit Groq, supporte le mode JSON strict (response_format json_object)
-// nécessaire à l'audit CV et au générateur de quiz d'entretien.
+// openai/gpt-oss-120b : remplaçant recommandé par Groq depuis la
+// dépréciation de llama-3.3-70b-versatile sur le palier gratuit (17 juin
+// 2026, cf. console.groq.com/docs/deprecations) -- confirmé en prod par un
+// 404 model_not_found sur l'ancien modèle. Supporte le mode JSON strict
+// (response_format json_object) nécessaire à l'audit CV et au générateur de
+// quiz d'entretien. Redéfinissable via GROQ_MODEL si Groq déprécie encore.
 export function getGroqModel() {
-  return process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+  return process.env.GROQ_MODEL || "openai/gpt-oss-120b";
 }
