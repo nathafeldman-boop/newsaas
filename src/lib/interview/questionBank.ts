@@ -16,7 +16,9 @@ export type InterviewQuestion = {
 
 export type InterviewDomain = { id: string; label: string };
 
-export const INTERVIEW_DOMAINS: InterviewDomain[] = [
+export type Bank = Record<string, Record<InterviewLevel, InterviewQuestion[]>>;
+
+const CORE_DOMAINS: InterviewDomain[] = [
   { id: "dev", label: "Développement web / informatique" },
   { id: "marketing", label: "Marketing digital" },
   { id: "rh", label: "Ressources humaines" },
@@ -30,9 +32,7 @@ export const QUESTION_COUNT_BY_LEVEL: Record<InterviewLevel, number> = {
   difficile: 7,
 };
 
-type Bank = Record<string, Record<InterviewLevel, InterviewQuestion[]>>;
-
-const BANK: Bank = {
+const CORE_BANK: Bank = {
   dev: {
     facile: [
       {
@@ -1244,6 +1244,13 @@ const BANK: Bank = {
     ],
   },
 };
+
+// Domaines/questions supplémentaires dans un fichier séparé pour garder
+// celui-ci lisible -- fusionnés ici, transparent pour le reste de l'app.
+import { EXTRA_DOMAINS, EXTRA_BANK } from "./questionBankExtra";
+
+export const INTERVIEW_DOMAINS: InterviewDomain[] = [...CORE_DOMAINS, ...EXTRA_DOMAINS];
+const BANK: Bank = { ...CORE_BANK, ...EXTRA_BANK };
 
 export function getInterviewQuestions(domainId: string, level: InterviewLevel): InterviewQuestion[] {
   const domain = BANK[domainId] ?? BANK[INTERVIEW_DOMAINS[0].id];
