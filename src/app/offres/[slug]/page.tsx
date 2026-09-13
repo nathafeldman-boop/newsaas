@@ -51,9 +51,48 @@ export async function generateMetadata({
   };
 }
 
+// schema.org exige que "baseSalary" soit un objet MonetaryAmount structuré
+// (currency + value numérique), jamais une chaîne libre -- offer.salary est
+// un texte non structuré ("900-1200€/mois", "25000-30000€" pour les offres
+// Adzuna sans mention d'unité...), injecté tel quel jusqu'ici : un type
+// invalide que Google écarte ou signale en erreur dans Search Console.
+// N'émet une valeur QUE si le texte mentionne explicitement une unité
+// (mois/an/jour/heure) : les salaires Adzuna sans mention (annuels côté API,
+// mais affichés sans "/an") ne doivent jamais être devinés comme mensuels,
+// ce qui donnerait un salaire structuré faux -- l'absence du champ est
+// toujours plus sûre qu'une valeur inventée.
+function parseBaseSalary(salary: string | null) {
+  if (!salary) return undefined;
+
+  const unitText = /\/\s*an\b|annuel/i.test(salary)
+    ? "YEAR"
+    : /\/\s*jour\b|journalier/i.test(salary)
+      ? "DAY"
+      : /\/\s*heure\b|horaire/i.test(salary)
+        ? "HOUR"
+        : /\/\s*mois\b|mensuel/i.test(salary)
+          ? "MONTH"
+          : null;
+  if (!unitText) return undefined;
+
+  const match = salary.match(/(\d[\d\s]{0,6})(?:\s*-\s*(\d[\d\s]{0,6}))?\s*€/);
+  if (!match) return undefined;
+  const min = Number(match[1].replace(/\s/g, ""));
+  const max = match[2] ? Number(match[2].replace(/\s/g, "")) : null;
+  if (!min || Number.isNaN(min)) return undefined;
+
+  const value =
+    max && max > min
+      ? { "@type": "QuantitativeValue", minValue: min, maxValue: max, unitText }
+      : { "@type": "QuantitativeValue", value: min, unitText };
+
+  return { "@type": "MonetaryAmount", currency: "EUR", value };
+}
+
 function jobPostingJsonLd(offer: Offer) {
   const validThrough = new Date(offer.last_seen_at);
   validThrough.setDate(validThrough.getDate() + 30);
+  const baseSalary = parseBaseSalary(offer.salary);
 
   return {
     "@context": "https://schema.org",
@@ -80,7 +119,7 @@ function jobPostingJsonLd(offer: Offer) {
         addressCountry: "FR",
       },
     },
-    ...(offer.salary ? { baseSalary: offer.salary } : {}),
+    ...(baseSalary ? { baseSalary } : {}),
   };
 }
 
