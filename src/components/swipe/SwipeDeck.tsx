@@ -150,6 +150,26 @@ function MatchCelebration({ show }: { show: boolean }) {
   );
 }
 
+// Prochaine ingestion d'offres : sync-adzuna tourne tous les jours à 4h UTC
+// (voir vercel.json), la plus précoce des deux crons qui ajoutent des
+// offres -- sert de base pour dire aux Premium à court d'offres quand en
+// attendre de nouvelles, plutôt qu'un vague "reviens plus tard". Calculé en
+// useEffect (jamais dans le render direct) pour éviter tout mismatch
+// d'hydratation entre l'heure serveur et l'heure client.
+function useNextOffersEta(): string | null {
+  const [eta, setEta] = useState<string | null>(null);
+  useEffect(() => {
+    const now = new Date();
+    const next = new Date(now);
+    next.setUTCHours(4, 0, 0, 0);
+    if (next <= now) next.setUTCDate(next.getUTCDate() + 1);
+    const hours = Math.max(1, Math.round((next.getTime() - now.getTime()) / 3_600_000));
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setEta(hours <= 1 ? "d'ici moins d'une heure" : `d'ici environ ${hours}h`);
+  }, []);
+  return eta;
+}
+
 function SwipeDeckInner({
   offers,
   scores,
@@ -160,6 +180,7 @@ function SwipeDeckInner({
   quotaReached,
   onQuotaReached,
   onBrowseSwipe,
+  onStackChange,
 }: {
   offers: Offer[];
   scores: Record<string, number>;
@@ -170,6 +191,7 @@ function SwipeDeckInner({
   quotaReached: boolean;
   onQuotaReached: () => void;
   onBrowseSwipe?: () => void;
+  onStackChange?: (count: number) => void;
 }) {
   const router = useRouter();
   const [stack, setStack] = useState(offers);
@@ -185,6 +207,17 @@ function SwipeDeckInner({
   const celebrationTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const visible = stack.slice(0, 3);
+  const eta = useNextOffersEta();
+
+  // Remonté au parent (voir SwipeDeck) pour afficher un compteur qui
+  // décroît vraiment à chaque swipe, juste au-dessus des cartes -- ce
+  // composant est remonté (key={contractFilter}) à chaque changement de
+  // filtre, donc cet effet retransmet aussi la bonne valeur de départ dès
+  // le montage sur le nouveau filtre.
+  useEffect(() => {
+    onStackChange?.(stack.length);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stack.length]);
 
   async function recordSwipe(offer: Offer, direction: SwipeDirection) {
     const supabase = createClient();
@@ -269,13 +302,23 @@ function SwipeDeckInner({
   }
 
   if (visible.length === 0) {
+    // N'est atteignable que par un compte Premium : le bloc juste au-dessus
+    // renvoie déjà tout compte gratuit (quota ou deck vide) avant d'arriver
+    // ici -- voir sa condition `!isPremium && (quotaReached || visible.
+    // length === 0)`.
     return (
       <div className="flex flex-1 flex-col items-center justify-center text-center px-6 py-20">
         <p className="text-4xl">🎉</p>
         <h2 style={{ fontSize: 22, marginTop: 16 }}>Tu as vu toutes les offres du moment</h2>
         <p style={{ marginTop: 8, color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
-          Reviens un peu plus tard, on en ajoute régulièrement.
+          {eta ? `De nouvelles offres arrivent ${eta}.` : "On en ajoute régulièrement."}
         </p>
+        <p style={{ marginTop: 6, fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
+          En attendant, entraîne-toi pour ton prochain entretien.
+        </p>
+        <Link href="/dashboard" className="btn btn-gradient mt-6">
+          🎤 M&apos;entraîner à l&apos;entretien
+        </Link>
       </div>
     );
   }
@@ -366,6 +409,16 @@ export function SwipeDeck({
   applicationStreak?: number;
 }) {
   const [contractFilter, setContractFilter] = useState<ContractType | "all">("all");
+  // Compteur d'offres restantes DANS LE DECK EN COURS, affiché juste
+  // au-dessus des cartes -- vit ici (pas dans SwipeDeckInner) pour la même
+  // raison que `remaining`/`quotaHit` plus bas : SwipeDeckInner est remonté
+  // à chaque changement de filtre Stage/Alternance, donc son propre state
+  // `stack` ne peut pas nourrir directement un texte qui doit rester
+  // affiché en continu. Initialisé à la taille du deck non filtré : la
+  // valeur exacte pour le filtre "all" par défaut, corrigée immédiatement
+  // par le premier appel de `onStackChange` sinon (montage ou changement de
+  // filtre).
+  const [cardsLeft, setCardsLeft] = useState(offers.length);
   // Compteur de swipes restants affiché en haut de l'écran (pill "📱 3") :
   // vit ici plutôt que dans SwipeDeckInner car ce dernier est remonté
   // (key={contractFilter}) à chaque changement de filtre Stage/Alternance,
@@ -426,13 +479,13 @@ export function SwipeDeck({
         <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: "-0.01em", margin: "14px 0 4px" }}>
           Tes opportunités du jour
         </h1>
-        {offers.length > 0 && (
+        {cardsLeft > 0 && (
           <p
             className="flex items-center gap-1.5"
             style={{ margin: 0, fontSize: 13.5, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}
           >
             <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--color-accent)" }} />
-            {offers.length} offre{offers.length > 1 ? "s" : ""} disponible{offers.length > 1 ? "s" : ""}
+            {cardsLeft} offre{cardsLeft > 1 ? "s" : ""} restante{cardsLeft > 1 ? "s" : ""}
           </p>
         )}
       </div>
@@ -511,6 +564,7 @@ export function SwipeDeck({
         onBrowseSwipe={() =>
           setRemaining((n) => (n === null ? n : Math.max(0, n - 1)))
         }
+        onStackChange={setCardsLeft}
       />
     </div>
   );
