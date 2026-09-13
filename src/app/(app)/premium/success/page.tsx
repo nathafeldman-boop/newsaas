@@ -74,9 +74,19 @@ async function reconcileFromSession(sessionId: string, userId: string) {
 
     const invoice = session.invoice as Stripe.Invoice | null;
     if (invoice && customerId && invoice.amount_paid > 0) {
-      const { error } = await creditInvoicePayment(invoice.id, customerId, invoice.amount_paid);
+      const { credited, error } = await creditInvoicePayment(invoice.id, customerId, invoice.amount_paid);
       if (error) {
         console.error("premium/success: creditInvoicePayment failed", error, {
+          userId,
+          invoiceId: invoice.id,
+        });
+      } else if (!credited) {
+        // Ne devrait normalement jamais arriver ici : stripe_customer_id
+        // vient d'être posé plus haut dans cette même fonction, avant cet
+        // appel. Si ça arrive quand même, ça mérite d'être visible plutôt
+        // que traité comme un succès silencieux (voir migration
+        // 20260913000000).
+        console.error("premium/success: creditInvoicePayment found no matching profile", {
           userId,
           invoiceId: invoice.id,
         });

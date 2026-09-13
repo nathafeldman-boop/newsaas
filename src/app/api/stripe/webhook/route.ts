@@ -106,13 +106,31 @@ export async function POST(request: NextRequest) {
       const customerId =
         typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id;
       if (customerId && invoice.amount_paid > 0) {
-        const { error } = await creditInvoicePayment(invoice.id, customerId, invoice.amount_paid);
+        const { credited, error } = await creditInvoicePayment(
+          invoice.id,
+          customerId,
+          invoice.amount_paid,
+        );
         if (error) {
           console.error("Stripe webhook: creditInvoicePayment failed", error, {
             customerId,
             invoiceId: invoice.id,
             amount: invoice.amount_paid,
           });
+        } else if (!credited) {
+          // Aucun profil ne correspond encore à ce stripe_customer_id --
+          // arrive quand "invoice.paid" est livré avant "checkout.session.
+          // completed" (Stripe ne garantit pas l'ordre). Répondre autre
+          // chose que 200 déclenche le retry automatique de Stripe (jusqu'à
+          // 3 jours, avec backoff) au lieu de perdre ce paiement en
+          // silence -- voir la migration 20260913000000 pour le détail du
+          // bug que ça corrige.
+          console.error("Stripe webhook: creditInvoicePayment found no matching profile yet", {
+            customerId,
+            invoiceId: invoice.id,
+            amount: invoice.amount_paid,
+          });
+          return NextResponse.json({ error: "Profil pas encore lié, réessaie plus tard." }, { status: 409 });
         }
       }
       break;
