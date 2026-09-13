@@ -25,7 +25,12 @@
 -- possible, a reessayer plus tard) plutot que rien -- l'appelant (webhook)
 -- s'en sert pour renvoyer une erreur a Stripe et declencher son retry
 -- automatique au lieu de repondre 200 sur un credit qui n'a pas eu lieu.
-create or replace function public.credit_invoice_payment(
+--
+-- drop necessaire : la fonction existante retourne void, Postgres refuse de
+-- changer le type de retour via un simple "create or replace" (erreur 42P13).
+drop function if exists public.credit_invoice_payment(text, text, integer);
+
+create function public.credit_invoice_payment(
   p_invoice_id text,
   p_stripe_customer_id text,
   p_amount_cents integer
