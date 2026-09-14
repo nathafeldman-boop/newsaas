@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   fixMissingLtvAction,
+  reconcileAllInvoicesAction,
   sendIncompletePaymentReminderAction,
   sendWeeklyOfferAnnouncementAction,
 } from "@/app/admin/users/actions";
@@ -32,9 +33,23 @@ function daysSince(date: string | null | undefined): number | null {
 export default async function AdminPremiumPage({
   searchParams,
 }: {
-  searchParams: Promise<{ weekly_sent?: string; weekly_total?: string }>;
+  searchParams: Promise<{
+    weekly_sent?: string;
+    weekly_total?: string;
+    reconcile_checked?: string;
+    reconcile_recovered?: string;
+    reconcile_failed?: string;
+    reconcile_error?: string;
+  }>;
 }) {
-  const { weekly_sent: weeklySent, weekly_total: weeklyTotal } = await searchParams;
+  const {
+    weekly_sent: weeklySent,
+    weekly_total: weeklyTotal,
+    reconcile_checked: reconcileChecked,
+    reconcile_recovered: reconcileRecovered,
+    reconcile_failed: reconcileFailed,
+    reconcile_error: reconcileError,
+  } = await searchParams;
   const admin = createAdminClient();
 
   const { data: profiles } = await admin
@@ -95,6 +110,51 @@ export default async function AdminPremiumPage({
           </p>
         </div>
       )}
+
+      {reconcileError !== undefined && (
+        <div
+          className="card"
+          style={{ padding: "var(--space-4)", marginBottom: 12, background: "var(--color-accent-100)" }}
+        >
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>
+            La reconciliation a échoué avant de démarrer (voir les logs).
+          </p>
+        </div>
+      )}
+
+      {reconcileChecked !== undefined && (
+        <div
+          className="card"
+          style={{
+            padding: "var(--space-4)",
+            marginBottom: 12,
+            background: "var(--color-accent-100)",
+            color: "var(--color-accent-700)",
+          }}
+        >
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>
+            {reconcileChecked} facture(s) Stripe vérifiée(s), {((Number(reconcileRecovered) || 0) / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} € récupéré(s)
+            {Number(reconcileFailed) > 0 ? ` — ${reconcileFailed} client(s) Stripe en échec (voir logs)` : ""}.
+          </p>
+        </div>
+      )}
+
+      <form
+        action={reconcileAllInvoicesAction}
+        className="card"
+        style={{ padding: "var(--space-4)", marginBottom: 12, gap: 10 }}
+      >
+        <p style={{ fontWeight: 600, margin: 0, fontSize: 14 }}>Réconcilier le LTV avec Stripe</p>
+        <p style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>
+          Relit l&apos;historique réel des factures payées sur Stripe pour chaque client connu et
+          crédite tout ce qui manque encore en base (voir la migration 20260913000000 pour la cause
+          du trou historique). Sans risque à relancer : une facture déjà correctement créditée n&apos;est
+          jamais comptée deux fois.
+        </p>
+        <button type="submit" className="btn btn-secondary" style={{ alignSelf: "flex-start" }}>
+          Lancer la réconciliation
+        </button>
+      </form>
 
       <form
         action={sendWeeklyOfferAnnouncementAction}

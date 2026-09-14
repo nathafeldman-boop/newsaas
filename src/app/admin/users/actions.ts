@@ -9,6 +9,15 @@ import { notifyIncompletePaymentOnce } from "@/lib/stripe/notifyIncompletePaymen
 import { notifyWeeklyOffer } from "@/lib/resend/notifyWeeklyOffer";
 import { isPremium } from "@/lib/subscription/isPremium";
 import { FREE_WEEKLY_SWIPE_QUOTA } from "@/lib/subscription/quota";
+import { getStripeClient } from "@/lib/stripe/client";
+import { creditInvoicePayment } from "@/lib/stripe/creditInvoicePayment";
+
+// Pas de "export const maxDuration" ici : un fichier "use server" ne peut
+// exporter que des fonctions serveur (async), pas de config de route -- ça
+// casse silencieusement TOUT le module ("no exports at all") si on essaie.
+// reconcileAllInvoicesAction reste dans le budget par défaut d'une Server
+// Action grâce au faible nombre de clients Stripe connus (dizaines, pas
+// milliers).
 
 // Recours manuel pour exactement le scénario rencontré en prod : un client a
 // payé (Stripe l'a bien débité) mais l'activation Premium n'a pas suivi
@@ -75,6 +84,77 @@ export async function fixMissingLtvAction(formData: FormData) {
 
   revalidatePath("/admin/premium");
   revalidatePath(`/admin/users/${userId}`);
+}
+
+// Correctif définitif du trou historique de LTV, au-delà du correctif au cas
+// par cas ci-dessus (fixMissingLtvAction, qui se contente de poser un prix
+// forfaitaire sur les comptes à 0€ -- imprécis pour un client qui a payé
+// plusieurs mois dont certains manquants). La vraie cause (voir migration
+// 20260913000000) est corrigée pour tout NOUVEAU paiement, mais les factures
+// déjà marquées "traitées" dans le registre avant ce correctif restent
+// bloquées pour toujours -- rien ne les rejoue automatiquement. Ici, on va
+// chercher l'historique RÉEL des factures payées côté Stripe pour chaque
+// client connu, et on crédite via la même fonction idempotente que le
+// webhook : sans risque à relancer plusieurs fois, une facture déjà créditée
+// correctement ne l'est jamais deux fois.
+export async function reconcileAllInvoicesAction() {
+  await assertAdminSession();
+  const admin = createAdminClient();
+  const stripe = getStripeClient();
+
+  const { data: profiles, error: profilesError } = await admin
+    .from("profiles")
+    .select("id, stripe_customer_id, total_paid_cents")
+    .not("stripe_customer_id", "is", null);
+
+  if (profilesError) {
+    console.error("reconcileAllInvoicesAction: query failed", profilesError);
+    redirect("/admin/premium?reconcile_error=1");
+  }
+
+  const totalBeforeCents = (profiles ?? []).reduce((sum, p) => sum + (p.total_paid_cents ?? 0), 0);
+
+  let invoicesChecked = 0;
+  let customersFailed = 0;
+
+  for (const profile of profiles ?? []) {
+    const customerId = profile.stripe_customer_id;
+    if (!customerId) continue;
+    try {
+      const invoices = await stripe.invoices.list({ customer: customerId, status: "paid", limit: 100 });
+      for (const invoice of invoices.data) {
+        if (invoice.amount_paid <= 0) continue;
+        invoicesChecked += 1;
+        const { error: creditError } = await creditInvoicePayment(
+          invoice.id,
+          customerId,
+          invoice.amount_paid,
+        );
+        if (creditError) {
+          console.error("reconcileAllInvoicesAction: creditInvoicePayment failed", creditError, {
+            customerId,
+            invoiceId: invoice.id,
+          });
+        }
+      }
+    } catch (stripeError) {
+      customersFailed += 1;
+      console.error("reconcileAllInvoicesAction: Stripe fetch failed", stripeError, { customerId });
+    }
+  }
+
+  const { data: afterRows } = await admin.from("profiles").select("total_paid_cents");
+  const totalAfterCents = (afterRows ?? []).reduce((sum, p) => sum + (p.total_paid_cents ?? 0), 0);
+  const recoveredCents = totalAfterCents - totalBeforeCents;
+
+  console.log(
+    `reconcileAllInvoicesAction: ${invoicesChecked} facture(s) vérifiée(s), ${recoveredCents} centime(s) récupéré(s), ${customersFailed} client(s) en échec`,
+  );
+
+  revalidatePath("/admin/premium");
+  redirect(
+    `/admin/premium?reconcile_checked=${invoicesChecked}&reconcile_recovered=${recoveredCents}&reconcile_failed=${customersFailed}`,
+  );
 }
 
 // Déclenchement manuel pour un cas repéré à la main dans le dashboard
