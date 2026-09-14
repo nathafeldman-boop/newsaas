@@ -306,7 +306,11 @@ export type Database = {
       };
       credit_invoice_payment: {
         Args: { p_invoice_id: string; p_stripe_customer_id: string; p_amount_cents: number };
-        Returns: undefined;
+        Returns: boolean;
+      };
+      sum_total_paid_cents: {
+        Args: Record<string, never>;
+        Returns: number;
       };
     };
     Enums: {

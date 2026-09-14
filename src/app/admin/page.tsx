@@ -149,7 +149,7 @@ export default async function AdminDashboardPage({
     { count: onlineNow },
     { count: paidPremiumCount },
     { count: compPremiumCount },
-    { data: revenueRows, error: revenueError },
+    { data: totalRevenueCentsRpc, error: revenueError },
     { data: periodSignups, error: periodSignupsError },
     { data: recentProfiles, error: recentProfilesError },
     { data: pricingRows, error: pricingError },
@@ -166,9 +166,12 @@ export default async function AdminDashboardPage({
     admin.from("profiles").select("id", { count: "exact", head: true }).gte("last_active_at", onlineSince.toISOString()),
     admin.from("profiles").select("id", { count: "exact", head: true }).in("subscription_status", ["active", "trialing"]),
     admin.from("profiles").select("id", { count: "exact", head: true }).eq("subscription_status", "comp"),
-    // Une seule colonne, sans tri : suffisant pour la somme du revenu
-    // cumulé, bien plus léger qu'un SELECT multi-colonnes trié.
-    admin.from("profiles").select("total_paid_cents"),
+    // Agrégation côté base (voir migration 20260914000000) plutôt qu'un
+    // SELECT total_paid_cents sur toute la table : "profiles" a fini par
+    // dépasser le "Max Rows" par défaut de l'API Supabase (1000), ce qui
+    // tronquait silencieusement la somme calculée côté JS -- un RPC ne
+    // retourne qu'un scalaire, jamais soumis à cette limite.
+    admin.rpc("sum_total_paid_cents"),
     // Bornée à la période choisie (sauf "tout") : le graphe n'a jamais
     // besoin de l'historique complet pour "7 jours" ou "30 jours".
     periodCutoff
@@ -213,7 +216,7 @@ export default async function AdminDashboardPage({
   const compPremium = compPremiumCount ?? 0;
   const premiumTotal = paidPremium + compPremium;
   const freePct = totalUsers && totalUsers > 0 ? Math.round(((totalUsers - premiumTotal) / totalUsers) * 100) : 0;
-  const totalRevenueCents = (revenueRows ?? []).reduce((sum, p) => sum + (p.total_paid_cents ?? 0), 0);
+  const totalRevenueCents = totalRevenueCentsRpc ?? 0;
 
   // Un abonné actif depuis avant l'ajout de ces deux colonnes (ou si la
   // requête ci-dessus a échoué) n'a encore ni l'un ni l'autre -- fallback

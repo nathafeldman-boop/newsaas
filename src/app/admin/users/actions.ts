@@ -104,7 +104,7 @@ export async function reconcileAllInvoicesAction() {
 
   const { data: profiles, error: profilesError } = await admin
     .from("profiles")
-    .select("id, stripe_customer_id, total_paid_cents")
+    .select("id, stripe_customer_id")
     .not("stripe_customer_id", "is", null);
 
   if (profilesError) {
@@ -112,11 +112,16 @@ export async function reconcileAllInvoicesAction() {
     redirect("/admin/premium?reconcile_error=1");
   }
 
-  const totalBeforeCents = (profiles ?? []).reduce((sum, p) => sum + (p.total_paid_cents ?? 0), 0);
-
   let invoicesChecked = 0;
+  let recoveredCents = 0;
   let customersFailed = 0;
 
+  // Le montant "récupéré" est suivi facture par facture (jamais via une
+  // somme totale de profiles avant/après) : "profiles" a déjà dépassé le
+  // "Max Rows" par défaut de l'API Supabase une fois (voir migration
+  // 20260914000000), et une somme calculée sur des lignes tronquées avait
+  // produit un montant "récupéré" négatif, impossible autrement puisqu'on
+  // n'additionne jamais que des montants positifs.
   for (const profile of profiles ?? []) {
     const customerId = profile.stripe_customer_id;
     if (!customerId) continue;
@@ -125,6 +130,13 @@ export async function reconcileAllInvoicesAction() {
       for (const invoice of invoices.data) {
         if (invoice.amount_paid <= 0) continue;
         invoicesChecked += 1;
+
+        const { data: existing } = await admin
+          .from("stripe_processed_invoices")
+          .select("invoice_id")
+          .eq("invoice_id", invoice.id)
+          .maybeSingle();
+
         const { error: creditError } = await creditInvoicePayment(
           invoice.id,
           customerId,
@@ -135,6 +147,8 @@ export async function reconcileAllInvoicesAction() {
             customerId,
             invoiceId: invoice.id,
           });
+        } else if (!existing) {
+          recoveredCents += invoice.amount_paid;
         }
       }
     } catch (stripeError) {
@@ -142,10 +156,6 @@ export async function reconcileAllInvoicesAction() {
       console.error("reconcileAllInvoicesAction: Stripe fetch failed", stripeError, { customerId });
     }
   }
-
-  const { data: afterRows } = await admin.from("profiles").select("total_paid_cents");
-  const totalAfterCents = (afterRows ?? []).reduce((sum, p) => sum + (p.total_paid_cents ?? 0), 0);
-  const recoveredCents = totalAfterCents - totalBeforeCents;
 
   console.log(
     `reconcileAllInvoicesAction: ${invoicesChecked} facture(s) vérifiée(s), ${recoveredCents} centime(s) récupéré(s), ${customersFailed} client(s) en échec`,
