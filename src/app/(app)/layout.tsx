@@ -38,24 +38,35 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     } = await supabase.auth.getUser();
 
     if (user) {
-      // Présence "en ligne" + page courante pour le dashboard admin : mise à
-      // jour à chaque navigation authentifiée (toutes pages confondues, pas
-      // juste les pages soumises au paywall), pas seulement au login --
-      // sinon un compte resterait compté "en ligne" des heures après avoir
-      // fermé l'onglet. last_active_path permet de répondre à "il est sur
-      // quelle page maintenant" sans mécanisme séparé, juste réutiliser ce
-      // qu'on sait déjà (x-pathname) au même endroit.
+      // Présence "en ligne" pour le dashboard admin : mise à jour à chaque
+      // navigation authentifiée (toutes pages confondues, pas juste les
+      // pages soumises au paywall), pas seulement au login -- sinon un
+      // compte resterait compté "en ligne" des heures après avoir fermé
+      // l'onglet. Volontairement séparée de la mise à jour de
+      // last_active_path ci-dessous : un seul appel groupé avait fait
+      // échouer les DEUX colonnes (donc "En ligne maintenant" bloqué à 0)
+      // tant que la migration ajoutant last_active_path n'était pas encore
+      // collée en base -- last_active_at ne doit jamais dépendre d'une
+      // colonne annexe pour se mettre à jour.
       const { error: presenceError } = await supabase
         .from("profiles")
-        .update({ last_active_at: new Date().toISOString(), last_active_path: pathname || null })
+        .update({ last_active_at: new Date().toISOString() })
         .eq("id", user.id);
       if (presenceError) {
-        // Ne jamais laisser passer une erreur silencieuse ici : supabase-js
-        // ne throw pas sur une erreur Postgres (ex: colonne manquante si la
-        // migration n'a pas encore été collée en base), donc sans ce log le
-        // dashboard admin afficherait "En ligne maintenant" à 0 en
-        // permanence sans aucune trace de pourquoi.
         console.error("AppLayout presence update failed", presenceError);
+      }
+
+      // Page courante pour le dashboard admin ("il est sur quelle page
+      // maintenant") -- best-effort : une erreur ici (colonne pas encore
+      // migrée en base) ne doit jamais affecter la présence "en ligne"
+      // ci-dessus, seulement l'affichage de la page courante sur
+      // /admin/online.
+      const { error: pathError } = await supabase
+        .from("profiles")
+        .update({ last_active_path: pathname || null })
+        .eq("id", user.id);
+      if (pathError) {
+        console.error("AppLayout last_active_path update failed", pathError);
       }
 
       if (!isExempt(pathname) && !isAdminEmail(user.email)) {
