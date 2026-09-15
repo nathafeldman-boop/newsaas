@@ -11,6 +11,27 @@ const SUBSCRIPTION_LABEL: Record<string, string> = {
   canceled: "Annulé",
 };
 
+const EVENT_LABEL: Record<string, string> = {
+  button_click: "Clic bouton",
+  login: "Connexion",
+  onboarding_step_viewed: "Étape onboarding vue",
+  onboarding_step_completed: "Étape onboarding terminée",
+};
+
+function describeEvent(eventType: string, metadata: Record<string, unknown> | null): string {
+  if (!metadata) return "";
+  if (eventType === "button_click") {
+    const button = typeof metadata.button === "string" ? metadata.button : "?";
+    const source = typeof metadata.source === "string" ? ` · source: ${metadata.source}` : "";
+    const path = typeof metadata.path === "string" ? ` · depuis ${metadata.path}` : "";
+    return `${button}${source}${path}`;
+  }
+  if (eventType === "onboarding_step_viewed" || eventType === "onboarding_step_completed") {
+    return typeof metadata.step === "string" ? `étape: ${metadata.step}` : "";
+  }
+  return "";
+}
+
 function fmt(date: string | null | undefined): string {
   if (!date) return "—";
   return new Date(date).toLocaleString("fr-FR", {
@@ -28,7 +49,7 @@ export default async function AdminUserDetailPage({
   const { id } = await params;
   const admin = createAdminClient();
 
-  const [{ data: profile }, { data: swipes }, { data: applications }, { data: loginEvents }] =
+  const [{ data: profile }, { data: swipes }, { data: applications }, { data: loginEvents }, { data: recentEvents }] =
     await Promise.all([
       admin.from("profiles").select("*").eq("id", id).maybeSingle(),
       admin.from("swipes").select("created_at").eq("user_id", id).order("created_at", { ascending: true }),
@@ -42,6 +63,14 @@ export default async function AdminUserDetailPage({
         .select("created_at")
         .eq("user_id", id)
         .eq("event_type", "login"),
+      // Timeline "qu'a-t-il fait récemment" -- les 50 derniers événements de
+      // ce compte seulement, jamais toute la table user_events.
+      admin
+        .from("user_events")
+        .select("id, event_type, metadata, created_at")
+        .eq("user_id", id)
+        .order("created_at", { ascending: false })
+        .limit(50),
     ]);
 
   if (!profile) notFound();
@@ -94,6 +123,11 @@ export default async function AdminUserDetailPage({
         <span className={isPremium(profile) ? "tag tag-accent" : "tag tag-neutral"}>
           {SUBSCRIPTION_LABEL[profile.subscription_status ?? ""] ?? "Gratuit"}
         </span>
+        {profile.last_active_path && (
+          <span className="tag tag-neutral" style={{ fontFamily: "monospace" }}>
+            actuellement sur {profile.last_active_path}
+          </span>
+        )}
         {!isPremium(profile) && (
           <form action={grantPremiumAndNotifyAction}>
             <input type="hidden" name="userId" value={profile.id} />
@@ -141,6 +175,38 @@ export default async function AdminUserDetailPage({
             <span style={{ fontWeight: 600, textAlign: "right" }}>{value || "—"}</span>
           </div>
         ))}
+      </div>
+
+      <h2 style={{ fontSize: 16, margin: "28px 0 10px" }}>Activité récente</h2>
+      <div className="card elev-sm" style={{ padding: 0, overflow: "hidden" }}>
+        {(recentEvents ?? []).length === 0 ? (
+          <p style={{ fontSize: 13, padding: "var(--space-4) var(--space-5)", color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
+            Aucun événement enregistré.
+          </p>
+        ) : (
+          <div className="flex flex-col">
+            {(recentEvents ?? []).map((e, i) => (
+              <div
+                key={e.id}
+                className="flex items-center justify-between gap-3"
+                style={{
+                  padding: "10px var(--space-5)",
+                  borderTop: i > 0 ? "1px solid var(--color-divider)" : undefined,
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <span className="tag tag-neutral" style={{ marginRight: 8 }}>
+                    {EVENT_LABEL[e.event_type] ?? e.event_type}
+                  </span>
+                  <span style={{ fontSize: 12.5, fontFamily: "monospace", color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
+                    {describeEvent(e.event_type, e.metadata as Record<string, unknown> | null)}
+                  </span>
+                </div>
+                <span style={{ fontSize: 12, flexShrink: 0 }}>{fmt(e.created_at)}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

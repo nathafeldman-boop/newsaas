@@ -81,6 +81,7 @@ export default async function CandidaturePage({
         )}
 
         <CoverLetterPanel
+          userId={user.id}
           offerId={offerId}
           applyUrl={offer.apply_url}
           initialLetter={application?.cover_note ?? null}

@@ -5,6 +5,7 @@ import { ProfileForm } from "@/components/profile/ProfileForm";
 import { GmailConnectionPanel } from "@/components/profile/GmailConnectionPanel";
 import { SettingsPanel } from "@/components/profile/SettingsPanel";
 import { ReviewPanel } from "@/components/profile/ReviewPanel";
+import { PremiumCtaLink } from "@/components/premium/PremiumCtaLink";
 import { isPremium } from "@/lib/subscription/isPremium";
 import type { ApplicationStatus } from "@/types/database";
 
@@ -134,14 +135,15 @@ export default async function ProfilPage({
       <ReviewPanel userId={user.id} initialReview={review ?? null} />
 
       <div className="flex flex-col gap-2.5 mt-5">
-        <Link
-          href="/premium"
+        <PremiumCtaLink
+          userId={user.id}
+          source="profil_row"
           className="card flex-row items-center justify-between no-underline"
           style={{ color: "inherit", padding: "var(--space-3) var(--space-4)" }}
         >
           <span style={{ fontSize: 14 }}>{premium ? "🔓 Abonnement Premium actif" : "Passer Premium (7,99€/mois)"}</span>
           <span>→</span>
-        </Link>
+        </PremiumCtaLink>
         <Link
           href="/mes-candidatures"
           className="card flex-row items-center justify-between no-underline"

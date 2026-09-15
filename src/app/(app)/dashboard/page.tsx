@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isPremium } from "@/lib/subscription/isPremium";
 import { InterviewSimulator } from "@/components/dashboard/InterviewSimulator";
 import { CvQuickSend } from "@/components/dashboard/CvQuickSend";
+import { PremiumCtaLink } from "@/components/premium/PremiumCtaLink";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -40,9 +41,14 @@ export default async function DashboardPage() {
           Simulateur d&apos;entretien à choix multiples (3 niveaux), suivi de tes candidatures,
           et envoi rapide de ton CV. Réservé aux membres Premium.
         </p>
-        <Link href="/premium" className="btn btn-primary mt-5" style={{ whiteSpace: "nowrap" }}>
+        <PremiumCtaLink
+          userId={user.id}
+          source="dashboard_gate"
+          className="btn btn-primary mt-5"
+          style={{ whiteSpace: "nowrap" }}
+        >
           🔓 Débloquer avec Premium (7,99€/mois)
-        </Link>
+        </PremiumCtaLink>
       </div>
     );
   }
@@ -73,7 +79,7 @@ export default async function DashboardPage() {
       </p>
 
       <div className="mt-6">
-        <InterviewSimulator isPremium={premium} defaultJobHint={defaultJobHint} />
+        <InterviewSimulator userId={user.id} isPremium={premium} defaultJobHint={defaultJobHint} />
       </div>
 
       <div className="card elev-sm mt-5" style={{ padding: "var(--space-6)" }}>

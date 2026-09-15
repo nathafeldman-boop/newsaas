@@ -147,6 +147,7 @@ export default async function AdminDashboardPage({
     { count: signupsToday },
     { count: signupsWeek },
     { count: onlineNow },
+    { count: buttonClicksToday },
     { count: paidPremiumCount },
     { count: compPremiumCount },
     { data: totalRevenueCentsRpc, error: revenueError },
@@ -164,6 +165,11 @@ export default async function AdminDashboardPage({
     admin.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", todayStart.toISOString()),
     admin.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", weekAgo.toISOString()),
     admin.from("profiles").select("id", { count: "exact", head: true }).gte("last_active_at", onlineSince.toISOString()),
+    admin
+      .from("user_events")
+      .select("id", { count: "exact", head: true })
+      .eq("event_type", "button_click")
+      .gte("created_at", todayStart.toISOString()),
     admin.from("profiles").select("id", { count: "exact", head: true }).in("subscription_status", ["active", "trialing"]),
     admin.from("profiles").select("id", { count: "exact", head: true }).eq("subscription_status", "comp"),
     // Agrégation côté base (voir migration 20260914000000) plutôt qu'un
@@ -280,6 +286,7 @@ export default async function AdminDashboardPage({
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <StatTile label="En ligne maintenant" value={String(onlineNow ?? 0)} accent href="/admin/online" />
+        <StatTile label="Clics aujourd'hui" value={String(buttonClicksToday ?? 0)} href="/admin/activity" />
         <StatTile label="Inscrits aujourd'hui" value={String(signupsToday ?? 0)} accent />
         <StatTile label="Inscrits (7 jours)" value={String(signupsWeek ?? 0)} />
         <StatTile label="Total utilisateurs" value={String(totalUsers ?? 0)} />

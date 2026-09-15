@@ -1,12 +1,20 @@
 "use client";
 
-import Link from "next/link";
 import { useActionState } from "react";
 import { auditCvAction, type CvAuditState } from "@/app/(app)/profil/cv-audit-actions";
+import { PremiumCtaLink } from "@/components/premium/PremiumCtaLink";
 
 const initialState: CvAuditState = { status: "idle" };
 
-export function CvAuditPanel({ hasCv, isPremium }: { hasCv: boolean; isPremium: boolean }) {
+export function CvAuditPanel({
+  userId,
+  hasCv,
+  isPremium,
+}: {
+  userId: string;
+  hasCv: boolean;
+  isPremium: boolean;
+}) {
   const [state, formAction, pending] = useActionState(
     auditCvAction,
     initialState,
@@ -108,13 +116,14 @@ export function CvAuditPanel({ hasCv, isPremium }: { hasCv: boolean; isPremium: 
       )}
 
       {hasCv && !isPremium && (
-        <Link
-          href="/premium"
+        <PremiumCtaLink
+          userId={userId}
+          source="cv_audit"
           className="btn btn-primary"
           style={{ marginTop: 14, background: "var(--color-accent-2)", whiteSpace: "nowrap" }}
         >
           🔓 Débloquer avec Premium (7,99€/mois)
-        </Link>
+        </PremiumCtaLink>
       )}
 
       {hasCv && isPremium && (

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { PremiumCtaLink } from "@/components/premium/PremiumCtaLink";
 
 // Vraie ressource pédagogique, pas juste une note automatique : demandé
 // explicitement en remplacement/complément de l'audit IA (devenu
@@ -183,9 +184,11 @@ function buildModules(targetLabel: string | null): Module[] {
 const STORAGE_KEY = "stageio_cv_guide_seen";
 
 export function CvGuideModule({
+  userId,
   targetLabel,
   isPremium,
 }: {
+  userId: string;
   targetLabel: string | null;
   isPremium: boolean;
 }) {
@@ -227,9 +230,9 @@ export function CvGuideModule({
           6 modules courts et concrets, personnalisés selon le métier que tu vises. Réservé aux membres
           Premium.
         </p>
-        <a href="/premium" className="btn btn-primary mt-4" style={{ whiteSpace: "nowrap" }}>
+        <PremiumCtaLink userId={userId} source="cv_guide" className="btn btn-primary mt-4" style={{ whiteSpace: "nowrap" }}>
           🔓 Débloquer avec Premium (7,99€/mois)
-        </a>
+        </PremiumCtaLink>
       </div>
     );
   }

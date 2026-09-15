@@ -38,14 +38,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     } = await supabase.auth.getUser();
 
     if (user) {
-      // Présence "en ligne" pour le dashboard admin : mise à jour à chaque
-      // navigation authentifiée (toutes pages confondues, pas juste les
-      // pages soumises au paywall), pas seulement au login -- sinon un
-      // compte resterait compté "en ligne" des heures après avoir fermé
-      // l'onglet.
+      // Présence "en ligne" + page courante pour le dashboard admin : mise à
+      // jour à chaque navigation authentifiée (toutes pages confondues, pas
+      // juste les pages soumises au paywall), pas seulement au login --
+      // sinon un compte resterait compté "en ligne" des heures après avoir
+      // fermé l'onglet. last_active_path permet de répondre à "il est sur
+      // quelle page maintenant" sans mécanisme séparé, juste réutiliser ce
+      // qu'on sait déjà (x-pathname) au même endroit.
       const { error: presenceError } = await supabase
         .from("profiles")
-        .update({ last_active_at: new Date().toISOString() })
+        .update({ last_active_at: new Date().toISOString(), last_active_path: pathname || null })
         .eq("id", user.id);
       if (presenceError) {
         // Ne jamais laisser passer une erreur silencieuse ici : supabase-js

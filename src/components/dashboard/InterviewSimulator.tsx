@@ -9,6 +9,7 @@ import {
   type InterviewQuestion,
 } from "@/lib/interview/questionBank";
 import { getInterviewResultMessage } from "@/lib/interview/resultMessages";
+import { PremiumCtaLink } from "@/components/premium/PremiumCtaLink";
 
 const LEVELS: { value: InterviewLevel; label: string; hint: string }[] = [
   { value: "facile", label: "Facile", hint: `${QUESTION_COUNT_BY_LEVEL.facile} questions` },
@@ -32,9 +33,11 @@ function findClosestDomain(hint: string): string {
 type Phase = "setup" | "quiz" | "results";
 
 export function InterviewSimulator({
+  userId,
   isPremium,
   defaultJobHint,
 }: {
+  userId: string;
   isPremium: boolean;
   defaultJobHint: string;
 }) {
@@ -63,9 +66,14 @@ export function InterviewSimulator({
           Entraîne-toi avec un entretien à choix multiples adapté à ton domaine, sur 3 niveaux de
           difficulté, avec un score et des explications à la fin.
         </p>
-        <a href="/premium" className="btn btn-primary mt-4" style={{ whiteSpace: "nowrap" }}>
+        <PremiumCtaLink
+          userId={userId}
+          source="interview_simulator"
+          className="btn btn-primary mt-4"
+          style={{ whiteSpace: "nowrap" }}
+        >
           🔓 Débloquer avec Premium (7,99€/mois)
-        </a>
+        </PremiumCtaLink>
       </div>
     );
   }

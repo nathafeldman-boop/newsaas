@@ -11,6 +11,8 @@ import {
   animate,
 } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
+import { logButtonClick } from "@/lib/analytics/logButtonClick";
+import { PremiumCtaLink } from "@/components/premium/PremiumCtaLink";
 import { OfferCardContent } from "@/components/swipe/OfferCard";
 import { cn } from "@/lib/utils";
 import type { ContractType, Offer, SwipeDirection } from "@/types/database";
@@ -294,9 +296,9 @@ function SwipeDeckInner({
             ? "Passe Premium pour swiper sans limite et générer tes lettres de motivation à volonté. Tu peux toujours candidater librement aux offres déjà vues."
             : "On en ajoute régulièrement. Passe Premium pour swiper sans limite dès qu'elles arrivent, et débloquer les lettres de motivation générées par IA."}
         </p>
-        <Link href="/premium" className="btn btn-gradient mt-6">
+        <PremiumCtaLink userId={userId} source="swipe_quota" className="btn btn-gradient mt-6">
           Passer en illimité
-        </Link>
+        </PremiumCtaLink>
       </div>
     );
   }
@@ -316,7 +318,11 @@ function SwipeDeckInner({
         <p style={{ marginTop: 6, fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
           En attendant, entraîne-toi pour ton prochain entretien.
         </p>
-        <Link href="/dashboard" className="btn btn-gradient mt-6">
+        <Link
+          href="/dashboard"
+          className="btn btn-gradient mt-6"
+          onClick={() => void logButtonClick(userId, "interview_practice_cta", { source: "swipe_empty_deck" })}
+        >
           🎤 M&apos;entraîner à l&apos;entretien
         </Link>
       </div>

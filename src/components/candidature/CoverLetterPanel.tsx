@@ -1,17 +1,19 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { generateCoverLetterAction } from "@/app/(app)/candidature/[offerId]/actions";
+import { PremiumCtaLink } from "@/components/premium/PremiumCtaLink";
 
 type Status = "idle" | "loading" | "ready" | "premium_required" | "error";
 
 export function CoverLetterPanel({
+  userId,
   offerId,
   applyUrl,
   initialLetter,
 }: {
+  userId: string;
   offerId: string;
   applyUrl: string | null;
   initialLetter: string | null;
@@ -123,9 +125,9 @@ export function CoverLetterPanel({
             <p style={{ fontSize: 13, margin: 0 }}>
               La lettre de motivation personnalisée est réservée aux membres Premium.
             </p>
-            <Link href="/premium" className="btn btn-gradient mt-2">
+            <PremiumCtaLink userId={userId} source="cover_letter" className="btn btn-gradient mt-2">
               Passer Premium
-            </Link>
+            </PremiumCtaLink>
           </motion.div>
         )}
 

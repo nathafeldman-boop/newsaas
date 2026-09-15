@@ -21,7 +21,7 @@ export default async function AdminOnlinePage() {
   const admin = createAdminClient();
   const { data: users } = await admin
     .from("profiles")
-    .select("id, email, full_name, subscription_status, last_active_at")
+    .select("id, email, full_name, subscription_status, last_active_at, last_active_path")
     .gte("last_active_at", onlineSince.toISOString())
     .order("last_active_at", { ascending: false });
 
@@ -55,7 +55,14 @@ export default async function AdminOnlinePage() {
                 {u.email} · {timeAgo(u.last_active_at)}
               </p>
             </div>
-            {isPremium(u) && <span className="tag tag-accent">Premium</span>}
+            <div className="flex items-center gap-2" style={{ flexShrink: 0 }}>
+              {u.last_active_path && (
+                <span className="tag tag-neutral" style={{ fontFamily: "monospace" }}>
+                  {u.last_active_path}
+                </span>
+              )}
+              {isPremium(u) && <span className="tag tag-accent">Premium</span>}
+            </div>
           </Link>
         ))}
         {online.length === 0 && (

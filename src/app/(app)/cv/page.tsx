@@ -39,9 +39,10 @@ export default async function CvPage() {
         <CvUploadPanel userId={user.id} cvSignedUrl={cvSignedUrl} />
       </div>
 
-      <CvAuditPanel hasCv={Boolean(profile.cv_path)} isPremium={isPremium(profile)} />
+      <CvAuditPanel userId={user.id} hasCv={Boolean(profile.cv_path)} isPremium={isPremium(profile)} />
 
       <CvGuideModule
+        userId={user.id}
         targetLabel={profile.target_jobs?.[0] || profile.sectors?.[0] || null}
         isPremium={isPremium(profile)}
       />
