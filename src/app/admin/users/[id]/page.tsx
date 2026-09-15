@@ -18,6 +18,14 @@ const EVENT_LABEL: Record<string, string> = {
   onboarding_step_completed: "Étape onboarding terminée",
 };
 
+const APPLICATION_STATUS_LABEL: Record<string, string> = {
+  envoyee: "Envoyée",
+  en_cours: "En cours",
+  entretien: "Entretien",
+  acceptee: "Acceptée",
+  refusee: "Refusée",
+};
+
 function describeEvent(eventType: string, metadata: Record<string, unknown> | null): string {
   if (!metadata) return "";
   if (eventType === "button_click") {
@@ -41,6 +49,13 @@ function fmt(date: string | null | undefined): string {
   });
 }
 
+type TimelineItem = {
+  at: string;
+  tag: "milestone" | "swipe" | "candidature" | "event";
+  label: string;
+  detail: string;
+};
+
 export default async function AdminUserDetailPage({
   params,
 }: {
@@ -49,39 +64,101 @@ export default async function AdminUserDetailPage({
   const { id } = await params;
   const admin = createAdminClient();
 
-  const [{ data: profile }, { data: swipes }, { data: applications }, { data: loginEvents }, { data: recentEvents }] =
-    await Promise.all([
-      admin.from("profiles").select("*").eq("id", id).maybeSingle(),
-      admin.from("swipes").select("created_at").eq("user_id", id).order("created_at", { ascending: true }),
-      admin
-        .from("applications")
-        .select("status, applied_at")
-        .eq("user_id", id)
-        .order("applied_at", { ascending: true }),
-      admin
-        .from("user_events")
-        .select("created_at")
-        .eq("user_id", id)
-        .eq("event_type", "login"),
-      // Timeline "qu'a-t-il fait récemment" -- les 50 derniers événements de
-      // ce compte seulement, jamais toute la table user_events.
-      admin
-        .from("user_events")
-        .select("id, event_type, metadata, created_at")
-        .eq("user_id", id)
-        .order("created_at", { ascending: false })
-        .limit(50),
-    ]);
+  // Requêtes toutes filtrées sur ce seul user_id (index dédiés sur chaque
+  // table) -- jamais un risque de retomber sur la limite 1000 lignes de
+  // l'API Supabase qui avait tronqué le calcul de LTV côté /admin.
+  const [{ data: profile }, { data: swipes }, { data: applications }, { data: events }] = await Promise.all([
+    admin.from("profiles").select("*").eq("id", id).maybeSingle(),
+    admin
+      .from("swipes")
+      .select("id, offer_id, direction, created_at")
+      .eq("user_id", id)
+      .order("created_at", { ascending: false })
+      .limit(1000),
+    admin
+      .from("applications")
+      .select("id, offer_id, status, applied_at")
+      .eq("user_id", id)
+      .order("applied_at", { ascending: false })
+      .limit(1000),
+    admin
+      .from("user_events")
+      .select("id, event_type, metadata, created_at")
+      .eq("user_id", id)
+      .order("created_at", { ascending: false })
+      .limit(1000),
+  ]);
 
   if (!profile) notFound();
 
-  const funnel = [
-    { label: "Inscription", at: profile.created_at },
-    { label: "Onboarding terminé", at: profile.onboarding_completed_at },
-    { label: "Premier swipe", at: swipes?.[0]?.created_at ?? null },
-    { label: "Première candidature", at: applications?.[0]?.applied_at ?? null },
-    { label: "Passage Premium", at: profile.premium_activated_at },
-  ];
+  const allSwipes = swipes ?? [];
+  const allApplications = applications ?? [];
+  const allEvents = events ?? [];
+  const loginCount = allEvents.filter((e) => e.event_type === "login").length;
+
+  // Titres/entreprises des offres swipées ou candidatées : un seul lookup
+  // groupé plutôt qu'une requête par ligne.
+  const offerIds = [...new Set([...allSwipes.map((s) => s.offer_id), ...allApplications.map((a) => a.offer_id)])];
+  const offerById = new Map<string, { title: string; company: string }>();
+  if (offerIds.length > 0) {
+    const { data: offers, error: offersError } = await admin
+      .from("offers")
+      .select("id, title, company")
+      .in("id", offerIds);
+    if (offersError) {
+      console.error("AdminUserDetailPage: offers query failed", offersError);
+    } else {
+      for (const o of offers ?? []) offerById.set(o.id, o);
+    }
+  }
+
+  // Timeline unique et complète : tout ce que ce compte a fait (pas
+  // seulement les 4-5 jalons du funnel), fusionné et trié du plus récent
+  // au plus ancien -- swipes, candidatures, connexions, clics, onboarding
+  // et les jalons de compte, tous mélangés dans l'ordre réel des événements.
+  const timeline: TimelineItem[] = [];
+
+  timeline.push({ at: profile.created_at, tag: "milestone", label: "Inscription", detail: "" });
+  if (profile.onboarding_completed_at) {
+    timeline.push({ at: profile.onboarding_completed_at, tag: "milestone", label: "Onboarding terminé", detail: "" });
+  }
+  if (profile.premium_activated_at) {
+    timeline.push({ at: profile.premium_activated_at, tag: "milestone", label: "Passage Premium", detail: "" });
+  }
+  for (const s of allSwipes) {
+    const offer = offerById.get(s.offer_id);
+    timeline.push({
+      at: s.created_at,
+      tag: "swipe",
+      label: s.direction === "like" ? "Swipe · j'aime" : "Swipe · passe",
+      detail: offer ? `${offer.title} — ${offer.company}` : "offre supprimée",
+    });
+  }
+  for (const a of allApplications) {
+    const offer = offerById.get(a.offer_id);
+    timeline.push({
+      at: a.applied_at,
+      tag: "candidature",
+      label: `Candidature · ${APPLICATION_STATUS_LABEL[a.status] ?? a.status}`,
+      detail: offer ? `${offer.title} — ${offer.company}` : "offre supprimée",
+    });
+  }
+  for (const e of allEvents) {
+    timeline.push({
+      at: e.created_at,
+      tag: "event",
+      label: EVENT_LABEL[e.event_type] ?? e.event_type,
+      detail: describeEvent(e.event_type, e.metadata as Record<string, unknown> | null),
+    });
+  }
+  timeline.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+
+  const TAG_CLASS: Record<TimelineItem["tag"], string> = {
+    milestone: "tag tag-accent",
+    swipe: "tag tag-neutral",
+    candidature: "tag tag-accent-2",
+    event: "tag tag-neutral",
+  };
 
   return (
     <div>
@@ -100,19 +177,19 @@ export default async function AdminUserDetailPage({
           </p>
         </div>
         <div className="card elev-sm" style={{ padding: "var(--space-4)" }}>
-          <p style={{ fontFamily: "var(--font-heading)", fontSize: 22, margin: 0 }}>{loginEvents?.length ?? 0}</p>
+          <p style={{ fontFamily: "var(--font-heading)", fontSize: 22, margin: 0 }}>{loginCount}</p>
           <p style={{ fontSize: 11, textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 65%, transparent)", margin: "4px 0 0" }}>
             Sessions
           </p>
         </div>
         <div className="card elev-sm" style={{ padding: "var(--space-4)" }}>
-          <p style={{ fontFamily: "var(--font-heading)", fontSize: 22, margin: 0 }}>{swipes?.length ?? 0}</p>
+          <p style={{ fontFamily: "var(--font-heading)", fontSize: 22, margin: 0 }}>{allSwipes.length}</p>
           <p style={{ fontSize: 11, textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 65%, transparent)", margin: "4px 0 0" }}>
             Swipes
           </p>
         </div>
         <div className="card elev-sm" style={{ padding: "var(--space-4)" }}>
-          <p style={{ fontFamily: "var(--font-heading)", fontSize: 22, margin: 0 }}>{applications?.length ?? 0}</p>
+          <p style={{ fontFamily: "var(--font-heading)", fontSize: 22, margin: 0 }}>{allApplications.length}</p>
           <p style={{ fontSize: 11, textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 65%, transparent)", margin: "4px 0 0" }}>
             Candidatures
           </p>
@@ -138,24 +215,6 @@ export default async function AdminUserDetailPage({
         )}
       </div>
 
-      <h2 style={{ fontSize: 16, margin: "28px 0 10px" }}>Funnel</h2>
-      <div className="card elev-sm" style={{ padding: "var(--space-4) var(--space-5)" }}>
-        {funnel.map((step, i) => (
-          <div
-            key={step.label}
-            className="flex items-center justify-between"
-            style={{
-              padding: "8px 0",
-              borderTop: i > 0 ? "1px solid var(--color-divider)" : undefined,
-              opacity: step.at ? 1 : 0.4,
-            }}
-          >
-            <span style={{ fontSize: 13 }}>{step.label}</span>
-            <span style={{ fontSize: 12, fontFamily: "var(--font-heading)" }}>{fmt(step.at)}</span>
-          </div>
-        ))}
-      </div>
-
       <h2 style={{ fontSize: 16, margin: "28px 0 10px" }}>Réponses onboarding</h2>
       <div className="card elev-sm flex flex-col gap-2.5" style={{ padding: "var(--space-4) var(--space-5)" }}>
         {[
@@ -177,17 +236,23 @@ export default async function AdminUserDetailPage({
         ))}
       </div>
 
-      <h2 style={{ fontSize: 16, margin: "28px 0 10px" }}>Activité récente</h2>
+      <h2 style={{ fontSize: 16, margin: "28px 0 10px" }}>
+        Tout l&apos;historique ({timeline.length})
+      </h2>
+      <p style={{ fontSize: 12, margin: "-4px 0 10px", color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
+        Inscription, swipes, candidatures, connexions, clics et étapes d&apos;onboarding, du plus récent au plus
+        ancien.
+      </p>
       <div className="card elev-sm" style={{ padding: 0, overflow: "hidden" }}>
-        {(recentEvents ?? []).length === 0 ? (
+        {timeline.length === 0 ? (
           <p style={{ fontSize: 13, padding: "var(--space-4) var(--space-5)", color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
             Aucun événement enregistré.
           </p>
         ) : (
           <div className="flex flex-col">
-            {(recentEvents ?? []).map((e, i) => (
+            {timeline.map((item, i) => (
               <div
-                key={e.id}
+                key={`${item.tag}-${item.at}-${i}`}
                 className="flex items-center justify-between gap-3"
                 style={{
                   padding: "10px var(--space-5)",
@@ -195,14 +260,16 @@ export default async function AdminUserDetailPage({
                 }}
               >
                 <div style={{ minWidth: 0 }}>
-                  <span className="tag tag-neutral" style={{ marginRight: 8 }}>
-                    {EVENT_LABEL[e.event_type] ?? e.event_type}
+                  <span className={TAG_CLASS[item.tag]} style={{ marginRight: 8 }}>
+                    {item.label}
                   </span>
-                  <span style={{ fontSize: 12.5, fontFamily: "monospace", color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
-                    {describeEvent(e.event_type, e.metadata as Record<string, unknown> | null)}
-                  </span>
+                  {item.detail && (
+                    <span style={{ fontSize: 12.5, fontFamily: "monospace", color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
+                      {item.detail}
+                    </span>
+                  )}
                 </div>
-                <span style={{ fontSize: 12, flexShrink: 0 }}>{fmt(e.created_at)}</span>
+                <span style={{ fontSize: 12, flexShrink: 0 }}>{fmt(item.at)}</span>
               </div>
             ))}
           </div>
