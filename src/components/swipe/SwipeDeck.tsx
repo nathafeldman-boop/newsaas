@@ -236,6 +236,13 @@ function SwipeDeckInner({
       // inline : dès que le quota tombe, on est déjà censé y être (voir la
       // redirection équivalente au niveau layout pour toute autre page).
       router.push("/premium?limite=1");
+    } else if (error) {
+      // La carte est déjà retirée de l'écran de façon optimiste (voir
+      // topCardRef.current?.swipeOut ci-dessous) avant même que cette
+      // requête ne reparte -- sans ce log, un swipe qui échoue pour une
+      // autre raison que le quota disparaît silencieusement (aucune trace
+      // ni côté utilisateur ni côté serveur).
+      console.error("recordSwipe failed", error, { offerId: offer.id, direction });
     }
   }
 

@@ -118,7 +118,7 @@ export async function GET(request: NextRequest) {
             )
           : null;
 
-        await admin.from("email_replies").insert({
+        const { error: replyInsertError } = await admin.from("email_replies").insert({
           user_id: conn.user_id,
           application_id: matchedApp?.id ?? null,
           provider_message_id: message.id,
@@ -128,6 +128,12 @@ export async function GET(request: NextRequest) {
           sentiment: result.sentiment,
           received_at: message.date ? new Date(message.date).toISOString() : null,
         });
+        if (replyInsertError) {
+          console.error("sync-gmail-replies: email_replies insert failed", replyInsertError, {
+            userId: conn.user_id,
+            messageId: message.id,
+          });
+        }
 
         if (matchedApp) {
           matched++;
@@ -135,18 +141,26 @@ export async function GET(request: NextRequest) {
             matchedApp.status === "acceptee" || matchedApp.status === "refusee";
           const newStatus = sentimentToStatus(result.sentiment);
           if (!isTerminal && newStatus) {
-            await admin
+            const { error: statusUpdateError } = await admin
               .from("applications")
               .update({ status: newStatus })
               .eq("id", matchedApp.id);
+            if (statusUpdateError) {
+              console.error("sync-gmail-replies: applications status update failed", statusUpdateError, {
+                applicationId: matchedApp.id,
+              });
+            }
           }
         }
       }
 
-      await admin
+      const { error: syncCursorError } = await admin
         .from("email_connections")
         .update({ last_synced_at: new Date().toISOString() })
         .eq("id", conn.id);
+      if (syncCursorError) {
+        console.error("sync-gmail-replies: last_synced_at update failed", syncCursorError, { connId: conn.id });
+      }
 
       summary.push({
         user_id: conn.user_id,

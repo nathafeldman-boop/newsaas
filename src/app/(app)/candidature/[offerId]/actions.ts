@@ -60,17 +60,29 @@ export async function generateCoverLetterAction(
     .maybeSingle();
 
   if (!existing) {
-    await supabase
+    const { error: insertError } = await supabase
       .from("applications")
       .insert({ user_id: user.id, offer_id: offerId, status: "envoyee" });
+    if (insertError) {
+      // supabase-js ne throw jamais sur une erreur Postgres -- sans ce log,
+      // l'utilisateur croirait avoir postulé (la page continue normalement)
+      // alors qu'aucune candidature n'existe en base.
+      console.error("generateCoverLetterAction: applications insert failed", insertError, {
+        userId: user.id,
+        offerId,
+      });
+    }
   }
 
-  await supabase
+  const { error: swipeError } = await supabase
     .from("swipes")
     .upsert(
       { user_id: user.id, offer_id: offerId, direction: "like" },
       { onConflict: "user_id,offer_id" },
     );
+  if (swipeError) {
+    console.error("generateCoverLetterAction: swipes upsert failed", swipeError, { userId: user.id, offerId });
+  }
 
   if (!isPremium(profile)) {
     return { status: "premium_required" };

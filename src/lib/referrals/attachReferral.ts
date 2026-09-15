@@ -23,9 +23,19 @@ export async function attachReferralIfNeeded(userId: string, refCode: string) {
 
   if (!referrer || referrer.id === userId) return;
 
-  await admin.from("profiles").update({ referred_by: referrer.id }).eq("id", userId);
-  await admin.from("referrals").upsert(
+  const { error: profileError } = await admin
+    .from("profiles")
+    .update({ referred_by: referrer.id })
+    .eq("id", userId);
+  if (profileError) {
+    console.error("attachReferralIfNeeded: profiles update failed", profileError, { userId, referrerId: referrer.id });
+  }
+
+  const { error: referralError } = await admin.from("referrals").upsert(
     { referrer_id: referrer.id, referred_id: userId, code: refCode.toUpperCase() },
     { onConflict: "referred_id" },
   );
+  if (referralError) {
+    console.error("attachReferralIfNeeded: referrals upsert failed", referralError, { userId, referrerId: referrer.id });
+  }
 }

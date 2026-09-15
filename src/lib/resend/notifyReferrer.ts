@@ -9,7 +9,7 @@ import { SITE_URL } from "@/lib/site";
 export async function notifyReferrerOfNewSignup(referredUserId: string) {
   const admin = createAdminClient();
 
-  const { data: referral } = await admin
+  const { data: referral, error: updateError } = await admin
     .from("referrals")
     .update({ notified_at: new Date().toISOString() })
     .eq("referred_id", referredUserId)
@@ -17,6 +17,13 @@ export async function notifyReferrerOfNewSignup(referredUserId: string) {
     .select("referrer_id")
     .maybeSingle();
 
+  // `!referral` peut vouloir dire "déjà notifié" (normal, cas idempotent) OU
+  // "la requête a échoué" (ex: colonne/table pas migrée) -- sans ce log les
+  // deux étaient indiscernables, et un échec réel faisait silencieusement
+  // manquer l'email au parrain sans aucune trace.
+  if (updateError) {
+    console.error("notifyReferrerOfNewSignup: referrals update failed", updateError, { referredUserId });
+  }
   if (!referral) return;
 
   const [{ data: referrer }, { data: referred }] = await Promise.all([

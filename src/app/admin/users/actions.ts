@@ -102,10 +102,16 @@ export async function reconcileAllInvoicesAction() {
   const admin = createAdminClient();
   const stripe = getStripeClient();
 
+  // Bornée par prudence (voir commentaire plus bas sur "profiles" et le Max
+  // Rows Supabase) même si le nombre de clients Stripe connus reste faible
+  // aujourd'hui -- ne jamais dépendre d'un select sans limite sur une table
+  // qui grossit indéfiniment.
   const { data: profiles, error: profilesError } = await admin
     .from("profiles")
     .select("id, stripe_customer_id")
-    .not("stripe_customer_id", "is", null);
+    .not("stripe_customer_id", "is", null)
+    .order("id")
+    .limit(5000);
 
   if (profilesError) {
     console.error("reconcileAllInvoicesAction: query failed", profilesError);
@@ -224,12 +230,19 @@ export async function sendWeeklyOfferAnnouncementAction() {
   await assertAdminSession();
   const admin = createAdminClient();
 
+  // Bornée par prudence : "profiles" a déjà dépassé 1000 lignes, et cette
+  // campagne ponctuelle filtre sur un sous-ensemble (onboarding terminé,
+  // pas encore annoncé) qui peut s'en approcher -- .order("id") garantit
+  // qu'un éventuel dépassement laisse toujours le même reste de côté
+  // (repris au prochain clic) plutôt qu'un sous-ensemble arbitraire.
   const { data: profiles, error } = await admin
     .from("profiles")
     .select("id, email, full_name, subscription_status")
     .eq("onboarding_completed", true)
     .is("weekly_offer_announced_at", null)
-    .not("email", "is", null);
+    .not("email", "is", null)
+    .order("id")
+    .limit(5000);
 
   if (error) {
     console.error("sendWeeklyOfferAnnouncementAction: query failed", error);

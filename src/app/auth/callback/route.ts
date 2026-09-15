@@ -24,10 +24,14 @@ export async function GET(request: NextRequest) {
         } catch {
           // best-effort : un souci de parrainage/email ne doit pas casser la connexion
         }
-        try {
-          await supabase.from("user_events").insert({ user_id: data.user.id, event_type: "login" });
-        } catch {
-          // best-effort : le suivi de session ne doit jamais casser la connexion
+        // supabase-js ne throw jamais sur une erreur Postgres -- ce try/catch
+        // n'attrape donc rien de ce genre ; on vérifie le résultat directement
+        // à la place (toujours best-effort : jamais bloquant pour la connexion).
+        const { error: loginEventError } = await supabase
+          .from("user_events")
+          .insert({ user_id: data.user.id, event_type: "login" });
+        if (loginEventError) {
+          console.error("auth/callback: login event insert failed", loginEventError, { userId: data.user.id });
         }
       }
       return NextResponse.redirect(`${origin}${next}`);

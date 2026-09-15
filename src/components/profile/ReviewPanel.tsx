@@ -45,7 +45,11 @@ export function ReviewPanel({
       { onConflict: "user_id" },
     );
     setSaving(false);
-    if (!error) setSaved(true);
+    if (!error) {
+      setSaved(true);
+    } else {
+      console.error("ReviewPanel: reviews upsert failed", error, { userId });
+    }
   }
 
   function selectReason(r: string) {

@@ -19,11 +19,16 @@ export default async function AdminOnlinePage() {
   onlineSince.setMinutes(onlineSince.getMinutes() - 5);
 
   const admin = createAdminClient();
-  const { data: users } = await admin
+  const { data: users, error: usersError } = await admin
     .from("profiles")
     .select("id, email, full_name, subscription_status, last_active_at, last_active_path")
     .gte("last_active_at", onlineSince.toISOString())
     .order("last_active_at", { ascending: false });
+
+  // supabase-js ne throw jamais sur une erreur Postgres -- sans ce log,
+  // une requête qui échoue (ex: colonne pas encore migrée) afficherait
+  // silencieusement "Personne en ligne" même si des gens le sont.
+  if (usersError) console.error("AdminOnlinePage: users query failed", usersError);
 
   const online = users ?? [];
 

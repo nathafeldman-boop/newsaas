@@ -119,13 +119,15 @@ export default async function AdminDashboardPage({
   const onlineSince = new Date();
   onlineSince.setMinutes(onlineSince.getMinutes() - 5);
 
-  // "tout" doit quand même borner la requête site_visits (une ligne par
-  // navigation depuis le lancement) -- 180 jours est largement au-delà de
-  // l'historique actuel du site, donc équivalent à "tout" en pratique, sans
-  // risquer de ramener une table qui grossit indéfiniment.
-  const visitsFallback = new Date();
-  visitsFallback.setDate(visitsFallback.getDate() - 180);
-  const visitsSince = periodStart(period) ?? visitsFallback;
+  // "tout" doit quand même borner les requêtes site_visits et profiles (une
+  // ligne par visite/inscription depuis le lancement) -- 180 jours est
+  // largement au-delà de l'historique actuel du site, donc équivalent à
+  // "tout" en pratique, sans risquer de ramener une table qui grossit
+  // indéfiniment (déjà vu : "profiles" a dépassé le Max Rows de 1000 et
+  // tronqué silencieusement le calcul de LTV avant le fix RPC ci-dessous).
+  const periodFallback = new Date();
+  periodFallback.setDate(periodFallback.getDate() - 180);
+  const visitsSince = periodStart(period) ?? periodFallback;
 
   // ARR = somme des abonnements actifs/essai annualisés selon leur vraie
   // cadence Stripe (subscription_price_cents/interval, posés par le webhook
@@ -133,8 +135,6 @@ export default async function AdminDashboardPage({
   // revenu réel derrière.
   const ANNUALIZATION_BY_INTERVAL: Record<string, number> = { day: 365, week: 52, month: 12, year: 1 };
   const DEFAULT_MONTHLY_PRICE_CENTS = 799;
-
-  const periodCutoff = periodStart(period);
 
   // Chaque stat vient désormais d'une requête ciblée (count exact côté
   // Postgres, ou colonnes minimales + filtre de date) plutôt que d'un seul
@@ -156,9 +156,9 @@ export default async function AdminDashboardPage({
     { count: activeOffers },
     { count: swipesTotal },
     { count: applicationsTotal },
-    { data: visits },
-    { data: onboardingEvents },
-    { data: reviewRows },
+    { data: visits, error: visitsError },
+    { data: funnelStats, error: funnelStatsError },
+    { data: reviewRows, error: reviewsError },
   ] = await Promise.all([
     admin.from("profiles").select("id", { count: "exact", head: true }),
     admin.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", todayStart.toISOString()),
@@ -172,11 +172,12 @@ export default async function AdminDashboardPage({
     // tronquait silencieusement la somme calculée côté JS -- un RPC ne
     // retourne qu'un scalaire, jamais soumis à cette limite.
     admin.rpc("sum_total_paid_cents"),
-    // Bornée à la période choisie (sauf "tout") : le graphe n'a jamais
-    // besoin de l'historique complet pour "7 jours" ou "30 jours".
-    periodCutoff
-      ? admin.from("profiles").select("created_at, subscription_status").gte("created_at", periodCutoff.toISOString())
-      : admin.from("profiles").select("created_at, subscription_status"),
+    // Toujours bornée dans le temps, "tout" compris (via periodFallback,
+    // 180 jours) : "profiles" grossit indéfiniment, un select sans borne
+    // ici retomberait dans le même piège que la tuile revenu (Max Rows
+    // 1000, tronqué en silence) -- reproductible aujourd'hui via
+    // /admin?periode=tout avant ce fix.
+    admin.from("profiles").select("created_at, subscription_status").gte("created_at", visitsSince.toISOString()),
     // Table "derniers inscrits" : seulement les 25 affichés, jamais toute
     // la base.
     admin
@@ -195,11 +196,17 @@ export default async function AdminDashboardPage({
     admin.from("swipes").select("id", { count: "exact", head: true }),
     admin.from("applications").select("id", { count: "exact", head: true }),
     admin.from("site_visits").select("visitor_id, created_at").gte("created_at", visitsSince.toISOString()),
-    admin
-      .from("user_events")
-      .select("user_id, event_type, metadata")
-      .in("event_type", ["onboarding_step_viewed", "onboarding_step_completed"]),
-    admin.from("reviews").select("*").order("created_at", { ascending: false }),
+    // Agrégation côté base (voir migration 20260915000001) plutôt qu'un
+    // SELECT brut sur user_events : avec 7 étapes x 2 événements, cette
+    // requête dépasse le Max Rows (1000) dès quelques centaines
+    // d'utilisateurs ayant traversé l'onboarding -- même piège que la LTV
+    // avant sum_total_paid_cents, ici probablement déjà actif vu le volume
+    // d'utilisateurs actuel.
+    admin.rpc("onboarding_funnel_stats"),
+    // Reviews : borné par prudence (une table qui devient un jour très
+    // grande ne doit jamais tronquer silencieusement avgRating) même si le
+    // volume actuel est très en dessous de 1000.
+    admin.from("reviews").select("*").order("created_at", { ascending: false }).limit(5000),
   ]);
 
   // supabase-js ne throw jamais sur une erreur Postgres (ex: colonne pas
@@ -211,6 +218,9 @@ export default async function AdminDashboardPage({
   if (periodSignupsError) console.error("AdminDashboardPage: period signups query failed", periodSignupsError);
   if (recentProfilesError) console.error("AdminDashboardPage: recent profiles query failed", recentProfilesError);
   if (pricingError) console.error("AdminDashboardPage: ARR pricing query failed", pricingError);
+  if (visitsError) console.error("AdminDashboardPage: visits query failed", visitsError);
+  if (funnelStatsError) console.error("AdminDashboardPage: onboarding funnel query failed", funnelStatsError);
+  if (reviewsError) console.error("AdminDashboardPage: reviews query failed", reviewsError);
 
   const paidPremium = paidPremiumCount ?? 0;
   const compPremium = compPremiumCount ?? 0;
@@ -242,14 +252,12 @@ export default async function AdminDashboardPage({
 
   const weekdayAverages = computeWeekdayAverages(visits ?? []);
 
-  const stepStats = new Map<StepId, { viewed: Set<string>; completed: Set<string> }>();
-  for (const id of STEP_IDS) stepStats.set(id, { viewed: new Set(), completed: new Set() });
-  for (const ev of onboardingEvents ?? []) {
-    const step = (ev.metadata as Record<string, unknown> | null)?.step as StepId | undefined;
+  const stepStats = new Map<StepId, { viewed: number; completed: number }>();
+  for (const id of STEP_IDS) stepStats.set(id, { viewed: 0, completed: 0 });
+  for (const row of funnelStats ?? []) {
+    const step = row.step as StepId | null;
     if (!step || !stepStats.has(step)) continue;
-    const entry = stepStats.get(step)!;
-    if (ev.event_type === "onboarding_step_viewed") entry.viewed.add(ev.user_id);
-    else entry.completed.add(ev.user_id);
+    stepStats.set(step, { viewed: row.viewed_count, completed: row.completed_count });
   }
 
   const allReviews = reviewRows ?? [];
@@ -342,8 +350,8 @@ export default async function AdminDashboardPage({
             <tbody>
               {STEP_IDS.map((id, i) => {
                 const stats = stepStats.get(id)!;
-                const viewed = stats.viewed.size;
-                const completed = stats.completed.size;
+                const viewed = stats.viewed;
+                const completed = stats.completed;
                 const dropoff = viewed > 0 ? Math.round(((viewed - completed) / viewed) * 100) : 0;
                 return (
                   <tr key={id} style={{ borderTop: "1px solid var(--color-divider)" }}>

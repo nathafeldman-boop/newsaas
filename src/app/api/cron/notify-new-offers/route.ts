@@ -35,12 +35,18 @@ export async function GET(request: NextRequest) {
   const now = new Date();
   const admin = createAdminClient();
 
+  // "profiles" grossit indéfiniment (déjà >1000 lignes) -- bornée par
+  // prudence même si ce sous-ensemble opt-in est aujourd'hui bien plus
+  // petit que la table entière, pour ne jamais silencieusement sauter des
+  // comptes au-delà du Max Rows Supabase sans aucune erreur visible.
   const { data: profiles, error: profilesError } = await admin
     .from("profiles")
     .select("*")
     .eq("notify_new_offers", true)
     .eq("onboarding_completed", true)
-    .not("email", "is", null);
+    .not("email", "is", null)
+    .order("id")
+    .limit(5000);
 
   if (profilesError) {
     return NextResponse.json({ error: profilesError.message }, { status: 500 });
@@ -71,10 +77,13 @@ export async function GET(request: NextRequest) {
 
       // Toujours avancer le curseur, même sans offre à annoncer, pour ne
       // jamais re-scanner la même fenêtre à l'infini pour un compte inactif.
-      await admin
+      const { error: cursorError } = await admin
         .from("profiles")
         .update({ last_offer_alert_sent_at: now.toISOString() })
         .eq("id", profile.id);
+      if (cursorError) {
+        console.error("notify-new-offers: cursor update failed", cursorError, { profileId: profile.id });
+      }
 
       if (!newOffers || newOffers.length === 0) continue;
 

@@ -41,7 +41,12 @@ export function LoginForm() {
       data: { user },
     } = await supabase.auth.getUser();
     if (user) {
-      void supabase.from("user_events").insert({ user_id: user.id, event_type: "login" });
+      void supabase
+        .from("user_events")
+        .insert({ user_id: user.id, event_type: "login" })
+        .then(({ error }) => {
+          if (error) console.error("LoginForm: login event insert failed", error, { userId: user.id });
+        });
     }
 
     // Navigation complète (pas router.push) : juste après signInWithPassword,

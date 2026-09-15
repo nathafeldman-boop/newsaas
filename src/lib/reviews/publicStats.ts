@@ -9,7 +9,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function getPublicReviewStats(): Promise<{ count: number; average: number | null }> {
   const admin = createAdminClient();
-  const { data } = await admin.from("reviews").select("rating").eq("status", "approved");
+  // Borné par prudence (voir /admin même souci sur cette table) : jamais de
+  // truncation silencieuse du Max Rows Supabase si "reviews" grossit un jour.
+  const { data, error } = await admin.from("reviews").select("rating").eq("status", "approved").limit(5000);
+  if (error) console.error("getPublicReviewStats: reviews query failed", error);
   const ratings = data ?? [];
   if (ratings.length === 0) return { count: 0, average: null };
 

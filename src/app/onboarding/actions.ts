@@ -16,5 +16,8 @@ export async function markReferralGrantedAction(userId: string) {
 
   if (!profile?.referred_by) return;
 
-  await admin.from("referrals").update({ reward_status: "granted" }).eq("referred_id", userId);
+  const { error } = await admin.from("referrals").update({ reward_status: "granted" }).eq("referred_id", userId);
+  if (error) {
+    console.error("markReferralGrantedAction: referrals update failed", error, { userId });
+  }
 }

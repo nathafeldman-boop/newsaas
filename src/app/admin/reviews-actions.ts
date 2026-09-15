@@ -11,7 +11,8 @@ export async function moderateReviewAction(formData: FormData) {
   if (status !== "approved" && status !== "rejected") return;
 
   const db = createAdminClient();
-  await db.from("reviews").update({ status }).eq("id", id);
+  const { error } = await db.from("reviews").update({ status }).eq("id", id);
+  if (error) console.error("moderateReviewAction: update failed", error, { id, status });
 
   revalidatePath("/admin");
 }

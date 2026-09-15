@@ -15,11 +15,12 @@ export async function createAccessCodeAction(formData: FormData) {
   const maxUses = Math.max(1, Number(formData.get("maxUses")) || 1);
 
   const db = createAdminClient();
-  await db.from("access_codes").insert({
+  const { error } = await db.from("access_codes").insert({
     code: generateCode(),
     note,
     max_uses: maxUses,
   });
+  if (error) console.error("createAccessCodeAction: insert failed", error);
 
   revalidatePath("/admin/codes");
 }
@@ -28,6 +29,7 @@ export async function deleteAccessCodeAction(formData: FormData) {
   await assertAdminSession();
   const id = formData.get("id") as string;
   const db = createAdminClient();
-  await db.from("access_codes").delete().eq("id", id);
+  const { error } = await db.from("access_codes").delete().eq("id", id);
+  if (error) console.error("deleteAccessCodeAction: delete failed", error, { id });
   revalidatePath("/admin/codes");
 }

@@ -313,6 +313,10 @@ export type Database = {
         Args: Record<string, never>;
         Returns: number;
       };
+      onboarding_funnel_stats: {
+        Args: Record<string, never>;
+        Returns: { step: string | null; viewed_count: number; completed_count: number }[];
+      };
     };
     Enums: {
       contract_type: ContractType;
