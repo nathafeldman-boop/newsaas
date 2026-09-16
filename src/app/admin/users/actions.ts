@@ -11,6 +11,7 @@ import { isPremium } from "@/lib/subscription/isPremium";
 import { FREE_WEEKLY_SWIPE_QUOTA } from "@/lib/subscription/quota";
 import { getStripeClient } from "@/lib/stripe/client";
 import { creditInvoicePayment } from "@/lib/stripe/creditInvoicePayment";
+import { syncSubscriptionToProfile } from "@/lib/stripe/syncSubscription";
 
 // Pas de "export const maxDuration" ici : un fichier "use server" ne peut
 // exporter que des fonctions serveur (async), pas de config de route -- ça
@@ -170,6 +171,72 @@ export async function reconcileAllInvoicesAction() {
   revalidatePath("/admin/premium");
   redirect(
     `/admin/premium?reconcile_checked=${invoicesChecked}&reconcile_recovered=${recoveredCents}&reconcile_failed=${customersFailed}`,
+  );
+}
+
+// Recours pour l'autre moitié du même bug que reconcileAllInvoicesAction :
+// customer.subscription.updated/deleted est un event Stripe À PART de
+// checkout.session.completed, livré sans garantie d'ordre -- s'il arrive
+// en premier, stripe_customer_id n'est pas encore posé sur le profil et
+// l'update de subscription_status ne matche rien. Corrigé pour tout
+// NOUVEL event (voir le retry 409 dans le webhook), mais deux clients
+// confirmés en logs (12 et 13/09) sont restés bloqués sur un statut
+// périmé -- Stripe a déjà marqué ces deliveries "réussies", donc plus
+// aucun retry automatique ne viendra les rattraper. Repart du dernier
+// abonnement connu de chaque client Stripe et rejoue la même synchro
+// idempotente que le webhook.
+export async function reconcileAllSubscriptionsAction() {
+  await assertAdminSession();
+  const admin = createAdminClient();
+  const stripe = getStripeClient();
+
+  const { data: profiles, error: profilesError } = await admin
+    .from("profiles")
+    .select("id, stripe_customer_id")
+    .not("stripe_customer_id", "is", null)
+    .order("id")
+    .limit(5000);
+
+  if (profilesError) {
+    console.error("reconcileAllSubscriptionsAction: query failed", profilesError);
+    redirect("/admin/premium?subreconcile_error=1");
+  }
+
+  let checked = 0;
+  let resynced = 0;
+  let customersFailed = 0;
+
+  for (const profile of profiles ?? []) {
+    const customerId = profile.stripe_customer_id;
+    if (!customerId) continue;
+    try {
+      // Le plus récent créé = l'abonnement qui doit faire foi aujourd'hui
+      // (list() trie par created desc côté Stripe) -- un client n'a en
+      // pratique qu'un seul abonnement Premium à la fois sur ce produit.
+      const subscriptions = await stripe.subscriptions.list({ customer: customerId, limit: 1 });
+      const subscription = subscriptions.data[0];
+      if (!subscription) continue;
+      checked += 1;
+
+      const { matched, error } = await syncSubscriptionToProfile(subscription);
+      if (error) {
+        console.error("reconcileAllSubscriptionsAction: sync failed", error, { customerId });
+      } else if (matched) {
+        resynced += 1;
+      }
+    } catch (stripeError) {
+      customersFailed += 1;
+      console.error("reconcileAllSubscriptionsAction: Stripe fetch failed", stripeError, { customerId });
+    }
+  }
+
+  console.log(
+    `reconcileAllSubscriptionsAction: ${checked} client(s) vérifié(s), ${resynced} resynchronisé(s), ${customersFailed} en échec`,
+  );
+
+  revalidatePath("/admin/premium");
+  redirect(
+    `/admin/premium?subreconcile_checked=${checked}&subreconcile_resynced=${resynced}&subreconcile_failed=${customersFailed}`,
   );
 }
 

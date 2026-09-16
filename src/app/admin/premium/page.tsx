@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import {
   fixMissingLtvAction,
   reconcileAllInvoicesAction,
+  reconcileAllSubscriptionsAction,
   sendIncompletePaymentReminderAction,
   sendWeeklyOfferAnnouncementAction,
 } from "@/app/admin/users/actions";
@@ -40,6 +41,10 @@ export default async function AdminPremiumPage({
     reconcile_recovered?: string;
     reconcile_failed?: string;
     reconcile_error?: string;
+    subreconcile_checked?: string;
+    subreconcile_resynced?: string;
+    subreconcile_failed?: string;
+    subreconcile_error?: string;
   }>;
 }) {
   const {
@@ -49,6 +54,10 @@ export default async function AdminPremiumPage({
     reconcile_recovered: reconcileRecovered,
     reconcile_failed: reconcileFailed,
     reconcile_error: reconcileError,
+    subreconcile_checked: subreconcileChecked,
+    subreconcile_resynced: subreconcileResynced,
+    subreconcile_failed: subreconcileFailed,
+    subreconcile_error: subreconcileError,
   } = await searchParams;
   const admin = createAdminClient();
 
@@ -150,6 +159,54 @@ export default async function AdminPremiumPage({
           crédite tout ce qui manque encore en base (voir la migration 20260913000000 pour la cause
           du trou historique). Sans risque à relancer : une facture déjà correctement créditée n&apos;est
           jamais comptée deux fois.
+        </p>
+        <button type="submit" className="btn btn-secondary" style={{ alignSelf: "flex-start" }}>
+          Lancer la réconciliation
+        </button>
+      </form>
+
+      {subreconcileError !== undefined && (
+        <div
+          className="card"
+          style={{ padding: "var(--space-4)", marginBottom: 12, background: "var(--color-accent-100)" }}
+        >
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>
+            La reconciliation des abonnements a échoué avant de démarrer (voir les logs).
+          </p>
+        </div>
+      )}
+
+      {subreconcileChecked !== undefined && (
+        <div
+          className="card"
+          style={{
+            padding: "var(--space-4)",
+            marginBottom: 12,
+            background: "var(--color-accent-100)",
+            color: "var(--color-accent-700)",
+          }}
+        >
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>
+            {subreconcileChecked} client(s) Stripe vérifié(s), {subreconcileResynced} resynchronisé(s)
+            avec succès
+            {Number(subreconcileFailed) > 0 ? ` — ${subreconcileFailed} client(s) Stripe en échec (voir logs)` : ""}.
+          </p>
+        </div>
+      )}
+
+      <form
+        action={reconcileAllSubscriptionsAction}
+        className="card"
+        style={{ padding: "var(--space-4)", marginBottom: 12, gap: 10 }}
+      >
+        <p style={{ fontWeight: 600, margin: 0, fontSize: 14 }}>Réconcilier le statut d&apos;abonnement avec Stripe</p>
+        <p style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>
+          customer.subscription.updated peut arriver avant checkout.session.completed (ordre non
+          garanti par Stripe) et se perdre en silence si le profil n&apos;a pas encore son
+          stripe_customer_id -- corrigé pour tout nouvel événement, mais des clients déjà touchés
+          avant ce correctif restent avec un statut périmé (payant compté &quot;gratuit&quot;, ou
+          l&apos;inverse). Relit le dernier abonnement Stripe connu de chaque client et le réapplique.
+          Sans risque à relancer.
         </p>
         <button type="submit" className="btn btn-secondary" style={{ alignSelf: "flex-start" }}>
           Lancer la réconciliation

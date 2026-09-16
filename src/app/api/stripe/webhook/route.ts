@@ -8,34 +8,43 @@ import { notifyIncompletePaymentByCustomerId } from "@/lib/stripe/notifyIncomple
 
 export const maxDuration = 30;
 
-async function syncSubscription(subscription: Stripe.Subscription) {
+async function syncSubscription(subscription: Stripe.Subscription): Promise<{ ok: boolean }> {
   const customerId =
     typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
   const { matched, error } = await syncSubscriptionToProfile(subscription);
   // supabase-js ne throw jamais sur une erreur Postgres, et un update qui ne
   // matche aucune ligne (ex: stripe_customer_id pas encore posé sur le
-  // profil au moment où l'event arrive) réussit silencieusement sans rien
-  // modifier -- dans les deux cas, sans ce log, un paiement réel resterait
-  // invisible sur le dashboard admin sans aucune trace pour comprendre
-  // pourquoi (voir la même mésaventure avec la présence "en ligne"). Filet
-  // de secours si malgré tout ce webhook échoue : /premium/success rejoue
-  // la même synchro juste après le paiement (voir ce fichier).
+  // profil au moment où l'event arrive -- customer.subscription.updated est
+  // un event À PART de checkout.session.completed, livré sans garantie
+  // d'ordre entre les deux, exactement le même piège que invoice.paid déjà
+  // corrigé) réussit silencieusement sans rien modifier -- dans les deux
+  // cas, sans ce log, un paiement réel resterait invisible sur le dashboard
+  // admin sans aucune trace pour comprendre pourquoi (voir la même
+  // mésaventure avec la présence "en ligne"). Le filet de secours
+  // /premium/success ne couvre que les visiteurs qui atteignent cette page
+  // (onglet fermé juste après paiement = aucun filet) -- ça ne suffit pas à
+  // soi seul, d'où le retry ci-dessous.
   if (error) {
     console.error("Stripe webhook: syncSubscription update failed", error, { customerId });
-  } else if (!matched) {
+    return { ok: false };
+  }
+  if (!matched) {
     console.error("Stripe webhook: syncSubscription matched no profile", { customerId });
+    return { ok: false };
   }
 
   // Abonnement bloqué en 'incomplete' (3D Secure jamais confirmé, carte
   // refusée au premier essai...) : le client n'est jamais devenu Premium et
   // ne le saura pas tout seul -- on le relance dès qu'on voit ce statut,
   // sans attendre un cron (idempotent, voir notifyIncompletePaymentOnce).
-  if (matched && subscription.status === "incomplete") {
+  if (subscription.status === "incomplete") {
     const { error: notifyError } = await notifyIncompletePaymentByCustomerId(customerId);
     if (notifyError) {
       console.error("Stripe webhook: notifyIncompletePayment failed", notifyError, { customerId });
     }
   }
+
+  return { ok: true };
 }
 
 export async function POST(request: NextRequest) {
@@ -89,15 +98,31 @@ export async function POST(request: NextRequest) {
 
       if (subscriptionId) {
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-        await syncSubscription(subscription);
+        const { ok } = await syncSubscription(subscription);
+        if (!ok) {
+          return NextResponse.json({ error: "Profil pas encore lié, réessaie plus tard." }, { status: 409 });
+        }
       }
       break;
     }
 
     case "customer.subscription.updated":
     case "customer.subscription.deleted": {
+      // customer.subscription.* est livré par Stripe comme un event à part
+      // entière, sans aucune garantie d'ordre par rapport à
+      // checkout.session.completed (même event différent, même paiement) --
+      // s'il arrive en premier, stripe_customer_id n'est pas encore posé sur
+      // le profil et l'update ne matche rien. Répondre autre chose que 200
+      // déclenche le retry automatique de Stripe (jusqu'à 3 jours, avec
+      // backoff) le temps que checkout.session.completed fasse son travail,
+      // au lieu de perdre le vrai statut d'abonnement en silence -- même
+      // correctif que celui déjà appliqué à invoice.paid pour la même
+      // course, qui avait laissé des clients payants comptés "gratuits".
       const subscription = event.data.object as Stripe.Subscription;
-      await syncSubscription(subscription);
+      const { ok } = await syncSubscription(subscription);
+      if (!ok) {
+        return NextResponse.json({ error: "Profil pas encore lié, réessaie plus tard." }, { status: 409 });
+      }
       break;
     }
 
