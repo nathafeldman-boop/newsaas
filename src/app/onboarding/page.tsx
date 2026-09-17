@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
-import { getOnboardingTrustStats } from "@/lib/onboarding/trustStats";
 
 export default async function OnboardingPage() {
   const supabase = await createClient();
@@ -23,12 +22,10 @@ export default async function OnboardingPage() {
     redirect("/swipe");
   }
 
-  const trustStats = await getOnboardingTrustStats();
-
   return (
     <div className="flex flex-1 flex-col px-5 py-6">
       <div className="mx-auto flex w-full max-w-lg flex-1 flex-col">
-        <OnboardingWizard userId={user.id} initialProfile={profile ?? null} trustStats={trustStats} />
+        <OnboardingWizard userId={user.id} initialProfile={profile ?? null} />
       </div>
     </div>
   );
