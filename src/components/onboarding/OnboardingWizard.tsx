@@ -8,6 +8,7 @@ import { ChipMultiSelectWithCustom } from "@/components/ui/ChipMultiSelectWithCu
 import { LocationSearchSelect } from "@/components/ui/LocationSearchSelect";
 import { Highlight } from "@/components/ui/Highlight";
 import type { ContractType, Profile } from "@/types/database";
+import type { OnboardingTrustStats } from "@/lib/onboarding/trustStats";
 import {
   SECTORS,
   SKILLS,
@@ -36,19 +37,43 @@ import { STEP_IDS, STEP_LABELS, type StepId } from "@/lib/onboarding/steps";
 // plutôt que de laisser un compte fonctionner avec des colonnes vides que
 // l'algorithme interprète par défaut de la pire des façons.
 const PROGRESS_STEPS: StepId[] = STEP_IDS.filter(
-  (s) => s !== "intro" && s !== "outro" && s !== "trust",
+  (s) => s !== "intro" && s !== "outro" && s !== "trust" && s !== "impact",
 );
 const SKIPPABLE: StepId[] = ["cv"];
 
-// Écran de réassurance sociale juste après le choix stage/alternance/les
-// deux -- traité comme "intro"/"outro" (pas de chrome, pas de progression
-// dans la barre) puisqu'il ne demande aucune donnée, juste une transition.
+// Écrans de réassurance sociale ("trust" juste après le choix stage/
+// alternance, "impact" après la recherche) -- traités comme "intro"/"outro"
+// (pas de chrome, pas de progression dans la barre) puisqu'ils ne demandent
+// aucune donnée, juste une transition.
 function trustContractLabel(lookingFor: ContractType[]): string {
   const hasAlternance = lookingFor.includes("alternance");
   const hasStage = lookingFor.includes("stage");
   if (hasAlternance && !hasStage) return "leur alternance";
   if (hasStage && !hasAlternance) return "leur stage";
   return "leur alternance ou leur stage";
+}
+
+// Contenu de l'écran "impact" selon la meilleure preuve honnête disponible
+// (voir getOnboardingTrustStats) : jamais de repli sur un chiffre inventé,
+// seulement une formulation différente selon ce qui est réellement vrai
+// aujourd'hui en base.
+function impactContent(stats: OnboardingTrustStats): { icon: string; line: string } {
+  if (stats.outcomeVariant === "hired") {
+    return {
+      icon: "💰",
+      line: "personnes ambitieuses touchent déjà un salaire grâce à une alternance ou un stage décroché sur Stageio",
+    };
+  }
+  if (stats.outcomeVariant === "interview") {
+    return {
+      icon: "🎯",
+      line: "candidats ambitieux sont déjà en entretien grâce à Stageio",
+    };
+  }
+  return {
+    icon: "🔥",
+    line: "personnes utilisent déjà Stageio pour décrocher leur alternance ou leur stage",
+  };
 }
 
 function AnimatedCount({ target, durationMs }: { target: number; durationMs: number }) {
@@ -160,9 +185,11 @@ async function logOnboardingEvent(
 export function OnboardingWizard({
   userId,
   initialProfile,
+  trustStats,
 }: {
   userId: string;
   initialProfile: Profile | null;
+  trustStats: OnboardingTrustStats;
 }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [direction, setDirection] = useState(1);
@@ -333,7 +360,8 @@ export function OnboardingWizard({
   }
 
   const progressIndex = PROGRESS_STEPS.indexOf(stepId);
-  const showChrome = stepId !== "intro" && stepId !== "outro" && stepId !== "trust";
+  const showChrome =
+    stepId !== "intro" && stepId !== "outro" && stepId !== "trust" && stepId !== "impact";
   const skippable = SKIPPABLE.includes(stepId);
 
   return (
@@ -534,7 +562,7 @@ export function OnboardingWizard({
                       letterSpacing: "-0.01em",
                     }}
                   >
-                    +<AnimatedCount target={10000} durationMs={1400} />
+                    +<AnimatedCount target={trustStats.totalUsers} durationMs={1400} />
                   </p>
                   <p style={{ fontSize: 16, fontWeight: 700, margin: "6px 0 0", lineHeight: 1.4, maxWidth: "28ch" }}>
                     personnes nous ont fait confiance pour trouver {trustContractLabel(lookingFor)}
@@ -621,6 +649,71 @@ export function OnboardingWizard({
                   </p>
                   <ChipMultiSelectWithCustom options={SKILLS} value={skills} onChange={setSkills} />
                 </div>
+              </div>
+            )}
+
+            {stepId === "impact" && (
+              <div className="flex flex-1 flex-col px-2" style={{ position: "relative", overflow: "hidden" }}>
+                <div
+                  aria-hidden
+                  style={{
+                    position: "absolute",
+                    top: -50,
+                    right: -50,
+                    width: 170,
+                    height: 170,
+                    borderRadius: "50%",
+                    background: "radial-gradient(circle, color-mix(in srgb, var(--color-accent-2) 25%, transparent), transparent 70%)",
+                    pointerEvents: "none",
+                  }}
+                />
+                <div
+                  className="flex flex-1 flex-col items-center justify-center text-center"
+                  style={{ position: "relative" }}
+                >
+                  <motion.div
+                    initial={{ scale: 0.6, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: "spring", stiffness: 260, damping: 18 }}
+                    style={{ fontSize: 46 }}
+                    aria-hidden
+                  >
+                    {impactContent(trustStats).icon}
+                  </motion.div>
+                  <p
+                    style={{
+                      fontFamily: "var(--font-heading)",
+                      fontSize: 40,
+                      fontWeight: 800,
+                      margin: "16px 0 0",
+                      letterSpacing: "-0.01em",
+                    }}
+                  >
+                    +<AnimatedCount target={trustStats.outcomeCount} durationMs={1400} />
+                  </p>
+                  <p style={{ fontSize: 16, fontWeight: 700, margin: "6px 0 0", lineHeight: 1.4, maxWidth: "30ch" }}>
+                    {impactContent(trustStats).line}
+                  </p>
+                  <motion.p
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5, duration: 0.4 }}
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 700,
+                      margin: "18px 0 0",
+                      padding: "8px 16px",
+                      borderRadius: 999,
+                      background: "var(--color-accent-2-100)",
+                      color: "var(--color-accent-2-800)",
+                    }}
+                  >
+                    🚀 Toi aussi, ça peut être ton tour
+                  </motion.p>
+                </div>
+                <button type="button" onClick={goNext} className="btn btn-primary btn-block">
+                  Continuer
+                </button>
               </div>
             )}
 
