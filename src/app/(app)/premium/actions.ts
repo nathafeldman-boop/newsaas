@@ -42,12 +42,19 @@ export async function createCheckoutSessionAction(formData: FormData) {
   // Stripe correspondante n'est pas configurée, seule l'offre mensuelle
   // (comportement historique, sans ce champ) reste disponible.
   const plan = formData.get("plan");
-  const priceId =
+  const rawPriceId =
     plan === "weekly"
       ? process.env.STRIPE_PRICE_ID_WEEKLY
       : plan === "daily"
         ? process.env.STRIPE_PRICE_ID_DAILY
         : process.env.STRIPE_PRICE_ID;
+  // .trim() : Stripe rejette un ID avec un espace superflu ("No such
+  // price") sans distinguer ça d'un ID réellement invalide -- un simple
+  // copier-coller depuis le dashboard Stripe vers Vercel embarque parfois
+  // un espace en fin de valeur, invisible dans l'interface. Coûte rien de
+  // s'en protéger ici plutôt que de dépendre d'une variable d'env toujours
+  // parfaitement propre.
+  const priceId = rawPriceId?.trim() || undefined;
   if (!priceId) {
     redirect("/premium?error=not_configured");
   }
