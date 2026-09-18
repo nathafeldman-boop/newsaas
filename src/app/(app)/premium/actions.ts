@@ -38,12 +38,16 @@ export async function createCheckoutSessionAction(formData: FormData) {
   if (!user) redirect("/login?next=/premium");
 
   // "plan" est posé par un input hidden dans chaque carte de prix (voir
-  // /premium) -- weekly reste optionnel : tant que STRIPE_PRICE_ID_WEEKLY
-  // n'est pas configuré, seule l'offre mensuelle (comportement historique,
-  // sans ce champ) reste disponible.
+  // /premium) -- weekly/daily restent optionnels : tant que leur variable
+  // Stripe correspondante n'est pas configurée, seule l'offre mensuelle
+  // (comportement historique, sans ce champ) reste disponible.
   const plan = formData.get("plan");
   const priceId =
-    plan === "weekly" ? process.env.STRIPE_PRICE_ID_WEEKLY : process.env.STRIPE_PRICE_ID;
+    plan === "weekly"
+      ? process.env.STRIPE_PRICE_ID_WEEKLY
+      : plan === "daily"
+        ? process.env.STRIPE_PRICE_ID_DAILY
+        : process.env.STRIPE_PRICE_ID;
   if (!priceId) {
     redirect("/premium?error=not_configured");
   }

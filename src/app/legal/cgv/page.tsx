@@ -30,15 +30,22 @@ export default function CGVPage() {
       </Section>
 
       <Section title="Prix">
-        <p>
-          L&apos;abonnement Premium est facturé <strong>7,99&nbsp;€ / mois</strong>
+        <p>L&apos;abonnement Premium est proposé selon trois formules, au choix :</p>
+        <ul style={{ margin: "8px 0 0", paddingLeft: 20 }}>
+          <li><strong>7,99&nbsp;€ / mois</strong>, renouvelable automatiquement chaque mois ;</li>
+          <li><strong>3,99&nbsp;€ / semaine</strong>, renouvelable automatiquement chaque semaine ;</li>
+          <li><strong>1,50&nbsp;€ / jour</strong>, renouvelable automatiquement chaque jour.</li>
+        </ul>
+        <p style={{ marginTop: 8 }}>
           {" "}
-          <ToComplete>TVA applicable (7,99&nbsp;€ TTC) ou &laquo; TVA non applicable, art. 293 B du CGI &raquo; selon ton statut fiscal — à préciser</ToComplete>
-          , sans engagement de durée. Le prix affiché au moment de la
-          souscription est celui applicable ; Stageio se réserve le droit
-          de faire évoluer ses tarifs pour les nouveaux abonnements, sans
-          effet rétroactif sur un abonnement déjà en cours tant qu&apos;il
-          n&apos;est pas renouvelé à un tarif modifié notifié au préalable.
+          <ToComplete>TVA applicable (montants ci-dessus TTC) ou &laquo; TVA non applicable, art. 293 B du CGI &raquo; selon ton statut fiscal — à préciser</ToComplete>
+          . Ces trois formules donnent accès aux mêmes avantages Premium, sans
+          engagement de durée : seule la fréquence de facturation change. Le
+          prix affiché au moment de la souscription est celui applicable ;
+          Stageio se réserve le droit de faire évoluer ses tarifs pour les
+          nouveaux abonnements, sans effet rétroactif sur un abonnement déjà
+          en cours tant qu&apos;il n&apos;est pas renouvelé à un tarif
+          modifié notifié au préalable.
         </p>
       </Section>
 
@@ -47,9 +54,11 @@ export default function CGVPage() {
           Le paiement s&apos;effectue par carte bancaire, via notre
           prestataire de paiement sécurisé Stripe. Stageio ne stocke à
           aucun moment ton numéro de carte bancaire. L&apos;abonnement est à
-          <strong> renouvellement automatique mensuel</strong> : le montant
-          est prélevé chaque mois à la date anniversaire de la
-          souscription, tant que l&apos;abonnement n&apos;a pas été résilié.
+          <strong> renouvellement automatique</strong>, selon la fréquence de
+          la formule choisie (mensuelle, hebdomadaire ou quotidienne) : le
+          montant correspondant est prélevé à chaque échéance, à la date
+          anniversaire de la souscription, tant que l&apos;abonnement
+          n&apos;a pas été résilié.
         </p>
       </Section>
 

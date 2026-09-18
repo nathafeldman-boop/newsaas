@@ -200,31 +200,6 @@ export default async function PremiumPage({
               </div>
             )}
 
-            {/* Bandeau temporaire (rentrée) : une hausse de prix est prévue
-                prochainement, ceci annonce honnêtement que le tarif actuel
-                ne tient qu'un temps limité -- jamais de faux prix barré
-                ("avant/après" jamais réellement pratiqué), ce qui serait
-                interdit (arrêté du 11 mars 2015 sur les annonces de
-                réduction de prix). À retirer quand la hausse sera actée. */}
-            <div
-              className="animate-in flex items-center gap-2"
-              style={{
-                background: "var(--color-accent-2-100)",
-                border: "1px solid var(--color-accent-2-300)",
-                borderRadius: 12,
-                padding: "9px 12px",
-                marginBottom: 14,
-              }}
-            >
-              <span aria-hidden style={{ fontSize: 16, lineHeight: 1 }}>
-                🎒
-              </span>
-              <div style={{ fontSize: 12, lineHeight: 1.4, color: "var(--color-accent-2-800)" }}>
-                <strong>Offre spéciale rentrée</strong> — tarifs actuels garantis encore 1 mois,
-                augmentation prévue ensuite.
-              </div>
-            </div>
-
             <span
               className="tag animate-in"
               style={{
@@ -327,7 +302,7 @@ export default async function PremiumPage({
                   Formule hebdomadaire
                 </div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 6 }}>
-                  <span style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.02em" }}>3,50 €</span>
+                  <span style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.02em" }}>3,99 €</span>
                   <span style={{ fontSize: 13.5, fontWeight: 500, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
                     / semaine
                   </span>
@@ -351,6 +326,50 @@ export default async function PremiumPage({
                     }}
                   >
                     Choisir l&apos;hebdomadaire
+                  </button>
+                </form>
+              </div>
+            )}
+
+            {process.env.STRIPE_PRICE_ID_DAILY && (
+              <div
+                className="animate-in"
+                style={{
+                  marginTop: 12,
+                  background: "var(--color-surface)",
+                  borderRadius: 20,
+                  border: "1.5px solid var(--color-divider)",
+                  padding: 20,
+                }}
+              >
+                <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: "0.06em", color: "color-mix(in srgb, var(--color-text) 55%, transparent)", textTransform: "uppercase" }}>
+                  Formule quotidienne
+                </div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 6 }}>
+                  <span style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.02em" }}>1,50 €</span>
+                  <span style={{ fontSize: 13.5, fontWeight: 500, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+                    / jour
+                  </span>
+                </div>
+                <div style={{ fontSize: 12, marginTop: 4, marginBottom: 14, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+                  Pour débloquer Premium juste le temps d&apos;une candidature aujourd&apos;hui.
+                </div>
+                <form action={createCheckoutSessionAction}>
+                  <input type="hidden" name="plan" value="daily" />
+                  <button
+                    type="submit"
+                    className="btn btn-block"
+                    style={{
+                      height: 46,
+                      border: "1.5px solid var(--color-accent)",
+                      borderRadius: 999,
+                      background: "transparent",
+                      color: "var(--color-accent-700)",
+                      fontSize: 14,
+                      fontWeight: 700,
+                    }}
+                  >
+                    Choisir le quotidien
                   </button>
                 </form>
               </div>
