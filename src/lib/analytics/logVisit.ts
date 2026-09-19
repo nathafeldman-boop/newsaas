@@ -5,7 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 // pas de bloquer quoi que ce soit (ce fichier n'écrit jamais rien qui
 // affecte la réponse HTTP réelle -- voir l'appel via event.waitUntil dans
 // proxy.ts).
-const BOT_UA_PATTERN =
+export const BOT_UA_PATTERN =
   /bot|crawl|spider|slurp|facebookexternalhit|pingdom|uptimerobot|monitor|headlesschrome/i;
 
 export async function logVisit(

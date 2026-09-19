@@ -20,21 +20,29 @@ export default async function AdminAffiliatesPage() {
   const userIds = rows.map((a) => a.user_id);
   const affiliateIds = rows.map((a) => a.id);
 
-  const [{ data: profiles, error: profilesError }, { data: commissions, error: commissionsError }] =
-    await Promise.all([
-      userIds.length
-        ? admin.from("profiles").select("id, email, full_name").in("id", userIds)
-        : Promise.resolve({ data: [] as { id: string; email: string | null; full_name: string | null }[], error: null }),
-      affiliateIds.length
-        ? admin
-            .from("affiliate_commissions")
-            .select("affiliate_id, commission_cents, status")
-            .in("affiliate_id", affiliateIds)
-            .limit(5000)
-        : Promise.resolve({ data: [] as { affiliate_id: string; commission_cents: number; status: string }[], error: null }),
-    ]);
+  const [
+    { data: profiles, error: profilesError },
+    { data: commissions, error: commissionsError },
+    { data: clicks, error: clicksError },
+  ] = await Promise.all([
+    userIds.length
+      ? admin.from("profiles").select("id, email, full_name").in("id", userIds)
+      : Promise.resolve({ data: [] as { id: string; email: string | null; full_name: string | null }[], error: null }),
+    affiliateIds.length
+      ? admin
+          .from("affiliate_commissions")
+          .select("affiliate_id, commission_cents, status")
+          .in("affiliate_id", affiliateIds)
+          .limit(5000)
+      : Promise.resolve({ data: [] as { affiliate_id: string; commission_cents: number; status: string }[], error: null }),
+    // Bornée par prudence (voir l'audit du 15/09), même logique que /affilies.
+    affiliateIds.length
+      ? admin.from("affiliate_clicks").select("affiliate_id, visitor_id").in("affiliate_id", affiliateIds).limit(5000)
+      : Promise.resolve({ data: [] as { affiliate_id: string; visitor_id: string }[], error: null }),
+  ]);
   if (profilesError) console.error("AdminAffiliatesPage: profiles query failed", profilesError);
   if (commissionsError) console.error("AdminAffiliatesPage: commissions query failed", commissionsError);
+  if (clicksError) console.error("AdminAffiliatesPage: clicks query failed", clicksError);
 
   const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
   const totalsByAffiliate = new Map<string, { pendingCents: number; paidCents: number }>();
@@ -43,6 +51,13 @@ export default async function AdminAffiliatesPage() {
     if (c.status === "paid") entry.paidCents += c.commission_cents;
     else entry.pendingCents += c.commission_cents;
     totalsByAffiliate.set(c.affiliate_id, entry);
+  }
+  const clicksByAffiliate = new Map<string, { total: number; visitors: Set<string> }>();
+  for (const c of clicks ?? []) {
+    const entry = clicksByAffiliate.get(c.affiliate_id) ?? { total: 0, visitors: new Set<string>() };
+    entry.total += 1;
+    entry.visitors.add(c.visitor_id);
+    clicksByAffiliate.set(c.affiliate_id, entry);
   }
 
   const pending = rows.filter((a) => a.status === "pending");
@@ -101,6 +116,7 @@ export default async function AdminAffiliatesPage() {
           {approved.map((a) => {
             const profile = profileById.get(a.user_id);
             const totals = totalsByAffiliate.get(a.id) ?? { pendingCents: 0, paidCents: 0 };
+            const clickStats = clicksByAffiliate.get(a.id);
             return (
               <div key={a.id} className="card" style={{ padding: "var(--space-4)" }}>
                 <div className="flex items-center justify-between gap-3">
@@ -112,7 +128,18 @@ export default async function AdminAffiliatesPage() {
                   </div>
                   <span className="tag tag-accent" style={{ flexShrink: 0 }}>Approuvé</span>
                 </div>
-                <div className="mt-3 grid grid-cols-2 gap-2.5">
+                <div className="mt-3 grid grid-cols-3 gap-2.5">
+                  <div>
+                    <p style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.04em", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>
+                      Clics
+                    </p>
+                    <p style={{ fontSize: 15, fontFamily: "var(--font-heading)", margin: "2px 0 0" }}>
+                      {clickStats?.total ?? 0}{" "}
+                      <span style={{ fontSize: 11, fontFamily: "inherit", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+                        ({clickStats?.visitors.size ?? 0} uniques)
+                      </span>
+                    </p>
+                  </div>
                   <div>
                     <p style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.04em", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>
                       À payer

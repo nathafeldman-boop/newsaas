@@ -118,16 +118,22 @@ export default async function AffiliesPage({
   // Approuvé : tableau de bord complet.
   const affiliateLink = `${origin}/inscription?aff=${affiliate.code}`;
 
-  const [{ count: referredCount }, { data: commissions }] = await Promise.all([
-    supabase.from("profiles").select("id", { count: "exact", head: true }).eq("affiliate_id", affiliate.id),
-    supabase
-      .from("affiliate_commissions")
-      .select("*")
-      .eq("affiliate_id", affiliate.id)
-      .order("created_at", { ascending: false })
-      .limit(200),
-  ]);
+  const [{ count: clickCount }, { data: clickVisitors }, { count: referredCount }, { data: commissions }] =
+    await Promise.all([
+      supabase.from("affiliate_clicks").select("id", { count: "exact", head: true }).eq("affiliate_id", affiliate.id),
+      // Bornée par prudence (voir l'audit du 15/09) : largement au-dessus du
+      // volume réel qu'un seul affilié peut générer.
+      supabase.from("affiliate_clicks").select("visitor_id").eq("affiliate_id", affiliate.id).limit(5000),
+      supabase.from("profiles").select("id", { count: "exact", head: true }).eq("affiliate_id", affiliate.id),
+      supabase
+        .from("affiliate_commissions")
+        .select("*")
+        .eq("affiliate_id", affiliate.id)
+        .order("created_at", { ascending: false })
+        .limit(200),
+    ]);
 
+  const uniqueVisitors = new Set((clickVisitors ?? []).map((c) => c.visitor_id)).size;
   const allCommissions = commissions ?? [];
   const pendingCents = allCommissions.filter((c) => c.status === "pending").reduce((sum, c) => sum + c.commission_cents, 0);
   const paidCents = allCommissions.filter((c) => c.status === "paid").reduce((sum, c) => sum + c.commission_cents, 0);
@@ -143,13 +149,25 @@ export default async function AffiliesPage({
         <ReferralLinkCard referralLink={affiliateLink} code={affiliate.code} />
       </div>
 
-      <div className="mt-5 grid grid-cols-3 gap-3">
+      <p style={{ fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)", margin: "20px 0 8px" }}>
+        Ton entonnoir
+      </p>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="card" style={{ textAlign: "center", padding: "var(--space-4)" }}>
+          <p style={{ fontFamily: "var(--font-heading)", fontSize: 22, margin: 0 }}>{clickCount ?? 0}</p>
+          <p style={{ fontSize: 10.5, letterSpacing: "0.04em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 65%, transparent)", margin: "4px 0 0" }}>
+            Clics ({uniqueVisitors} uniques)
+          </p>
+        </div>
         <div className="card" style={{ textAlign: "center", padding: "var(--space-4)" }}>
           <p style={{ fontFamily: "var(--font-heading)", fontSize: 22, margin: 0 }}>{referredCount ?? 0}</p>
           <p style={{ fontSize: 10.5, letterSpacing: "0.04em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 65%, transparent)", margin: "4px 0 0" }}>
             Inscrits
           </p>
         </div>
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-3">
         <div className="card" style={{ textAlign: "center", padding: "var(--space-4)" }}>
           <p style={{ fontFamily: "var(--font-heading)", fontSize: 22, margin: 0, color: "var(--color-accent-700)" }}>
             {(pendingCents / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €

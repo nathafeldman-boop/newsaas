@@ -220,6 +220,13 @@ export type AffiliateCommission = {
   paid_at: string | null;
 };
 
+export type AffiliateClick = {
+  id: string;
+  affiliate_id: string;
+  visitor_id: string;
+  created_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -283,6 +290,12 @@ export type Database = {
           plan_interval: string;
         };
         Update: Partial<AffiliateCommission>;
+        Relationships: [];
+      };
+      affiliate_clicks: {
+        Row: AffiliateClick;
+        Insert: Partial<AffiliateClick> & { affiliate_id: string; visitor_id: string };
+        Update: Partial<AffiliateClick>;
         Relationships: [];
       };
       email_connections: {

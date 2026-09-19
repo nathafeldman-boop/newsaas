@@ -1,6 +1,7 @@
 import { type NextFetchEvent, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 import { logVisit } from "@/lib/analytics/logVisit";
+import { logAffiliateClick } from "@/lib/affiliates/logAffiliateClick";
 
 const VISITOR_COOKIE = "sid";
 const VISITOR_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 an
@@ -30,6 +31,17 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
   event.waitUntil(
     logVisit(visitorId, request.nextUrl.pathname, request.headers.get("user-agent")),
   );
+
+  // Clic sur un lien d'affiliation (?aff=CODE) -- avant même l'inscription,
+  // donc capturé ici plutôt que côté formulaire : fonctionne même si la
+  // personne quitte sans jamais s'inscrire, ce qui est justement ce qu'un
+  // affilié veut pouvoir mesurer (clics vs inscriptions réelles).
+  const affCode = request.nextUrl.searchParams.get("aff");
+  if (affCode) {
+    event.waitUntil(
+      logAffiliateClick(visitorId, affCode, request.headers.get("user-agent")),
+    );
+  }
 
   return response;
 }
