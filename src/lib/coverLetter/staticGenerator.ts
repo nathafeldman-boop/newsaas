@@ -13,17 +13,38 @@ import type { Offer, Profile } from "@/types/database";
 // Architecture par blocs combinables (accroche / paragraphe de fit /
 // réalisation / pourquoi cette entreprise / formule de politesse) plutôt que
 // des lettres entières pré-écrites : quelques dizaines de blocs courts par
-// famille suffisent à produire, une fois combinés, plusieurs milliers de
-// lettres réellement différentes -- une variété honnête (vraie combinatoire,
-// pas un chiffre gonflé) sans avoir à rédiger des centaines de lettres
-// complètes.
+// famille suffisent à produire, une fois combinés, plusieurs centaines de
+// milliers de lettres réellement différentes -- une variété honnête (vraie
+// combinatoire, pas un chiffre gonflé) sans avoir à rédiger des centaines de
+// lettres complètes.
+//
+// "Analyse de profil" sans IA : plutôt qu'un simple bloc "compétence
+// trouvée / pas trouvée", la sélection croise plusieurs signaux profil x
+// offre (voir generateStaticCoverLetter) --
+//   - toutes les compétences du profil présentes dans l'offre sont
+//     recherchées (pas seulement la première) : deux compétences trouvées
+//     déclenchent un paragraphe dédié qui les cite ensemble (fitWithTwoSkills),
+//     plus convaincant qu'un paragraphe à une seule compétence ;
+//   - le métier visé (profile.target_jobs) est comparé au titre de l'offre :
+//     une correspondance ajoute un paragraphe dédié (targetJobLines) ;
+//   - la famille de contenu (le "ton" de la lettre) est choisie par le
+//     secteur de l'OFFRE en priorité (offer.sector), et seulement à défaut
+//     par le secteur déclaré du profil -- une offre "Marketing" chez un
+//     candidat qui a coché plusieurs secteurs doit parler marketing, pas le
+//     premier secteur coché à l'onboarding.
+// Rien de tout ça n'est de l'IA générative : c'est de la correspondance de
+// mots-clés déterministe (containsWholeWord), mais le résultat perçu -- une
+// lettre qui semble "avoir compris" le profil et l'offre -- est le même.
 
 export type CoverLetterExtra = {
   achievement?: string;
   whyCompany?: string;
 };
 
-type OfferInput = Pick<Offer, "title" | "company" | "description" | "requirements" | "contract_type">;
+type OfferInput = Pick<
+  Offer,
+  "title" | "company" | "description" | "requirements" | "contract_type" | "sector"
+>;
 type ProfileInput = Pick<
   Profile,
   "full_name" | "city" | "skills" | "sectors" | "target_jobs" | "education_level" | "formation" | "experience_level"
@@ -183,7 +204,9 @@ function containsWholeWord(haystack: string, needle: string): boolean {
 type FamilyContent = {
   openers: string[];
   fitWithSkill: string[];
+  fitWithTwoSkills: string[];
   fitFallback: string[];
+  targetJobLines: string[];
   achievementLines: string[];
   whyCompanyLines: string[];
   closings: string[];
@@ -273,6 +296,11 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "C'est en tombant sur votre offre de {{poste}} en {{contrat}} que j'ai immédiatement pensé que {{entreprise}} correspondait à ce que je cherche.",
       "Autodidacte et méthodique, je candidate avec conviction au poste de {{poste}} en {{contrat}} chez {{entreprise}}.",
       "Je vous écris pour candidater au poste de {{poste}} en {{contrat}} : {{entreprise}} est exactement le type de structure technique où je veux apprendre.",
+      "En quête d'un poste technique formateur, j'ai repéré votre offre de {{poste}} en {{contrat}} chez {{entreprise}} avec un vrai intérêt.",
+      "Votre offre de {{poste}} en {{contrat}} chez {{entreprise}} a tout de suite capté mon attention par son exigence technique.",
+      "Je candidate au poste de {{poste}} en {{contrat}} chez {{entreprise}}, avec l'envie de progresser sur des sujets techniques concrets.",
+      "Attentif(ve) aux offres techniques exigeantes, j'ai repéré chez {{entreprise}} le poste de {{poste}} en {{contrat}} avec intérêt.",
+      "Votre poste de {{poste}} en {{contrat}} chez {{entreprise}} correspond exactement au cadre technique dans lequel je veux progresser.",
     ],
     fitWithSkill: [
       "Votre offre mentionne {{skill}}, une compétence que j'ai développée concrètement et que je saurais mobiliser rapidement sur vos projets.",
@@ -285,6 +313,17 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "{{skill}} fait partie des compétences que je continue à approfondir activement, et qui correspond exactement à votre besoin.",
       "Je me suis formé(e) sérieusement à {{skill}}, un point clé de votre offre que je saurais mobiliser dès mon arrivée.",
       "Votre besoin en {{skill}} rejoint précisément ce sur quoi je me suis entraîné(e) ces derniers mois.",
+      "{{skill}} est une compétence sur laquelle je continue de progresser activement, en écho direct à votre offre.",
+      "J'ai mis {{skill}} en pratique sur plusieurs projets techniques, ce qui correspond bien à votre besoin.",
+      "Votre offre valorise {{skill}}, une compétence que je pratique avec plaisir et que je continue d'approfondir.",
+    ],
+    fitWithTwoSkills: [
+      "Votre offre associe {{skill}} et {{skill2}} : deux compétences que j'ai déjà pratiquées ensemble sur des projets concrets.",
+      "Je maîtrise à la fois {{skill}} et {{skill2}}, exactement la combinaison technique que recherche ce poste.",
+      "Entre {{skill}} et {{skill2}}, votre offre recoupe directement deux compétences sur lesquelles j'ai une vraie pratique.",
+      "J'ai eu l'occasion de combiner {{skill}} et {{skill2}} sur des projets réels, ce qui correspond précisément à votre besoin.",
+      "{{skill}} comme {{skill2}} font partie des compétences que je maîtrise le mieux, toutes deux mentionnées dans votre offre.",
+      "Votre offre demande {{skill}} et {{skill2}} : deux points sur lesquels je peux être rapidement opérationnel(le).",
     ],
     fitFallback: [
       "Ma formation ({{formation}}) m'a donné une base technique solide que je suis prêt à mettre au service de vos équipes dès le premier jour.",
@@ -295,6 +334,16 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Ma formation ({{formation}}) m'a surtout appris à apprendre vite, une qualité essentielle pour m'adapter rapidement à vos outils et méthodes.",
       "Issu(e) d'une formation en {{formation}}, je suis à l'aise pour monter en compétence rapidement sur de nouveaux sujets techniques.",
       "Ma formation ({{formation}}) a été l'occasion de développer une vraie logique de résolution de problèmes, transposable à ce poste.",
+      "Ma formation ({{formation}}) reste ma meilleure base technique, et je compte l'approfondir concrètement chez {{entreprise}}.",
+      "Ma formation ({{formation}}) m'a surtout donné l'habitude de tester, me tromper et recommencer jusqu'à trouver la bonne solution.",
+      "Ma formation ({{formation}}) m'a permis de développer une vraie autonomie face à des problèmes techniques nouveaux.",
+    ],
+    targetJobLines: [
+      "{{poste}} correspond en plus exactement au métier de {{targetJob}} que je vise depuis le début de mes recherches.",
+      "C'est justement le poste de {{targetJob}} que je cible activement, et votre offre y correspond parfaitement.",
+      "Devenir {{targetJob}} est mon objectif précis, et ce poste chez {{entreprise}} en est une parfaite illustration.",
+      "Je me projette précisément sur un poste de {{targetJob}}, ce qui rend votre offre particulièrement pertinente pour moi.",
+      "{{targetJob}} est le métier que je vise en priorité, et votre annonce technique correspond exactement à cette ambition.",
     ],
     achievementLines: [
       "Pour vous donner un exemple concret : {{achievement}}",
@@ -305,6 +354,9 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Cela illustre bien ma façon de travailler : {{achievement}}",
       "Un projet représentatif de mon approche technique : {{achievement}}",
       "Concrètement, {{achievement}}",
+      "Voici un exemple technique qui résume bien mon approche : {{achievement}}",
+      "J'aime citer cet exemple pour illustrer ma rigueur technique : {{achievement}}",
+      "Une situation technique qui me représente bien : {{achievement}}",
     ],
     whyCompanyLines: [
       "{{entreprise}} m'intéresse en particulier parce que {{whyCompany}}",
@@ -315,6 +367,9 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "{{entreprise}} correspond à l'environnement technique que je recherche, notamment parce que {{whyCompany}}",
       "Ce qui me donne envie de rejoindre {{entreprise}} : {{whyCompany}}",
       "Je m'intéresse de près à {{entreprise}}, en particulier parce que {{whyCompany}}",
+      "Vos choix techniques m'inspirent particulièrement : {{whyCompany}}",
+      "Je suis attentivement ce que fait {{entreprise}} sur le plan technique, notamment parce que {{whyCompany}}",
+      "{{entreprise}} incarne le type de rigueur technique que je recherche, notamment parce que {{whyCompany}}",
     ],
     closings: [
       "Je serais ravi(e) d'échanger avec vous pour vous présenter plus en détail ma motivation et mes compétences techniques.",
@@ -327,6 +382,11 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Je serais très heureux(se) de pouvoir échanger avec votre équipe technique sur mes compétences et ma motivation.",
       "N'hésitez pas à me contacter pour organiser un entretien ou un test technique, je reste disponible rapidement.",
       "Je me tiens à votre disposition pour toute question technique complémentaire.",
+      "Je reste disponible pour un entretien technique ou un test de code, selon ce qui vous conviendra le mieux.",
+      "Je serais ravi(e) d'approfondir avec vous les aspects techniques de ce poste lors d'un entretien.",
+      "N'hésitez pas à me proposer un test technique, je reste disponible rapidement pour le réaliser.",
+      "Je reste à votre disposition pour un échange technique, à l'oral ou via un exercice pratique.",
+      "Curieux(se) d'en apprendre plus sur vos projets techniques, je reste disponible pour un entretien rapidement.",
     ],
   },
 
@@ -344,6 +404,11 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Orienté(e) objectifs et à l'aise avec les chiffres, je candidate avec conviction au poste de {{poste}} en {{contrat}} chez {{entreprise}}.",
       "Je vous adresse ma candidature pour le poste de {{poste}} en {{contrat}} : {{entreprise}} correspond exactement à l'environnement business que je recherche.",
       "C'est avec ambition que je candidate au poste de {{poste}} en {{contrat}} chez {{entreprise}}, une entreprise dont je partage les valeurs.",
+      "Convaincu(e) que ce poste correspond à mon projet, j'ai repéré votre offre de {{poste}} en {{contrat}} chez {{entreprise}} avec un vrai intérêt.",
+      "Votre offre de {{poste}} en {{contrat}} chez {{entreprise}} correspond précisément à l'environnement business exigeant que je recherche.",
+      "Je candidate au poste de {{poste}} en {{contrat}} chez {{entreprise}}, avec l'envie de contribuer concrètement à vos résultats.",
+      "Attentif(ve) aux opportunités commerciales stimulantes, j'ai repéré chez {{entreprise}} le poste de {{poste}} en {{contrat}} avec intérêt.",
+      "Votre poste de {{poste}} en {{contrat}} chez {{entreprise}} correspond exactement au niveau d'ambition commerciale que je recherche.",
     ],
     fitWithSkill: [
       "Votre offre demande {{skill}} : c'est une compétence que j'ai déjà mise en pratique et que je sais transformer en résultats concrets.",
@@ -356,6 +421,17 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "J'ai déjà généré des résultats concrets grâce à {{skill}}, un point sur lequel je peux rapidement être utile à votre équipe.",
       "Votre besoin en {{skill}} correspond précisément à ce que j'ai pratiqué dans mes précédentes expériences.",
       "Je me suis particulièrement investi(e) sur {{skill}}, une compétence directement transposable à vos enjeux commerciaux.",
+      "{{skill}} est une compétence sur laquelle je continue de progresser activement, en écho direct à votre offre.",
+      "J'ai mis {{skill}} en pratique pour atteindre des objectifs concrets, ce qui correspond bien à votre besoin.",
+      "Votre offre valorise {{skill}}, une compétence que je pratique avec plaisir et que je continue d'approfondir.",
+    ],
+    fitWithTwoSkills: [
+      "Votre offre associe {{skill}} et {{skill2}} : deux compétences que j'ai déjà mises en pratique ensemble sur le terrain commercial.",
+      "Je maîtrise à la fois {{skill}} et {{skill2}}, exactement la combinaison que recherche ce poste.",
+      "Entre {{skill}} et {{skill2}}, votre offre recoupe directement deux compétences sur lesquelles j'ai déjà des résultats concrets.",
+      "J'ai eu l'occasion de combiner {{skill}} et {{skill2}} pour atteindre mes objectifs, ce qui correspond précisément à votre besoin.",
+      "{{skill}} comme {{skill2}} font partie des compétences que je maîtrise le mieux, toutes deux mentionnées dans votre offre.",
+      "Votre offre demande {{skill}} et {{skill2}} : deux points sur lesquels je peux être rapidement productif(ve).",
     ],
     fitFallback: [
       "Ma formation ({{formation}}) m'a apporté une vraie culture du résultat, un atout que je compte mettre au service de {{entreprise}}.",
@@ -366,6 +442,16 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Issu(e) d'une formation en {{formation}}, j'ai développé une vraie capacité à convaincre et à argumenter avec méthode.",
       "Mon parcours en {{formation}} m'a habitué(e) à travailler avec des objectifs chiffrés à atteindre.",
       "Ma formation ({{formation}}) a renforcé mon sens de l'écoute client, une qualité essentielle pour ce type de poste.",
+      "Ma formation ({{formation}}) reste ma meilleure base commerciale, et je compte l'approfondir concrètement chez {{entreprise}}.",
+      "Ma formation ({{formation}}) m'a surtout appris à ne jamais lâcher un objectif avant de l'avoir atteint.",
+      "Ma formation ({{formation}}) m'a permis de développer une vraie aisance relationnelle, essentielle pour ce type de poste.",
+    ],
+    targetJobLines: [
+      "{{poste}} correspond en plus exactement au métier de {{targetJob}} que je vise depuis le début de mes recherches.",
+      "C'est justement le poste de {{targetJob}} que je cible activement, et votre offre y correspond parfaitement.",
+      "Devenir {{targetJob}} est mon objectif précis, et ce poste chez {{entreprise}} en est une parfaite illustration.",
+      "Je me projette précisément sur un poste de {{targetJob}}, ce qui rend votre offre particulièrement pertinente pour moi.",
+      "{{targetJob}} est le métier que je vise en priorité, et votre annonce commerciale correspond exactement à cette ambition.",
     ],
     achievementLines: [
       "Pour donner un exemple concret : {{achievement}}",
@@ -376,6 +462,9 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Concrètement, {{achievement}}",
       "Un résultat dont je suis particulièrement fier(ère) : {{achievement}}",
       "Cela s'illustre bien par cette expérience : {{achievement}}",
+      "Voici un exemple qui résume bien mon sens du résultat : {{achievement}}",
+      "J'aime citer cet exemple pour illustrer ma détermination : {{achievement}}",
+      "Une situation commerciale qui me représente bien : {{achievement}}",
     ],
     whyCompanyLines: [
       "{{entreprise}} m'attire particulièrement parce que {{whyCompany}}",
@@ -386,6 +475,9 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "{{entreprise}} correspond à l'environnement business que je recherche, notamment parce que {{whyCompany}}",
       "Ce qui me donne envie de rejoindre {{entreprise}} : {{whyCompany}}",
       "Je m'intéresse de près à {{entreprise}}, en particulier parce que {{whyCompany}}",
+      "Votre stratégie commerciale m'inspire particulièrement : {{whyCompany}}",
+      "Je suis attentivement ce que fait {{entreprise}} sur son marché, notamment parce que {{whyCompany}}",
+      "{{entreprise}} incarne le type d'ambition commerciale que je recherche, notamment parce que {{whyCompany}}",
     ],
     closings: [
       "Je serais heureux(se) de vous rencontrer pour discuter de ma motivation et de ce que je peux apporter à votre équipe.",
@@ -398,6 +490,11 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Je serais très heureux(se) de pouvoir échanger avec vous sur mes objectifs et ma motivation commerciale.",
       "N'hésitez pas à me solliciter pour organiser un entretien, je reste disponible rapidement.",
       "Je me tiens à votre disposition pour toute question complémentaire sur mon profil.",
+      "Je reste disponible pour un entretien commercial ou une mise en situation, selon ce qui vous conviendra le mieux.",
+      "Je serais ravi(e) d'approfondir avec vous ma stratégie commerciale lors d'un entretien.",
+      "N'hésitez pas à me proposer un cas pratique, je reste disponible rapidement pour le réaliser.",
+      "Je reste à votre disposition pour un échange sur mes objectifs, à l'oral ou via une mise en situation.",
+      "Motivé(e) à l'idée de contribuer à vos résultats, je reste disponible pour un entretien rapidement.",
     ],
   },
 
@@ -415,6 +512,11 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Consciencieux(se) et fiable, je candidate avec sérieux au poste de {{poste}} en {{contrat}} chez {{entreprise}}.",
       "Je vous adresse ma candidature avec conviction pour le poste de {{poste}} en {{contrat}} : {{entreprise}} correspond à l'environnement rigoureux que je recherche.",
       "C'est avec un vrai respect pour le cadre institutionnel que je candidate au poste de {{poste}} en {{contrat}} chez {{entreprise}}.",
+      "Rigoureux(se) dans mon approche, j'ai repéré votre offre de {{poste}} en {{contrat}} chez {{entreprise}} avec un vrai intérêt.",
+      "Votre offre de {{poste}} en {{contrat}} chez {{entreprise}} correspond précisément au cadre structuré que je recherche.",
+      "Je candidate au poste de {{poste}} en {{contrat}} chez {{entreprise}}, avec l'envie de m'investir dans un cadre exigeant.",
+      "Attentif(ve) aux missions administratives précises, j'ai repéré chez {{entreprise}} le poste de {{poste}} en {{contrat}} avec intérêt.",
+      "Votre poste de {{poste}} en {{contrat}} chez {{entreprise}} correspond exactement au niveau de rigueur que je recherche.",
     ],
     fitWithSkill: [
       "Votre offre mentionne {{skill}}, une compétence que j'ai développée et que je saurais appliquer avec la rigueur attendue sur ce type de poste.",
@@ -427,6 +529,17 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "J'ai déjà mobilisé {{skill}} dans un contexte réglementé, ce qui me permettrait d'être rapidement fiable sur ce poste.",
       "Votre besoin en {{skill}} correspond précisément à ce que j'ai pratiqué avec rigueur par le passé.",
       "Je me suis particulièrement formé(e) à {{skill}}, une compétence directement utile aux missions décrites.",
+      "{{skill}} est une compétence sur laquelle je continue de progresser avec sérieux, en écho direct à votre offre.",
+      "J'ai mis {{skill}} en pratique dans un cadre rigoureux, ce qui correspond bien à votre besoin.",
+      "Votre offre valorise {{skill}}, une compétence que je pratique avec application et que je continue d'approfondir.",
+    ],
+    fitWithTwoSkills: [
+      "Votre offre associe {{skill}} et {{skill2}} : deux compétences que j'ai déjà pratiquées ensemble dans un cadre exigeant.",
+      "Je maîtrise à la fois {{skill}} et {{skill2}}, exactement la combinaison attendue pour ce poste.",
+      "Entre {{skill}} et {{skill2}}, votre offre recoupe directement deux compétences sur lesquelles j'ai une vraie pratique.",
+      "J'ai eu l'occasion de combiner {{skill}} et {{skill2}} sur des dossiers concrets, ce qui correspond précisément à votre besoin.",
+      "{{skill}} comme {{skill2}} font partie des compétences que je maîtrise avec le plus de sérieux, toutes deux mentionnées dans votre offre.",
+      "Votre offre demande {{skill}} et {{skill2}} : deux points sur lesquels je peux être rapidement fiable.",
     ],
     fitFallback: [
       "Ma formation ({{formation}}) m'a apporté rigueur et sens de l'organisation, des qualités essentielles pour ce type de mission.",
@@ -437,6 +550,16 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Issu(e) d'une formation en {{formation}}, je sais gérer des dossiers exigeants avec méthode et discrétion.",
       "Mon parcours en {{formation}} m'a habitué(e) à travailler dans un cadre normé, avec des délais et des règles précises.",
       "Ma formation ({{formation}}) a renforcé ma capacité à traiter des dossiers complexes avec fiabilité.",
+      "Ma formation ({{formation}}) reste ma meilleure base pour ce type de mission, et je compte l'approfondir concrètement chez {{entreprise}}.",
+      "Ma formation ({{formation}}) m'a surtout appris à ne jamais négliger le détail qui fait la différence.",
+      "Ma formation ({{formation}}) m'a permis de développer une vraie discrétion professionnelle, essentielle pour ce type de poste.",
+    ],
+    targetJobLines: [
+      "{{poste}} correspond en plus exactement au métier de {{targetJob}} que je vise depuis le début de mes recherches.",
+      "C'est justement le poste de {{targetJob}} que je cible activement, et votre offre y correspond parfaitement.",
+      "Devenir {{targetJob}} est mon objectif précis, et ce poste chez {{entreprise}} en est une parfaite illustration.",
+      "Je me projette précisément sur un poste de {{targetJob}}, ce qui rend votre offre particulièrement pertinente pour moi.",
+      "{{targetJob}} est le métier que je vise en priorité, et votre annonce correspond exactement à cette ambition.",
     ],
     achievementLines: [
       "Pour illustrer concrètement mon sérieux : {{achievement}}",
@@ -447,6 +570,9 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Concrètement, {{achievement}}",
       "Une situation représentative de ma méthode de travail : {{achievement}}",
       "Cela s'illustre bien par cette expérience : {{achievement}}",
+      "Voici un exemple qui résume bien mon sérieux : {{achievement}}",
+      "J'aime citer cet exemple pour illustrer ma rigueur : {{achievement}}",
+      "Une situation représentative de mon application au travail : {{achievement}}",
     ],
     whyCompanyLines: [
       "Je souhaite rejoindre {{entreprise}} en particulier parce que {{whyCompany}}",
@@ -457,6 +583,9 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "{{entreprise}} correspond au cadre de travail que je recherche, notamment parce que {{whyCompany}}",
       "Ce qui me donne envie de rejoindre {{entreprise}} : {{whyCompany}}",
       "Je m'intéresse de près à {{entreprise}}, en particulier parce que {{whyCompany}}",
+      "Votre organisation m'inspire particulièrement : {{whyCompany}}",
+      "Je suis attentivement ce que fait {{entreprise}}, notamment parce que {{whyCompany}}",
+      "{{entreprise}} incarne le type de cadre structuré que je recherche, notamment parce que {{whyCompany}}",
     ],
     closings: [
       "Je reste à votre entière disposition pour un entretien et vous remercie de l'attention portée à ma candidature.",
@@ -469,6 +598,11 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Je serais très honoré(e) de pouvoir échanger avec vous sur ma candidature lors d'un entretien.",
       "N'hésitez pas à me contacter pour tout complément, je reste disponible rapidement.",
       "Je vous prie d'agréer, Madame, Monsieur, l'expression de ma considération distinguée.",
+      "Je reste disponible pour un entretien ou tout test administratif, selon ce qui vous conviendra le mieux.",
+      "Je serais heureux(se) d'approfondir avec vous les missions de ce poste lors d'un entretien.",
+      "N'hésitez pas à me proposer un cas pratique, je reste disponible rapidement pour le réaliser.",
+      "Je reste à votre disposition pour un échange, à l'oral ou par écrit selon vos préférences.",
+      "Je vous remercie de l'attention portée à ma candidature et reste disponible rapidement.",
     ],
   },
 
@@ -486,6 +620,11 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Fiable et volontaire, je candidate avec conviction au poste de {{poste}} en {{contrat}} chez {{entreprise}}.",
       "Je vous adresse ma candidature pour le poste de {{poste}} en {{contrat}} : {{entreprise}} correspond exactement à l'environnement de terrain que je recherche.",
       "C'est avec sérieux et envie de bien faire que je candidate au poste de {{poste}} en {{contrat}} chez {{entreprise}}.",
+      "Habitué(e) au travail concret, j'ai repéré votre offre de {{poste}} en {{contrat}} chez {{entreprise}} avec un vrai intérêt.",
+      "Votre offre de {{poste}} en {{contrat}} chez {{entreprise}} correspond précisément au type de mission de terrain que je recherche.",
+      "Je candidate au poste de {{poste}} en {{contrat}} chez {{entreprise}}, avec l'envie de m'investir dans un travail concret.",
+      "Attentif(ve) aux offres de terrain exigeantes, j'ai repéré chez {{entreprise}} le poste de {{poste}} en {{contrat}} avec intérêt.",
+      "Votre poste de {{poste}} en {{contrat}} chez {{entreprise}} correspond exactement au niveau d'engagement physique que je recherche.",
     ],
     fitWithSkill: [
       "Votre offre demande {{skill}}, une compétence pratique que j'ai déjà mise en œuvre sur le terrain.",
@@ -498,6 +637,17 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "J'ai déjà utilisé {{skill}} dans des conditions réelles, ce qui me permettrait d'être efficace dès mon arrivée.",
       "Votre besoin en {{skill}} correspond précisément à ce que j'ai pratiqué sur mes précédentes missions.",
       "Je me suis particulièrement entraîné(e) sur {{skill}}, un savoir-faire directement utile aux missions décrites.",
+      "{{skill}} est un savoir-faire sur lequel je continue de progresser activement, en écho direct à votre offre.",
+      "J'ai mis {{skill}} en pratique sur le terrain à plusieurs reprises, ce qui correspond bien à votre besoin.",
+      "Votre offre valorise {{skill}}, un savoir-faire que je pratique avec sérieux et que je continue d'approfondir.",
+    ],
+    fitWithTwoSkills: [
+      "Votre offre associe {{skill}} et {{skill2}} : deux savoir-faire que j'ai déjà pratiqués ensemble sur le terrain.",
+      "Je maîtrise à la fois {{skill}} et {{skill2}}, exactement la combinaison attendue pour ce poste.",
+      "Entre {{skill}} et {{skill2}}, votre offre recoupe directement deux savoir-faire que je pratique concrètement.",
+      "J'ai eu l'occasion de combiner {{skill}} et {{skill2}} sur des missions réelles, ce qui correspond précisément à votre besoin.",
+      "{{skill}} comme {{skill2}} font partie des savoir-faire que je maîtrise le mieux, tous deux mentionnés dans votre offre.",
+      "Votre offre demande {{skill}} et {{skill2}} : deux points sur lesquels je peux être rapidement opérationnel(le).",
     ],
     fitFallback: [
       "Ma formation ({{formation}}) m'a donné les bases pratiques nécessaires pour être efficace rapidement sur le terrain.",
@@ -508,6 +658,16 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Issu(e) d'une formation en {{formation}}, je sais m'adapter rapidement aux exigences physiques et pratiques du terrain.",
       "Mon parcours en {{formation}} m'a habitué(e) à travailler en équipe dans des conditions parfois exigeantes.",
       "Ma formation ({{formation}}) a renforcé ma capacité à suivre des procédures précises sur le terrain.",
+      "Ma formation ({{formation}}) reste ma meilleure base pratique, et je compte l'approfondir concrètement chez {{entreprise}}.",
+      "Ma formation ({{formation}}) m'a surtout appris à respecter les consignes de sécurité sans jamais les négliger.",
+      "Ma formation ({{formation}}) m'a permis de développer une vraie endurance face aux exigences physiques du terrain.",
+    ],
+    targetJobLines: [
+      "{{poste}} correspond en plus exactement au métier de {{targetJob}} que je vise depuis le début de mes recherches.",
+      "C'est justement le poste de {{targetJob}} que je cible activement, et votre offre y correspond parfaitement.",
+      "Devenir {{targetJob}} est mon objectif précis, et ce poste chez {{entreprise}} en est une parfaite illustration.",
+      "Je me projette précisément sur un poste de {{targetJob}}, ce qui rend votre offre particulièrement pertinente pour moi.",
+      "{{targetJob}} est le métier que je vise en priorité, et votre annonce correspond exactement à cette ambition.",
     ],
     achievementLines: [
       "Pour donner un exemple concret de mon savoir-faire : {{achievement}}",
@@ -518,6 +678,9 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Concrètement, {{achievement}}",
       "Une mission représentative de mon savoir-faire : {{achievement}}",
       "Cela s'illustre bien par cette expérience de terrain : {{achievement}}",
+      "Voici un exemple qui résume bien mon savoir-faire : {{achievement}}",
+      "J'aime citer cet exemple pour illustrer mon sérieux sur le terrain : {{achievement}}",
+      "Une situation représentative de mon engagement physique : {{achievement}}",
     ],
     whyCompanyLines: [
       "Je souhaite rejoindre {{entreprise}} en particulier parce que {{whyCompany}}",
@@ -528,6 +691,9 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "{{entreprise}} correspond à l'environnement de terrain que je recherche, notamment parce que {{whyCompany}}",
       "Ce qui me donne envie de rejoindre {{entreprise}} : {{whyCompany}}",
       "Je m'intéresse de près à {{entreprise}}, en particulier parce que {{whyCompany}}",
+      "Votre savoir-faire de terrain m'inspire particulièrement : {{whyCompany}}",
+      "Je suis attentivement ce que fait {{entreprise}}, notamment parce que {{whyCompany}}",
+      "{{entreprise}} incarne le type de travail concret que je recherche, notamment parce que {{whyCompany}}",
     ],
     closings: [
       "Disponible rapidement, je me tiens à votre disposition pour un entretien.",
@@ -540,6 +706,11 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Je serais très heureux(se) de vous rencontrer pour vous montrer ma motivation de vive voix.",
       "N'hésitez pas à me contacter pour organiser un entretien, je reste disponible rapidement.",
       "Je me tiens à votre disposition pour toute question complémentaire sur mon profil.",
+      "Je reste disponible pour un entretien ou une période d'essai sur le terrain, selon ce qui vous conviendra le mieux.",
+      "Je serais heureux(se) d'approfondir avec vous les missions de ce poste lors d'un entretien.",
+      "N'hésitez pas à me proposer une mise en situation, je reste disponible rapidement.",
+      "Je reste à votre disposition pour un échange, sur site ou par téléphone selon vos préférences.",
+      "Motivé(e) à l'idée de rejoindre vos équipes de terrain, je reste disponible rapidement.",
     ],
   },
 
@@ -557,6 +728,11 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Bienveillant(e) et patient(e), je candidate avec conviction au poste de {{poste}} en {{contrat}} chez {{entreprise}}.",
       "Je vous adresse ma candidature avec sincérité pour le poste de {{poste}} en {{contrat}} : {{entreprise}} correspond à mes valeurs d'accompagnement.",
       "C'est avec un vrai désir d'aider que je candidate au poste de {{poste}} en {{contrat}} chez {{entreprise}}.",
+      "Sensible à l'accompagnement humain, j'ai repéré votre offre de {{poste}} en {{contrat}} chez {{entreprise}} avec un vrai intérêt.",
+      "Votre offre de {{poste}} en {{contrat}} chez {{entreprise}} correspond précisément au type d'accompagnement que je veux exercer.",
+      "Je candidate au poste de {{poste}} en {{contrat}} chez {{entreprise}}, avec l'envie de m'investir humainement au quotidien.",
+      "Attentif(ve) aux missions d'accompagnement exigeantes, j'ai repéré chez {{entreprise}} le poste de {{poste}} en {{contrat}} avec intérêt.",
+      "Votre poste de {{poste}} en {{contrat}} chez {{entreprise}} correspond exactement au niveau d'engagement humain que je recherche.",
     ],
     fitWithSkill: [
       "Votre offre mentionne {{skill}}, une compétence que j'ai développée et qui me semble essentielle pour ce type d'accompagnement.",
@@ -569,6 +745,17 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "J'ai déjà mobilisé {{skill}} au contact de personnes accompagnées, ce qui me permettrait d'être vite à l'aise ici.",
       "Votre besoin en {{skill}} correspond précisément à ce que j'ai pratiqué dans mes expériences précédentes.",
       "Je me suis particulièrement formé(e) à {{skill}}, une compétence directement utile pour ce type de mission.",
+      "{{skill}} est une compétence sur laquelle je continue de progresser activement, en écho direct à votre offre.",
+      "J'ai mis {{skill}} en pratique auprès de personnes accompagnées, ce qui correspond bien à votre besoin.",
+      "Votre offre valorise {{skill}}, une compétence que je pratique avec constance et que je continue d'approfondir.",
+    ],
+    fitWithTwoSkills: [
+      "Votre offre associe {{skill}} et {{skill2}} : deux compétences que j'ai déjà mises en pratique ensemble auprès de personnes accompagnées.",
+      "Je maîtrise à la fois {{skill}} et {{skill2}}, exactement la combinaison attendue pour ce poste.",
+      "Entre {{skill}} et {{skill2}}, votre offre recoupe directement deux compétences que je pratique avec constance.",
+      "J'ai eu l'occasion de combiner {{skill}} et {{skill2}} auprès de personnes accompagnées, ce qui correspond précisément à votre besoin.",
+      "{{skill}} comme {{skill2}} font partie des compétences que je maîtrise le mieux, toutes deux mentionnées dans votre offre.",
+      "Votre offre demande {{skill}} et {{skill2}} : deux points sur lesquels je peux être rapidement à l'aise.",
     ],
     fitFallback: [
       "Ma formation ({{formation}}) m'a appris l'écoute et la rigueur nécessaires pour accompagner des personnes au quotidien.",
@@ -579,6 +766,16 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Issu(e) d'une formation en {{formation}}, je sais garder mon calme et mon écoute même dans des situations sensibles.",
       "Mon parcours en {{formation}} m'a habitué(e) à travailler en équipe pluridisciplinaire autour d'un même accompagnement.",
       "Ma formation ({{formation}}) a renforcé ma capacité à m'adapter à chaque personne et à sa situation particulière.",
+      "Ma formation ({{formation}}) reste ma meilleure base pour ce type d'accompagnement, et je compte l'approfondir concrètement chez {{entreprise}}.",
+      "Ma formation ({{formation}}) m'a surtout appris à ne jamais juger avant de comprendre la situation de chacun.",
+      "Ma formation ({{formation}}) m'a permis de développer une vraie stabilité émotionnelle, essentielle pour ce type de poste.",
+    ],
+    targetJobLines: [
+      "{{poste}} correspond en plus exactement au métier de {{targetJob}} que je vise depuis le début de mes recherches.",
+      "C'est justement le poste de {{targetJob}} que je cible activement, et votre offre y correspond parfaitement.",
+      "Devenir {{targetJob}} est mon objectif précis, et ce poste chez {{entreprise}} en est une parfaite illustration.",
+      "Je me projette précisément sur un poste de {{targetJob}}, ce qui rend votre offre particulièrement pertinente pour moi.",
+      "{{targetJob}} est le métier que je vise en priorité, et votre annonce correspond exactement à cette ambition.",
     ],
     achievementLines: [
       "Pour illustrer concrètement mon engagement : {{achievement}}",
@@ -589,6 +786,9 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Concrètement, {{achievement}}",
       "Une situation représentative de mon engagement : {{achievement}}",
       "Cela s'illustre bien par cette expérience humaine : {{achievement}}",
+      "Voici un exemple qui résume bien mon engagement humain : {{achievement}}",
+      "J'aime citer cet exemple pour illustrer ma bienveillance : {{achievement}}",
+      "Une situation représentative de mon accompagnement : {{achievement}}",
     ],
     whyCompanyLines: [
       "Je souhaite rejoindre {{entreprise}} en particulier parce que {{whyCompany}}",
@@ -599,6 +799,9 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "{{entreprise}} correspond aux valeurs humaines que je recherche, notamment parce que {{whyCompany}}",
       "Ce qui me donne envie de rejoindre {{entreprise}} : {{whyCompany}}",
       "Je m'intéresse de près à {{entreprise}}, en particulier parce que {{whyCompany}}",
+      "Votre approche humaine m'inspire particulièrement : {{whyCompany}}",
+      "Je suis attentivement ce que fait {{entreprise}}, notamment parce que {{whyCompany}}",
+      "{{entreprise}} incarne les valeurs d'accompagnement que je recherche, notamment parce que {{whyCompany}}",
     ],
     closings: [
       "Je reste à votre disposition pour un entretien et vous remercie de l'attention portée à ma candidature.",
@@ -611,6 +814,11 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Je serais très heureux(se) de pouvoir échanger avec vous sur mon engagement et ma motivation.",
       "N'hésitez pas à me contacter pour organiser un entretien, je reste disponible rapidement.",
       "Je me tiens à votre disposition pour toute question complémentaire sur mon profil.",
+      "Je reste disponible pour un entretien ou une période d'immersion, selon ce qui vous conviendra le mieux.",
+      "Je serais heureux(se) d'approfondir avec vous mon engagement lors d'un entretien.",
+      "N'hésitez pas à me proposer une rencontre, je reste disponible rapidement.",
+      "Je reste à votre disposition pour un échange, quand cela vous conviendra le mieux.",
+      "Motivé(e) à l'idée de rejoindre vos équipes, je reste disponible rapidement.",
     ],
   },
 
@@ -628,6 +836,11 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Inventif(ve) et exigeant(e), je candidate avec enthousiasme au poste de {{poste}} en {{contrat}} chez {{entreprise}}.",
       "Je vous adresse ma candidature avec enthousiasme pour le poste de {{poste}} en {{contrat}} : {{entreprise}} correspond à l'univers créatif que je recherche.",
       "C'est avec une vraie envie de créer que je candidate au poste de {{poste}} en {{contrat}} chez {{entreprise}}.",
+      "Toujours en quête de nouveaux univers créatifs, j'ai repéré votre offre de {{poste}} en {{contrat}} chez {{entreprise}} avec enthousiasme.",
+      "Votre offre de {{poste}} en {{contrat}} chez {{entreprise}} correspond précisément à l'univers créatif que je recherche.",
+      "Je candidate au poste de {{poste}} en {{contrat}} chez {{entreprise}}, avec l'envie de m'exprimer pleinement.",
+      "Attentif(ve) aux projets créatifs exigeants, j'ai repéré chez {{entreprise}} le poste de {{poste}} en {{contrat}} avec enthousiasme.",
+      "Votre poste de {{poste}} en {{contrat}} chez {{entreprise}} correspond exactement au niveau d'exigence créative que je recherche.",
     ],
     fitWithSkill: [
       "Votre offre mentionne {{skill}}, une compétence que j'ai développée et que je saurais mettre au service de vos projets créatifs.",
@@ -640,6 +853,17 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "J'ai déjà mis en œuvre {{skill}} sur des projets concrets, ce qui me permettrait d'apporter une vraie valeur ajoutée.",
       "Votre besoin en {{skill}} correspond précisément à ce que j'ai exploré dans mes créations précédentes.",
       "Je me suis particulièrement perfectionné(e) en {{skill}}, une compétence directement utile à votre univers créatif.",
+      "{{skill}} est une compétence sur laquelle je continue de progresser activement, en écho direct à votre offre.",
+      "J'ai mis {{skill}} en pratique sur des projets créatifs personnels, ce qui correspond bien à votre besoin.",
+      "Votre offre valorise {{skill}}, une compétence que je pratique avec passion et que je continue d'approfondir.",
+    ],
+    fitWithTwoSkills: [
+      "Votre offre associe {{skill}} et {{skill2}} : deux compétences que j'ai déjà combinées sur des projets créatifs.",
+      "Je maîtrise à la fois {{skill}} et {{skill2}}, exactement la combinaison recherchée pour ce poste.",
+      "Entre {{skill}} et {{skill2}}, votre offre recoupe directement deux compétences que je pratique avec passion.",
+      "J'ai eu l'occasion de combiner {{skill}} et {{skill2}} sur des créations concrètes, ce qui correspond précisément à votre besoin.",
+      "{{skill}} comme {{skill2}} font partie des compétences que je maîtrise le mieux, toutes deux mentionnées dans votre offre.",
+      "Votre offre demande {{skill}} et {{skill2}} : deux points sur lesquels je peux rapidement apporter une vraie valeur créative.",
     ],
     fitFallback: [
       "Ma formation ({{formation}}) m'a donné une vraie sensibilité créative que je souhaite mettre au service de {{entreprise}}.",
@@ -650,6 +874,16 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Issu(e) d'une formation en {{formation}}, j'aime remettre en question mes idées pour aller plus loin.",
       "Mon parcours en {{formation}} m'a habitué(e) à recevoir et intégrer des retours critiques sur mon travail.",
       "Ma formation ({{formation}}) a renforcé ma curiosité et mon envie de sortir des sentiers battus.",
+      "Ma formation ({{formation}}) reste ma meilleure base créative, et je compte l'approfondir concrètement chez {{entreprise}}.",
+      "Ma formation ({{formation}}) m'a surtout appris à défendre une idée tout en restant ouvert(e) à la critique.",
+      "Ma formation ({{formation}}) m'a permis de développer un vrai univers personnel que je veux mettre au service de vos projets.",
+    ],
+    targetJobLines: [
+      "{{poste}} correspond en plus exactement au métier de {{targetJob}} que je vise depuis le début de mes recherches.",
+      "C'est justement le poste de {{targetJob}} que je cible activement, et votre offre y correspond parfaitement.",
+      "Devenir {{targetJob}} est mon objectif précis, et ce poste chez {{entreprise}} en est une parfaite illustration.",
+      "Je me projette précisément sur un poste de {{targetJob}}, ce qui rend votre offre particulièrement pertinente pour moi.",
+      "{{targetJob}} est le métier que je vise en priorité, et votre annonce correspond exactement à cette ambition.",
     ],
     achievementLines: [
       "Pour donner un exemple concret de mon travail : {{achievement}}",
@@ -660,6 +894,9 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Concrètement, {{achievement}}",
       "Un projet représentatif de mon univers : {{achievement}}",
       "Cela s'illustre bien par cette création : {{achievement}}",
+      "Voici un exemple qui résume bien mon univers créatif : {{achievement}}",
+      "J'aime citer ce projet pour illustrer ma démarche : {{achievement}}",
+      "Une création représentative de mon style : {{achievement}}",
     ],
     whyCompanyLines: [
       "{{entreprise}} m'attire particulièrement parce que {{whyCompany}}",
@@ -670,6 +907,9 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "{{entreprise}} correspond à l'univers créatif que je recherche, notamment parce que {{whyCompany}}",
       "Ce qui me donne envie de rejoindre {{entreprise}} : {{whyCompany}}",
       "Je m'intéresse de près à {{entreprise}}, en particulier parce que {{whyCompany}}",
+      "Votre direction artistique m'inspire particulièrement : {{whyCompany}}",
+      "Je suis attentivement ce que fait {{entreprise}}, notamment parce que {{whyCompany}}",
+      "{{entreprise}} incarne l'univers créatif que je recherche, notamment parce que {{whyCompany}}",
     ],
     closings: [
       "Je serais ravi(e) de vous présenter mon univers créatif et mon portfolio lors d'un entretien.",
@@ -682,6 +922,11 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Je serais très heureux(se) de pouvoir échanger avec vous sur ma démarche créative.",
       "N'hésitez pas à me contacter pour organiser un entretien, je reste disponible rapidement.",
       "Je me tiens à votre disposition pour toute question complémentaire sur mon portfolio.",
+      "Je reste disponible pour un entretien où je pourrai vous présenter mes créations plus en détail.",
+      "Je serais ravi(e) d'approfondir avec vous ma démarche créative lors d'un entretien.",
+      "N'hésitez pas à me demander mon portfolio complet, je reste disponible rapidement.",
+      "Je reste à votre disposition pour un échange sur mon univers créatif, quand cela vous conviendra.",
+      "Impatient(e) de vous présenter mon travail, je reste disponible pour un entretien rapidement.",
     ],
   },
 
@@ -699,6 +944,11 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Chaleureux(se) et réactif(ve), je candidate avec enthousiasme au poste de {{poste}} en {{contrat}} chez {{entreprise}}.",
       "Je vous adresse ma candidature avec enthousiasme pour le poste de {{poste}} en {{contrat}} : {{entreprise}} correspond à l'univers que je recherche.",
       "C'est avec un vrai plaisir du contact humain que je candidate au poste de {{poste}} en {{contrat}} chez {{entreprise}}.",
+      "Toujours souriant(e) et disponible, j'ai repéré votre offre de {{poste}} en {{contrat}} chez {{entreprise}} avec un vrai intérêt.",
+      "Votre offre de {{poste}} en {{contrat}} chez {{entreprise}} correspond précisément à l'expérience client que je veux offrir.",
+      "Je candidate au poste de {{poste}} en {{contrat}} chez {{entreprise}}, avec l'envie de faire vivre une expérience mémorable aux clients.",
+      "Attentif(ve) aux métiers du contact client, j'ai repéré chez {{entreprise}} le poste de {{poste}} en {{contrat}} avec intérêt.",
+      "Votre poste de {{poste}} en {{contrat}} chez {{entreprise}} correspond exactement au niveau d'énergie que je veux mettre au service des clients.",
     ],
     fitWithSkill: [
       "Votre offre mentionne {{skill}}, une compétence que j'ai développée et qui me semble essentielle pour ce poste orienté client.",
@@ -711,6 +961,17 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "J'ai déjà mobilisé {{skill}} en contact direct avec des clients, ce qui me permettrait d'être vite à l'aise ici.",
       "Votre besoin en {{skill}} correspond précisément à ce que j'ai pratiqué dans mes précédentes expériences.",
       "Je me suis particulièrement entraîné(e) sur {{skill}}, un atout directement utile pour ce poste orienté client.",
+      "{{skill}} est une compétence sur laquelle je continue de progresser activement, en écho direct à votre offre.",
+      "J'ai mis {{skill}} en pratique au contact de clients variés, ce qui correspond bien à votre besoin.",
+      "Votre offre valorise {{skill}}, une compétence que je pratique avec plaisir et que je continue d'approfondir.",
+    ],
+    fitWithTwoSkills: [
+      "Votre offre associe {{skill}} et {{skill2}} : deux compétences que j'ai déjà combinées au contact de la clientèle.",
+      "Je maîtrise à la fois {{skill}} et {{skill2}}, exactement la combinaison recherchée pour ce poste.",
+      "Entre {{skill}} et {{skill2}}, votre offre recoupe directement deux compétences que je pratique avec plaisir.",
+      "J'ai eu l'occasion de combiner {{skill}} et {{skill2}} au contact de clients, ce qui correspond précisément à votre besoin.",
+      "{{skill}} comme {{skill2}} font partie des compétences que je maîtrise le mieux, toutes deux mentionnées dans votre offre.",
+      "Votre offre demande {{skill}} et {{skill2}} : deux points sur lesquels je peux être rapidement à l'aise avec vos clients.",
     ],
     fitFallback: [
       "Ma formation ({{formation}}) m'a appris le sens du service et de l'accueil, essentiel pour ce type de poste.",
@@ -721,6 +982,16 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Issu(e) d'une formation en {{formation}}, je sais garder le sourire même dans les moments de forte affluence.",
       "Mon parcours en {{formation}} m'a habitué(e) à m'adapter à des clientèles très différentes.",
       "Ma formation ({{formation}}) a renforcé mon goût du travail en équipe dans un environnement dynamique.",
+      "Ma formation ({{formation}}) reste ma meilleure base pour ce type de poste, et je compte l'approfondir concrètement chez {{entreprise}}.",
+      "Ma formation ({{formation}}) m'a surtout appris à garder le sourire même sous pression.",
+      "Ma formation ({{formation}}) m'a permis de développer une vraie aisance avec des clientèles très différentes.",
+    ],
+    targetJobLines: [
+      "{{poste}} correspond en plus exactement au métier de {{targetJob}} que je vise depuis le début de mes recherches.",
+      "C'est justement le poste de {{targetJob}} que je cible activement, et votre offre y correspond parfaitement.",
+      "Devenir {{targetJob}} est mon objectif précis, et ce poste chez {{entreprise}} en est une parfaite illustration.",
+      "Je me projette précisément sur un poste de {{targetJob}}, ce qui rend votre offre particulièrement pertinente pour moi.",
+      "{{targetJob}} est le métier que je vise en priorité, et votre annonce correspond exactement à cette ambition.",
     ],
     achievementLines: [
       "Pour donner un exemple concret de mon sens du service : {{achievement}}",
@@ -731,6 +1002,9 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Concrètement, {{achievement}}",
       "Une situation représentative de mon sens du service : {{achievement}}",
       "Cela s'illustre bien par cette expérience client : {{achievement}}",
+      "Voici un exemple qui résume bien mon sens du service : {{achievement}}",
+      "J'aime citer cet exemple pour illustrer mon énergie : {{achievement}}",
+      "Une situation représentative de mon sens de l'accueil : {{achievement}}",
     ],
     whyCompanyLines: [
       "Je souhaite rejoindre {{entreprise}} en particulier parce que {{whyCompany}}",
@@ -741,6 +1015,9 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "{{entreprise}} correspond à l'univers que je recherche, notamment parce que {{whyCompany}}",
       "Ce qui me donne envie de rejoindre {{entreprise}} : {{whyCompany}}",
       "Je m'intéresse de près à {{entreprise}}, en particulier parce que {{whyCompany}}",
+      "Votre univers m'inspire particulièrement : {{whyCompany}}",
+      "Je suis attentivement ce que fait {{entreprise}}, notamment parce que {{whyCompany}}",
+      "{{entreprise}} incarne l'expérience client que je veux offrir, notamment parce que {{whyCompany}}",
     ],
     closings: [
       "Disponible rapidement, je me tiens à votre disposition pour un entretien.",
@@ -753,6 +1030,11 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Je serais très heureux(se) de pouvoir échanger avec vous sur ma motivation et mon énergie.",
       "N'hésitez pas à me contacter pour organiser un entretien, je reste disponible rapidement.",
       "Je me tiens à votre disposition pour toute question complémentaire sur mon profil.",
+      "Je reste disponible pour un entretien ou une journée d'essai, selon ce qui vous conviendra le mieux.",
+      "Je serais heureux(se) d'approfondir avec vous mon sens du service lors d'un entretien.",
+      "N'hésitez pas à me proposer une mise en situation, je reste disponible rapidement.",
+      "Je reste à votre disposition pour un échange, y compris en horaires décalés si besoin.",
+      "Motivé(e) à l'idée de rejoindre vos équipes, je reste disponible rapidement.",
     ],
   },
 
@@ -770,6 +1052,11 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Patient(e) et pédagogue, je candidate avec conviction au poste de {{poste}} en {{contrat}} chez {{entreprise}}.",
       "Je vous adresse ma candidature avec sincérité pour le poste de {{poste}} en {{contrat}} : {{entreprise}} correspond à ma vision de la transmission.",
       "C'est avec un vrai désir d'accompagner la progression des autres que je candidate au poste de {{poste}} en {{contrat}} chez {{entreprise}}.",
+      "Attaché(e) à la réussite des autres, j'ai repéré votre offre de {{poste}} en {{contrat}} chez {{entreprise}} avec un vrai intérêt.",
+      "Votre offre de {{poste}} en {{contrat}} chez {{entreprise}} correspond précisément à mon envie de transmettre.",
+      "Je candidate au poste de {{poste}} en {{contrat}} chez {{entreprise}}, avec l'envie d'accompagner la progression des autres.",
+      "Attentif(ve) aux missions pédagogiques exigeantes, j'ai repéré chez {{entreprise}} le poste de {{poste}} en {{contrat}} avec intérêt.",
+      "Votre poste de {{poste}} en {{contrat}} chez {{entreprise}} correspond exactement à l'engagement pédagogique que je recherche.",
     ],
     fitWithSkill: [
       "Votre offre mentionne {{skill}}, une compétence que j'ai développée et qui me semble utile pour ce poste pédagogique.",
@@ -782,6 +1069,17 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "J'ai déjà mobilisé {{skill}} auprès d'un public varié, ce qui me permettrait d'être vite à l'aise ici.",
       "Votre besoin en {{skill}} correspond précisément à ce que j'ai pratiqué dans mes expériences précédentes.",
       "Je me suis particulièrement investi(e) sur {{skill}}, une compétence directement utile pour ce poste pédagogique.",
+      "{{skill}} est une compétence sur laquelle je continue de progresser activement, en écho direct à votre offre.",
+      "J'ai mis {{skill}} en pratique auprès d'apprenants, ce qui correspond bien à votre besoin.",
+      "Votre offre valorise {{skill}}, une compétence que je pratique avec plaisir et que je continue d'approfondir.",
+    ],
+    fitWithTwoSkills: [
+      "Votre offre associe {{skill}} et {{skill2}} : deux compétences que j'ai déjà combinées auprès d'apprenants.",
+      "Je maîtrise à la fois {{skill}} et {{skill2}}, exactement la combinaison attendue pour ce poste.",
+      "Entre {{skill}} et {{skill2}}, votre offre recoupe directement deux compétences que je pratique avec plaisir.",
+      "J'ai eu l'occasion de combiner {{skill}} et {{skill2}} auprès d'un public varié, ce qui correspond précisément à votre besoin.",
+      "{{skill}} comme {{skill2}} font partie des compétences que je maîtrise le mieux, toutes deux mentionnées dans votre offre.",
+      "Votre offre demande {{skill}} et {{skill2}} : deux points sur lesquels je peux être rapidement à l'aise avec un public.",
     ],
     fitFallback: [
       "Ma formation ({{formation}}) m'a donné une vraie appétence pour la transmission et la pédagogie.",
@@ -792,6 +1090,16 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Issu(e) d'une formation en {{formation}}, je sais m'adapter au rythme et aux besoins de chaque apprenant.",
       "Mon parcours en {{formation}} m'a habitué(e) à encourager la progression plutôt qu'à sanctionner l'erreur.",
       "Ma formation ({{formation}}) a renforcé ma capacité à captiver l'attention d'un public varié.",
+      "Ma formation ({{formation}}) reste ma meilleure base pour ce type de poste, et je compte l'approfondir concrètement chez {{entreprise}}.",
+      "Ma formation ({{formation}}) m'a surtout appris à valoriser les progrès, aussi petits soient-ils.",
+      "Ma formation ({{formation}}) m'a permis de développer une vraie patience face aux difficultés d'apprentissage.",
+    ],
+    targetJobLines: [
+      "{{poste}} correspond en plus exactement au métier de {{targetJob}} que je vise depuis le début de mes recherches.",
+      "C'est justement le poste de {{targetJob}} que je cible activement, et votre offre y correspond parfaitement.",
+      "Devenir {{targetJob}} est mon objectif précis, et ce poste chez {{entreprise}} en est une parfaite illustration.",
+      "Je me projette précisément sur un poste de {{targetJob}}, ce qui rend votre offre particulièrement pertinente pour moi.",
+      "{{targetJob}} est le métier que je vise en priorité, et votre annonce correspond exactement à cette ambition.",
     ],
     achievementLines: [
       "Pour illustrer concrètement mon engagement pédagogique : {{achievement}}",
@@ -802,6 +1110,9 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Concrètement, {{achievement}}",
       "Une situation représentative de mon approche pédagogique : {{achievement}}",
       "Cela s'illustre bien par cette expérience de transmission : {{achievement}}",
+      "Voici un exemple qui résume bien mon engagement pédagogique : {{achievement}}",
+      "J'aime citer cet exemple pour illustrer ma pédagogie : {{achievement}}",
+      "Une situation représentative de mon approche de la transmission : {{achievement}}",
     ],
     whyCompanyLines: [
       "Je souhaite rejoindre {{entreprise}} en particulier parce que {{whyCompany}}",
@@ -812,6 +1123,9 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "{{entreprise}} correspond à ma vision de la transmission, notamment parce que {{whyCompany}}",
       "Ce qui me donne envie de rejoindre {{entreprise}} : {{whyCompany}}",
       "Je m'intéresse de près à {{entreprise}}, en particulier parce que {{whyCompany}}",
+      "Votre approche pédagogique m'inspire particulièrement : {{whyCompany}}",
+      "Je suis attentivement ce que fait {{entreprise}}, notamment parce que {{whyCompany}}",
+      "{{entreprise}} incarne ma vision de la transmission, notamment parce que {{whyCompany}}",
     ],
     closings: [
       "Je reste à votre disposition pour un entretien et vous remercie de l'attention portée à ma candidature.",
@@ -824,6 +1138,11 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Je serais très heureux(se) de pouvoir échanger avec vous sur ma vision de la transmission.",
       "N'hésitez pas à me contacter pour organiser un entretien, je reste disponible rapidement.",
       "Je me tiens à votre disposition pour toute question complémentaire sur mon profil.",
+      "Je reste disponible pour un entretien ou une mise en situation pédagogique, selon ce qui vous conviendra le mieux.",
+      "Je serais heureux(se) d'approfondir avec vous ma vision de la transmission lors d'un entretien.",
+      "N'hésitez pas à me proposer une rencontre, je reste disponible rapidement.",
+      "Je reste à votre disposition pour un échange, quand cela vous conviendra le mieux.",
+      "Motivé(e) à l'idée de rejoindre vos équipes, je reste disponible rapidement.",
     ],
   },
 
@@ -841,6 +1160,11 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Motivé(e) et impliqué(e), je candidate avec conviction au poste de {{poste}} en {{contrat}} chez {{entreprise}}.",
       "Je vous adresse ma candidature avec sérieux pour le poste de {{poste}} en {{contrat}} : {{entreprise}} correspond à ce que je recherche.",
       "C'est avec envie que je candidate au poste de {{poste}} en {{contrat}} chez {{entreprise}}.",
+      "Ouvert(e) à un poste polyvalent, j'ai repéré votre offre de {{poste}} en {{contrat}} chez {{entreprise}} avec un vrai intérêt.",
+      "Votre offre de {{poste}} en {{contrat}} chez {{entreprise}} correspond précisément à ce que je recherche pour progresser.",
+      "Je candidate au poste de {{poste}} en {{contrat}} chez {{entreprise}}, avec l'envie de m'investir pleinement.",
+      "Attentif(ve) aux opportunités qui correspondent à mon profil, j'ai repéré chez {{entreprise}} le poste de {{poste}} en {{contrat}} avec intérêt.",
+      "Votre poste de {{poste}} en {{contrat}} chez {{entreprise}} correspond exactement à l'opportunité que je recherche.",
     ],
     fitWithSkill: [
       "Votre offre mentionne {{skill}}, une compétence que j'ai développée et que je saurais mobiliser rapidement.",
@@ -853,6 +1177,17 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "J'ai déjà utilisé {{skill}} dans un contexte concret, ce qui me permettrait d'être rapidement utile à votre équipe.",
       "Votre besoin en {{skill}} correspond précisément à ce que j'ai pratiqué dans mes expériences précédentes.",
       "Je me suis particulièrement investi(e) sur {{skill}}, une compétence directement utile pour ce poste.",
+      "{{skill}} est une compétence sur laquelle je continue de progresser activement, en écho direct à votre offre.",
+      "J'ai mis {{skill}} en pratique sur des projets concrets, ce qui correspond bien à votre besoin.",
+      "Votre offre valorise {{skill}}, une compétence que je pratique avec plaisir et que je continue d'approfondir.",
+    ],
+    fitWithTwoSkills: [
+      "Votre offre associe {{skill}} et {{skill2}} : deux compétences que j'ai déjà pratiquées ensemble.",
+      "Je maîtrise à la fois {{skill}} et {{skill2}}, exactement la combinaison attendue pour ce poste.",
+      "Entre {{skill}} et {{skill2}}, votre offre recoupe directement deux compétences sur lesquelles j'ai une vraie pratique.",
+      "J'ai eu l'occasion de combiner {{skill}} et {{skill2}} sur des projets concrets, ce qui correspond précisément à votre besoin.",
+      "{{skill}} comme {{skill2}} font partie des compétences que je maîtrise le mieux, toutes deux mentionnées dans votre offre.",
+      "Votre offre demande {{skill}} et {{skill2}} : deux points sur lesquels je peux être rapidement utile à votre équipe.",
     ],
     fitFallback: [
       "Ma formation ({{formation}}) m'a donné une base solide que je souhaite mettre au service de {{entreprise}}.",
@@ -863,6 +1198,16 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Issu(e) d'une formation en {{formation}}, je sais m'adapter rapidement à un nouvel environnement de travail.",
       "Mon parcours en {{formation}} m'a habitué(e) à travailler avec sérieux et méthode.",
       "Ma formation ({{formation}}) a renforcé ma curiosité et mon envie de progresser continuellement.",
+      "Ma formation ({{formation}}) reste ma meilleure base, et je compte l'approfondir concrètement chez {{entreprise}}.",
+      "Ma formation ({{formation}}) m'a surtout appris à apprendre vite, une qualité essentielle pour ce poste.",
+      "Ma formation ({{formation}}) m'a permis de développer une vraie polyvalence, utile pour ce type de poste.",
+    ],
+    targetJobLines: [
+      "{{poste}} correspond en plus exactement au métier de {{targetJob}} que je vise depuis le début de mes recherches.",
+      "C'est justement le poste de {{targetJob}} que je cible activement, et votre offre y correspond parfaitement.",
+      "Devenir {{targetJob}} est mon objectif précis, et ce poste chez {{entreprise}} en est une parfaite illustration.",
+      "Je me projette précisément sur un poste de {{targetJob}}, ce qui rend votre offre particulièrement pertinente pour moi.",
+      "{{targetJob}} est le métier que je vise en priorité, et votre annonce correspond exactement à cette ambition.",
     ],
     achievementLines: [
       "Pour donner un exemple concret : {{achievement}}",
@@ -873,6 +1218,9 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Concrètement, {{achievement}}",
       "Une situation représentative de mon investissement : {{achievement}}",
       "Cela s'illustre bien par cette expérience : {{achievement}}",
+      "Voici un exemple qui résume bien mon investissement : {{achievement}}",
+      "J'aime citer cet exemple pour illustrer ma motivation : {{achievement}}",
+      "Une situation représentative de mon sérieux : {{achievement}}",
     ],
     whyCompanyLines: [
       "{{entreprise}} m'intéresse en particulier parce que {{whyCompany}}",
@@ -883,6 +1231,9 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "{{entreprise}} correspond à ce que je recherche, notamment parce que {{whyCompany}}",
       "Ce qui me donne envie de rejoindre {{entreprise}} : {{whyCompany}}",
       "Je m'intéresse de près à {{entreprise}}, en particulier parce que {{whyCompany}}",
+      "Votre activité m'inspire particulièrement : {{whyCompany}}",
+      "Je suis attentivement ce que fait {{entreprise}}, notamment parce que {{whyCompany}}",
+      "{{entreprise}} correspond exactement à ce que je recherche, notamment parce que {{whyCompany}}",
     ],
     closings: [
       "Je reste à votre disposition pour un entretien et vous remercie de l'attention portée à ma candidature.",
@@ -895,6 +1246,11 @@ const CONTENT: Record<LetterFamily, FamilyContent> = {
       "Je serais très heureux(se) de pouvoir échanger avec vous sur ma motivation.",
       "N'hésitez pas à me contacter pour organiser un entretien, je reste disponible rapidement.",
       "Je me tiens à votre disposition pour toute question complémentaire sur mon profil.",
+      "Je reste disponible pour un entretien, selon ce qui vous conviendra le mieux.",
+      "Je serais heureux(se) d'approfondir avec vous ma motivation lors d'un entretien.",
+      "N'hésitez pas à me proposer un échange ou un test, je reste disponible rapidement.",
+      "Je reste à votre disposition pour un échange, quand cela vous conviendra le mieux.",
+      "Motivé(e) à l'idée de rejoindre vos équipes, je reste disponible rapidement.",
     ],
   },
 };
@@ -912,10 +1268,21 @@ const GENERIC_FIT_NO_FORMATION = [
   "Ce qui me caractérise, c'est ma curiosité et ma persévérance : deux qualités que je compte mettre au service de {{entreprise}}.",
 ];
 
-function findMatchedSkill(profile: ProfileInput, offer: OfferInput): string | null {
-  if (!profile?.skills?.length) return null;
-  const offerText = `${offer.description} ${offer.requirements ?? ""}`;
-  return profile.skills.find((skill) => containsWholeWord(offerText, skill)) ?? null;
+// Toutes les compétences du profil présentes dans l'offre, pas seulement la
+// première trouvée -- deux compétences trouvées permettent un paragraphe
+// dédié plus convaincant (fitWithTwoSkills) qu'un paragraphe à une seule.
+function findMatchedSkills(profile: ProfileInput, offer: OfferInput): string[] {
+  if (!profile?.skills?.length) return [];
+  const offerText = `${offer.title} ${offer.description} ${offer.requirements ?? ""}`;
+  return profile.skills.filter((skill) => containsWholeWord(offerText, skill));
+}
+
+// Le métier visé (onboarding) comparé au titre de l'offre : une
+// correspondance directe ("Data analyst" visé, offre "Data Analyst H/F")
+// mérite un paragraphe dédié, distinct du match de compétences.
+function findMatchedTargetJob(profile: ProfileInput, offer: OfferInput): string | null {
+  if (!profile?.target_jobs?.length) return null;
+  return profile.target_jobs.find((job) => containsWholeWord(offer.title, job)) ?? null;
 }
 
 export function generateStaticCoverLetter(
@@ -924,7 +1291,12 @@ export function generateStaticCoverLetter(
   extra?: CoverLetterExtra,
   attempt = 0,
 ): string {
-  const sector = profile?.sectors?.[0] ?? null;
+  // Le secteur de l'OFFRE prime sur le secteur déclaré du profil : un
+  // candidat qui a coché plusieurs secteurs à l'onboarding doit recevoir une
+  // lettre au ton "marketing" pour une offre marketing, pas systématiquement
+  // le ton de son premier secteur coché. À défaut (source sans secteur
+  // classé, ex. ingestion manuelle), on retombe sur le profil.
+  const sector = offer.sector ?? profile?.sectors?.[0] ?? null;
   const family = familyForSector(sector);
   const content = CONTENT[family];
 
@@ -942,19 +1314,40 @@ export function generateStaticCoverLetter(
     formation: profile?.formation || profile?.education_level || "",
   };
 
-  const matchedSkill = findMatchedSkill(profile, offer);
+  const matchedSkills = findMatchedSkills(profile, offer);
   const paragraphs: string[] = [
     fill(pickNoRepeat(content.openers, `${seedBase}::opener`, attempt), vars),
   ];
 
-  if (matchedSkill) {
+  if (matchedSkills.length >= 2) {
     paragraphs.push(
-      fill(pickNoRepeat(content.fitWithSkill, `${seedBase}::fit`, attempt), { ...vars, skill: matchedSkill }),
+      fill(pickNoRepeat(content.fitWithTwoSkills, `${seedBase}::fit`, attempt), {
+        ...vars,
+        skill: matchedSkills[0],
+        skill2: matchedSkills[1],
+      }),
+    );
+  } else if (matchedSkills.length === 1) {
+    paragraphs.push(
+      fill(pickNoRepeat(content.fitWithSkill, `${seedBase}::fit`, attempt), { ...vars, skill: matchedSkills[0] }),
     );
   } else if (hasFormationInfo) {
     paragraphs.push(fill(pickNoRepeat(content.fitFallback, `${seedBase}::fit`, attempt), vars));
   } else {
     paragraphs.push(fill(pickNoRepeat(GENERIC_FIT_NO_FORMATION, `${seedBase}::fit`, attempt), vars));
+  }
+
+  // Renfort optionnel : le titre de l'offre correspond directement à un
+  // métier visé à l'onboarding -- s'ajoute au paragraphe de fit plutôt que
+  // de le remplacer, c'est un signal distinct (le poste, pas la compétence).
+  const matchedTargetJob = findMatchedTargetJob(profile, offer);
+  if (matchedTargetJob) {
+    paragraphs.push(
+      fill(pickNoRepeat(content.targetJobLines, `${seedBase}::targetJob`, attempt), {
+        ...vars,
+        targetJob: matchedTargetJob,
+      }),
+    );
   }
 
   const achievement = extra?.achievement?.trim();
