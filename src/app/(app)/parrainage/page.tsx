@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { SITE_URL } from "@/lib/site";
 import { ReferralLinkCard } from "@/components/referral/ReferralLinkCard";
 
 export default async function ParrainagePage() {
@@ -34,11 +34,7 @@ export default async function ParrainagePage() {
     (referredProfiles ?? []).map((p) => [p.id, p.full_name]),
   );
 
-  const headerList = await headers();
-  const host = headerList.get("host") ?? "localhost:3000";
-  const protocol = host.startsWith("localhost") ? "http" : "https";
-  const origin = process.env.NEXT_PUBLIC_SITE_URL ?? `${protocol}://${host}`;
-  const referralLink = `${origin}/inscription?ref=${profile?.referral_code ?? ""}`;
+  const referralLink = `${SITE_URL}/inscription?ref=${profile?.referral_code ?? ""}`;
 
   const referralCount = referrals?.length ?? 0;
   const grantedCount = (referrals ?? []).filter(

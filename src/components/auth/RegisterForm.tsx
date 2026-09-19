@@ -7,10 +7,17 @@ import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { GoogleButton } from "@/components/auth/GoogleButton";
 
-export function RegisterForm() {
+export function RegisterForm({
+  initialAffiliateCode,
+}: {
+  initialAffiliateCode?: string | null;
+} = {}) {
   const searchParams = useSearchParams();
   const referredByCode = searchParams.get("ref");
-  const affiliateCode = searchParams.get("aff");
+  // L'URL prime si présente (lien direct /inscription?aff=...) ; sinon on
+  // retombe sur le code résolu côté serveur (cookie aff_code, voir page.tsx)
+  // pour le cas où le lien affilié amène sur la home avant l'inscription.
+  const affiliateCode = searchParams.get("aff") ?? initialAffiliateCode ?? null;
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");

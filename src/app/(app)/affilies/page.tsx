@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { SITE_URL } from "@/lib/site";
 import { ReferralLinkCard } from "@/components/referral/ReferralLinkCard";
 import { applyAsAffiliateAction } from "./actions";
 
@@ -37,11 +37,6 @@ export default async function AffiliesPage({
     // candidature sans aucune trace de pourquoi la vraie fiche n'apparaît pas.
     console.error("AffiliesPage: affiliates query failed", affiliateError, { userId: user.id });
   }
-
-  const headerList = await headers();
-  const host = headerList.get("host") ?? "localhost:3000";
-  const protocol = host.startsWith("localhost") ? "http" : "https";
-  const origin = process.env.NEXT_PUBLIC_SITE_URL ?? `${protocol}://${host}`;
 
   // Pas encore candidat : formulaire d'inscription au programme.
   if (!affiliate) {
@@ -116,7 +111,11 @@ export default async function AffiliesPage({
   }
 
   // Approuvé : tableau de bord complet.
-  const affiliateLink = `${origin}/inscription?aff=${affiliate.code}`;
+  // Pointe sur la home (pas /inscription) : un lien mis en bio doit d'abord
+  // montrer l'argumentaire à du trafic froid plutôt que de le jeter direct
+  // sur un formulaire -- voir proxy.ts pour le cookie qui fait persister le
+  // code jusqu'à l'inscription malgré ce détour par la home.
+  const affiliateLink = `${SITE_URL}/?aff=${affiliate.code}`;
 
   const [{ count: clickCount }, { data: clickVisitors }, { count: referredCount }, { data: commissions }] =
     await Promise.all([

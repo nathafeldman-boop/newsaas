@@ -1,8 +1,21 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { RegisterForm } from "@/components/auth/RegisterForm";
 
-export default function InscriptionPage() {
+export default async function InscriptionPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ aff?: string }>;
+}) {
+  const { aff } = await searchParams;
+  // Fallback cookie (voir proxy.ts) : le lien affilié amène désormais sur la
+  // home plutôt que directement ici, donc "aff" n'est plus forcément présent
+  // dans l'URL de cette page -- sans ce fallback, l'attribution se perdrait
+  // dès que la personne clique un CTA de la landing avant de s'inscrire.
+  const cookieStore = await cookies();
+  const affiliateCode = aff ?? cookieStore.get("aff_code")?.value ?? null;
+
   return (
     <div className="flex-1 flex items-center justify-center px-6 py-12">
       <div className="w-full max-w-[380px]">
@@ -21,7 +34,7 @@ export default function InscriptionPage() {
         </p>
         <div className="mt-6">
           <Suspense>
-            <RegisterForm />
+            <RegisterForm initialAffiliateCode={affiliateCode} />
           </Suspense>
         </div>
       </div>
