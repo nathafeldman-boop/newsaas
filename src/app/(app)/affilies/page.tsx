@@ -25,11 +25,18 @@ export default async function AffiliesPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/affilies");
 
-  const { data: affiliate } = await supabase
+  const { data: affiliate, error: affiliateError } = await supabase
     .from("affiliates")
     .select("*")
     .eq("user_id", user.id)
     .maybeSingle();
+  if (affiliateError) {
+    // supabase-js ne throw jamais sur une erreur Postgres -- sans ce log, un
+    // souci ici (ex: migration pas encore collée en base) retombe
+    // silencieusement sur "pas encore candidat" et affiche le formulaire de
+    // candidature sans aucune trace de pourquoi la vraie fiche n'apparaît pas.
+    console.error("AffiliesPage: affiliates query failed", affiliateError, { userId: user.id });
+  }
 
   const headerList = await headers();
   const host = headerList.get("host") ?? "localhost:3000";
