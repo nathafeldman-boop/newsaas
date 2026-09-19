@@ -5,9 +5,11 @@ import { createClient } from "@/lib/supabase/client";
 
 export function GoogleButton({
   referredByCode,
+  affiliateCode,
   next = "/onboarding",
 }: {
   referredByCode?: string | null;
+  affiliateCode?: string | null;
   next?: string;
 }) {
   const [loading, setLoading] = useState(false);
@@ -22,6 +24,9 @@ export function GoogleButton({
     redirectTo.searchParams.set("next", next);
     if (referredByCode) {
       redirectTo.searchParams.set("ref", referredByCode);
+    }
+    if (affiliateCode) {
+      redirectTo.searchParams.set("aff", affiliateCode);
     }
 
     const { error } = await supabase.auth.signInWithOAuth({

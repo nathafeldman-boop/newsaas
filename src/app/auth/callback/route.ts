@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { attachReferralIfNeeded } from "@/lib/referrals/attachReferral";
+import { attachAffiliateIfNeeded } from "@/lib/affiliates/attachAffiliate";
 import { notifyReferrerOfNewSignup } from "@/lib/resend/notifyReferrer";
 
 // Échange le code renvoyé par le lien de confirmation email / le retour
@@ -9,6 +10,7 @@ export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const ref = searchParams.get("ref");
+  const aff = searchParams.get("aff");
   const next = searchParams.get("next") ?? "/onboarding";
 
   if (code) {
@@ -20,9 +22,12 @@ export async function GET(request: NextRequest) {
           if (ref) {
             await attachReferralIfNeeded(data.user.id, ref);
           }
+          if (aff) {
+            await attachAffiliateIfNeeded(data.user.id, aff);
+          }
           await notifyReferrerOfNewSignup(data.user.id);
         } catch {
-          // best-effort : un souci de parrainage/email ne doit pas casser la connexion
+          // best-effort : un souci de parrainage/affiliation/email ne doit pas casser la connexion
         }
         // supabase-js ne throw jamais sur une erreur Postgres -- ce try/catch
         // n'attrape donc rien de ce genre ; on vérifie le résultat directement

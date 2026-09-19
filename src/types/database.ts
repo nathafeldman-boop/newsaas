@@ -61,6 +61,7 @@ export type Profile = {
   incomplete_payment_reminder_sent_at: string | null;
   weekly_offer_announced_at: string | null;
   swipe_relance_sent_at: string | null;
+  affiliate_id: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -192,6 +193,33 @@ export type Review = {
   created_at: string;
 };
 
+export type AffiliateStatus = "pending" | "approved" | "rejected";
+
+export type Affiliate = {
+  id: string;
+  user_id: string;
+  code: string;
+  status: AffiliateStatus;
+  payout_email: string | null;
+  created_at: string;
+  approved_at: string | null;
+};
+
+export type AffiliateCommissionStatus = "pending" | "paid";
+
+export type AffiliateCommission = {
+  id: string;
+  affiliate_id: string;
+  referred_user_id: string;
+  invoice_id: string;
+  amount_paid_cents: number;
+  commission_cents: number;
+  plan_interval: string;
+  status: AffiliateCommissionStatus;
+  created_at: string;
+  paid_at: string | null;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -236,6 +264,25 @@ export type Database = {
           code: string;
         };
         Update: Partial<Referral>;
+        Relationships: [];
+      };
+      affiliates: {
+        Row: Affiliate;
+        Insert: Partial<Affiliate> & { user_id: string; code: string };
+        Update: Partial<Affiliate>;
+        Relationships: [];
+      };
+      affiliate_commissions: {
+        Row: AffiliateCommission;
+        Insert: Partial<AffiliateCommission> & {
+          affiliate_id: string;
+          referred_user_id: string;
+          invoice_id: string;
+          amount_paid_cents: number;
+          commission_cents: number;
+          plan_interval: string;
+        };
+        Update: Partial<AffiliateCommission>;
         Relationships: [];
       };
       email_connections: {

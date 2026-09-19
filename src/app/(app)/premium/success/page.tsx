@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getStripeClient } from "@/lib/stripe/client";
 import { syncSubscriptionToProfile } from "@/lib/stripe/syncSubscription";
 import { creditInvoicePayment } from "@/lib/stripe/creditInvoicePayment";
+import { creditAffiliateCommission } from "@/lib/affiliates/creditAffiliateCommission";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type Stripe from "stripe";
 
@@ -90,6 +91,14 @@ async function reconcileFromSession(sessionId: string, userId: string) {
           userId,
           invoiceId: invoice.id,
         });
+      } else {
+        const { error: commissionError } = await creditAffiliateCommission(invoice, customerId);
+        if (commissionError) {
+          console.error("premium/success: creditAffiliateCommission failed", commissionError, {
+            userId,
+            invoiceId: invoice.id,
+          });
+        }
       }
     }
   } catch (err) {

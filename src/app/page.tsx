@@ -457,6 +457,7 @@ export default async function LandingPage() {
           style={{ borderTop: "1px solid var(--color-divider)" }}
         >
           {[
+            { href: "/affilies", label: "Devenir affilié" },
             { href: "/legal/mentions-legales", label: "Mentions légales" },
             { href: "/legal/cgu", label: "CGU" },
             { href: "/legal/cgv", label: "CGV" },

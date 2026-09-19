@@ -160,6 +160,14 @@ export default async function ProfilPage({
           <span style={{ fontSize: 14 }}>Parrainage</span>
           <span>→</span>
         </Link>
+        <Link
+          href="/affilies"
+          className="card flex-row items-center justify-between no-underline"
+          style={{ color: "inherit", padding: "var(--space-3) var(--space-4)" }}
+        >
+          <span style={{ fontSize: 14 }}>Programme d&apos;affiliation (50% de commission)</span>
+          <span>→</span>
+        </Link>
         {isAdmin && (
           <Link
             href="/admin/offres"

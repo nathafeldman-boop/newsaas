@@ -10,6 +10,7 @@ import { GoogleButton } from "@/components/auth/GoogleButton";
 export function RegisterForm() {
   const searchParams = useSearchParams();
   const referredByCode = searchParams.get("ref");
+  const affiliateCode = searchParams.get("aff");
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -43,6 +44,7 @@ export function RegisterForm() {
         data: {
           full_name: fullName,
           referred_by_code: referredByCode ?? undefined,
+          affiliate_code: affiliateCode ?? undefined,
         },
       },
     });
@@ -192,7 +194,7 @@ export function RegisterForm() {
 
   return (
     <div className="flex flex-col gap-4">
-      <GoogleButton referredByCode={referredByCode} />
+      <GoogleButton referredByCode={referredByCode} affiliateCode={affiliateCode} />
 
       <div className="flex items-center gap-3 text-xs" style={{ color: "color-mix(in srgb, var(--color-text) 45%, transparent)" }}>
         <div className="h-px flex-1" style={{ background: "var(--color-divider)" }} />

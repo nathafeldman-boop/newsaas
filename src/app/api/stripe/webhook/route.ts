@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { syncSubscriptionToProfile } from "@/lib/stripe/syncSubscription";
 import { creditInvoicePayment } from "@/lib/stripe/creditInvoicePayment";
 import { notifyIncompletePaymentByCustomerId } from "@/lib/stripe/notifyIncompletePayment";
+import { creditAffiliateCommission } from "@/lib/affiliates/creditAffiliateCommission";
 
 export const maxDuration = 30;
 
@@ -156,6 +157,17 @@ export async function POST(request: NextRequest) {
             amount: invoice.amount_paid,
           });
           return NextResponse.json({ error: "Profil pas encore lié, réessaie plus tard." }, { status: 409 });
+        } else {
+          // N'appelé que si creditInvoicePayment a bien matché un profil --
+          // hérite donc gratuitement de la protection contre la course
+          // ci-dessus (jamais appelé avant que stripe_customer_id soit posé).
+          const { error: commissionError } = await creditAffiliateCommission(invoice, customerId);
+          if (commissionError) {
+            console.error("Stripe webhook: creditAffiliateCommission failed", commissionError, {
+              customerId,
+              invoiceId: invoice.id,
+            });
+          }
         }
       }
       break;
