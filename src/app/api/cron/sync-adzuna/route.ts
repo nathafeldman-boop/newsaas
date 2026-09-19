@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { searchAdzunaPage } from "@/lib/adzuna/client";
 import { mapAdzunaJob } from "@/lib/adzuna/mapOffer";
+import { TOP_CITIES } from "@/lib/onboarding/options";
 
 // Sync périodique (voir vercel.json) : ramène des offres alternance/stage
 // depuis Adzuna par lots, upsert dans "offers" (source=adzuna), et désactive
@@ -24,15 +25,34 @@ export const maxDuration = 60;
 // est une requête à part entière (pas juste un synonyme dans le regex de
 // classification) pour élargir le filet sur les annonces qui ne disent
 // jamais littéralement "alternance".
-const QUERIES: { what: string; pages: number }[] = [
-  { what: "alternance", pages: 5 },
-  { what: "apprentissage", pages: 3 },
+const QUERIES: { what: string; pages: number; where?: string }[] = [
+  { what: "alternance", pages: 4 },
+  { what: "apprentissage", pages: 2 },
   { what: "stage", pages: 3 },
 ];
 // Conservateur tant que le compte Adzuna est en plan "Trial Access" (quota
-// limité, souvent quelques centaines d'appels/mois). 11 pages x 1 run/jour
-// (vercel.json) = 11 appels/jour, ~330/mois. Augmenter une fois le
-// plan/quota réel connu (page "Stats" du dashboard Adzuna).
+// limité, souvent quelques centaines d'appels/mois). 11 appels/jour au total
+// (9 génériques ci-dessus + 2 ciblés ville ci-dessous) x 1 run/jour
+// (vercel.json) = ~330/mois. Augmenter une fois le plan/quota réel connu
+// (page "Stats" du dashboard Adzuna).
+
+// Les requêtes génériques ci-dessus, sans filtre "where", sont classées par
+// Adzuna par pertinence/date -- ce qui favorise mécaniquement l'Île-de-France
+// où se concentre l'essentiel du volume d'offres. Résultat : un profil basé
+// à Lyon ou Marseille voyait très peu d'offres réellement proches de lui.
+// Plutôt que de multiplier chaque requête par les 12 métropoles de
+// TOP_CITIES (dépasserait largement le quota), on cible une seule ville par
+// jour à tour de rôle -- cycle complet tous les 12 jours -- avec le budget
+// libéré par la réduction des requêtes génériques ci-dessus (5→4 et 3→2
+// pages). Basé sur le nombre de jours depuis l'epoch plutôt que le jour du
+// mois/de l'année : reste stable même si un run de cron est manqué, et ne
+// dérive pas d'une année sur l'autre (365 n'est pas un multiple de 12).
+const CITY_OF_THE_DAY = TOP_CITIES[Math.floor(Date.now() / 86_400_000) % TOP_CITIES.length];
+const CITY_QUERIES: { what: string; pages: number; where: string }[] = [
+  { what: "alternance", pages: 1, where: CITY_OF_THE_DAY },
+  { what: "stage", pages: 1, where: CITY_OF_THE_DAY },
+];
+
 const STALE_AFTER_DAYS = 10;
 // Filtre de sécurité en plus de max_days_old côté requête (searchAdzunaPage) :
 // une annonce alternance/stage de plusieurs mois est presque certainement
@@ -56,11 +76,11 @@ export async function GET(request: NextRequest) {
   let upserted = 0;
   const errors: string[] = [];
 
-  for (const { what, pages } of QUERIES) {
+  for (const { what, pages, where } of [...QUERIES, ...CITY_QUERIES]) {
     for (let page = 1; page <= pages; page++) {
       let jobs;
       try {
-        jobs = await searchAdzunaPage(what, page);
+        jobs = await searchAdzunaPage(what, page, where);
       } catch (err) {
         errors.push(err instanceof Error ? err.message : String(err));
         break; // page suivante inutile si celle-ci a échoué (ex: quota, auth)
@@ -109,6 +129,7 @@ export async function GET(request: NextRequest) {
     mapped,
     upserted,
     deactivated: deactivated?.length ?? 0,
+    cityOfTheDay: CITY_OF_THE_DAY,
     errors,
   });
 }

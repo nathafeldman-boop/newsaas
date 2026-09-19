@@ -35,6 +35,7 @@ const MAX_DAYS_OLD = 30;
 export async function searchAdzunaPage(
   what: string,
   page: number,
+  where?: string,
 ): Promise<AdzunaJob[]> {
   const appId = process.env.ADZUNA_APP_ID;
   const appKey = process.env.ADZUNA_APP_KEY;
@@ -50,6 +51,7 @@ export async function searchAdzunaPage(
   url.searchParams.set("sort_by", "date");
   url.searchParams.set("max_days_old", String(MAX_DAYS_OLD));
   url.searchParams.set("content-type", "application/json");
+  if (where) url.searchParams.set("where", where);
 
   const res = await fetch(url.toString());
   if (!res.ok) {
