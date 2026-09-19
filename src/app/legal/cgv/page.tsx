@@ -33,7 +33,7 @@ export default function CGVPage() {
         <p>L&apos;abonnement Premium est proposé selon trois formules, au choix :</p>
         <ul style={{ margin: "8px 0 0", paddingLeft: 20 }}>
           <li><strong>7,99&nbsp;€ / mois</strong>, renouvelable automatiquement chaque mois ;</li>
-          <li><strong>4,50&nbsp;€ / semaine</strong>, renouvelable automatiquement chaque semaine ;</li>
+          <li><strong>3,50&nbsp;€ / semaine</strong>, renouvelable automatiquement chaque semaine ;</li>
           <li><strong>1,50&nbsp;€ / jour</strong>, renouvelable automatiquement chaque jour.</li>
         </ul>
         <p style={{ marginTop: 8 }}>

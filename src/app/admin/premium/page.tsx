@@ -250,7 +250,7 @@ export default async function AdminPremiumPage({
       >
         <p style={{ fontWeight: 600, margin: 0, fontSize: 14 }}>Annoncer l&apos;offre hebdomadaire</p>
         <p style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>
-          Envoie un email annonçant Premium à 4,50€/semaine à tous les inscrits non-Premium ayant déjà
+          Envoie un email annonçant Premium à 3,50€/semaine à tous les inscrits non-Premium ayant déjà
           épuisé leurs swipes gratuits (jusqu&apos;à {weeklyOfferCandidatesUpperBound ?? 0} candidat(s), le
           nombre réel de destinataires peut être plus bas). Sans effet sur un compte déjà notifié — si
           l&apos;envoi s&apos;interrompt (gros volume), relancer reprend juste là où ça s&apos;est arrêté.

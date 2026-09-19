@@ -274,7 +274,7 @@ export async function sendIncompletePaymentReminderAction(formData: FormData) {
   revalidatePath("/admin/premium");
 }
 
-// Relance en masse au lancement de l'offre hebdomadaire (4,50€/semaine,
+// Relance en masse au lancement de l'offre hebdomadaire (3,50€/semaine,
 // voir /premium) : prévient tous les inscrits déjà passés par le mur
 // payant sans avoir pris Premium. "Passé par le mur" n'a pas de tracking
 // dédié (site_visits n'est pas fiable pour ça, voir ailleurs) -- on

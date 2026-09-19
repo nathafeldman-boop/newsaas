@@ -44,7 +44,7 @@ export default async function AffiliesPage({
       <div className="mx-auto w-full max-w-[520px]">
         <h1 style={{ fontSize: 28, margin: 0 }}>Programme d&apos;affiliation</h1>
         <p style={{ fontSize: 14, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "8px 0 0", lineHeight: 1.5 }}>
-          Touche <strong>50% de commission</strong> sur chaque abonnement hebdomadaire (4,50€) ou
+          Touche <strong>50% de commission</strong> sur chaque abonnement hebdomadaire (3,50€) ou
           mensuel (7,99€) que tu apportes à Stageio, sur toute la durée de l&apos;abonnement.
         </p>
 

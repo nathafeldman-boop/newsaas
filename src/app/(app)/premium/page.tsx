@@ -302,7 +302,7 @@ export default async function PremiumPage({
                   Formule hebdomadaire
                 </div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 6 }}>
-                  <span style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.02em" }}>4,50 €</span>
+                  <span style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.02em" }}>3,50 €</span>
                   <span style={{ fontSize: 13.5, fontWeight: 500, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
                     / semaine
                   </span>
