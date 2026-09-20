@@ -200,6 +200,31 @@ export default async function PremiumPage({
               </div>
             )}
 
+            {/* Bandeau saisonnier (rentrée) : pas de claim de hausse de prix à
+                venir contrairement à la version précédente (retirée puis
+                réintroduite ici) -- le prix hebdo vient d'être repassé de
+                4,50€ à 3,50€, annoncer une "augmentation prévue" serait donc
+                faux, et l'arrêté du 11 mars 2015 encadre strictement ce type
+                d'annonce. Purement saisonnier/motivationnel ici. */}
+            <div
+              className="animate-in flex items-center gap-2"
+              style={{
+                background: "var(--color-accent-2-100)",
+                border: "1px solid var(--color-accent-2-300)",
+                borderRadius: 12,
+                padding: "9px 12px",
+                marginBottom: 14,
+              }}
+            >
+              <span aria-hidden style={{ fontSize: 16, lineHeight: 1 }}>
+                🎒
+              </span>
+              <div style={{ fontSize: 12, lineHeight: 1.4, color: "var(--color-accent-2-800)" }}>
+                <strong>Offre spéciale rentrée</strong> — tous les outils Premium pour décrocher ton
+                alternance ou ton stage cette rentrée.
+              </div>
+            </div>
+
             <span
               className="tag animate-in"
               style={{
