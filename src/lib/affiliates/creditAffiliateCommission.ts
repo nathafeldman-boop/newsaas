@@ -32,7 +32,19 @@ export async function creditAffiliateCommission(
   const priceRef = invoice.lines.data[0]?.pricing?.price_details?.price;
   const priceId = typeof priceRef === "string" ? priceRef : (priceRef?.id ?? null);
   const planInterval = planLabelForPriceId(priceId);
-  if (!planInterval) return {};
+  if (!planInterval) {
+    // Jamais une erreur en soi (formule quotidienne, ou paiement hors
+    // abonnement) -- mais sans ce log, impossible de distinguer après coup
+    // "normal, pas éligible" de "STRIPE_PRICE_ID_WEEKLY/STRIPE_PRICE_ID ne
+    // matche plus le vrai price Stripe" (ex: env var pas encore repropagée
+    // juste après un changement de prix). Voir l'audit du 15/09.
+    console.log("creditAffiliateCommission: plan non commissionnable, ignoré", {
+      invoiceId: invoice.id,
+      customerId,
+      priceId,
+    });
+    return {};
+  }
 
   const admin = createAdminClient();
   const { data: profile, error: profileError } = await admin
@@ -41,7 +53,18 @@ export async function creditAffiliateCommission(
     .eq("stripe_customer_id", customerId)
     .maybeSingle();
   if (profileError) return { error: profileError.message };
-  if (!profile?.affiliate_id) return {};
+  if (!profile?.affiliate_id) {
+    // Idem : jamais une erreur (la personne n'est simplement pas venue via
+    // un lien d'affiliation), mais sans log, un vrai bug d'attribution à
+    // l'inscription (cookie aff_code perdu, code mal transmis...) serait
+    // indiscernable d'un client venu par un autre canal.
+    console.log("creditAffiliateCommission: profil sans affiliate_id, ignoré", {
+      invoiceId: invoice.id,
+      customerId,
+      profileId: profile?.id ?? null,
+    });
+    return {};
+  }
 
   const commissionCents = Math.round(invoice.amount_paid * COMMISSION_RATE);
 
@@ -56,5 +79,13 @@ export async function creditAffiliateCommission(
   // 23505 = violation de contrainte unique sur invoice_id : ce paiement a
   // déjà été commissionné (webhook rejoué) -- jamais une vraie erreur.
   if (error && error.code !== "23505") return { error: error.message };
+  if (!error) {
+    console.log("creditAffiliateCommission: commission créditée", {
+      invoiceId: invoice.id,
+      affiliateId: profile.affiliate_id,
+      planInterval,
+      commissionCents,
+    });
+  }
   return {};
 }
