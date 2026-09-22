@@ -855,6 +855,41 @@ export function OnboardingWizard({
                   </div>
                 </div>
 
+                {/* Contexte marché (chiffre réel DARES/Insee, voir la LP pour
+                    la même donnée) + rappel de l'offre rentrée -- juste avant
+                    le bouton final, pour que l'urgence soit la dernière chose
+                    lue avant de basculer sur /swipe puis /premium. */}
+                <div
+                  className="flex flex-col gap-2"
+                  style={{
+                    marginTop: 16,
+                    background: "var(--color-accent-2-100)",
+                    border: "1px solid var(--color-accent-2-300)",
+                    borderRadius: 16,
+                    padding: 14,
+                  }}
+                >
+                  <div className="flex items-start gap-2">
+                    <span aria-hidden style={{ fontSize: 16, lineHeight: 1.3 }}>
+                      📉
+                    </span>
+                    <p style={{ fontSize: 12, lineHeight: 1.45, color: "var(--color-accent-2-800)", margin: 0 }}>
+                      <strong>846 700 contrats d&apos;alternance signés en France en 2025</strong>, soit 5% de
+                      moins qu&apos;en 2024 (source DARES/Insee) — le marché se resserre, se démarquer compte
+                      plus que jamais.
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span aria-hidden style={{ fontSize: 16, lineHeight: 1.3 }}>
+                      🎒
+                    </span>
+                    <p style={{ fontSize: 12, lineHeight: 1.45, color: "var(--color-accent-2-800)", margin: 0 }}>
+                      <strong>Offre spéciale rentrée</strong> — tarifs actuels garantis encore un temps
+                      limité, augmentation prévue ensuite.
+                    </p>
+                  </div>
+                </div>
+
                 <div className="flex-1" style={{ minHeight: 20 }} />
 
                 {error && (

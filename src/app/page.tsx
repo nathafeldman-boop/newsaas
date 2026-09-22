@@ -290,6 +290,27 @@ export default async function LandingPage() {
 
         <section className="py-8 text-center">
           <span className="tag tag-accent-2" style={{ marginBottom: 16 }}>
+            La réalité du marché
+          </span>
+          <h2 style={{ fontSize: 26, margin: "14px auto 0", maxWidth: "26ch" }}>
+            Les contrats d&apos;alternance ont <Highlight>baissé de 5%</Highlight> en France en 2025
+          </h2>
+          <p
+            style={{
+              fontSize: 14.5,
+              margin: "10px auto 0",
+              maxWidth: "48ch",
+              color: "color-mix(in srgb, var(--color-text) 70%, transparent)",
+            }}
+          >
+            846 700 contrats signés en France en 2025, soit 5% de moins qu&apos;en 2024
+            (source DARES/Insee) — un marché qui se resserre chaque année. Se démarquer
+            devient essentiel.
+          </p>
+        </section>
+
+        <section className="py-8 text-center">
+          <span className="tag tag-accent-2" style={{ marginBottom: 16 }}>
             Essaie, là, tout de suite
           </span>
           <h2 style={{ fontSize: 26, margin: "14px auto 0", maxWidth: "22ch" }}>
