@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getStripeClient } from "@/lib/stripe/client";
 import { SITE_URL } from "@/lib/site";
+import { isDailyOfferActive } from "@/lib/subscription/dailyOfferDeadline";
 
 async function getOrCreateStripeCustomer(userId: string, email: string | null) {
   const supabase = await createClient();
@@ -42,6 +43,12 @@ export async function createCheckoutSessionAction(formData: FormData) {
   // Stripe correspondante n'est pas configurée, seule l'offre mensuelle
   // (comportement historique, sans ce champ) reste disponible.
   const plan = formData.get("plan");
+  // Formule quotidienne retirée après DAILY_OFFER_DEADLINE (voir ce module) :
+  // vérifié ici en plus de son absence côté UI sur /premium, au cas où un
+  // onglet resté ouvert ou un lien direct tenterait quand même le checkout.
+  if (plan === "daily" && !isDailyOfferActive()) {
+    redirect("/premium?error=not_configured");
+  }
   const rawPriceId =
     plan === "weekly"
       ? process.env.STRIPE_PRICE_ID_WEEKLY

@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { isPremium } from "@/lib/subscription/isPremium";
 import { createCheckoutSessionAction, createPortalSessionAction } from "./actions";
 import { AccessCodeForm } from "@/components/premium/AccessCodeForm";
+import { DailyOfferCountdown } from "@/components/premium/DailyOfferCountdown";
+import { DAILY_OFFER_DEADLINE, isDailyOfferActive } from "@/lib/subscription/dailyOfferDeadline";
 
 const ERROR_MESSAGES: Record<string, string> = {
   not_configured: "Le paiement n'est pas encore configuré, réessaie plus tard.",
@@ -75,6 +77,7 @@ export default async function PremiumPage({
   searchParams: Promise<{ error?: string; limite?: string }>;
 }) {
   const { error, limite } = await searchParams;
+  const dailyOfferActive = isDailyOfferActive();
   const supabase = await createClient();
   const {
     data: { user },
@@ -205,8 +208,12 @@ export default async function PremiumPage({
                 annonce honnêtement que le tarif actuel ne tient qu'un temps
                 limité -- jamais de faux prix barré ("avant/après" jamais
                 réellement pratiqué), ce qui serait interdit (arrêté du 11
-                mars 2015 sur les annonces de réduction de prix). À retirer
-                quand la hausse sera actée. */}
+                mars 2015 sur les annonces de réduction de prix).
+                CONSIGNE EXPLICITE (22/09) : garder ce bandeau tel quel
+                pendant 1 à 2 mois, y compris si d'autres changements
+                touchent le paywall entre-temps (ex: retrait de la formule
+                quotidienne ci-dessous) -- ne pas le retirer ni le modifier
+                sans demande explicite de Nathan. */}
             <div
               className="animate-in flex items-center gap-2"
               style={{
@@ -357,7 +364,7 @@ export default async function PremiumPage({
               </div>
             )}
 
-            {process.env.STRIPE_PRICE_ID_DAILY && (
+            {process.env.STRIPE_PRICE_ID_DAILY && dailyOfferActive && (
               <div
                 className="animate-in"
                 style={{
@@ -377,9 +384,10 @@ export default async function PremiumPage({
                     / jour
                   </span>
                 </div>
-                <div style={{ fontSize: 12, marginTop: 4, marginBottom: 14, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+                <div style={{ fontSize: 12, marginTop: 4, marginBottom: 10, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
                   Pour débloquer Premium juste le temps d&apos;une candidature aujourd&apos;hui.
                 </div>
+                <DailyOfferCountdown deadline={DAILY_OFFER_DEADLINE} />
                 <form action={createCheckoutSessionAction}>
                   <input type="hidden" name="plan" value="daily" />
                   <button
