@@ -400,3 +400,18 @@ qui n'existent pas encore en production**. Avant que ce déploiement ne
 soit utile, il faut appliquer cette migration manuellement (SQL Editor
 Supabase, ou `supabase db push` en CLI) — exactement comme pour toute
 migration précédente de ce projet.
+
+**Mise à jour** : un premier push avait laissé `/swipe`, `/dashboard` et le
+digest email `notify-new-offers` dépendants directement de
+`offers.quality_score` — sans la migration, ces requêtes auraient échoué et
+vidé le deck pour tout le monde. Corrigé immédiatement après coup
+(`src/lib/offers/fetchActiveOffers.ts`) : ces trois chemins retombent
+maintenant automatiquement sur le comportement exact d'avant cette colonne
+si la requête avec filtre qualité échoue. **Le fonctionnement actuel de
+l'app n'est donc plus à risque en attendant l'application de la
+migration** — mais tant qu'elle n'est pas appliquée, la nouvelle ingestion
+d'offres (Adzuna + Mistral) échouera pour chaque offre (colonnes manquantes
+dans l'upsert), la clôture de recherche et le feedback d'annulation ne se
+sauvegarderont pas, et Jimmy fonctionnera sans mémoriser l'historique —
+dégradé, jamais cassant, mais à corriger en appliquant la migration dès que
+possible pour profiter réellement de cette passe.
