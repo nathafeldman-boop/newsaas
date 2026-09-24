@@ -386,32 +386,27 @@ d'appel listés en 3.9 (`candidature/actions.ts`, `cv-audit-actions.ts`,
 
 ---
 
-## ⚠️ Avertissement bloquant : migration non appliquée
+## Mise à jour — Jimmy retiré
 
-La migration `supabase/migrations/20260925000000_retention_v2.sql` a été
-écrite et validée syntaxiquement (cohérente avec les 32 migrations
-précédentes) mais **n'a pas pu être appliquée au projet Supabase de
-production depuis cette session** : le connecteur Supabase MCP disponible
-ici pointe vers un projet Supabase totalement différent et sans rapport
-(`menopause-app`), pas celui de Stageio. Toutes les nouvelles
-fonctionnalités de cette passe (qualité/dédup offres, clôture de
-recherche, feedback d'annulation, Jimmy) **dépendent de colonnes/tables
-qui n'existent pas encore en production**. Avant que ce déploiement ne
-soit utile, il faut appliquer cette migration manuellement (SQL Editor
-Supabase, ou `supabase db push` en CLI) — exactement comme pour toute
-migration précédente de ce projet.
+Sur demande explicite de Nathan, le copilote IA "Jimmy" (section 3.5) a été
+entièrement retiré juste après cette passe (`src/lib/jimmy/`,
+`src/app/(app)/jimmy/`, `src/components/jimmy/`, liens de nav). La table
+`jimmy_messages` reste en base (déjà migrée, jamais de suppression
+rétroactive d'une table/colonne migrée, même inutilisée -- convention du
+projet), mais plus aucun code applicatif ne l'utilise. Le reste de cette
+passe (qualité/dédup offres, matching, statut de candidature, clôture de
+recherche, feedback d'annulation, CV↔offre, plan d'action) reste en place.
 
-**Mise à jour** : un premier push avait laissé `/swipe`, `/dashboard` et le
-digest email `notify-new-offers` dépendants directement de
-`offers.quality_score` — sans la migration, ces requêtes auraient échoué et
-vidé le deck pour tout le monde. Corrigé immédiatement après coup
-(`src/lib/offers/fetchActiveOffers.ts`) : ces trois chemins retombent
-maintenant automatiquement sur le comportement exact d'avant cette colonne
-si la requête avec filtre qualité échoue. **Le fonctionnement actuel de
-l'app n'est donc plus à risque en attendant l'application de la
-migration** — mais tant qu'elle n'est pas appliquée, la nouvelle ingestion
-d'offres (Adzuna + Mistral) échouera pour chaque offre (colonnes manquantes
-dans l'upsert), la clôture de recherche et le feedback d'annulation ne se
-sauvegarderont pas, et Jimmy fonctionnera sans mémoriser l'historique —
-dégradé, jamais cassant, mais à corriger en appliquant la migration dès que
-possible pour profiter réellement de cette passe.
+## Migration appliquée
+
+`supabase/migrations/20260925000000_retention_v2.sql` a été appliquée
+manuellement par Nathan via le SQL Editor Supabase (le connecteur Supabase
+MCP disponible dans cette session pointait vers un projet sans rapport,
+donc l'application automatique n'était pas possible depuis ici). Qualité/
+dédup offres, clôture de recherche et feedback d'annulation sont
+pleinement actifs. Un correctif de résilience
+(`src/lib/offers/fetchActiveOffers.ts`) avait de toute façon été ajouté
+entre-temps pour que `/swipe`, `/dashboard` et `notify-new-offers` ne
+dépendent jamais brutalement de ces colonnes si une future migration
+tardait à être appliquée — gardé en place, sans effet une fois la
+migration posée.

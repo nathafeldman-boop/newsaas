@@ -9,7 +9,6 @@ const LINKS = [
   { href: "/swipe", label: "Swipe" },
   { href: "/favoris", label: "Favoris" },
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/jimmy", label: "Jimmy" },
   { href: "/cv", label: "CV" },
   { href: "/profil", label: "Profil" },
 ];
