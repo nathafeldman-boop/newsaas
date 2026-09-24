@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getStripeClient } from "@/lib/stripe/client";
 import { SITE_URL } from "@/lib/site";
-import { isDailyOfferActive } from "@/lib/subscription/dailyOfferDeadline";
 
 async function getOrCreateStripeCustomer(userId: string, email: string | null) {
   const supabase = await createClient();
@@ -39,22 +38,18 @@ export async function createCheckoutSessionAction(formData: FormData) {
   if (!user) redirect("/login?next=/premium");
 
   // "plan" est posé par un input hidden dans chaque carte de prix (voir
-  // /premium) -- weekly/daily restent optionnels : tant que leur variable
-  // Stripe correspondante n'est pas configurée, seule l'offre mensuelle
+  // /premium) -- weekly reste optionnel : tant que sa variable Stripe
+  // correspondante n'est pas configurée, seule l'offre mensuelle
   // (comportement historique, sans ce champ) reste disponible.
+  // Formule quotidienne définitivement retirée (demande Nathan du 24/09,
+  // après le délai de 24h annoncé le 22/09) : rejetée explicitement plutôt
+  // que silencieusement retombée sur le mensuel, au cas où un onglet resté
+  // ouvert ou un lien direct tenterait quand même ce plan.
   const plan = formData.get("plan");
-  // Formule quotidienne retirée après DAILY_OFFER_DEADLINE (voir ce module) :
-  // vérifié ici en plus de son absence côté UI sur /premium, au cas où un
-  // onglet resté ouvert ou un lien direct tenterait quand même le checkout.
-  if (plan === "daily" && !isDailyOfferActive()) {
+  if (plan === "daily") {
     redirect("/premium?error=not_configured");
   }
-  const rawPriceId =
-    plan === "weekly"
-      ? process.env.STRIPE_PRICE_ID_WEEKLY
-      : plan === "daily"
-        ? process.env.STRIPE_PRICE_ID_DAILY
-        : process.env.STRIPE_PRICE_ID;
+  const rawPriceId = plan === "weekly" ? process.env.STRIPE_PRICE_ID_WEEKLY : process.env.STRIPE_PRICE_ID;
   // .trim() : Stripe rejette un ID avec un espace superflu ("No such
   // price") sans distinguer ça d'un ID réellement invalide -- un simple
   // copier-coller depuis le dashboard Stripe vers Vercel embarque parfois

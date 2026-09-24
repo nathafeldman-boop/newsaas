@@ -4,8 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import { isPremium } from "@/lib/subscription/isPremium";
 import { createCheckoutSessionAction, createPortalSessionAction } from "./actions";
 import { AccessCodeForm } from "@/components/premium/AccessCodeForm";
-import { DailyOfferCountdown } from "@/components/premium/DailyOfferCountdown";
-import { DAILY_OFFER_DEADLINE, isDailyOfferActive } from "@/lib/subscription/dailyOfferDeadline";
 
 const ERROR_MESSAGES: Record<string, string> = {
   not_configured: "Le paiement n'est pas encore configuré, réessaie plus tard.",
@@ -77,7 +75,6 @@ export default async function PremiumPage({
   searchParams: Promise<{ error?: string; limite?: string }>;
 }) {
   const { error, limite } = await searchParams;
-  const dailyOfferActive = isDailyOfferActive();
   const supabase = await createClient();
   const {
     data: { user },
@@ -364,50 +361,6 @@ export default async function PremiumPage({
               </div>
             )}
 
-            {process.env.STRIPE_PRICE_ID_DAILY && dailyOfferActive && (
-              <div
-                className="animate-in"
-                style={{
-                  marginTop: 12,
-                  background: "var(--color-surface)",
-                  borderRadius: 20,
-                  border: "1.5px solid var(--color-divider)",
-                  padding: 20,
-                }}
-              >
-                <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: "0.06em", color: "color-mix(in srgb, var(--color-text) 55%, transparent)", textTransform: "uppercase" }}>
-                  Formule quotidienne
-                </div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 6 }}>
-                  <span style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.02em" }}>1,50 €</span>
-                  <span style={{ fontSize: 13.5, fontWeight: 500, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                    / jour
-                  </span>
-                </div>
-                <div style={{ fontSize: 12, marginTop: 4, marginBottom: 10, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                  Pour débloquer Premium juste le temps d&apos;une candidature aujourd&apos;hui.
-                </div>
-                <DailyOfferCountdown deadline={DAILY_OFFER_DEADLINE} />
-                <form action={createCheckoutSessionAction}>
-                  <input type="hidden" name="plan" value="daily" />
-                  <button
-                    type="submit"
-                    className="btn btn-block"
-                    style={{
-                      height: 46,
-                      border: "1.5px solid var(--color-accent)",
-                      borderRadius: 999,
-                      background: "transparent",
-                      color: "var(--color-accent-700)",
-                      fontSize: 14,
-                      fontWeight: 700,
-                    }}
-                  >
-                    Choisir le quotidien
-                  </button>
-                </form>
-              </div>
-            )}
           </div>
 
           <div style={{ paddingTop: 20 }}>

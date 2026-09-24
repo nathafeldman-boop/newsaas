@@ -6,7 +6,6 @@ import {
   reconcileAllSubscriptionsAction,
   sendIncompletePaymentReminderAction,
   sendWeeklyOfferAnnouncementAction,
-  sendDailyOfferAnnouncementAction,
 } from "@/app/admin/users/actions";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -38,8 +37,6 @@ export default async function AdminPremiumPage({
   searchParams: Promise<{
     weekly_sent?: string;
     weekly_total?: string;
-    daily_sent?: string;
-    daily_total?: string;
     reconcile_checked?: string;
     reconcile_recovered?: string;
     reconcile_failed?: string;
@@ -53,8 +50,6 @@ export default async function AdminPremiumPage({
   const {
     weekly_sent: weeklySent,
     weekly_total: weeklyTotal,
-    daily_sent: dailySent,
-    daily_total: dailyTotal,
     reconcile_checked: reconcileChecked,
     reconcile_recovered: reconcileRecovered,
     reconcile_failed: reconcileFailed,
@@ -92,15 +87,6 @@ export default async function AdminPremiumPage({
     .not("email", "is", null)
     .or("subscription_status.is.null,subscription_status.not.in.(active,trialing,comp)");
 
-  // Contrairement à l'offre hebdo, celle-ci cible tout le monde (pas de
-  // filtre Premium/quota) -- ce compte est donc exact, pas une borne haute.
-  const { count: dailyOfferCandidatesCount } = await admin
-    .from("profiles")
-    .select("id", { count: "exact", head: true })
-    .eq("onboarding_completed", true)
-    .is("daily_offer_announced_at", null)
-    .not("email", "is", null);
-
   const sessionCounts = await Promise.all(
     rows.map((p) =>
       admin
@@ -130,22 +116,6 @@ export default async function AdminPremiumPage({
         >
           <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>
             Envoyé à {weeklySent}/{weeklyTotal} candidat(s).
-          </p>
-        </div>
-      )}
-
-      {dailySent !== undefined && (
-        <div
-          className="card"
-          style={{
-            padding: "var(--space-4)",
-            marginBottom: 12,
-            background: "var(--color-accent-100)",
-            color: "var(--color-accent-700)",
-          }}
-        >
-          <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>
-            Envoyé à {dailySent}/{dailyTotal} inscrit(s).
           </p>
         </div>
       )}
@@ -254,23 +224,6 @@ export default async function AdminPremiumPage({
           épuisé leurs swipes gratuits (jusqu&apos;à {weeklyOfferCandidatesUpperBound ?? 0} candidat(s), le
           nombre réel de destinataires peut être plus bas). Sans effet sur un compte déjà notifié — si
           l&apos;envoi s&apos;interrompt (gros volume), relancer reprend juste là où ça s&apos;est arrêté.
-        </p>
-        <button type="submit" className="btn btn-secondary" style={{ alignSelf: "flex-start" }}>
-          Envoyer l&apos;annonce à tous
-        </button>
-      </form>
-
-      <form
-        action={sendDailyOfferAnnouncementAction}
-        className="card"
-        style={{ padding: "var(--space-4)", marginBottom: 12, gap: 10 }}
-      >
-        <p style={{ fontWeight: 600, margin: 0, fontSize: 14 }}>Annoncer l&apos;offre quotidienne</p>
-        <p style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>
-          Envoie un email annonçant Premium à 1,50€/jour à TOUS les inscrits, sans filtre de statut
-          Premium ni de swipes déjà épuisés ({dailyOfferCandidatesCount ?? 0} destinataire(s) exact(s)).
-          Sans effet sur un compte déjà notifié — si l&apos;envoi s&apos;interrompt (gros volume),
-          relancer reprend juste là où ça s&apos;est arrêté.
         </p>
         <button type="submit" className="btn btn-secondary" style={{ alignSelf: "flex-start" }}>
           Envoyer l&apos;annonce à tous
