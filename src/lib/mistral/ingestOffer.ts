@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { extractOfferFromText } from "@/lib/mistral/extractOffer";
+import { computeOfferFingerprint } from "@/lib/offers/fingerprint";
+import { computeOfferQualityScore } from "@/lib/offers/quality";
 import type { ContractType, Offer } from "@/types/database";
 
 function htmlToText(html: string): string {
@@ -56,27 +58,38 @@ export async function ingestOffer(
   const dedupKey = sourceUrl ?? rawText.slice(0, 500);
   const externalId = createHash("sha256").update(dedupKey).digest("hex").slice(0, 40);
 
+  const offerFields = {
+    title: extracted.title,
+    company: extracted.company,
+    location: extracted.location,
+    contract_type: extracted.contract_type,
+    sector: extracted.sector ?? null,
+    description: extracted.description,
+    requirements: extracted.requirements ?? null,
+    duration: extracted.duration ?? null,
+    salary: extracted.salary ?? null,
+    start_date: extracted.start_date ?? null,
+    remote_policy: extracted.remote_policy ?? null,
+    apply_url: extracted.apply_url ?? sourceUrl ?? null,
+  };
+
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("offers")
     .upsert(
       {
-        title: extracted.title,
-        company: extracted.company,
-        location: extracted.location,
-        contract_type: extracted.contract_type,
-        sector: extracted.sector ?? null,
-        description: extracted.description,
-        requirements: extracted.requirements ?? null,
-        duration: extracted.duration ?? null,
-        salary: extracted.salary ?? null,
-        start_date: extracted.start_date ?? null,
-        remote_policy: extracted.remote_policy ?? null,
-        apply_url: extracted.apply_url ?? sourceUrl ?? null,
+        ...offerFields,
         source: "mistral_ingest",
         source_url: sourceUrl ?? null,
         external_id: externalId,
         is_active: true,
+        // Corrige un vrai bug trouvé à l'audit (RETENTION_AUDIT.md) :
+        // last_seen_at n'était jamais relevé pour ce chemin d'ingestion
+        // (contrairement à sync-adzuna), donc une offre mistral_ingest
+        // re-découverte plus tard ne voyait jamais sa fraîcheur mise à jour.
+        last_seen_at: new Date().toISOString(),
+        content_fingerprint: computeOfferFingerprint(offerFields.title, offerFields.company),
+        quality_score: computeOfferQualityScore(offerFields),
       },
       { onConflict: "source,external_id" },
     )

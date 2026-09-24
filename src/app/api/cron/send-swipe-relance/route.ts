@@ -40,6 +40,7 @@ export async function GET(request: NextRequest) {
     .from("profiles")
     .select("id, email, full_name, created_at")
     .is("swipe_relance_sent_at", null)
+    .is("search_completed_at", null)
     .not("email", "is", null)
     .lte("created_at", CAMPAIGN_CUTOFF)
     .order("created_at", { ascending: true });

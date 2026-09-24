@@ -5,6 +5,9 @@ import { isPremium } from "@/lib/subscription/isPremium";
 import { InterviewSimulator } from "@/components/dashboard/InterviewSimulator";
 import { CvQuickSend } from "@/components/dashboard/CvQuickSend";
 import { PremiumCtaLink } from "@/components/premium/PremiumCtaLink";
+import { computeMatchScore } from "@/lib/matching/score";
+import { MIN_QUALITY_FOR_FEED } from "@/lib/offers/quality";
+import { buildActionPlan } from "@/lib/dashboard/actionPlan";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -15,7 +18,7 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("subscription_status, target_jobs, sectors, cv_path")
+    .select("*")
     .eq("id", user.id)
     .single();
 
@@ -53,12 +56,27 @@ export default async function DashboardPage() {
     );
   }
 
-  const [{ data: applications }, cvSignedUrlResult] = await Promise.all([
-    supabase.from("applications").select("status").eq("user_id", user.id),
-    profile?.cv_path
-      ? supabase.storage.from("cvs").createSignedUrl(profile.cv_path, 60 * 60)
-      : Promise.resolve({ data: null }),
-  ]);
+  const [{ data: applications }, cvSignedUrlResult, { data: likedSwipes }, { data: todayOffers }] =
+    await Promise.all([
+      supabase.from("applications").select("offer_id, status, applied_at").eq("user_id", user.id),
+      profile?.cv_path
+        ? supabase.storage.from("cvs").createSignedUrl(profile.cv_path, 60 * 60)
+        : Promise.resolve({ data: null }),
+      supabase.from("swipes").select("offer_id").eq("user_id", user.id).eq("direction", "like"),
+      (() => {
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        let q = supabase
+          .from("offers")
+          .select("*")
+          .eq("is_active", true)
+          .gte("quality_score", MIN_QUALITY_FOR_FEED)
+          .gte("published_at", todayStart.toISOString())
+          .limit(300);
+        if (profile && profile.sectors.length > 0) q = q.in("sector", profile.sectors);
+        return q;
+      })(),
+    ]);
 
   const counts = { sent: 0, positive: 0, negative: 0 };
   for (const app of applications ?? []) {
@@ -67,6 +85,29 @@ export default async function DashboardPage() {
     else counts.sent++;
   }
   const totalApplications = applications?.length ?? 0;
+
+  // Plan d'action (RETENTION_AUDIT.md) : calculé ici, purement à partir de
+  // vraies données -- jamais de compteur générique/factice.
+  const appliedOfferIds = new Set((applications ?? []).map((a) => a.offer_id));
+  const likedOfferIds = new Set((likedSwipes ?? []).map((s) => s.offer_id));
+  const offersToApplyCount = [...likedOfferIds].filter((id) => !appliedOfferIds.has(id)).length;
+
+  // Même seuil que le digest email de nouvelles offres (notify-new-offers) :
+  // n'annonce que ce qui vaudrait aussi sa place dans un feed pertinent.
+  const MIN_SCORE_FOR_PLAN = 58;
+  const newMatchingOffersCount = profile
+    ? (todayOffers ?? []).filter((o) => computeMatchScore(profile, o) >= MIN_SCORE_FOR_PLAN).length
+    : 0;
+
+  const staleCutoff = new Date();
+  staleCutoff.setDate(staleCutoff.getDate() - 7);
+  const staleApplicationsCount = (applications ?? []).filter(
+    (a) =>
+      (a.status === "envoyee" || a.status === "en_cours") &&
+      new Date(a.applied_at) < staleCutoff,
+  ).length;
+
+  const actionPlan = buildActionPlan({ newMatchingOffersCount, offersToApplyCount, staleApplicationsCount });
 
   const defaultJobHint = profile?.target_jobs?.[0] || profile?.sectors?.[0] || "";
   const cvSignedUrl = cvSignedUrlResult.data?.signedUrl ?? null;
@@ -77,6 +118,30 @@ export default async function DashboardPage() {
       <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "4px 0 0" }}>
         Prépare tes entretiens et suis tes candidatures, au même endroit.
       </p>
+
+      {actionPlan.length > 0 && (
+        <div className="card elev-sm mt-6" style={{ padding: "var(--space-6)" }}>
+          <p style={{ fontFamily: "var(--font-heading)", fontSize: 17, margin: 0 }}>🎯 Aujourd&apos;hui</p>
+          <div className="flex flex-col gap-2.5" style={{ marginTop: 12 }}>
+            {actionPlan.map((item) => (
+              <div key={item.text} className="flex items-start gap-2.5">
+                <span aria-hidden style={{ fontSize: 15, lineHeight: 1.4 }}>
+                  {item.icon}
+                </span>
+                <p style={{ fontSize: 13.5, lineHeight: 1.4, margin: 0 }}>{item.text}</p>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2" style={{ marginTop: 14 }}>
+            <Link href="/swipe" className="btn btn-primary" style={{ padding: "8px 14px", fontSize: 12.5 }}>
+              Voir les offres
+            </Link>
+            <Link href="/favoris" className="btn btn-secondary" style={{ padding: "8px 14px", fontSize: 12.5 }}>
+              Mes favoris
+            </Link>
+          </div>
+        </div>
+      )}
 
       <div className="mt-6">
         <InterviewSimulator userId={user.id} isPremium={premium} defaultJobHint={defaultJobHint} />

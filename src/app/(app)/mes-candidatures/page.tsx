@@ -1,23 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import type { ApplicationStatus } from "@/types/database";
-
-const STATUS_TAG_CLASS: Record<ApplicationStatus, string> = {
-  envoyee: "tag tag-accent",
-  en_cours: "tag tag-neutral",
-  entretien: "tag tag-outline",
-  acceptee: "tag tag-accent-2",
-  refusee: "tag tag-neutral",
-};
-
-const STATUS_LABELS: Record<ApplicationStatus, string> = {
-  envoyee: "Envoyée",
-  en_cours: "En cours",
-  entretien: "Entretien",
-  acceptee: "Acceptée",
-  refusee: "Refusée",
-};
+import { ApplicationStatusControl } from "@/components/candidature/ApplicationStatusControl";
 
 export default async function MesCandidaturesPage() {
   const supabase = await createClient();
@@ -103,13 +87,12 @@ export default async function MesCandidaturesPage() {
             const offer = offerById.get(app.offer_id);
             if (!offer) return null;
             return (
-              <Link
-                key={app.id}
-                href={`/candidature/${offer.id}`}
-                className="card flex-row items-center justify-between no-underline"
-                style={{ color: "inherit" }}
-              >
-                <div>
+              <div key={app.id} className="card flex-row items-center justify-between">
+                <Link
+                  href={`/candidature/${offer.id}`}
+                  className="no-underline"
+                  style={{ color: "inherit", minWidth: 0 }}
+                >
                   <p style={{ fontWeight: 600, margin: 0 }}>{offer.title}</p>
                   <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "2px 0 0" }}>
                     {offer.company} · {offer.location}
@@ -117,9 +100,9 @@ export default async function MesCandidaturesPage() {
                   <p style={{ fontSize: 11, color: "color-mix(in srgb, var(--color-text) 45%, transparent)", margin: "4px 0 0" }}>
                     Postulé le {new Date(app.applied_at).toLocaleDateString("fr-FR")}
                   </p>
-                </div>
-                <span className={STATUS_TAG_CLASS[app.status]}>{STATUS_LABELS[app.status]}</span>
-              </Link>
+                </Link>
+                <ApplicationStatusControl applicationId={app.id} status={app.status} />
+              </div>
             );
           })}
         </div>

@@ -2,11 +2,11 @@ import Link from "next/link";
 import type { ApplicationStatus, Offer } from "@/types/database";
 
 const STATUS_LABELS: Record<ApplicationStatus, string> = {
-  envoyee: "Candidature envoyée",
-  en_cours: "En cours",
-  entretien: "Entretien",
-  acceptee: "Acceptée",
-  refusee: "Refusée",
+  envoyee: "📨 Candidature envoyée",
+  en_cours: "📝 En cours",
+  entretien: "💬 Entretien",
+  acceptee: "✅ Acceptée",
+  refusee: "❌ Refusée",
 };
 
 export function OfferListCard({
@@ -65,7 +65,7 @@ export function OfferListCard({
           </span>
         ) : (
           <span style={{ fontSize: 11, color: "color-mix(in srgb, var(--color-text) 50%, transparent)" }}>
-            Pas encore postulé
+            ❤️ À regarder
           </span>
         )}
         <Link

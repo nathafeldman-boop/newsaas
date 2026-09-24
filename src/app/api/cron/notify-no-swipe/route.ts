@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
     .select("id, email, full_name")
     .eq("onboarding_completed", true)
     .is("no_swipe_reminder_sent_at", null)
+    .is("search_completed_at", null)
     .lte("created_at", cutoff.toISOString())
     .not("email", "is", null);
 

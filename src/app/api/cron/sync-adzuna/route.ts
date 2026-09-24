@@ -3,6 +3,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { searchAdzunaPage } from "@/lib/adzuna/client";
 import { mapAdzunaJob } from "@/lib/adzuna/mapOffer";
 import { TOP_CITIES } from "@/lib/onboarding/options";
+import { computeOfferFingerprint } from "@/lib/offers/fingerprint";
+import { computeOfferQualityScore } from "@/lib/offers/quality";
 
 // Sync périodique (voir vercel.json) : ramène des offres alternance/stage
 // depuis Adzuna par lots, upsert dans "offers" (source=adzuna), et désactive
@@ -96,7 +98,12 @@ export async function GET(request: NextRequest) {
         .map(mapAdzunaJob)
         .filter((o): o is NonNullable<typeof o> => o !== null)
         .filter((o) => new Date(o.published_at) >= ageCutoff)
-        .map((o) => ({ ...o, last_seen_at: syncStartedAt }));
+        .map((o) => ({
+          ...o,
+          last_seen_at: syncStartedAt,
+          content_fingerprint: computeOfferFingerprint(o.title, o.company),
+          quality_score: computeOfferQualityScore(o),
+        }));
       mapped += rows.length;
 
       if (rows.length > 0) {

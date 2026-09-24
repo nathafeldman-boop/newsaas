@@ -7,6 +7,7 @@ import { auditCvWithGemini } from "@/lib/cvAudit/generateWithGemini";
 import { isGeminiConfigured } from "@/lib/gemini/client";
 import { PROFILE_FOR_AI_COLUMNS } from "@/lib/gemini/profileContext";
 import { isPremium } from "@/lib/subscription/isPremium";
+import { logServerEvent } from "@/lib/analytics/logServerEvent";
 import type { CvAudit } from "@/lib/cvAudit/schema";
 
 export type CvAuditState =
@@ -81,6 +82,7 @@ export async function auditCvAction(
     if (isGeminiConfigured()) {
       try {
         const audit = await auditCvWithGemini(text, profile);
+        await logServerEvent(supabase, user.id, "cv_analyzed", { source: "gemini", score: audit.score });
         return { status: "success", ...audit };
       } catch (err) {
         console.error("auditCvAction: Gemini a échoué, repli sur l'analyse statique", err);
@@ -93,6 +95,7 @@ export async function auditCvAction(
       educationLevel: profile.education_level,
       experienceLevel: profile.experience_level,
     });
+    await logServerEvent(supabase, user.id, "cv_analyzed", { source: "static", score: audit.score });
     return { status: "success", ...audit };
   } catch (err) {
     console.error("auditCvAction", err);

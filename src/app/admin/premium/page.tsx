@@ -99,7 +99,12 @@ export default async function AdminPremiumPage({
 
   return (
     <div>
-      <h1 style={{ fontSize: 26, margin: "0 0 6px" }}>Premium payant</h1>
+      <div className="flex items-center justify-between" style={{ margin: "0 0 6px" }}>
+        <h1 style={{ fontSize: 26, margin: 0 }}>Premium payant</h1>
+        <Link href="/admin/annulations" style={{ fontSize: 12.5 }}>
+          Voir les annulations →
+        </Link>
+      </div>
       <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "0 0 20px" }}>
         {rows.length} abonné(s) payant(s) (statut actif ou essai, hors codes offerts).
       </p>

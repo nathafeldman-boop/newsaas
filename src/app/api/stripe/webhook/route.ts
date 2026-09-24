@@ -89,6 +89,13 @@ export async function POST(request: NextRequest) {
             userId,
             customerId,
           });
+        } else {
+          const { error: eventError } = await admin
+            .from("user_events")
+            .insert({ user_id: userId, event_type: "subscription_started", metadata: { customerId } });
+          if (eventError) {
+            console.error("Stripe webhook: subscription_started event insert failed", eventError, { userId });
+          }
         }
       } else {
         console.error("Stripe webhook: checkout.session.completed missing userId or customerId", {

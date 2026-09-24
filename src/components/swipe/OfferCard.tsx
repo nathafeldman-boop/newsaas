@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { getFreshnessLabel } from "@/lib/offers/freshness";
 import type { Offer } from "@/types/database";
 
 function formatStartDate(dateStr: string): string {
@@ -236,6 +237,7 @@ export function OfferCardContent({
     (t): t is string => Boolean(t),
   );
   const hypeMessage = matchHypeMessage(score, offer.id);
+  const freshnessLabel = getFreshnessLabel(offer.published_at);
 
   return (
     <div className="flex h-full flex-col overflow-y-auto" style={{ padding: "20px 20px 18px" }}>
@@ -276,25 +278,43 @@ export function OfferCardContent({
         {typeLabel} • {offer.location}
       </p>
 
-      {hypeMessage && (
-        <p
-          style={{
-            margin: "10px 0 0",
-            fontSize: 12.5,
-            fontWeight: 700,
-            color: "var(--color-accent-700)",
-            background: "var(--color-accent-100)",
-            display: "inline-block",
-            padding: "5px 10px",
-            borderRadius: 999,
-          }}
-        >
-          {hypeMessage}
-        </p>
+      {(hypeMessage || typeof score === "number") && (
+        <div className="flex flex-wrap items-center gap-1.5" style={{ marginTop: 10 }}>
+          {typeof score === "number" && (
+            <span
+              style={{
+                fontSize: 12.5,
+                fontWeight: 700,
+                color: "var(--color-accent-700)",
+                background: "var(--color-accent-100)",
+                padding: "5px 10px",
+                borderRadius: 999,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {score}% compatible
+            </span>
+          )}
+          {hypeMessage && (
+            <span
+              style={{
+                fontSize: 12.5,
+                fontWeight: 700,
+                color: "var(--color-accent-700)",
+                background: "var(--color-accent-100)",
+                padding: "5px 10px",
+                borderRadius: 999,
+              }}
+            >
+              {hypeMessage}
+            </span>
+          )}
+        </div>
       )}
 
-      {tags.length > 0 && (
+      {(tags.length > 0 || freshnessLabel) && (
         <div className="flex flex-wrap gap-1.5" style={{ marginTop: 12 }}>
+          {freshnessLabel && <span className="tag tag-accent-2">✨ {freshnessLabel}</span>}
           {tags.map((tag) => (
             <span key={tag} className="tag tag-neutral">
               {tag}

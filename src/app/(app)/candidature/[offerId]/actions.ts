@@ -6,6 +6,7 @@ import { generateCoverLetterWithGemini } from "@/lib/coverLetter/generateWithGem
 import { isGeminiConfigured } from "@/lib/gemini/client";
 import { PROFILE_FOR_AI_COLUMNS } from "@/lib/gemini/profileContext";
 import { isPremium } from "@/lib/subscription/isPremium";
+import { logServerEvent } from "@/lib/analytics/logServerEvent";
 
 export type GenerateCoverLetterResult =
   | { status: "success"; letter: string }
@@ -77,6 +78,8 @@ export async function generateCoverLetterAction(
         userId: user.id,
         offerId,
       });
+    } else {
+      await logServerEvent(supabase, user.id, "offer_applied", { offerId });
     }
   }
 
@@ -95,16 +98,21 @@ export async function generateCoverLetterAction(
   }
 
   let letter: string | null = null;
+  let letterSource: "gemini" | "static" = "static";
   if (isGeminiConfigured()) {
     try {
       letter = await generateCoverLetterWithGemini(offer, profile, profile?.cv_text ?? null, extra);
+      letterSource = "gemini";
     } catch (err) {
       console.error("generateCoverLetterAction: Gemini a échoué, repli sur le générateur statique", err);
     }
   }
   if (!letter) {
     letter = generateStaticCoverLetter(offer, profile, extra, attempt);
+    letterSource = "static";
   }
+
+  await logServerEvent(supabase, user.id, "cover_letter_generated", { offerId, source: letterSource, attempt });
 
   // Ne touche jamais au statut ici : une candidature déjà en cours
   // d'entretien ne doit pas retomber à "envoyee" à cause d'une

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isPremium } from "@/lib/subscription/isPremium";
-import { createCheckoutSessionAction, createPortalSessionAction } from "./actions";
+import { createCheckoutSessionAction } from "./actions";
 import { AccessCodeForm } from "@/components/premium/AccessCodeForm";
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -139,24 +139,25 @@ export default async function PremiumPage({
           >
             Swipes illimités, candidatures illimitées et audit CV sont débloqués.
           </p>
-          <form action={createPortalSessionAction} className="w-full" style={{ maxWidth: 300 }}>
-            <button
-              type="submit"
-              className="btn btn-block"
-              style={{
-                height: 50,
-                borderRadius: 999,
-                border: "1.5px solid var(--color-accent)",
-                background: "transparent",
-                color: "var(--color-accent-700)",
-                fontSize: 15,
-                fontWeight: 700,
-                marginTop: 28,
-              }}
-            >
-              Gérer mon abonnement
-            </button>
-          </form>
+          <Link
+            href="/premium/annuler"
+            className="btn btn-block"
+            style={{
+              height: 50,
+              borderRadius: 999,
+              border: "1.5px solid var(--color-accent)",
+              background: "transparent",
+              color: "var(--color-accent-700)",
+              fontSize: 15,
+              fontWeight: 700,
+              marginTop: 28,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            Gérer mon abonnement
+          </Link>
         </div>
       ) : (
         <>

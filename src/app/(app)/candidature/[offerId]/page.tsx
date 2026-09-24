@@ -2,6 +2,8 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { CoverLetterPanel } from "@/components/candidature/CoverLetterPanel";
+import { CvOfferMatchPanel } from "@/components/candidature/CvOfferMatchPanel";
+import { isPremium } from "@/lib/subscription/isPremium";
 
 export default async function CandidaturePage({
   params,
@@ -24,12 +26,16 @@ export default async function CandidaturePage({
 
   if (!offer) notFound();
 
-  const { data: application } = await supabase
-    .from("applications")
-    .select("*")
-    .eq("user_id", user.id)
-    .eq("offer_id", offerId)
-    .maybeSingle();
+  const [{ data: application }, { data: profile }] = await Promise.all([
+    supabase
+      .from("applications")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("offer_id", offerId)
+      .maybeSingle(),
+    supabase.from("profiles").select("subscription_status, cv_text").eq("id", user.id).single(),
+  ]);
+  const canAnalyzeOfferFit = isPremium(profile) && !!profile?.cv_text;
 
   return (
     <div className="mx-auto max-w-xl">
@@ -86,6 +92,8 @@ export default async function CandidaturePage({
           applyUrl={offer.apply_url}
           initialLetter={application?.cover_note ?? null}
         />
+
+        {canAnalyzeOfferFit && <CvOfferMatchPanel offerId={offerId} />}
       </div>
     </div>
   );

@@ -63,6 +63,8 @@ export type Profile = {
   daily_offer_announced_at: string | null;
   swipe_relance_sent_at: string | null;
   affiliate_id: string | null;
+  search_completed_at: string | null;
+  search_completed_reason: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -90,6 +92,8 @@ export type Offer = {
   published_at: string;
   created_at: string;
   last_seen_at: string;
+  content_fingerprint: string | null;
+  quality_score: number;
 };
 
 export type Swipe = {
@@ -228,6 +232,24 @@ export type AffiliateClick = {
   created_at: string;
 };
 
+export type SubscriptionCancellation = {
+  id: string;
+  user_id: string;
+  reason: string;
+  detail: string | null;
+  created_at: string;
+};
+
+export type JimmyMessageRole = "user" | "assistant";
+
+export type JimmyMessage = {
+  id: string;
+  user_id: string;
+  role: JimmyMessageRole;
+  content: string;
+  created_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -357,6 +379,18 @@ export type Database = {
           amount_cents: number;
         };
         Update: Partial<StripeProcessedInvoice>;
+        Relationships: [];
+      };
+      subscription_cancellations: {
+        Row: SubscriptionCancellation;
+        Insert: Partial<SubscriptionCancellation> & { user_id: string; reason: string };
+        Update: Partial<SubscriptionCancellation>;
+        Relationships: [];
+      };
+      jimmy_messages: {
+        Row: JimmyMessage;
+        Insert: Partial<JimmyMessage> & { user_id: string; role: JimmyMessageRole; content: string };
+        Update: Partial<JimmyMessage>;
         Relationships: [];
       };
     };

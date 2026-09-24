@@ -1,10 +1,12 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SwipeDeck } from "@/components/swipe/SwipeDeck";
+import { SearchCompletedCard } from "@/components/swipe/SearchCompletedCard";
 import { computeMatchScore, computeMatchReasons, computeCvMatchBonus, isNearbyCity } from "@/lib/matching/score";
 import { buildLearnedAffinity, type SwipeHistoryEntry } from "@/lib/matching/learning";
 import { computeQuotaStatus, FREE_WEEKLY_SWIPE_QUOTA } from "@/lib/subscription/quota";
 import { computeApplicationStreak } from "@/lib/engagement/applicationStreak";
+import { MIN_QUALITY_FOR_FEED } from "@/lib/offers/quality";
 import type { Offer } from "@/types/database";
 
 export default async function SwipePage() {
@@ -20,6 +22,19 @@ export default async function SwipePage() {
     .select("*")
     .eq("id", user.id)
     .single();
+
+  // Recherche clôturée ("j'ai trouvé mon alternance", voir
+  // RETENTION_AUDIT.md section 17E) : on ne considère jamais ça comme un
+  // échec produit -- état de félicitations avec une sortie simple pour
+  // reprendre la recherche, plutôt que de forcer un compte inactif à revoir
+  // un deck qui ne l'intéresse plus.
+  if (profile?.search_completed_at) {
+    return (
+      <div className="flex flex-1 flex-col items-center">
+        <SearchCompletedCard reason={profile.search_completed_reason} />
+      </div>
+    );
+  }
 
   const [{ data: swiped }, { data: applications }] = await Promise.all([
     supabase
@@ -58,7 +73,12 @@ export default async function SwipePage() {
     swipeHistory = (swiped ?? []).flatMap((s) => {
       const offer = swipedOffersById.get(s.offer_id);
       if (!offer) return [];
-      return [{ direction: s.direction, applied: appliedOfferIds.has(s.offer_id), offer }];
+      return [{
+        direction: s.direction,
+        applied: appliedOfferIds.has(s.offer_id),
+        offer,
+        swipedAt: s.created_at,
+      }];
     });
   }
   const affinity = buildLearnedAffinity(swipeHistory);
@@ -97,6 +117,8 @@ export default async function SwipePage() {
       .from("offers")
       .select("*")
       .eq("is_active", true)
+      .gte("quality_score", MIN_QUALITY_FOR_FEED)
+      .order("quality_score", { ascending: false })
       .order("published_at", { ascending: false })
       .limit(CANDIDATE_POOL_SIZE);
 
@@ -131,6 +153,8 @@ export default async function SwipePage() {
         .from("offers")
         .select("*")
         .eq("is_active", true)
+        .gte("quality_score", MIN_QUALITY_FOR_FEED)
+        .order("quality_score", { ascending: false })
         .order("published_at", { ascending: false })
         .limit(CANDIDATE_POOL_SIZE);
       if (excludeIds.length > 0) {

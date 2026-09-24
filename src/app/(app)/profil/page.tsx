@@ -5,6 +5,7 @@ import { ProfileForm } from "@/components/profile/ProfileForm";
 import { GmailConnectionPanel } from "@/components/profile/GmailConnectionPanel";
 import { SettingsPanel } from "@/components/profile/SettingsPanel";
 import { ReviewPanel } from "@/components/profile/ReviewPanel";
+import { SearchCompletedToggle } from "@/components/profile/SearchCompletedToggle";
 import { PremiumCtaLink } from "@/components/premium/PremiumCtaLink";
 import { isPremium } from "@/lib/subscription/isPremium";
 import type { ApplicationStatus } from "@/types/database";
@@ -144,6 +145,10 @@ export default async function ProfilPage({
           <span style={{ fontSize: 14 }}>{premium ? "🔓 Abonnement Premium actif" : "Passer Premium (7,99€/mois)"}</span>
           <span>→</span>
         </PremiumCtaLink>
+        <SearchCompletedToggle
+          completedAt={profile.search_completed_at}
+          completedReason={profile.search_completed_reason}
+        />
         <Link
           href="/mes-candidatures"
           className="card flex-row items-center justify-between no-underline"

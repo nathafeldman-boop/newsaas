@@ -11,6 +11,11 @@ export type SwipeHistoryEntry = {
   direction: SwipeDirection;
   applied: boolean;
   offer: Pick<Offer, "sector" | "title" | "remote_policy">;
+  /** ISO timestamp du swipe -- utilisé pour la décroissance temporelle du
+   * signal (voir recencyMultiplier ci-dessous). Optionnel pour ne pas casser
+   * un appelant qui ne l'aurait pas (aucun aujourd'hui, mais garde le type
+   * robuste à un futur appelant partiel). */
+  swipedAt?: string;
 };
 
 const STOPWORDS = new Set([
@@ -46,6 +51,22 @@ function bump(map: Map<string, Stat>, rawKey: string, weight: number) {
 // swipe hâtif.
 const MIN_SAMPLES = 2;
 
+// Décroissance temporelle du signal (absente avant cet audit -- voir
+// RETENTION_AUDIT.md) : un swipe d'il y a 3 semaines ne doit plus peser
+// autant qu'un swipe d'hier, sinon un changement récent de préférence (ex:
+// un profil qui se réoriente d'un secteur à un autre) met des semaines à se
+// refléter dans le feed. Paliers simples plutôt qu'une vraie exponentielle :
+// assez pour capturer "récent compte plus" sans sur-ingénierer un modèle
+// dont la différence ne se verrait de toute façon pas à ce volume de swipes.
+function recencyMultiplier(swipedAt: string | undefined): number {
+  if (!swipedAt) return 1;
+  const days = (Date.now() - new Date(swipedAt).getTime()) / 86_400_000;
+  if (days <= 3) return 1.3;
+  if (days <= 14) return 1;
+  if (days <= 30) return 0.6;
+  return 0.3;
+}
+
 function scoreFrom(map: Map<string, Stat>, rawKey: string | null, cap: number): number {
   if (!rawKey) return 0;
   const stat = map.get(normalize(rawKey));
@@ -76,7 +97,7 @@ export function buildLearnedAffinity(history: SwipeHistoryEntry[]): LearnedAffin
     // pass = signal négatif clair. Poids relevé (3 -> 4) pour que quelques
     // vraies candidatures dominent plus vite un historique mêlé de likes
     // impulsifs, plutôt que d'être noyées dedans.
-    const weight = entry.applied ? 4 : entry.direction === "like" ? 1 : -1;
+    const weight = (entry.applied ? 4 : entry.direction === "like" ? 1 : -1) * recencyMultiplier(entry.swipedAt);
     if (entry.offer.sector) bump(sectorStats, entry.offer.sector, weight);
     if (entry.offer.remote_policy) bump(remoteStats, entry.offer.remote_policy, weight);
     for (const kw of extractKeywords(entry.offer.title)) bump(keywordStats, kw, weight);

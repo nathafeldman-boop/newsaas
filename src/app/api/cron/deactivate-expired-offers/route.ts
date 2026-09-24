@@ -1,11 +1,17 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { dedupeActiveOffers } from "@/lib/offers/dedupe";
 
 // Cron quotidien (voir vercel.json) : désactive les offres ingérées qui
 // traînent depuis trop longtemps sans avoir été retraitées (probablement
 // pourvues ou expirées). Les offres de démo ne sont jamais désactivées.
 // Déclenché par Vercel Cron, qui envoie automatiquement
 // "Authorization: Bearer $CRON_SECRET" quand cette variable est définie.
+//
+// Fait aussi office de nettoyage des doublons cross-source (voir
+// RETENTION_AUDIT.md, "déduplication" et src/lib/offers/dedupe.ts) : cette
+// même tâche d'hygiène du catalogue est le point naturel pour ça, plutôt que
+// d'ajouter un cron dédié.
 
 const EXPIRY_DAYS = 30;
 
@@ -34,5 +40,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ deactivated: data?.length ?? 0 });
+  const dedupeResult = await dedupeActiveOffers(admin);
+
+  return NextResponse.json({
+    deactivated: data?.length ?? 0,
+    dedupe: dedupeResult,
+  });
 }

@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getResendClient } from "@/lib/resend/client";
 import { computeMatchScore } from "@/lib/matching/score";
+import { MIN_QUALITY_FOR_FEED } from "@/lib/offers/quality";
 import { SITE_URL } from "@/lib/site";
 import type { Profile } from "@/types/database";
 
@@ -44,6 +45,7 @@ export async function GET(request: NextRequest) {
     .select("*")
     .eq("notify_new_offers", true)
     .eq("onboarding_completed", true)
+    .is("search_completed_at", null)
     .not("email", "is", null)
     .order("id")
     .limit(5000);
@@ -69,6 +71,7 @@ export async function GET(request: NextRequest) {
           .from("offers")
           .select("*")
           .eq("is_active", true)
+          .gte("quality_score", MIN_QUALITY_FOR_FEED)
           .gt("published_at", sinceIso)
           .order("published_at", { ascending: false })
           .limit(200),
