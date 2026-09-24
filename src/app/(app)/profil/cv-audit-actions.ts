@@ -3,18 +3,25 @@
 import { createClient } from "@/lib/supabase/server";
 import { extractCvText } from "@/lib/cv/extractText";
 import { auditCvTextStatic } from "@/lib/cvAudit/staticAudit";
+import { auditCvWithGemini } from "@/lib/cvAudit/generateWithGemini";
+import { isGeminiConfigured } from "@/lib/gemini/client";
+import { PROFILE_FOR_AI_COLUMNS } from "@/lib/gemini/profileContext";
 import { isPremium } from "@/lib/subscription/isPremium";
-import type { CvAudit } from "@/lib/mistral/auditCv";
+import type { CvAudit } from "@/lib/cvAudit/schema";
 
 export type CvAuditState =
   | { status: "idle" }
   | { status: "error"; message: string }
   | ({ status: "success" } & CvAudit);
 
-// Analyse 100% heuristique (voir staticAudit.ts), plus aucun appel Mistral :
-// même contrainte de fiabilité que la lettre de motivation (voir actions.ts
-// du dossier candidature) -- une fonctionnalité Premium ne doit jamais
-// dépendre d'un quota tiers hors de notre contrôle.
+// Gemini en priorité quand configuré (voir .env.example), avec le profil
+// onboarding complet en contexte (mêmes champs que l'algo de matching des
+// swipes -- demande explicite de Nathan avant de démarrer cette intégration) ;
+// repli automatique et silencieux sur l'analyse 100% heuristique
+// (staticAudit.ts) dès que Gemini échoue, dépasse son timeout ou n'est pas
+// configuré. Même contrainte de fiabilité que la lettre de motivation (voir
+// actions.ts du dossier candidature) -- une fonctionnalité Premium ne doit
+// jamais dépendre d'un quota tiers hors de notre contrôle.
 export async function auditCvAction(
   _prevState: CvAuditState,
   _formData: FormData,
@@ -30,7 +37,7 @@ export async function auditCvAction(
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("cv_path, subscription_status, sectors, target_jobs, education_level, experience_level")
+    .select(`cv_path, subscription_status, ${PROFILE_FOR_AI_COLUMNS}`)
     .eq("id", user.id)
     .single();
 
@@ -69,6 +76,15 @@ export async function auditCvAction(
         message:
           "Le texte extrait de ton CV est trop court pour être analysé (CV scanné en image ?).",
       };
+    }
+
+    if (isGeminiConfigured()) {
+      try {
+        const audit = await auditCvWithGemini(text, profile);
+        return { status: "success", ...audit };
+      } catch (err) {
+        console.error("auditCvAction: Gemini a échoué, repli sur l'analyse statique", err);
+      }
     }
 
     const audit = auditCvTextStatic(text, {

@@ -1,14 +1,14 @@
-import type { CvAudit } from "@/lib/mistral/auditCv";
+import type { CvAudit } from "@/lib/cvAudit/schema";
 
-// Audit CV entièrement statique -- ZÉRO appel IA. Remplace l'ancienne
-// version Mistral (src/lib/mistral/auditCv.ts, conservée pour son type
-// CvAudit mais plus utilisée) : même contrat de sortie ({score, strengths,
-// improvements, missing_sections}), donc aucun changement nécessaire côté
-// CvAuditPanel.tsx. Basé sur des heuristiques simples (présence de
-// sections-clés, longueur, résultats chiffrés, pertinence au secteur visé)
-// plutôt qu'une lecture fine du contenu -- moins subtil qu'une vraie lecture
-// par un humain ou une IA, mais toujours disponible, jamais bloqué par un
-// quota tiers.
+// Audit CV entièrement statique -- ZÉRO appel IA. Repli final de
+// auditCvAction (voir cv-audit-actions.ts) quand Gemini n'est pas configuré
+// ou échoue : même contrat de sortie ({score, strengths, improvements,
+// missing_sections} -- voir schema.ts), donc aucun changement nécessaire
+// côté CvAuditPanel.tsx quelle que soit la source. Basé sur des heuristiques
+// simples (présence de sections-clés, longueur, résultats chiffrés,
+// pertinence au secteur visé) plutôt qu'une lecture fine du contenu --
+// moins subtil qu'une vraie lecture par un humain ou une IA, mais toujours
+// disponible, jamais bloqué par un quota tiers.
 
 export type CvAuditContext = {
   sectors?: string[];

@@ -2,6 +2,9 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { generateStaticCoverLetter, type CoverLetterExtra } from "@/lib/coverLetter/staticGenerator";
+import { generateCoverLetterWithGemini } from "@/lib/coverLetter/generateWithGemini";
+import { isGeminiConfigured } from "@/lib/gemini/client";
+import { PROFILE_FOR_AI_COLUMNS } from "@/lib/gemini/profileContext";
 import { isPremium } from "@/lib/subscription/isPremium";
 
 export type GenerateCoverLetterResult =
@@ -14,11 +17,16 @@ export type GenerateCoverLetterResult =
 // qui l'accompagne, pour le quota) est toujours enregistrée -- seule la
 // lettre est réservée aux membres Premium.
 //
-// Génération 100% statique (voir staticGenerator.ts), plus aucun appel
-// Mistral : la version IA plantait pour tous les Premium depuis le 4
-// septembre (quota Mistral à 0 req/min, hors de notre contrôle), et une
-// fonctionnalité Premium phare indisponible pendant des jours a été
-// identifiée comme cause directe de mauvais avis et de churn.
+// Gemini en priorité quand configuré (voir .env.example), avec le profil
+// onboarding complet en contexte (mêmes champs que l'algo de matching des
+// swipes -- demande explicite de Nathan avant de démarrer cette intégration) ;
+// repli automatique et silencieux sur le générateur 100% statique (voir
+// staticGenerator.ts) dès que Gemini échoue, dépasse son timeout ou n'est pas
+// configuré -- jamais un simple appel IA seul en bout de chaîne : la version
+// Mistral plantait pour tous les Premium depuis le 4 septembre (quota à 0
+// req/min, hors de notre contrôle), et une fonctionnalité Premium phare
+// indisponible pendant des jours a été identifiée comme cause directe de
+// mauvais avis et de churn.
 export async function generateCoverLetterAction(
   offerId: string,
   extra?: CoverLetterExtra,
@@ -41,9 +49,7 @@ export async function generateCoverLetterAction(
       .single(),
     supabase
       .from("profiles")
-      .select(
-        "full_name, city, skills, sectors, target_jobs, education_level, formation, experience_level, subscription_status",
-      )
+      .select(`${PROFILE_FOR_AI_COLUMNS}, subscription_status, cv_text`)
       .eq("id", user.id)
       .single(),
   ]);
@@ -88,7 +94,17 @@ export async function generateCoverLetterAction(
     return { status: "premium_required" };
   }
 
-  const letter = generateStaticCoverLetter(offer, profile, extra, attempt);
+  let letter: string | null = null;
+  if (isGeminiConfigured()) {
+    try {
+      letter = await generateCoverLetterWithGemini(offer, profile, profile?.cv_text ?? null, extra);
+    } catch (err) {
+      console.error("generateCoverLetterAction: Gemini a échoué, repli sur le générateur statique", err);
+    }
+  }
+  if (!letter) {
+    letter = generateStaticCoverLetter(offer, profile, extra, attempt);
+  }
 
   // Ne touche jamais au statut ici : une candidature déjà en cours
   // d'entretien ne doit pas retomber à "envoyee" à cause d'une
