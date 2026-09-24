@@ -6,7 +6,7 @@ import { computeMatchScore, computeMatchReasons, computeCvMatchBonus, isNearbyCi
 import { buildLearnedAffinity, type SwipeHistoryEntry } from "@/lib/matching/learning";
 import { computeQuotaStatus, FREE_WEEKLY_SWIPE_QUOTA } from "@/lib/subscription/quota";
 import { computeApplicationStreak } from "@/lib/engagement/applicationStreak";
-import { MIN_QUALITY_FOR_FEED } from "@/lib/offers/quality";
+import { fetchActiveOffers } from "@/lib/offers/fetchActiveOffers";
 import type { Offer } from "@/types/database";
 
 export default async function SwipePage() {
@@ -113,34 +113,18 @@ export default async function SwipePage() {
   let offers: Offer[] = [];
 
   if (!quotaReached) {
-    let query = supabase
-      .from("offers")
-      .select("*")
-      .eq("is_active", true)
-      .gte("quality_score", MIN_QUALITY_FOR_FEED)
-      .order("quality_score", { ascending: false })
-      .order("published_at", { ascending: false })
-      .limit(CANDIDATE_POOL_SIZE);
-
-    if (excludeIds.length > 0) {
-      query = query.not("id", "in", `(${excludeIds.join(",")})`);
-    }
-
+    // Pas de filtre dur par looking_for ici : le sélecteur Stage/Alternance/
+    // Les deux dans SwipeDeck doit pouvoir montrer les deux types même si
+    // l'utilisateur n'a coché qu'un seul lors de l'onboarding. La préférence
+    // continue de peser sur le tri via computeMatchScore.
+    //
     // Filtre dur par secteur : demandé explicitement à l'onboarding
     // (obligatoire depuis peu), donc on ne montre que les offres dans le(s)
     // secteur(s) choisi(s) plutôt que de le laisser peser juste sur le tri.
     // Les comptes créés avant que ce champ soit obligatoire (sectors vide)
     // ne sont pas filtrés, sinon leur deck se viderait d'un coup.
-    if (profile && profile.sectors.length > 0) {
-      query = query.in("sector", profile.sectors);
-    }
-
-    // Pas de filtre dur par looking_for ici : le sélecteur Stage/Alternance/
-    // Les deux dans SwipeDeck doit pouvoir montrer les deux types même si
-    // l'utilisateur n'a coché qu'un seul lors de l'onboarding. La préférence
-    // continue de peser sur le tri via computeMatchScore.
-    const { data: rawOffers } = await query;
-    offers = rawOffers ?? [];
+    const hardSectors = profile && profile.sectors.length > 0 ? profile.sectors : [];
+    offers = await fetchActiveOffers(supabase, { excludeIds, sectors: hardSectors, limit: CANDIDATE_POOL_SIZE });
 
     // Filet de sécurité : si le filtre secteur ne renvoie rien (secteur trop
     // niche, catalogue encore mince dessus...), un compte gratuit qui n'a
@@ -148,20 +132,8 @@ export default async function SwipePage() {
     // -- donc directement sur l'écran "Plus d'offres" au style paywall,
     // sans avoir pu swiper une seule fois. On retente sans le filtre secteur
     // plutôt que de bloquer sur un filtre qu'on a nous-même ajouté.
-    if (offers.length === 0 && profile && profile.sectors.length > 0) {
-      let fallbackQuery = supabase
-        .from("offers")
-        .select("*")
-        .eq("is_active", true)
-        .gte("quality_score", MIN_QUALITY_FOR_FEED)
-        .order("quality_score", { ascending: false })
-        .order("published_at", { ascending: false })
-        .limit(CANDIDATE_POOL_SIZE);
-      if (excludeIds.length > 0) {
-        fallbackQuery = fallbackQuery.not("id", "in", `(${excludeIds.join(",")})`);
-      }
-      const { data: fallbackOffers } = await fallbackQuery;
-      offers = fallbackOffers ?? [];
+    if (offers.length === 0 && hardSectors.length > 0) {
+      offers = await fetchActiveOffers(supabase, { excludeIds, limit: CANDIDATE_POOL_SIZE });
     }
   }
 

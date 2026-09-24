@@ -6,7 +6,7 @@ import { InterviewSimulator } from "@/components/dashboard/InterviewSimulator";
 import { CvQuickSend } from "@/components/dashboard/CvQuickSend";
 import { PremiumCtaLink } from "@/components/premium/PremiumCtaLink";
 import { computeMatchScore } from "@/lib/matching/score";
-import { MIN_QUALITY_FOR_FEED } from "@/lib/offers/quality";
+import { fetchActiveOffers } from "@/lib/offers/fetchActiveOffers";
 import { buildActionPlan } from "@/lib/dashboard/actionPlan";
 
 export default async function DashboardPage() {
@@ -56,7 +56,7 @@ export default async function DashboardPage() {
     );
   }
 
-  const [{ data: applications }, cvSignedUrlResult, { data: likedSwipes }, { data: todayOffers }] =
+  const [{ data: applications }, cvSignedUrlResult, { data: likedSwipes }, todayOffers] =
     await Promise.all([
       supabase.from("applications").select("offer_id, status, applied_at").eq("user_id", user.id),
       profile?.cv_path
@@ -66,15 +66,11 @@ export default async function DashboardPage() {
       (() => {
         const todayStart = new Date();
         todayStart.setHours(0, 0, 0, 0);
-        let q = supabase
-          .from("offers")
-          .select("*")
-          .eq("is_active", true)
-          .gte("quality_score", MIN_QUALITY_FOR_FEED)
-          .gte("published_at", todayStart.toISOString())
-          .limit(300);
-        if (profile && profile.sectors.length > 0) q = q.in("sector", profile.sectors);
-        return q;
+        return fetchActiveOffers(supabase, {
+          sectors: profile && profile.sectors.length > 0 ? profile.sectors : [],
+          publishedAfter: todayStart.toISOString(),
+          limit: 300,
+        });
       })(),
     ]);
 

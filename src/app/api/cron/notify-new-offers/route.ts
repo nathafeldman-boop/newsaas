@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getResendClient } from "@/lib/resend/client";
 import { computeMatchScore } from "@/lib/matching/score";
-import { MIN_QUALITY_FOR_FEED } from "@/lib/offers/quality";
+import { fetchActiveOffers } from "@/lib/offers/fetchActiveOffers";
 import { SITE_URL } from "@/lib/site";
 import type { Profile } from "@/types/database";
 
@@ -66,15 +66,8 @@ export async function GET(request: NextRequest) {
         ? profile.last_offer_alert_sent_at
         : new Date(now.getTime() - FIRST_RUN_WINDOW_HOURS * 3600 * 1000).toISOString();
 
-      const [{ data: newOffers }, { data: swiped }] = await Promise.all([
-        admin
-          .from("offers")
-          .select("*")
-          .eq("is_active", true)
-          .gte("quality_score", MIN_QUALITY_FOR_FEED)
-          .gt("published_at", sinceIso)
-          .order("published_at", { ascending: false })
-          .limit(200),
+      const [newOffers, { data: swiped }] = await Promise.all([
+        fetchActiveOffers(admin, { publishedAfter: sinceIso, limit: 200 }),
         admin.from("swipes").select("offer_id").eq("user_id", profile.id),
       ]);
 
