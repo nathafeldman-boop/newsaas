@@ -18,27 +18,6 @@ export const metadata: Metadata = {
 // frais pour des stats qui bougent lentement.
 export const revalidate = 3600;
 
-const STEPS = [
-  {
-    n: "01",
-    title: "Crée ton profil",
-    text: "Compétences, ville, parcours, et ton CV si tu veux — facultatif.",
-    tone: "light" as const,
-  },
-  {
-    n: "02",
-    title: "Swipe les offres",
-    text: "Logo, salaire, avis d'anciens alternants : tout pour décider d'un regard.",
-    tone: "light" as const,
-  },
-  {
-    n: "03",
-    title: "Postule en un geste",
-    text: "Directement depuis la carte que tu aimes, sans ressaisir tes infos.",
-    tone: "dark" as const,
-  },
-];
-
 const FEATURES = [
   {
     icon: "✍️",
@@ -467,17 +446,27 @@ export default async function LandingPage() {
           <Reveal delay={0.1}>
             <div
               className="mx-auto flex items-center justify-center"
-              style={{ position: "relative", maxWidth: 360, minHeight: 560 }}
+              style={{ position: "relative", maxWidth: 420, minHeight: 760 }}
             >
               <div
                 aria-hidden
                 className="lp-spin"
                 style={{
                   position: "absolute",
-                  width: 420,
-                  height: 420,
+                  width: 480,
+                  height: 480,
                   borderRadius: "50%",
                   border: "1px dashed color-mix(in srgb, var(--color-accent) 35%, transparent)",
+                }}
+              />
+              <div
+                aria-hidden
+                style={{
+                  position: "absolute",
+                  width: 660,
+                  height: 660,
+                  borderRadius: "50%",
+                  border: "1px solid color-mix(in srgb, var(--color-text) 6%, transparent)",
                 }}
               />
               <div
@@ -493,14 +482,109 @@ export default async function LandingPage() {
                 }}
               />
 
-              <div style={{ position: "relative", zIndex: 2 }}>
-                <SwipeDemo />
+              {/* Maquette téléphone (voir le design) : la vraie démo interactive
+                  (SwipeDemo) vit à l'intérieur, avec juste le chrome (encoche,
+                  barre de statut, en-tête app, barre d'onglets factice) autour --
+                  pas une simple carte flottante comme avant. */}
+              <div
+                style={{
+                  position: "relative",
+                  zIndex: 2,
+                  width: 300,
+                  height: 700,
+                  borderRadius: 50,
+                  background: "var(--color-neutral-900)",
+                  padding: 10,
+                  boxSizing: "border-box",
+                  boxShadow: "0 40px 80px color-mix(in srgb, var(--color-text) 30%, transparent), inset 0 0 0 2px var(--color-neutral-700)",
+                  transform: "rotate(-4deg)",
+                }}
+              >
+                <div
+                  style={{
+                    position: "relative",
+                    width: "100%",
+                    height: "100%",
+                    borderRadius: 40,
+                    background: "var(--color-bg)",
+                    overflow: "hidden",
+                    display: "flex",
+                    flexDirection: "column",
+                  }}
+                >
+                  <div
+                    aria-hidden
+                    style={{
+                      position: "absolute",
+                      top: 9,
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      width: 92,
+                      height: 26,
+                      borderRadius: 20,
+                      background: "var(--color-neutral-900)",
+                      zIndex: 10,
+                    }}
+                  />
+                  <div
+                    className="flex items-center justify-between"
+                    style={{ padding: "13px 24px 0", fontSize: 12, fontWeight: 700 }}
+                  >
+                    <span>9:41</span>
+                    <span aria-hidden style={{ fontSize: 11 }}>
+                      📶 🔋
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2" style={{ padding: "16px 16px 0" }}>
+                    <span aria-hidden style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--color-accent)" }} />
+                    <span style={{ fontSize: 15, fontWeight: 800, letterSpacing: "-0.03em" }}>Stageio</span>
+                    <span
+                      className="flex items-center gap-1"
+                      style={{
+                        marginLeft: "auto",
+                        padding: "4px 8px",
+                        borderRadius: 999,
+                        background: "var(--color-accent-100)",
+                        color: "var(--color-accent-700)",
+                        fontSize: 11,
+                        fontWeight: 700,
+                      }}
+                    >
+                      🔥 4 j
+                    </span>
+                  </div>
+                  <p style={{ margin: "10px 16px 0", fontSize: 18, fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.1 }}>
+                    Tes opportunités du jour
+                  </p>
+
+                  <div style={{ position: "relative", flex: 1, minHeight: 0, margin: "10px 10px 0" }}>
+                    <SwipeDemo />
+                  </div>
+
+                  <div
+                    aria-hidden
+                    className="flex items-center justify-around"
+                    style={{
+                      padding: "10px 6px 16px",
+                      borderTop: "1px solid var(--color-divider)",
+                      background: "var(--color-surface)",
+                      color: "var(--color-neutral-400)",
+                      fontSize: 18,
+                    }}
+                  >
+                    <span style={{ color: "var(--color-accent)" }}>🔥</span>
+                    <span>♥</span>
+                    <span>🎯</span>
+                    <span>📄</span>
+                    <span>👤</span>
+                  </div>
+                </div>
               </div>
 
               <div
                 aria-hidden
                 className="lp-float"
-                style={{ position: "absolute", zIndex: 3, left: -18, top: -14, ["--r" as string]: "-6deg" }}
+                style={{ position: "absolute", zIndex: 3, left: -8, top: 40, ["--r" as string]: "-6deg" }}
               >
                 <div
                   className="flex items-center gap-2.5"
@@ -529,7 +613,7 @@ export default async function LandingPage() {
               <div
                 aria-hidden
                 className="lp-float"
-                style={{ position: "absolute", zIndex: 3, right: -16, top: 60, animationDelay: "0.8s", ["--r" as string]: "5deg" }}
+                style={{ position: "absolute", zIndex: 3, right: -12, top: 110, animationDelay: "0.8s", ["--r" as string]: "5deg" }}
               >
                 <div
                   className="flex items-center gap-2.5"
@@ -557,7 +641,7 @@ export default async function LandingPage() {
               <div
                 aria-hidden
                 className="lp-float"
-                style={{ position: "absolute", zIndex: 3, right: -8, bottom: 30, animationDelay: "0.3s", ["--r" as string]: "-10deg" }}
+                style={{ position: "absolute", zIndex: 3, right: -4, bottom: 160, animationDelay: "0.3s", ["--r" as string]: "-10deg" }}
               >
                 <div
                   style={{
@@ -579,7 +663,27 @@ export default async function LandingPage() {
               <div
                 aria-hidden
                 className="lp-float"
-                style={{ position: "absolute", zIndex: 1, left: -16, bottom: 70, animationDelay: "1.2s", ["--r" as string]: "0deg" }}
+                style={{ position: "absolute", zIndex: 3, left: -14, bottom: 190, animationDelay: "1.2s", ["--r" as string]: "8deg" }}
+              >
+                <div
+                  className="flex items-center justify-center"
+                  style={{
+                    width: 60,
+                    height: 60,
+                    borderRadius: 20,
+                    background: "linear-gradient(135deg, var(--color-accent), var(--color-accent-2))",
+                    boxShadow: "0 14px 30px color-mix(in srgb, var(--color-accent) 35%, transparent)",
+                    fontSize: 28,
+                  }}
+                >
+                  ❤️
+                </div>
+              </div>
+
+              <div
+                aria-hidden
+                className="lp-float"
+                style={{ position: "absolute", zIndex: 1, left: -4, top: 380, animationDelay: "2s", ["--r" as string]: "0deg" }}
               >
                 <div
                   className="flex items-center gap-1.5"
@@ -718,37 +822,238 @@ export default async function LandingPage() {
         {/* COMMENT ÇA MARCHE */}
         <section id="comment" className="py-10" style={{ scrollMarginTop: 80 }}>
           <Reveal>
-            <p style={eyebrow}>Le parcours</p>
-            <h2 style={{ ...h2Style, maxWidth: "16ch" }}>Trois gestes, et ta candidature est partie.</h2>
+            <div className="flex flex-wrap items-end justify-between gap-5">
+              <div>
+                <p style={eyebrow}>Le parcours</p>
+                <h2 style={{ ...h2Style, maxWidth: "16ch" }}>Trois gestes, et ta candidature est partie.</h2>
+              </div>
+              <p style={{ margin: 0, fontSize: 15, color: mutedText, maxWidth: "32ch" }}>
+                Pas de formulaire à rallonge, pas de lettre à recopier. Juste toi, tes envies et les
+                bonnes offres.
+              </p>
+            </div>
           </Reveal>
-          <div className="mt-8 grid gap-5" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,280px),1fr))" }}>
-            {STEPS.map((step, i) => (
-              <Reveal key={step.title} delay={i * 0.08}>
+          <div className="mt-9 grid gap-5" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,280px),1fr))" }}>
+            <Reveal>
+              <div style={{ background: "var(--color-surface)", borderRadius: 24, overflow: "hidden", boxShadow: "0 1px 2px color-mix(in srgb, var(--color-text) 10%, transparent)" }}>
                 <div
-                  className="card m-0"
+                  aria-hidden
                   style={{
-                    padding: "var(--space-6)",
-                    background: step.tone === "dark" ? "var(--color-neutral-900)" : "var(--color-surface)",
-                    color: step.tone === "dark" ? "var(--color-bg)" : "inherit",
+                    height: 210,
+                    background: "var(--color-accent-2-100)",
+                    position: "relative",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    overflow: "hidden",
                   }}
                 >
-                  <span style={{ fontSize: 13, fontWeight: 800, color: step.tone === "dark" ? "var(--color-accent-300)" : "var(--color-accent)" }}>
-                    {step.n}
-                  </span>
-                  <h3 style={{ margin: "8px 0 0", fontSize: 20, fontWeight: 800, letterSpacing: "-0.02em" }}>{step.title}</h3>
-                  <p
+                  <div
                     style={{
-                      margin: "8px 0 0",
-                      fontSize: 14.5,
-                      lineHeight: 1.6,
-                      color: step.tone === "dark" ? "color-mix(in srgb, var(--color-bg) 80%, transparent)" : mutedText,
+                      position: "absolute",
+                      inset: 0,
+                      backgroundImage: "radial-gradient(color-mix(in srgb, var(--color-text) 12%, transparent) 1px, transparent 1.2px)",
+                      backgroundSize: "18px 18px",
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: "relative",
+                      width: 200,
+                      background: "var(--color-surface)",
+                      borderRadius: 20,
+                      padding: 16,
+                      boxShadow: "0 12px 28px color-mix(in srgb, var(--color-text) 14%, transparent)",
                     }}
                   >
-                    {step.text}
+                    <div className="flex items-center gap-2.5">
+                      <span
+                        className="flex items-center justify-center"
+                        style={{ width: 38, height: 38, borderRadius: "50%", background: "linear-gradient(135deg, var(--color-accent), var(--color-accent-2))", color: "#fff", fontWeight: 800, fontSize: 13, flexShrink: 0 }}
+                      >
+                        LM
+                      </span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ height: 8, width: "80%", borderRadius: 4, background: "var(--color-text)" }} />
+                        <div style={{ height: 6, width: "55%", borderRadius: 4, background: "var(--color-divider)", marginTop: 6 }} />
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5" style={{ marginTop: 14 }}>
+                      {["Marketing", "Lyon", "SEO", "Canva"].map((t) => (
+                        <span key={t} className="tag tag-accent" style={{ fontSize: 10.5 }}>
+                          {t}
+                        </span>
+                      ))}
+                      <span className="tag tag-neutral" style={{ fontSize: 10.5 }}>
+                        Bac+3
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div style={{ padding: "24px 26px 28px" }}>
+                  <div className="flex items-center gap-2.5">
+                    <span style={{ fontSize: 13, fontWeight: 800, color: "var(--color-accent)" }}>01</span>
+                    <h3 style={{ margin: 0, fontSize: 21, fontWeight: 800, letterSpacing: "-0.025em" }}>Crée ton profil</h3>
+                  </div>
+                  <p style={{ margin: "8px 0 0", fontSize: 14.5, lineHeight: 1.6, color: mutedText }}>
+                    Compétences, ville, parcours, et ton CV si tu veux — facultatif.
                   </p>
                 </div>
-              </Reveal>
-            ))}
+              </div>
+            </Reveal>
+
+            <Reveal delay={0.08}>
+              <div style={{ background: "var(--color-surface)", borderRadius: 24, overflow: "hidden", boxShadow: "0 1px 2px color-mix(in srgb, var(--color-text) 10%, transparent)" }}>
+                <div
+                  aria-hidden
+                  style={{
+                    height: 210,
+                    background: "var(--color-accent-2-100)",
+                    position: "relative",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      backgroundImage: "radial-gradient(color-mix(in srgb, var(--color-text) 12%, transparent) 1px, transparent 1.2px)",
+                      backgroundSize: "18px 18px",
+                    }}
+                  />
+                  <div style={{ position: "relative", width: 150, height: 170 }}>
+                    <div style={{ position: "absolute", inset: 0, borderRadius: 18, background: "var(--color-neutral-300)", transform: "translateY(12px) scale(0.9)" }} />
+                    <div
+                      className="lp-wiggle"
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        borderRadius: 18,
+                        background: "var(--color-surface)",
+                        overflow: "hidden",
+                        boxShadow: "0 12px 28px color-mix(in srgb, var(--color-text) 18%, transparent)",
+                        transformOrigin: "50% 120%",
+                      }}
+                    >
+                      <div style={{ height: 54, background: "linear-gradient(125deg, var(--color-accent), var(--color-accent-2))" }} />
+                      <div style={{ padding: 12 }}>
+                        <div style={{ height: 8, width: "85%", borderRadius: 4, background: "var(--color-text)" }} />
+                        <div style={{ height: 8, width: "60%", borderRadius: 4, background: "var(--color-text)", marginTop: 6 }} />
+                        <div className="flex gap-1" style={{ marginTop: 12 }}>
+                          <div style={{ flex: 1, height: 26, borderRadius: 8, background: "var(--color-bg)" }} />
+                          <div style={{ flex: 1, height: 26, borderRadius: 8, background: "var(--color-bg)" }} />
+                          <div style={{ flex: 1, height: 26, borderRadius: 8, background: "var(--color-bg)" }} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <span
+                    className="flex items-center justify-center"
+                    style={{
+                      position: "absolute",
+                      left: 22,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      width: 40,
+                      height: 40,
+                      borderRadius: "50%",
+                      background: "var(--color-surface)",
+                      color: "var(--color-neutral-600)",
+                      boxShadow: "0 4px 10px color-mix(in srgb, var(--color-text) 12%, transparent)",
+                    }}
+                  >
+                    ✕
+                  </span>
+                  <span
+                    className="flex items-center justify-center"
+                    style={{
+                      position: "absolute",
+                      right: 22,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      width: 40,
+                      height: 40,
+                      borderRadius: "50%",
+                      background: "var(--color-accent)",
+                      color: "var(--color-bg)",
+                      boxShadow: "0 4px 10px color-mix(in srgb, var(--color-accent) 30%, transparent)",
+                    }}
+                  >
+                    ♥
+                  </span>
+                </div>
+                <div style={{ padding: "24px 26px 28px" }}>
+                  <div className="flex items-center gap-2.5">
+                    <span style={{ fontSize: 13, fontWeight: 800, color: "var(--color-accent)" }}>02</span>
+                    <h3 style={{ margin: 0, fontSize: 21, fontWeight: 800, letterSpacing: "-0.025em" }}>Swipe les offres</h3>
+                  </div>
+                  <p style={{ margin: "8px 0 0", fontSize: 14.5, lineHeight: 1.6, color: mutedText }}>
+                    Logo, salaire, avis d&apos;anciens alternants : tout pour décider d&apos;un regard.
+                  </p>
+                </div>
+              </div>
+            </Reveal>
+
+            <Reveal delay={0.16}>
+              <div
+                style={{
+                  background: "linear-gradient(160deg, var(--color-accent), var(--color-accent-800))",
+                  color: "var(--color-bg)",
+                  borderRadius: 24,
+                  overflow: "hidden",
+                  boxShadow: "0 18px 40px color-mix(in srgb, var(--color-accent) 25%, transparent)",
+                }}
+              >
+                <div aria-hidden style={{ height: 210, position: "relative", overflow: "hidden" }}>
+                  <div
+                    className="lp-float"
+                    style={{ position: "absolute", left: 40, top: 90, ["--r" as string]: "0deg" }}
+                  >
+                    <div
+                      className="flex items-center justify-center"
+                      style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 15,
+                        background: "var(--color-bg)",
+                        color: "var(--color-accent)",
+                        boxShadow: "0 10px 24px color-mix(in srgb, var(--color-text) 25%, transparent)",
+                        fontSize: 22,
+                      }}
+                    >
+                      ✈️
+                    </div>
+                  </div>
+                  <div
+                    className="flex items-center gap-1.5"
+                    style={{
+                      position: "absolute",
+                      right: 22,
+                      top: 24,
+                      background: "var(--color-neutral-900)",
+                      padding: "8px 12px",
+                      borderRadius: 999,
+                      fontSize: 12,
+                      fontWeight: 700,
+                    }}
+                  >
+                    ✓ Envoyée
+                  </div>
+                </div>
+                <div style={{ padding: "24px 26px 28px" }}>
+                  <div className="flex items-center gap-2.5">
+                    <span style={{ fontSize: 13, fontWeight: 800, color: "var(--color-accent-200)" }}>03</span>
+                    <h3 style={{ margin: 0, fontSize: 21, fontWeight: 800, letterSpacing: "-0.025em" }}>Postule en un geste</h3>
+                  </div>
+                  <p style={{ margin: "8px 0 0", fontSize: 14.5, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-bg) 88%, transparent)" }}>
+                    Directement depuis la carte que tu aimes, sans ressaisir tes infos.
+                  </p>
+                </div>
+              </div>
+            </Reveal>
           </div>
         </section>
 
@@ -847,15 +1152,95 @@ export default async function LandingPage() {
           </Reveal>
 
           <div className="mt-5 grid gap-5" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,260px),1fr))" }}>
-            {FEATURES.map((f, i) => (
-              <Reveal key={f.title} delay={i * 0.06}>
-                <div className="card m-0" style={{ padding: "var(--space-6)" }}>
-                  <span aria-hidden style={{ fontSize: 26 }}>{f.icon}</span>
-                  <h3 style={{ margin: "14px 0 0", fontSize: 17, fontWeight: 800, letterSpacing: "-0.015em" }}>{f.title}</h3>
-                  <p style={{ margin: "6px 0 0", fontSize: 13.5, lineHeight: 1.55, color: mutedText }}>{f.text}</p>
+            <Reveal delay={0}>
+              <div className="card m-0" style={{ padding: "var(--space-6)" }}>
+                <div
+                  aria-hidden
+                  style={{ background: "var(--color-bg)", borderRadius: 16, padding: 14, height: 106, boxSizing: "border-box" }}
+                >
+                  <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: mutedText, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    Objet : Alternance marketing
+                  </p>
+                  <p style={{ margin: "8px 0 0", fontSize: 12.5, lineHeight: 1.5 }}>Madame, Monsieur,</p>
+                  <p style={{ margin: "2px 0 0", fontSize: 12.5, lineHeight: 1.5, color: "color-mix(in srgb, var(--color-text) 78%, transparent)" }}>
+                    passionnée par le marketing de marque…
+                  </p>
                 </div>
-              </Reveal>
-            ))}
+                <h3 style={{ margin: "16px 0 0", fontSize: 17, fontWeight: 800, letterSpacing: "-0.015em", display: "flex", alignItems: "center", gap: 7 }}>
+                  <span aria-hidden style={{ fontSize: 18 }}>✍️</span>
+                  {FEATURES[0].title}
+                </h3>
+                <p style={{ margin: "6px 0 0", fontSize: 13.5, lineHeight: 1.55, color: mutedText }}>{FEATURES[0].text}</p>
+              </div>
+            </Reveal>
+
+            <Reveal delay={0.06}>
+              <div className="card m-0" style={{ padding: "var(--space-6)" }}>
+                <div
+                  aria-hidden
+                  className="flex flex-col gap-1.5"
+                  style={{ background: "var(--color-bg)", borderRadius: 16, padding: 12, height: 106, boxSizing: "border-box", justifyContent: "center" }}
+                >
+                  <div style={{ fontSize: 11, fontWeight: 700, padding: "6px 10px", borderRadius: 10, background: "var(--color-accent)", color: "var(--color-bg)" }}>
+                    Vos produits me parlent
+                  </div>
+                  <div style={{ fontSize: 11, fontWeight: 700, padding: "6px 10px", borderRadius: 10, border: "1px solid var(--color-divider)" }}>
+                    Parce que c&apos;est bien payé
+                  </div>
+                  <div style={{ fontSize: 11, fontWeight: 700, padding: "6px 10px", borderRadius: 10, border: "1px solid var(--color-divider)" }}>
+                    J&apos;ai postulé partout
+                  </div>
+                </div>
+                <h3 style={{ margin: "16px 0 0", fontSize: 17, fontWeight: 800, letterSpacing: "-0.015em", display: "flex", alignItems: "center", gap: 7 }}>
+                  <span aria-hidden style={{ fontSize: 18 }}>🎤</span>
+                  {FEATURES[1].title}
+                </h3>
+                <p style={{ margin: "6px 0 0", fontSize: 13.5, lineHeight: 1.55, color: mutedText }}>{FEATURES[1].text}</p>
+              </div>
+            </Reveal>
+
+            <Reveal delay={0.12}>
+              <div className="card m-0" style={{ padding: "var(--space-6)" }}>
+                <div
+                  aria-hidden
+                  className="flex items-center gap-3.5"
+                  style={{ background: "var(--color-bg)", borderRadius: 16, padding: "12px 14px", height: 106, boxSizing: "border-box" }}
+                >
+                  <div style={{ position: "relative", width: 66, height: 66, flexShrink: 0 }}>
+                    <svg width="66" height="66" viewBox="0 0 88 88" style={{ transform: "rotate(-90deg)" }}>
+                      <circle cx="44" cy="44" r="38" stroke="var(--color-divider)" strokeWidth="8" fill="none" />
+                      <circle
+                        cx="44"
+                        cy="44"
+                        r="38"
+                        stroke="var(--color-accent)"
+                        strokeWidth="8"
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeDasharray="238.8"
+                        strokeDashoffset="66.9"
+                      />
+                    </svg>
+                    <span
+                      className="flex items-center justify-center"
+                      style={{ position: "absolute", inset: 0, fontSize: 17, fontWeight: 800 }}
+                    >
+                      72
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-1.5" style={{ flex: 1 }}>
+                    <div style={{ height: 6, borderRadius: 4, background: "var(--color-accent)", width: "90%" }} />
+                    <div style={{ height: 6, borderRadius: 4, background: "var(--color-accent-2)", width: "70%" }} />
+                    <div style={{ height: 6, borderRadius: 4, background: "var(--color-neutral-300)", width: "45%" }} />
+                  </div>
+                </div>
+                <h3 style={{ margin: "16px 0 0", fontSize: 17, fontWeight: 800, letterSpacing: "-0.015em", display: "flex", alignItems: "center", gap: 7 }}>
+                  <span aria-hidden style={{ fontSize: 18 }}>📄</span>
+                  {FEATURES[2].title}
+                </h3>
+                <p style={{ margin: "6px 0 0", fontSize: 13.5, lineHeight: 1.55, color: mutedText }}>{FEATURES[2].text}</p>
+              </div>
+            </Reveal>
           </div>
         </section>
 
@@ -1060,12 +1445,18 @@ export default async function LandingPage() {
         </section>
 
         {/* FAQ */}
-        <section id="faq" className="py-10" style={{ scrollMarginTop: 80 }}>
+        <section
+          id="faq"
+          className="py-10 flex flex-wrap items-start gap-9"
+          style={{ scrollMarginTop: 80 }}
+        >
           <Reveal>
-            <p style={eyebrow}>Questions fréquentes</p>
-            <h2 style={{ ...h2Style, maxWidth: "12ch" }}>Tout ce que tu te demandes.</h2>
+            <div style={{ flex: "1 1 280px", minWidth: 0 }}>
+              <p style={eyebrow}>Questions fréquentes</p>
+              <h2 style={{ ...h2Style, maxWidth: "11ch" }}>Tout ce que tu te demandes.</h2>
+            </div>
           </Reveal>
-          <div className="mt-8 flex flex-col gap-2.5" style={{ maxWidth: "68ch" }}>
+          <div className="flex flex-col gap-2.5" style={{ flex: "2 1 480px", minWidth: 0 }}>
             {FAQ.map((item, i) => (
               <Reveal key={item.question} delay={i * 0.04}>
                 <details
