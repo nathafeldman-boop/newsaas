@@ -26,15 +26,13 @@ import { STEP_IDS, STEP_LABELS, type StepId } from "@/lib/onboarding/steps";
 // plus tard depuis le profil — pas assez tap-friendly (texte libre) pour
 // rester ici.
 //
-// L'étape "profile" (métiers visés, mobilité, niveau d'études, expérience,
-// disponibilité) avait été retirée un temps car jugée facultative -- mais
-// mobilité en particulier pèse lourd dans computeMatchScore (pénalité de
-// localisation), et un profil qui ne la renseigne jamais se fait pénaliser
-// par défaut comme s'il n'était mobile pour rien, même quand ce n'est pas
-// vrai. Toute donnée qui sert réellement le matching (ou les lettres de
-// motivation générées) est désormais redemandée ici et rendue obligatoire,
-// plutôt que de laisser un compte fonctionner avec des colonnes vides que
-// l'algorithme interprète par défaut de la pire des façons.
+// Une question par écran (ville / secteurs / compétences / métiers /
+// mobilité / niveau / dispo) plutôt que deux mega-étapes : plus facile à
+// compléter au tap, et permet à la jauge "Matching précis à X%" de bouger à
+// chaque réponse. Mobilité en particulier pèse lourd dans computeMatchScore
+// (pénalité de localisation) : un profil qui ne la renseigne jamais se fait
+// pénaliser par défaut comme s'il n'était mobile pour rien, même quand ce
+// n'est pas vrai — d'où son caractère obligatoire comme les autres.
 const PROGRESS_STEPS: StepId[] = STEP_IDS.filter(
   (s) => s !== "intro" && s !== "outro" && s !== "trust",
 );
@@ -160,9 +158,11 @@ async function logOnboardingEvent(
 export function OnboardingWizard({
   userId,
   initialProfile,
+  trustCount,
 }: {
   userId: string;
   initialProfile: Profile | null;
+  trustCount: number;
 }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [direction, setDirection] = useState(1);
@@ -215,31 +215,37 @@ export function OnboardingWizard({
     if (stepId === "looking_for" && lookingFor.length === 0) {
       return "Sélectionne alternance et/ou stage.";
     }
-    if (stepId === "search" && !city.trim()) {
+    if (stepId === "city" && !city.trim()) {
       return "Indique au moins ta ville.";
     }
-    if (stepId === "search" && sectors.length === 0) {
+    if (stepId === "sectors" && sectors.length === 0) {
       return "Sélectionne au moins un secteur.";
     }
-    if (stepId === "search" && skills.length === 0) {
+    if (stepId === "skills" && skills.length === 0) {
       return "Sélectionne au moins une compétence.";
     }
-    if (stepId === "profile" && targetJobs.length === 0) {
+    if (stepId === "jobs" && targetJobs.length === 0) {
       return "Sélectionne au moins un métier visé.";
     }
-    if (stepId === "profile" && !mobility) {
+    if (stepId === "mobility" && !mobility) {
       return "Indique ta mobilité.";
     }
-    if (stepId === "profile" && !educationLevel) {
+    if (stepId === "level" && !educationLevel) {
       return "Indique ton niveau d'études.";
     }
-    if (stepId === "profile" && !experienceLevel) {
+    if (stepId === "level" && !experienceLevel) {
       return "Indique ton niveau d'expérience.";
     }
-    if (stepId === "profile" && !availabilityLabel) {
+    if (stepId === "dispo" && !availabilityLabel) {
       return "Indique ta disponibilité.";
     }
     return null;
+  }
+
+  function goToStep(id: StepId) {
+    setError(null);
+    setDirection(-1);
+    setStepIndex(STEP_IDS.indexOf(id));
   }
 
   function goNext() {
@@ -335,6 +341,24 @@ export function OnboardingWizard({
   const progressIndex = PROGRESS_STEPS.indexOf(stepId);
   const showChrome = stepId !== "intro" && stepId !== "outro" && stepId !== "trust";
   const skippable = SKIPPABLE.includes(stepId);
+  const currentStepValid = validateCurrentStep() === null;
+
+  // Jauge "Matching précis à X%" : reflète en direct à quel point le profil
+  // en cours de remplissage réduit l'incertitude du score de compatibilité
+  // (computeMatchScore) -- purement indicatif côté UI, ne modifie aucun
+  // score réel.
+  const precision =
+    10 +
+    (lookingFor.length ? 10 : 0) +
+    (city.trim() ? 15 : 0) +
+    (sectors.length ? 15 : 0) +
+    (skills.length ? Math.min(15, skills.length * 5) : 0) +
+    (targetJobs.length ? 10 : 0) +
+    (mobility ? 8 : 0) +
+    (educationLevel ? 5 : 0) +
+    (experienceLevel ? 4 : 0) +
+    (availabilityLabel ? 3 : 0) +
+    (cvFile || initialProfile?.cv_path ? 5 : 0);
 
   return (
     <div
@@ -353,24 +377,32 @@ export function OnboardingWizard({
             >
               ←
             </button>
-            <div
-              style={{
-                flex: 1,
-                height: 6,
-                borderRadius: 999,
-                background: "var(--color-surface)",
-                overflow: "hidden",
-              }}
-            >
-              <motion.div
-                animate={{ width: `${((progressIndex + 1) / PROGRESS_STEPS.length) * 100}%` }}
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                style={{
-                  height: "100%",
-                  background: "linear-gradient(90deg, var(--color-accent), var(--color-accent-2))",
-                  borderRadius: 999,
-                }}
-              />
+            <div style={{ flex: 1, display: "flex", gap: 4 }}>
+              {PROGRESS_STEPS.map((s, i) => (
+                <div
+                  key={s}
+                  style={{
+                    flex: 1,
+                    height: 6,
+                    borderRadius: 999,
+                    background: "var(--color-surface)",
+                    overflow: "hidden",
+                  }}
+                >
+                  <motion.div
+                    animate={{
+                      width:
+                        i < progressIndex ? "100%" : i === progressIndex ? (currentStepValid ? "100%" : "40%") : "0%",
+                    }}
+                    transition={{ duration: 0.4, ease: [0.2, 0.7, 0.2, 1] }}
+                    style={{
+                      height: "100%",
+                      background: "linear-gradient(90deg, var(--color-accent), var(--color-accent-2))",
+                      borderRadius: 999,
+                    }}
+                  />
+                </div>
+              ))}
             </div>
           </div>
           <p
@@ -534,7 +566,7 @@ export function OnboardingWizard({
                       letterSpacing: "-0.01em",
                     }}
                   >
-                    +<AnimatedCount target={10000} durationMs={1400} />
+                    +<AnimatedCount target={trustCount} durationMs={1400} />
                   </p>
                   <p style={{ fontSize: 16, fontWeight: 700, margin: "6px 0 0", lineHeight: 1.4, maxWidth: "28ch" }}>
                     personnes nous ont fait confiance pour trouver {trustContractLabel(lookingFor)}
@@ -562,102 +594,99 @@ export function OnboardingWizard({
               </div>
             )}
 
-            {stepId === "search" && (
-              <div className="flex flex-col gap-7">
-                <StepHeader title="Ta recherche" subtitle="Dernière ligne droite, et tes offres sont prêtes." />
-
-                <div className="flex flex-col gap-3">
-                  <p style={{ fontSize: 13, fontFamily: "var(--font-heading)", margin: 0 }}>
-                    Ta ville <span style={{ color: "var(--color-accent-700)" }}>(obligatoire)</span>
-                  </p>
-                  <p style={{ fontSize: 12, margin: 0, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                    Une ville précise, ou tout un département si tu es mobile plus large.
-                  </p>
-                  <LocationSearchSelect
-                    options={LOCATION_OPTIONS}
+            {stepId === "city" && (
+              <div className="flex flex-col gap-4">
+                <StepHeader
+                  title="Tu veux travailler où ?"
+                  subtitle="Une ville précise, ou tout un département si tu es mobile plus large."
+                />
+                <LocationSearchSelect
+                  options={LOCATION_OPTIONS}
+                  value={city}
+                  onChange={(c) => {
+                    setCity(c);
+                    setCityCustomOpen(false);
+                  }}
+                  placeholder="Rechercher une ville ou un département..."
+                />
+                {cityCustomOpen || (city && !LOCATION_OPTIONS.includes(city)) ? (
+                  <input
+                    autoFocus
                     value={city}
-                    onChange={(c) => {
-                      setCity(c);
-                      setCityCustomOpen(false);
-                    }}
-                    placeholder="Rechercher une ville ou un département..."
+                    onChange={(e) => setCity(e.target.value)}
+                    placeholder="Ta ville"
+                    className="input"
                   />
-                  {cityCustomOpen || (city && !LOCATION_OPTIONS.includes(city)) ? (
-                    <input
-                      autoFocus
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                      placeholder="Ta ville"
-                      className="input"
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setCityCustomOpen(true)}
+                    className="tag tag-outline"
+                    style={{ padding: "7px 14px", fontSize: 13, alignSelf: "flex-start" }}
+                  >
+                    + Autre ville
+                  </button>
+                )}
+              </div>
+            )}
+
+            {stepId === "sectors" && (
+              <div className="flex flex-col gap-4">
+                <StepHeader title="Quels secteurs te font envie ?" subtitle="Choisis-en autant que tu veux." />
+                <ChipMultiSelectWithCustom
+                  options={SECTORS}
+                  value={sectors}
+                  onChange={setSectors}
+                  searchable
+                  searchPlaceholder="Rechercher un secteur..."
+                />
+              </div>
+            )}
+
+            {stepId === "skills" && (
+              <div className="flex flex-col gap-4">
+                <StepHeader title="Tu es bon·ne en quoi ?" subtitle="Outils, langues, soft skills : tout compte." />
+                <ChipMultiSelectWithCustom options={SKILLS} value={skills} onChange={setSkills} />
+              </div>
+            )}
+
+            {stepId === "jobs" && (
+              <div className="flex flex-col gap-4">
+                <StepHeader
+                  title="Quel métier tu vises ?"
+                  subtitle="Ça change vraiment le calcul de compatibilité."
+                />
+                <ChipMultiSelectWithCustom options={TARGET_JOBS} value={targetJobs} onChange={setTargetJobs} />
+              </div>
+            )}
+
+            {stepId === "mobility" && (
+              <div className="flex flex-col gap-5">
+                <StepHeader
+                  title="Tu peux bouger jusqu'où ?"
+                  subtitle="Pour ne pas te pénaliser sur des offres un peu plus loin."
+                />
+                <div className="grid grid-cols-2 gap-3">
+                  {MOBILITY_OPTIONS.map((opt) => (
+                    <TileOption
+                      key={opt.value}
+                      label={opt.value}
+                      icon={opt.icon}
+                      active={mobility === opt.value}
+                      onClick={() => setMobility(opt.value)}
                     />
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setCityCustomOpen(true)}
-                      className="tag tag-outline"
-                      style={{ padding: "7px 14px", fontSize: 13, alignSelf: "flex-start" }}
-                    >
-                      + Autre ville
-                    </button>
-                  )}
-                </div>
-
-                <div className="flex flex-col gap-3">
-                  <p style={{ fontSize: 13, fontFamily: "var(--font-heading)", margin: 0 }}>
-                    Secteurs recherchés <span style={{ color: "var(--color-accent-700)" }}>(obligatoire)</span>
-                  </p>
-                  <ChipMultiSelectWithCustom
-                    options={SECTORS}
-                    value={sectors}
-                    onChange={setSectors}
-                    searchable
-                    searchPlaceholder="Rechercher un secteur..."
-                  />
-                </div>
-
-                <div className="flex flex-col gap-3">
-                  <p style={{ fontSize: 13, fontFamily: "var(--font-heading)", margin: 0 }}>
-                    Compétences <span style={{ color: "var(--color-accent-700)" }}>(obligatoire)</span>
-                  </p>
-                  <ChipMultiSelectWithCustom options={SKILLS} value={skills} onChange={setSkills} />
+                  ))}
                 </div>
               </div>
             )}
 
-            {stepId === "profile" && (
+            {stepId === "level" && (
               <div className="flex flex-col gap-7">
-                <StepHeader
-                  title="Précise ton profil"
-                  subtitle="Ça change vraiment le calcul de compatibilité de chaque offre."
-                />
+                <StepHeader title="Où en es-tu dans ton parcours ?" subtitle="Niveau d'études et expérience." />
 
                 <div className="flex flex-col gap-3">
                   <p style={{ fontSize: 13, fontFamily: "var(--font-heading)", margin: 0 }}>
-                    Métiers visés <span style={{ color: "var(--color-accent-700)" }}>(obligatoire)</span>
-                  </p>
-                  <ChipMultiSelectWithCustom options={TARGET_JOBS} value={targetJobs} onChange={setTargetJobs} />
-                </div>
-
-                <div className="flex flex-col gap-3">
-                  <p style={{ fontSize: 13, fontFamily: "var(--font-heading)", margin: 0 }}>
-                    Mobilité <span style={{ color: "var(--color-accent-700)" }}>(obligatoire)</span>
-                  </p>
-                  <div className="grid grid-cols-2 gap-3">
-                    {MOBILITY_OPTIONS.map((opt) => (
-                      <TileOption
-                        key={opt.value}
-                        label={opt.value}
-                        icon={opt.icon}
-                        active={mobility === opt.value}
-                        onClick={() => setMobility(opt.value)}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-3">
-                  <p style={{ fontSize: 13, fontFamily: "var(--font-heading)", margin: 0 }}>
-                    Niveau d&apos;études <span style={{ color: "var(--color-accent-700)" }}>(obligatoire)</span>
+                    Niveau d&apos;études
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {EDUCATION_LEVELS.map((level) => (
@@ -681,9 +710,7 @@ export function OnboardingWizard({
                 </div>
 
                 <div className="flex flex-col gap-3">
-                  <p style={{ fontSize: 13, fontFamily: "var(--font-heading)", margin: 0 }}>
-                    Expérience <span style={{ color: "var(--color-accent-700)" }}>(obligatoire)</span>
-                  </p>
+                  <p style={{ fontSize: 13, fontFamily: "var(--font-heading)", margin: 0 }}>Expérience</p>
                   <div className="grid grid-cols-2 gap-3">
                     {EXPERIENCE_LEVELS.map((opt) => (
                       <TileOption
@@ -696,29 +723,35 @@ export function OnboardingWizard({
                     ))}
                   </div>
                 </div>
+              </div>
+            )}
 
-                <div className="flex flex-col gap-3">
-                  <p style={{ fontSize: 13, fontFamily: "var(--font-heading)", margin: 0 }}>
-                    Disponibilité <span style={{ color: "var(--color-accent-700)" }}>(obligatoire)</span>
-                  </p>
-                  <div className="grid grid-cols-2 gap-3">
-                    {AVAILABILITY_OPTIONS.map((opt) => (
-                      <TileOption
-                        key={opt.label}
-                        label={opt.label}
-                        icon={opt.icon}
-                        active={availabilityLabel === opt.label}
-                        onClick={() => setAvailabilityLabel(opt.label)}
-                      />
-                    ))}
-                  </div>
+            {stepId === "dispo" && (
+              <div className="flex flex-col gap-5">
+                <StepHeader
+                  title="Tu peux commencer quand ?"
+                  subtitle="On met en avant les offres qui démarrent au bon moment."
+                />
+                <div className="grid grid-cols-2 gap-3">
+                  {AVAILABILITY_OPTIONS.map((opt) => (
+                    <TileOption
+                      key={opt.label}
+                      label={opt.label}
+                      icon={opt.icon}
+                      active={availabilityLabel === opt.label}
+                      onClick={() => setAvailabilityLabel(opt.label)}
+                    />
+                  ))}
                 </div>
               </div>
             )}
 
             {stepId === "cv" && (
               <div className="flex flex-1 flex-col gap-5">
-                <StepHeader title="Ajoute ton CV" subtitle="Améliore tes recommandations. Modifiable plus tard depuis ton profil." />
+                <StepHeader
+                  title="Ajoute ton CV"
+                  subtitle="Facultatif — améliore tes recommandations. Modifiable plus tard."
+                />
                 <label
                   className="flex flex-1 flex-col items-center justify-center gap-2.5 text-center cursor-pointer"
                   style={{
@@ -796,63 +829,95 @@ export function OnboardingWizard({
                     padding: 18,
                   }}
                 >
-                  <div>
-                    <p
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 800,
-                        letterSpacing: "0.06em",
-                        textTransform: "uppercase",
-                        color: "color-mix(in srgb, var(--color-text) 50%, transparent)",
-                        margin: "0 0 8px",
-                      }}
-                    >
-                      Type de contrat
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {lookingFor.map((t) => (
-                        <span key={t} className="tag tag-accent">
-                          {t === "alternance" ? "🎯 Alternance" : "🌱 Stage"}
-                        </span>
-                      ))}
+                  {[
+                    {
+                      icon: "🎯",
+                      label: "Type de contrat",
+                      value: lookingFor.length
+                        ? lookingFor.map((t) => (t === "alternance" ? "Alternance" : "Stage")).join(" + ")
+                        : "—",
+                      onEdit: () => goToStep("looking_for"),
+                    },
+                    {
+                      icon: "📍",
+                      label: "Ville · mobilité",
+                      value: (city || "—") + (mobility ? " · " + mobility : ""),
+                      onEdit: () => goToStep("city"),
+                    },
+                    {
+                      icon: "🗂️",
+                      label: "Secteurs",
+                      value: sectors.length
+                        ? sectors.slice(0, 3).join(", ") + (sectors.length > 3 ? ` +${sectors.length - 3}` : "")
+                        : "—",
+                      onEdit: () => goToStep("sectors"),
+                    },
+                    {
+                      icon: "💼",
+                      label: "Métiers visés",
+                      value: targetJobs.length
+                        ? targetJobs.slice(0, 2).join(", ") +
+                          (targetJobs.length > 2 ? ` +${targetJobs.length - 2}` : "")
+                        : "—",
+                      onEdit: () => goToStep("jobs"),
+                    },
+                    {
+                      icon: "🎓",
+                      label: "Niveau",
+                      value: [educationLevel, experienceLevel, availabilityLabel].filter(Boolean).join(" · ") || "—",
+                      onEdit: () => goToStep("level"),
+                    },
+                  ].map((row) => (
+                    <div key={row.label} className="flex items-start gap-3">
+                      <span
+                        aria-hidden
+                        className="flex items-center justify-center"
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: 10,
+                          background: "var(--color-accent-100)",
+                          fontSize: 15,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {row.icon}
+                      </span>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <p
+                          style={{
+                            fontSize: 10.5,
+                            fontWeight: 800,
+                            letterSpacing: "0.06em",
+                            textTransform: "uppercase",
+                            color: "color-mix(in srgb, var(--color-text) 50%, transparent)",
+                            margin: 0,
+                          }}
+                        >
+                          {row.label}
+                        </p>
+                        <p style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 1.35, margin: "2px 0 0" }}>
+                          {row.value}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={row.onEdit}
+                        aria-label={`Modifier : ${row.label}`}
+                        style={{
+                          border: "none",
+                          background: "none",
+                          cursor: "pointer",
+                          color: "color-mix(in srgb, var(--color-text) 55%, transparent)",
+                          padding: 4,
+                          fontSize: 15,
+                          lineHeight: 1,
+                        }}
+                      >
+                        ✏️
+                      </button>
                     </div>
-                  </div>
-                  <div>
-                    <p
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 800,
-                        letterSpacing: "0.06em",
-                        textTransform: "uppercase",
-                        color: "color-mix(in srgb, var(--color-text) 50%, transparent)",
-                        margin: "0 0 8px",
-                      }}
-                    >
-                      Ville
-                    </p>
-                    <span className="tag tag-neutral">{city || "—"}</span>
-                  </div>
-                  <div>
-                    <p
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 800,
-                        letterSpacing: "0.06em",
-                        textTransform: "uppercase",
-                        color: "color-mix(in srgb, var(--color-text) 50%, transparent)",
-                        margin: "0 0 8px",
-                      }}
-                    >
-                      Secteurs
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {sectors.slice(0, 6).map((s) => (
-                        <span key={s} className="tag tag-neutral">
-                          {s}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+                  ))}
                 </div>
 
                 {/* Contexte marché (chiffre réel DARES/Insee, voir la LP pour
@@ -911,12 +976,35 @@ export function OnboardingWizard({
 
             {showChrome && (
               <>
+                <div className="mt-auto flex items-center gap-2.5 pt-8">
+                  <span aria-hidden style={{ fontSize: 15 }}>
+                    🎯
+                  </span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "var(--color-text)", whiteSpace: "nowrap" }}>
+                    Matching précis à {precision}%
+                  </span>
+                  <div
+                    style={{
+                      flex: 1,
+                      height: 5,
+                      borderRadius: 999,
+                      background: "var(--color-surface)",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <motion.div
+                      animate={{ width: `${precision}%` }}
+                      transition={{ duration: 0.5, ease: [0.2, 0.7, 0.2, 1] }}
+                      style={{ height: "100%", background: "var(--color-accent)", borderRadius: 999 }}
+                    />
+                  </div>
+                </div>
                 {error && (
-                  <p className="mt-4 text-sm" style={{ color: "var(--color-accent-700)" }}>
+                  <p className="mt-3 text-sm" style={{ color: "var(--color-accent-700)" }}>
                     {error}
                   </p>
                 )}
-                <div className="mt-auto flex items-center justify-between gap-3 pt-8">
+                <div className="flex items-center justify-between gap-3" style={{ marginTop: error ? 12 : 14 }}>
                   {skippable ? (
                     <button type="button" onClick={goNext} className="btn btn-ghost">
                       Passer
