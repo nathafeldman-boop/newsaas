@@ -19,6 +19,7 @@ const PUBLIC_PATHS = [
   "/sitemap.xml",
   "/llms.txt",
   "/admin",
+  "/compte-supprime",
 ];
 const ONBOARDING_EXEMPT_PATHS = ["/onboarding", "/auth", "/admin"];
 

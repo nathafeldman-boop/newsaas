@@ -6,6 +6,7 @@ import { GmailConnectionPanel } from "@/components/profile/GmailConnectionPanel"
 import { SettingsPanel } from "@/components/profile/SettingsPanel";
 import { ReviewPanel } from "@/components/profile/ReviewPanel";
 import { SearchCompletedToggle } from "@/components/profile/SearchCompletedToggle";
+import { DeleteAccountPanel } from "@/components/profile/DeleteAccountPanel";
 import { PremiumCtaLink } from "@/components/premium/PremiumCtaLink";
 import { isPremium } from "@/lib/subscription/isPremium";
 import type { ApplicationStatus } from "@/types/database";
@@ -13,9 +14,9 @@ import type { ApplicationStatus } from "@/types/database";
 export default async function ProfilPage({
   searchParams,
 }: {
-  searchParams: Promise<{ gmail?: string }>;
+  searchParams: Promise<{ gmail?: string; error?: string }>;
 }) {
-  const { gmail } = await searchParams;
+  const { gmail, error } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -202,6 +203,8 @@ export default async function ProfilPage({
           </button>
         </form>
       </div>
+
+      <DeleteAccountPanel hasSubscription={Boolean(profile.stripe_subscription_id)} error={error} />
     </div>
   );
 }

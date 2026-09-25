@@ -99,24 +99,47 @@ export default function ConfidentialitePage() {
 
       <Section title="Durée de conservation">
         <p>
-          Tes données sont conservées tant que ton compte est actif. En cas
-          de suppression de compte, tes données personnelles sont
-          supprimées sous 30 jours, à l&apos;exception des données que nous
-          devons conserver plus longtemps pour répondre à une obligation
-          légale (ex : factures).
+          Tes données sont conservées tant que ton compte est actif. Si tu
+          supprimes ton compte (voir ci-dessous), tes données personnelles
+          sont effacées immédiatement de nos bases, à l&apos;exception des
+          données que nous devons conserver plus longtemps pour répondre à
+          une obligation légale (ex : factures).
         </p>
       </Section>
 
       <Section title="Tes droits (RGPD)">
         <p>
-          Conformément au RGPD, tu peux à tout moment demander l&apos;accès,
-          la rectification ou la suppression de tes données, ou retirer
-          ton consentement (par exemple en déconnectant Gmail). Tu as
-          aussi le droit à la portabilité de tes données et celui
-          d&apos;introduire une réclamation auprès de la CNIL
-          (www.cnil.fr). Pour toute demande, contacte-nous à l&apos;adresse
-          indiquée ci-dessous.
+          Conformément au RGPD, tu disposes des droits suivants sur tes
+          données :
         </p>
+        <ul style={{ margin: "8px 0 0", paddingLeft: 20 }}>
+          <li>
+            <strong>Droit à l&apos;effacement</strong> : supprime ton compte
+            et l&apos;ensemble de tes données en un clic, à tout moment,
+            depuis ton <a href="/profil">profil</a> (section &laquo;&nbsp;Zone
+            de suppression&nbsp;&raquo;, tout en bas de page). Un abonnement
+            Premium actif est résilié automatiquement au même moment.
+          </li>
+          <li>
+            <strong>Droit de rectification</strong> : modifie directement
+            tes informations de profil (ville, compétences, CV...) depuis
+            la page <a href="/profil">profil</a>.
+          </li>
+          <li>
+            <strong>Droit de retrait du consentement</strong> : par exemple
+            en déconnectant Gmail depuis ton profil.
+          </li>
+          <li>
+            <strong>Droit d&apos;accès et à la portabilité</strong> : contacte-nous
+            à l&apos;adresse ci-dessous pour recevoir une copie de tes
+            données dans un format structuré.
+          </li>
+          <li>
+            <strong>Droit de réclamation</strong> auprès de la CNIL
+            (www.cnil.fr) si tu estimes que tes droits ne sont pas
+            respectés.
+          </li>
+        </ul>
       </Section>
 
       <Section title="Contact">
