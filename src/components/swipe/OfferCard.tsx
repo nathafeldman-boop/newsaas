@@ -9,9 +9,10 @@ function formatStartDate(dateStr: string): string {
   return date.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
 }
 
-// Toujours utilisés par la démo publique de la landing (SwipeDemo.tsx), qui
-// a ses propres offres fictives et son propre balisage de carte -- gardés
-// exportés même si OfferCardContent ci-dessous ne les utilise plus.
+// Toujours utilisé par la démo publique de la landing (SwipeDemo.tsx), qui a
+// ses propres offres fictives et son propre balisage de carte -- gardé
+// exporté même si OfferCardContent ci-dessous ne l'utilise plus directement
+// (InfoCell plus bas, elle, est réutilisée telle quelle par les deux).
 export function MatchRing({ score }: { score: number }) {
   const size = 46;
   const stroke = 4;
@@ -49,66 +50,6 @@ export function MatchRing({ score }: { score: number }) {
       >
         {score}%
       </span>
-    </div>
-  );
-}
-
-export function StatPill({ icon, label, value }: { icon: string; label: string; value: string }) {
-  return (
-    <div
-      className="flex items-center gap-2"
-      style={{
-        background: "var(--color-surface)",
-        border: "1px solid var(--color-divider)",
-        borderRadius: "var(--radius-md)",
-        padding: "8px 9px",
-        minWidth: 0,
-      }}
-    >
-      <span
-        aria-hidden
-        style={{
-          width: 22,
-          height: 22,
-          borderRadius: "50%",
-          background: "var(--color-accent-100)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 11,
-          flexShrink: 0,
-        }}
-      >
-        {icon}
-      </span>
-      <div style={{ minWidth: 0 }}>
-        <p
-          style={{
-            fontSize: 9.5,
-            letterSpacing: "0.03em",
-            textTransform: "uppercase",
-            color: "color-mix(in srgb, var(--color-text) 60%, transparent)",
-            margin: 0,
-          }}
-        >
-          {label}
-        </p>
-        <p
-          style={{
-            fontSize: 11.5,
-            lineHeight: 1.25,
-            fontFamily: "var(--font-heading)",
-            margin: "1px 0 0",
-            overflowWrap: "break-word",
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-          }}
-        >
-          {value}
-        </p>
-      </div>
     </div>
   );
 }
@@ -197,7 +138,7 @@ function companyInitials(company: string): string {
 
 const mutedText = "color-mix(in srgb, var(--color-text) 60%, transparent)";
 
-function InfoCell({ icon, label, value }: { icon: string; label: string; value: string }) {
+export function InfoCell({ icon, label, value }: { icon: string; label: string; value: string }) {
   return (
     <div style={{ minWidth: 0, background: "var(--color-bg)", borderRadius: 14, padding: "10px 10px 9px" }}>
       <span aria-hidden style={{ fontSize: 15 }}>
@@ -221,11 +162,9 @@ function InfoCell({ icon, label, value }: { icon: string; label: string; value: 
           fontSize: 12.5,
           fontWeight: 700,
           lineHeight: 1.25,
-          overflowWrap: "break-word",
-          display: "-webkit-box",
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: "vertical",
+          whiteSpace: "nowrap",
           overflow: "hidden",
+          textOverflow: "ellipsis",
         }}
       >
         {value}

@@ -500,7 +500,7 @@ export default async function LandingPage() {
               <div
                 aria-hidden
                 className="lp-float"
-                style={{ position: "absolute", zIndex: 3, left: -12, top: 20, ["--r" as string]: "-6deg" }}
+                style={{ position: "absolute", zIndex: 3, left: -18, top: -14, ["--r" as string]: "-6deg" }}
               >
                 <div
                   className="flex items-center gap-2.5"

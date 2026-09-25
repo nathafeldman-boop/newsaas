@@ -9,7 +9,7 @@ import {
   useTransform,
   animate,
 } from "framer-motion";
-import { MatchRing, StatPill } from "@/components/swipe/OfferCard";
+import { MatchRing, InfoCell } from "@/components/swipe/OfferCard";
 
 const SWIPE_THRESHOLD = 100;
 const EXIT_DISTANCE = 500;
@@ -74,6 +74,13 @@ const DEMO_OFFERS = [
   },
 ] as const;
 
+function demoInitials(company: string): string {
+  const words = company.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return "?";
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return (words[0][0] + words[1][0]).toUpperCase();
+}
+
 interface DemoCardHandle {
   swipeOut: (direction: DemoDirection) => void;
 }
@@ -128,15 +135,18 @@ const DemoCard = forwardRef<
               style={{
                 opacity: likeOpacity,
                 position: "absolute",
-                left: 20,
-                top: 20,
+                left: 18,
+                top: 74,
                 zIndex: 10,
                 transform: "rotate(-12deg)",
-                border: "4px solid var(--color-accent-2)",
-                color: "var(--color-accent-2)",
-                borderRadius: 8,
-                padding: "3px 10px",
+                border: "3px solid var(--color-accent)",
+                color: "var(--color-accent)",
+                background: "var(--color-accent-100)",
+                borderRadius: 9,
+                padding: "1px 10px",
                 fontSize: 17,
+                fontWeight: 800,
+                letterSpacing: "0.04em",
                 fontFamily: "var(--font-heading)",
                 pointerEvents: "none",
               }}
@@ -147,15 +157,18 @@ const DemoCard = forwardRef<
               style={{
                 opacity: passOpacity,
                 position: "absolute",
-                right: 20,
-                top: 20,
+                right: 18,
+                top: 74,
                 zIndex: 10,
                 transform: "rotate(12deg)",
-                border: "4px solid var(--color-neutral-500)",
+                border: "3px solid var(--color-neutral-500)",
                 color: "var(--color-neutral-600)",
-                borderRadius: 8,
-                padding: "3px 10px",
+                background: "var(--color-surface)",
+                borderRadius: 9,
+                padding: "1px 10px",
                 fontSize: 17,
+                fontWeight: 800,
+                letterSpacing: "0.04em",
                 fontFamily: "var(--font-heading)",
                 pointerEvents: "none",
               }}
@@ -164,47 +177,115 @@ const DemoCard = forwardRef<
             </motion.span>
           </>
         )}
-        <div className="flex h-full flex-col">
+        <div className="flex h-full flex-col overflow-hidden">
           <div
             style={{
-              background: "linear-gradient(135deg, var(--color-accent), var(--color-accent-2))",
-              color: "#fff",
-              padding: "20px 20px 34px",
+              position: "relative",
+              flexShrink: 0,
+              overflow: "hidden",
+              padding: "16px 16px 15px 18px",
+              background: "linear-gradient(125deg, var(--color-accent), var(--color-accent-2))",
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 11,
             }}
           >
-            <div className="flex items-start justify-between gap-3">
-              <div style={{ minWidth: 0 }}>
-                <p style={{ fontFamily: "var(--font-heading)", fontSize: 13, margin: 0 }}>{offer.company}</p>
-                <p style={{ fontSize: 11.5, opacity: 0.85, margin: "2px 0 0" }}>{offer.location}</p>
-              </div>
-              <MatchRing score={offer.matchScore} />
+            <div
+              aria-hidden
+              style={{
+                position: "absolute",
+                right: -36,
+                top: -54,
+                width: 160,
+                height: 160,
+                borderRadius: "50%",
+                border: "1px solid rgba(242,248,249,.18)",
+              }}
+            />
+            <div
+              aria-hidden
+              style={{
+                position: "absolute",
+                right: 8,
+                top: -18,
+                width: 108,
+                height: 108,
+                borderRadius: "50%",
+                border: "1px solid rgba(242,248,249,.14)",
+              }}
+            />
+            <div
+              aria-hidden
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 13,
+                flexShrink: 0,
+                background: "var(--color-bg)",
+                color: "var(--color-accent-700)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: 800,
+                fontSize: 14,
+                fontFamily: "var(--font-heading)",
+              }}
+            >
+              {demoInitials(offer.company)}
             </div>
-            <h3 style={{ fontFamily: "var(--font-heading)", fontSize: 18, lineHeight: 1.25, margin: "14px 0 0" }}>
-              {offer.title}
-            </h3>
-            <div className="flex items-center gap-2" style={{ marginTop: 8 }}>
-              <span className="tag" style={{ background: "rgba(255,255,255,0.18)", color: "#fff", fontSize: 10.5 }}>
+            <div style={{ minWidth: 0, flex: 1, paddingTop: 2 }}>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: 13.5,
+                  fontWeight: 700,
+                  color: "#fff",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {offer.company}
+              </p>
+              <p style={{ margin: "2px 0 0", fontSize: 11.5, color: "rgba(242,248,249,.88)" }}>📍 {offer.location}</p>
+            </div>
+            <MatchRing score={offer.matchScore} />
+          </div>
+
+          <div className="flex flex-1 flex-col overflow-y-auto" style={{ padding: "13px 16px 15px" }}>
+            <div className="flex flex-wrap gap-1.5">
+              <span className="tag tag-accent" style={{ fontSize: 10.5 }}>
                 {offer.contractType}
               </span>
-              <span style={{ fontSize: 10.5, opacity: 0.75 }}>{offer.publishedLabel}</span>
+              <span className="tag tag-accent-2" style={{ fontSize: 10.5 }}>
+                ✨ {offer.publishedLabel}
+              </span>
             </div>
-          </div>
+            <h3
+              style={{
+                margin: "9px 0 0",
+                fontSize: 17,
+                fontWeight: 800,
+                lineHeight: 1.2,
+                letterSpacing: "-0.015em",
+              }}
+            >
+              {offer.title}
+            </h3>
 
-          <div style={{ padding: "0 14px", marginTop: -20, position: "relative", zIndex: 2 }}>
-            <div className="grid grid-cols-2 gap-1.5">
-              <StatPill icon="💶" label="Rémunération" value={offer.salary} />
-              <StatPill icon="⏱" label="Durée" value={offer.duration} />
+            <div className="grid grid-cols-3 gap-1.5" style={{ marginTop: 12 }}>
+              <InfoCell icon="🗓" label="Début" value={offer.start} />
+              <InfoCell icon="⏱" label="Durée" value={offer.duration} />
+              <InfoCell icon="💰" label="Salaire" value={offer.salary} />
             </div>
-          </div>
 
-          <div style={{ padding: "12px 16px 16px", marginTop: "auto" }}>
             <p
               style={{
+                margin: "12px 0 0",
                 fontSize: 10,
                 letterSpacing: "0.06em",
                 textTransform: "uppercase",
                 color: "color-mix(in srgb, var(--color-text) 60%, transparent)",
-                margin: 0,
               }}
             >
               Pourquoi toi
@@ -212,7 +293,7 @@ const DemoCard = forwardRef<
             <ul style={{ margin: "6px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 3 }}>
               {offer.reasons.map((reason) => (
                 <li key={reason} style={{ fontSize: 12, display: "flex", gap: 5 }}>
-                  <span aria-hidden style={{ color: "var(--color-accent-2-700)" }}>✓</span>
+                  <span aria-hidden style={{ color: "var(--color-accent-700)", fontWeight: 700 }}>✓</span>
                   {reason}
                 </li>
               ))}
@@ -252,7 +333,7 @@ export function SwipeDemo() {
 
   return (
     <div className="flex flex-col items-center">
-      <div className="relative h-[400px] w-full max-w-[300px]">
+      <div className="relative h-[420px] w-full max-w-[300px]">
         <AnimatePresence>
           {done ? (
             <motion.div
