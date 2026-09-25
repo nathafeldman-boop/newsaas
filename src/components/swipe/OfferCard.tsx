@@ -199,15 +199,27 @@ const mutedText = "color-mix(in srgb, var(--color-text) 60%, transparent)";
 
 function InfoCell({ icon, label, value }: { icon: string; label: string; value: string }) {
   return (
-    <div style={{ minWidth: 0 }}>
-      <p style={{ margin: 0, fontSize: 11, color: mutedText }}>
-        {icon} {label}
+    <div style={{ minWidth: 0, background: "var(--color-bg)", borderRadius: 14, padding: "10px 10px 9px" }}>
+      <span aria-hidden style={{ fontSize: 15 }}>
+        {icon}
+      </span>
+      <p
+        style={{
+          margin: "5px 0 0",
+          fontSize: 9.5,
+          fontWeight: 600,
+          letterSpacing: "0.05em",
+          textTransform: "uppercase",
+          color: mutedText,
+        }}
+      >
+        {label}
       </p>
       <p
         style={{
-          margin: "3px 0 0",
-          fontSize: 13,
-          fontWeight: 600,
+          margin: "2px 0 0",
+          fontSize: 12.5,
+          fontWeight: 700,
           lineHeight: 1.25,
           overflowWrap: "break-word",
           display: "-webkit-box",
@@ -240,80 +252,95 @@ export function OfferCardContent({
   const freshnessLabel = getFreshnessLabel(offer.published_at);
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto" style={{ padding: "20px 20px 18px" }}>
-      <div className="flex items-start justify-between gap-2.5">
-        <div className="flex items-center gap-2.5" style={{ minWidth: 0 }}>
-          <div
-            aria-hidden
+    <div className="flex h-full flex-col overflow-hidden">
+      <div
+        style={{
+          position: "relative",
+          flexShrink: 0,
+          overflow: "hidden",
+          padding: "18px 18px 17px 20px",
+          background: "linear-gradient(125deg, var(--color-accent), var(--color-accent-2))",
+          display: "flex",
+          alignItems: "flex-start",
+          gap: 12,
+        }}
+      >
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            right: -40,
+            top: -60,
+            width: 180,
+            height: 180,
+            borderRadius: "50%",
+            border: "1px solid rgba(242,248,249,.18)",
+          }}
+        />
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            right: 10,
+            top: -20,
+            width: 120,
+            height: 120,
+            borderRadius: "50%",
+            border: "1px solid rgba(242,248,249,.14)",
+          }}
+        />
+        <div
+          aria-hidden
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 15,
+            flexShrink: 0,
+            background: "var(--color-bg)",
+            color: "var(--color-accent-700)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontWeight: 800,
+            fontSize: 15,
+            fontFamily: "var(--font-heading)",
+          }}
+        >
+          {companyInitials(offer.company)}
+        </div>
+        <div style={{ minWidth: 0, flex: 1, paddingTop: 2 }}>
+          <p
             style={{
-              width: 42,
-              height: 42,
-              borderRadius: 14,
-              flexShrink: 0,
-              background: "var(--color-accent-100)",
-              color: "var(--color-accent-700)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              margin: 0,
+              fontSize: 14.5,
               fontWeight: 700,
-              fontSize: 14,
-              fontFamily: "var(--font-heading)",
+              color: "#fff",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
             }}
           >
-            {companyInitials(offer.company)}
-          </div>
-          <div style={{ minWidth: 0 }}>
-            <p style={{ margin: 0, fontSize: 13.5, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {offer.company}
-            </p>
-            <p style={{ margin: "1px 0 0", fontSize: 12, color: mutedText }}>{offer.location}</p>
-          </div>
+            {offer.company}
+          </p>
+          <p
+            style={{
+              margin: "2px 0 0",
+              fontSize: 12,
+              color: "rgba(242,248,249,.88)",
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+            }}
+          >
+            📍 {offer.location}
+          </p>
         </div>
+        {typeof score === "number" && <MatchRing score={score} />}
       </div>
 
-      <h2 style={{ margin: "16px 0 0", fontSize: 20, fontWeight: 700, lineHeight: 1.28, letterSpacing: "-0.01em" }}>
-        {offer.title}
-      </h2>
-      <p style={{ margin: "5px 0 0", fontSize: 13.5, fontWeight: 500, color: mutedText }}>
-        {typeLabel} • {offer.location}
-      </p>
-
-      {(hypeMessage || typeof score === "number") && (
-        <div className="flex flex-wrap items-center gap-1.5" style={{ marginTop: 10 }}>
-          {typeof score === "number" && (
-            <span
-              style={{
-                fontSize: 12.5,
-                fontWeight: 700,
-                color: "var(--color-accent-700)",
-                background: "var(--color-accent-100)",
-                padding: "5px 10px",
-                borderRadius: 999,
-                whiteSpace: "nowrap",
-              }}
-            >
-              {score}% compatible
-            </span>
-          )}
-          {hypeMessage && (
-            <span
-              style={{
-                fontSize: 12.5,
-                fontWeight: 700,
-                color: "var(--color-accent-700)",
-                background: "var(--color-accent-100)",
-                padding: "5px 10px",
-                borderRadius: 999,
-              }}
-            >
-              {hypeMessage}
-            </span>
-          )}
-        </div>
-      )}
-
-      {(tags.length > 0 || freshnessLabel) && (
-        <div className="flex flex-wrap gap-1.5" style={{ marginTop: 12 }}>
+      <div className="flex flex-1 flex-col overflow-y-auto" style={{ padding: "16px 20px 18px" }}>
+        <div className="flex flex-wrap gap-1.5">
+          <span className="tag tag-accent">{typeLabel}</span>
           {freshnessLabel && <span className="tag tag-accent-2">✨ {freshnessLabel}</span>}
           {tags.map((tag) => (
             <span key={tag} className="tag tag-neutral">
@@ -321,72 +348,91 @@ export function OfferCardContent({
             </span>
           ))}
         </div>
-      )}
 
-      <div style={{ height: 1, background: "var(--color-divider)", margin: "16px 0" }} />
+        <h2 style={{ margin: "12px 0 0", fontSize: 20, fontWeight: 800, lineHeight: 1.22, letterSpacing: "-0.02em" }}>
+          {offer.title}
+        </h2>
 
-      <div className="grid grid-cols-3 gap-2">
-        <InfoCell icon="🗓" label="Début" value={offer.start_date ? formatStartDate(offer.start_date) : "Flexible"} />
-        <InfoCell icon="⏱" label="Durée" value={offer.duration ?? "Non précisé"} />
-        <InfoCell icon="💰" label="Salaire" value={offer.salary ?? "Non précisé"} />
-      </div>
-
-      {reasons && reasons.length > 0 && (
-        <div style={{ marginTop: 16 }}>
-          <p style={{ margin: 0, fontSize: 12.5, fontWeight: 700 }}>✨ Pourquoi cette offre pour toi</p>
-          <div className="flex flex-col gap-1.5" style={{ marginTop: 8 }}>
-            {reasons.map((reason) => (
-              <p
-                key={reason}
-                style={{ margin: 0, fontSize: 13, display: "flex", gap: 6, alignItems: "flex-start", color: "color-mix(in srgb, var(--color-text) 82%, transparent)" }}
-              >
-                <span aria-hidden style={{ color: "var(--color-accent-700)", fontWeight: 700, flexShrink: 0 }}>
-                  ✓
-                </span>
-                {reason}
-              </p>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div style={{ marginTop: 14, paddingBottom: 4 }}>
-        <p
-          style={{
-            margin: 0,
-            fontSize: 13,
-            lineHeight: 1.55,
-            color: "color-mix(in srgb, var(--color-text) 78%, transparent)",
-            ...(detailsOpen
-              ? {}
-              : {
-                  display: "-webkit-box",
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: "vertical" as const,
-                  overflow: "hidden",
-                }),
-          }}
-        >
-          {offer.description}
-        </p>
-        {!detailsOpen && (
-          <button
-            type="button"
-            onClick={() => setDetailsOpen(true)}
+        {hypeMessage && (
+          <p
             style={{
-              marginTop: 6,
-              background: "none",
-              border: "none",
-              padding: 0,
+              margin: "8px 0 0",
+              alignSelf: "flex-start",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
               fontSize: 12.5,
-              fontWeight: 600,
-              color: "var(--color-accent)",
-              cursor: "pointer",
+              fontWeight: 700,
+              color: "var(--color-accent-700)",
             }}
           >
-            Voir les détails →
-          </button>
+            ✨ {hypeMessage}
+          </p>
         )}
+
+        <div className="grid grid-cols-3 gap-2" style={{ marginTop: 14 }}>
+          <InfoCell icon="🗓" label="Début" value={offer.start_date ? formatStartDate(offer.start_date) : "Flexible"} />
+          <InfoCell icon="⏱" label="Durée" value={offer.duration ?? "Non précisé"} />
+          <InfoCell icon="💰" label="Salaire" value={offer.salary ?? "Non précisé"} />
+        </div>
+
+        {reasons && reasons.length > 0 && (
+          <div style={{ marginTop: 16 }}>
+            <p style={{ margin: 0, fontSize: 12.5, fontWeight: 700 }}>✨ Pourquoi cette offre pour toi</p>
+            <div className="flex flex-col gap-1.5" style={{ marginTop: 8 }}>
+              {reasons.map((reason) => (
+                <p
+                  key={reason}
+                  style={{ margin: 0, fontSize: 13, display: "flex", gap: 6, alignItems: "flex-start", color: "color-mix(in srgb, var(--color-text) 82%, transparent)" }}
+                >
+                  <span aria-hidden style={{ color: "var(--color-accent-700)", fontWeight: 700, flexShrink: 0 }}>
+                    ✓
+                  </span>
+                  {reason}
+                </p>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div style={{ marginTop: 14, paddingBottom: 4 }}>
+          <p
+            style={{
+              margin: 0,
+              fontSize: 13,
+              lineHeight: 1.55,
+              color: "color-mix(in srgb, var(--color-text) 78%, transparent)",
+              ...(detailsOpen
+                ? {}
+                : {
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical" as const,
+                    overflow: "hidden",
+                  }),
+            }}
+          >
+            {offer.description}
+          </p>
+          {!detailsOpen && (
+            <button
+              type="button"
+              onClick={() => setDetailsOpen(true)}
+              style={{
+                marginTop: 6,
+                background: "none",
+                border: "none",
+                padding: 0,
+                fontSize: 12.5,
+                fontWeight: 600,
+                color: "var(--color-accent)",
+                cursor: "pointer",
+              }}
+            >
+              Voir les détails →
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -31,39 +31,39 @@ export function BottomNav() {
           <Link
             key={item.href}
             href={item.href}
-            className="relative flex flex-1 flex-col items-center gap-0.5 text-[11px] no-underline"
+            className="relative flex flex-1 flex-col items-center gap-1 no-underline"
             style={{
               fontFamily: "var(--font-heading)",
-              color: active ? "var(--color-accent-700)" : "inherit",
-              padding: "4px 0",
+              color: active ? "var(--color-accent-700)" : "color-mix(in srgb, var(--color-text) 65%, transparent)",
+              padding: "2px 0",
             }}
           >
-            {active && (
-              <motion.span
-                layoutId="bottom-nav-pill"
-                transition={{ type: "spring", stiffness: 420, damping: 32 }}
-                style={{
-                  position: "absolute",
-                  inset: "-4px 6px",
-                  borderRadius: 14,
-                  background: "color-mix(in srgb, var(--color-accent) 12%, transparent)",
-                  zIndex: -1,
-                }}
-              />
-            )}
-            <motion.span
-              aria-hidden
-              animate={{ scale: active ? 1.15 : 1 }}
-              transition={{ type: "spring", stiffness: 420, damping: 22 }}
-              style={{ fontSize: 18, lineHeight: 1, opacity: active ? 1 : 0.65 }}
-            >
-              {item.icon}
-            </motion.span>
-            {item.label}
             <span
-              className={cn("h-1 w-1 rounded-full")}
-              style={{ background: active ? "var(--color-accent)" : "transparent" }}
-            />
+              className="relative flex items-center justify-center"
+              style={{ width: 52, height: 30, borderRadius: 999 }}
+            >
+              {active && (
+                <motion.span
+                  layoutId="bottom-nav-pill"
+                  transition={{ type: "spring", stiffness: 420, damping: 32 }}
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    borderRadius: 999,
+                    background: "color-mix(in srgb, var(--color-accent) 13%, transparent)",
+                  }}
+                />
+              )}
+              <motion.span
+                aria-hidden
+                animate={{ scale: active ? 1.1 : 1 }}
+                transition={{ type: "spring", stiffness: 420, damping: 22 }}
+                style={{ position: "relative", fontSize: 20, lineHeight: 1, opacity: active ? 1 : 0.75 }}
+              >
+                {item.icon}
+              </motion.span>
+            </span>
+            <span className={cn("text-[10.5px]", active && "font-bold")}>{item.label}</span>
           </Link>
         );
       })}

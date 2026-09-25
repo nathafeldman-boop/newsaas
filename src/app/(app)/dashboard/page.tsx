@@ -171,6 +171,13 @@ export default async function DashboardPage() {
             </p>
           </div>
         </div>
+        {totalApplications > 0 && (
+          <div className="flex" style={{ gap: 3, height: 6, marginTop: 12, borderRadius: 999, overflow: "hidden" }}>
+            <div style={{ flex: counts.sent, background: "var(--color-accent)" }} />
+            <div style={{ flex: counts.positive, background: "var(--color-accent-2)" }} />
+            <div style={{ flex: counts.negative, background: "var(--color-neutral-400)" }} />
+          </div>
+        )}
         <Link href="/mes-candidatures" style={{ fontSize: 12.5, display: "inline-block", marginTop: 14, color: "var(--color-accent-700)" }}>
           Voir le détail →
         </Link>

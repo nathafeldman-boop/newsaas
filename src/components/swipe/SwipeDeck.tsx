@@ -77,15 +77,18 @@ const SwipeCard = forwardRef<
               style={{
                 opacity: likeOpacity,
                 position: "absolute",
-                left: 24,
-                top: 24,
+                left: 20,
+                top: 92,
                 zIndex: 10,
                 transform: "rotate(-12deg)",
-                border: "4px solid var(--color-accent-2)",
-                color: "var(--color-accent-2)",
-                borderRadius: 8,
-                padding: "4px 12px",
+                border: "3px solid var(--color-accent)",
+                color: "var(--color-accent)",
+                background: "var(--color-accent-100)",
+                borderRadius: 10,
+                padding: "2px 12px",
                 fontSize: 20,
+                fontWeight: 800,
+                letterSpacing: "0.04em",
                 fontFamily: "var(--font-heading)",
                 pointerEvents: "none",
               }}
@@ -96,15 +99,18 @@ const SwipeCard = forwardRef<
               style={{
                 opacity: passOpacity,
                 position: "absolute",
-                right: 24,
-                top: 24,
+                right: 20,
+                top: 92,
                 zIndex: 10,
                 transform: "rotate(12deg)",
-                border: "4px solid var(--color-neutral-500)",
+                border: "3px solid var(--color-neutral-500)",
                 color: "var(--color-neutral-600)",
-                borderRadius: 8,
-                padding: "4px 12px",
+                background: "var(--color-surface)",
+                borderRadius: 10,
+                padding: "2px 12px",
                 fontSize: 20,
+                fontWeight: 800,
+                letterSpacing: "0.04em",
                 fontFamily: "var(--font-heading)",
                 pointerEvents: "none",
               }}
@@ -372,13 +378,13 @@ function SwipeDeckInner({
       {/* Juste passer/aimer ici : postuler et voir l'offre externe vivent sur
           /favoris une fois l'offre likée, pas sur l'écran de swipe lui-même
           -- swipe reste le geste rapide, candidater est une décision à part. */}
-      <div className="mt-7 flex items-center gap-6">
+      <div className="mt-7 flex items-center gap-7">
         <button
           type="button"
           onClick={() => handleSwipeIntent("pass")}
           aria-label="Passer"
           className="btn btn-icon btn-secondary"
-          style={{ width: 56, height: 56, borderRadius: "50%", fontSize: 22 }}
+          style={{ width: 58, height: 58, borderRadius: "50%", fontSize: 22 }}
         >
           ✕
         </button>
@@ -386,10 +392,19 @@ function SwipeDeckInner({
           type="button"
           onClick={() => handleSwipeIntent("like")}
           aria-label="Aimer"
-          className="btn btn-icon btn-secondary"
-          style={{ width: 56, height: 56, borderRadius: "50%", fontSize: 22 }}
+          className="btn btn-icon"
+          style={{
+            width: 68,
+            height: 68,
+            borderRadius: "50%",
+            fontSize: 28,
+            border: "none",
+            background: "linear-gradient(135deg, var(--color-accent), var(--color-accent-2))",
+            color: "var(--color-bg)",
+            boxShadow: "0 8px 20px color-mix(in srgb, var(--color-accent) 35%, transparent)",
+          }}
         >
-          🤍
+          ♥
         </button>
       </div>
     </div>
