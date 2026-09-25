@@ -410,3 +410,45 @@ entre-temps pour que `/swipe`, `/dashboard` et `notify-new-offers` ne
 dépendent jamais brutalement de ces colonnes si une future migration
 tardait à être appliquée — gardé en place, sans effet une fois la
 migration posée.
+
+## Mise à jour — Passe "l'app marche vraiment" (2026-09-25)
+
+Suite à la demande explicite "fait en sorte que l'application marche
+réellement et qu'il n'y ait plus de churn parce que ça marche vraiment" :
+audit ciblé sur des bugs FONCTIONNELS concrets (pas de style/visuel,
+distinct des passes de fidélité design précédentes), sur 4 zones en
+parallèle (paiement/abonnement, boucle swipe/matching, auth/onboarding,
+CV/candidature). Bugs réels trouvés et corrigés (détail dans le message de
+commit correspondant) :
+
+- **Critique** : glisser une carte (le geste principal d'une app façon
+  Tinder) ne passait jamais par `recordSwipe` — swipe perdu côté serveur,
+  quota gratuit contournable en glissant, célébration de match jamais
+  déclenchée au drag. Seuls les boutons ✕/♥ fonctionnaient correctement.
+  Vérifié corrigé par un vrai geste de souris simulé (pas un clic).
+- **Sécurité** : IDOR sur `markReferralGrantedAction` (n'importe quel
+  compte pouvait faire passer la récompense de parrainage d'un AUTRE
+  utilisateur à "granted") et open redirect sur `/login`/`/auth/callback`
+  via le paramètre `next` non validé.
+- Suppression de compte : un abonnement Stripe qui échouait à s'annuler
+  devenait orphelin et continuait d'être facturé sans recours (mon propre
+  ajout RGPD de la passe précédente) — ajouté une alerte email aux admins.
+- Double souscription Stripe possible (deux onglets / retour arrière) —
+  garde-fou serveur ajouté.
+- CV `.doc` accepté à l'upload mais jamais analysable (seuls PDF/DOCX le
+  sont) — bouclait indéfiniment sur "réessaie dans un instant" au lieu
+  d'un message actionnable. Retiré de l'upload, message précis remonté.
+- Carte "Connecter Gmail" du dashboard affichait "À venir" alors que la
+  fonctionnalité est déjà live sur `/profil`.
+- Mineur : doublon d'event analytics possible sur retry webhook Stripe.
+
+**Limite de cette passe** : le sandbox de cette session n'a pas d'accès
+réseau sortant vers l'hôte Supabase/Stripe du projet réel (politique
+réseau de l'environnement) — impossible d'y exécuter un test end-to-end
+complet avec de vraies données. Les correctifs sont vérifiés par lecture
+de code ligne à ligne contre leur scénario d'échec exact, et pour le bug
+critique du drag, par un test d'interaction réel (geste de souris simulé
+via Playwright contre une page de preview temporaire avec des données
+factices, supprimée avant commit). Un test manuel en conditions réelles
+(vrai compte, vrai paiement test Stripe) reste recommandé avant de
+considérer ces correctifs à 100% validés en production.
