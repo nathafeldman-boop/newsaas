@@ -66,6 +66,16 @@ function AnimatedCount({ target, durationMs }: { target: number; durationMs: num
   return <>{value.toLocaleString("fr-FR")}</>;
 }
 
+// Sous-textes des tuiles de mobilité (voir design) -- gardés ici plutôt que
+// dans lib/onboarding/options.ts pour ne pas ajouter un champ que
+// ProfileForm.tsx (qui réutilise MOBILITY_OPTIONS) n'a pas demandé.
+const MOBILITY_SUBTEXT: Record<string, string> = {
+  "Sur place uniquement": "Seulement dans ta ville",
+  "Mobile dans la région": "Jusqu'à ~50 km",
+  "Mobile en France": "Prêt·e à déménager",
+  "Full remote": "100% à distance",
+};
+
 // Messages affichés en boucle pendant la sauvegarde finale (étape "outro") --
 // purement cosmétique (aucun ne décrit une étape technique distincte), sert
 // juste à faire sentir que l'app travaille pendant les ~1.8s d'animation.
@@ -103,44 +113,100 @@ function StepHeader({ title, subtitle }: { title: string; subtitle?: string }) {
 function TileOption({
   label,
   icon,
+  sub,
   active,
   onClick,
   size = "sm",
 }: {
   label: string;
   icon?: string;
+  sub?: string;
   active: boolean;
   onClick: () => void;
   size?: "sm" | "lg";
 }) {
   const isLg = size === "lg";
+  const iconBox = isLg ? 48 : 38;
   return (
     <motion.button
       type="button"
-      whileTap={{ scale: 0.96 }}
+      whileTap={{ scale: 0.97 }}
       onClick={onClick}
-      className="flex flex-col items-center"
+      className="flex flex-col items-start"
       style={{
-        textAlign: "center",
+        position: "relative",
+        textAlign: "left",
         width: "100%",
-        padding: isLg ? "26px 22px" : "14px 10px",
+        gap: 10,
+        padding: isLg ? "22px 20px" : "14px",
         borderRadius: isLg ? "var(--radius-lg)" : "var(--radius-md)",
         border: `2px solid ${active ? "var(--color-accent)" : "var(--color-divider)"}`,
-        background: active ? "var(--color-accent)" : "var(--color-surface)",
-        fontFamily: "var(--font-heading)",
-        fontWeight: isLg ? 800 : 700,
-        fontSize: isLg ? 18 : 12.5,
-        lineHeight: 1.25,
+        background: active ? "linear-gradient(135deg, var(--color-accent), var(--color-accent-2))" : "var(--color-surface)",
+        boxShadow: active ? "0 10px 24px color-mix(in srgb, var(--color-accent) 28%, transparent)" : "0 1px 2px color-mix(in srgb, var(--color-text) 8%, transparent)",
         color: active ? "var(--color-bg)" : "var(--color-text)",
-        transition: "border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease",
+        transition: "border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease",
       }}
     >
+      {active && (
+        <span
+          aria-hidden
+          className="flex items-center justify-center"
+          style={{
+            position: "absolute",
+            top: 12,
+            right: 12,
+            width: 20,
+            height: 20,
+            borderRadius: "50%",
+            background: "var(--color-bg)",
+            color: "var(--color-accent)",
+            fontSize: 11,
+            fontWeight: 800,
+          }}
+        >
+          ✓
+        </span>
+      )}
       {icon && (
-        <span aria-hidden style={{ fontSize: isLg ? 30 : 22, marginBottom: isLg ? 10 : 6 }}>
+        <span
+          aria-hidden
+          className="flex items-center justify-center"
+          style={{
+            width: iconBox,
+            height: iconBox,
+            borderRadius: 13,
+            flexShrink: 0,
+            background: active ? "color-mix(in srgb, var(--color-bg) 20%, transparent)" : "var(--color-accent-100)",
+            color: active ? "var(--color-bg)" : "var(--color-accent)",
+            fontSize: isLg ? 24 : 18,
+          }}
+        >
           {icon}
         </span>
       )}
-      {label}
+      <span
+        style={{
+          fontFamily: "var(--font-heading)",
+          fontWeight: isLg ? 800 : 700,
+          fontSize: isLg ? 18 : 13.5,
+          lineHeight: 1.25,
+        }}
+      >
+        {label}
+      </span>
+      {sub && (
+        <span
+          style={{
+            marginTop: -6,
+            fontSize: 12.5,
+            fontWeight: 500,
+            lineHeight: 1.4,
+            opacity: 0.85,
+          }}
+        >
+          {sub}
+        </span>
+      )}
     </motion.button>
   );
 }
@@ -692,6 +758,11 @@ export function OnboardingWizard({
                       size="lg"
                       label={type === "alternance" ? "Alternance" : "Stage"}
                       icon={type === "alternance" ? "🎯" : "🌱"}
+                      sub={
+                        type === "alternance"
+                          ? "Tu alternes école et entreprise, avec un salaire."
+                          : "Une expérience de quelques mois pendant tes études."
+                      }
                       active={lookingFor.includes(type)}
                       onClick={() => toggleLookingFor(type)}
                     />
@@ -890,6 +961,7 @@ export function OnboardingWizard({
                       key={opt.value}
                       label={opt.value}
                       icon={opt.icon}
+                      sub={MOBILITY_SUBTEXT[opt.value]}
                       active={mobility === opt.value}
                       onClick={() => setMobility(opt.value)}
                     />
@@ -912,7 +984,7 @@ export function OnboardingWizard({
                         key={level}
                         type="button"
                         onClick={() => setEducationLevel(level)}
-                        className={educationLevel === level ? "tag" : "tag tag-neutral"}
+                        className={educationLevel === level ? "tag flex items-center gap-1.5" : "tag tag-neutral flex items-center gap-1.5"}
                         style={{
                           padding: "7px 14px",
                           fontSize: 13,
@@ -921,6 +993,7 @@ export function OnboardingWizard({
                             : {}),
                         }}
                       >
+                        <span aria-hidden>{educationLevel === level ? "✓" : "🎓"}</span>
                         {level}
                       </button>
                     ))}
@@ -965,18 +1038,18 @@ export function OnboardingWizard({
             )}
 
             {stepId === "cv" && (
-              <div className="flex flex-1 flex-col gap-5">
+              <div className="flex flex-col gap-5">
                 <StepHeader
                   title="Ajoute ton CV"
                   subtitle="Facultatif — améliore tes recommandations. Modifiable plus tard."
                 />
                 <label
-                  className="flex flex-1 flex-col items-center justify-center gap-2.5 text-center cursor-pointer"
+                  className="flex flex-col items-center justify-center gap-2.5 text-center cursor-pointer"
                   style={{
                     border: `2.5px dashed ${cvFile ? "var(--color-accent)" : "var(--color-divider)"}`,
                     borderRadius: "var(--radius-lg)",
                     background: cvFile ? "var(--color-accent-100)" : "var(--color-surface)",
-                    padding: "30px 20px",
+                    padding: "34px 20px",
                   }}
                 >
                   <input
@@ -995,6 +1068,20 @@ export function OnboardingWizard({
                     PDF, DOC ou DOCX
                   </span>
                 </label>
+                <div className="flex flex-col gap-2">
+                  <p className="flex items-center gap-2" style={{ margin: 0, fontSize: 13, color: "color-mix(in srgb, var(--color-text) 82%, transparent)" }}>
+                    <span aria-hidden style={{ color: "var(--color-accent)", fontSize: 16 }}>✓</span>
+                    Matching affiné sur le contenu de ton CV
+                  </p>
+                  <p className="flex items-center gap-2" style={{ margin: 0, fontSize: 13, color: "color-mix(in srgb, var(--color-text) 82%, transparent)" }}>
+                    <span aria-hidden style={{ color: "var(--color-accent)", fontSize: 16 }}>✓</span>
+                    Audit noté sur 100 avec conseils
+                  </p>
+                  <p className="flex items-center gap-2" style={{ margin: 0, fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
+                    <span aria-hidden style={{ fontSize: 16 }}>🔒</span>
+                    Jamais partagé sans ton accord
+                  </p>
+                </div>
               </div>
             )}
 
