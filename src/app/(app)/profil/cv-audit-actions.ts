@@ -67,18 +67,33 @@ export async function auditCvAction(
     };
   }
 
+  // Séparé du try/catch plus bas : extractCvText lève déjà un message
+  // précis et actionnable pour un format non supporté (ex : un vieux
+  // ".doc" -- accepté à l'upload mais jamais analysable, seuls PDF/DOCX le
+  // sont) -- avant ce correctif, ce message précis se faisait écraser par
+  // le "réessaie dans un instant" générique du catch global ci-dessous, qui
+  // boucle indéfiniment sur un format qui ne deviendra jamais analysable en
+  // réessayant. Bug réel trouvé à l'audit du 2026-09-25.
+  let text: string;
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
-    const text = await extractCvText(buffer, profile.cv_path);
+    text = await extractCvText(buffer, profile.cv_path);
+  } catch (err) {
+    return {
+      status: "error",
+      message: err instanceof Error ? err.message : "Impossible de lire le contenu de ton CV.",
+    };
+  }
 
-    if (text.trim().length < 50) {
-      return {
-        status: "error",
-        message:
-          "Le texte extrait de ton CV est trop court pour être analysé (CV scanné en image ?).",
-      };
-    }
+  if (text.trim().length < 50) {
+    return {
+      status: "error",
+      message:
+        "Le texte extrait de ton CV est trop court pour être analysé (CV scanné en image ?).",
+    };
+  }
 
+  try {
     if (isGeminiConfigured()) {
       try {
         const audit = await auditCvWithGemini(text, profile);

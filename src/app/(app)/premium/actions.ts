@@ -37,6 +37,30 @@ export async function createCheckoutSessionAction(formData: FormData) {
 
   if (!user) redirect("/login?next=/premium");
 
+  // Garde-fou serveur : /premium masque déjà le bouton "Débloquer Premium"
+  // pour un profil Premium (voir isPremium() côté page), mais c'est
+  // purement cosmétique -- rien n'empêchait cette action elle-même d'être
+  // rappelée (deux onglets ouverts, retour arrière/bfcache sur un rendu
+  // pré-paiement de /premium) pendant qu'un abonnement Stripe est déjà
+  // actif. Stripe n'impose aucune limite "un seul abonnement par client" :
+  // sans ce check, ça créait un DEUXIÈME abonnement indépendant sur la
+  // même carte -- double prélèvement réel jusqu'à ce que quelqu'un s'en
+  // aperçoive. On ne bloque que s'il existe un VRAI abonnement Stripe actif
+  // (stripe_subscription_id) : un statut "comp" (accès offert par un code
+  // admin, jamais de Stripe derrière) doit au contraire pouvoir souscrire
+  // normalement s'il le souhaite. Bug réel trouvé à l'audit du 2026-09-25.
+  const { data: existingProfile } = await supabase
+    .from("profiles")
+    .select("stripe_subscription_id, subscription_status")
+    .eq("id", user.id)
+    .single();
+  if (
+    existingProfile?.stripe_subscription_id &&
+    (existingProfile.subscription_status === "active" || existingProfile.subscription_status === "trialing")
+  ) {
+    redirect("/premium?error=already_subscribed");
+  }
+
   // "plan" est posé par un input hidden dans chaque carte de prix (voir
   // /premium) -- weekly reste optionnel : tant que sa variable Stripe
   // correspondante n'est pas configurée, seule l'offre mensuelle

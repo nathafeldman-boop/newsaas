@@ -188,21 +188,28 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <div className="card elev-sm mt-5" style={{ padding: "var(--space-6)", opacity: 0.75 }}>
+      {/* La connexion Gmail est en réalité déjà disponible (GmailConnectionPanel
+          sur /profil) -- cette carte affichait "À venir" avec un bouton
+          désactivé, ce qui faisait croire à une fonctionnalité inexistante
+          alors qu'elle est live ailleurs. Corrigé pour pointer vers la vraie
+          fonctionnalité plutôt que la dupliquer ici (état de connexion déjà
+          géré sur /profil). Trouvé à l'audit du 2026-09-25. */}
+      <Link
+        href="/profil"
+        className="card elev-sm mt-5 no-underline"
+        style={{ padding: "var(--space-6)", color: "inherit", display: "block" }}
+      >
         <div className="flex items-center gap-2">
           <p style={{ fontFamily: "var(--font-heading)", fontSize: 17, margin: 0 }}>📧 Connecter Gmail</p>
-          <span className="tag tag-neutral" style={{ fontSize: 10.5 }}>
-            À venir
-          </span>
         </div>
         <p style={{ fontSize: 13, margin: "6px 0 0", color: "color-mix(in srgb, var(--color-text) 65%, transparent)" }}>
-          Bientôt : connecte ta boîte Gmail pour suivre automatiquement tes candidatures et les
-          réponses des recruteurs, sans rien saisir à la main.
+          Suis automatiquement tes candidatures et les réponses des recruteurs, sans rien saisir à
+          la main. Disponible depuis ton profil.
         </p>
-        <button type="button" disabled className="btn btn-secondary mt-3" style={{ whiteSpace: "nowrap", cursor: "not-allowed" }}>
-          Connecter Gmail
-        </button>
-      </div>
+        <span className="btn btn-secondary mt-3" style={{ whiteSpace: "nowrap" }}>
+          Aller sur mon profil →
+        </span>
+      </Link>
     </div>
   );
 }

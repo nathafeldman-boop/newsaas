@@ -90,11 +90,27 @@ export async function POST(request: NextRequest) {
             customerId,
           });
         } else {
-          const { error: eventError } = await admin
+          // Stripe réessaie tout l'event si syncSubscription renvoie 409
+          // plus bas (ligne ~111) -- sans ce garde-fou, un même
+          // abonnement pouvait logger plusieurs "subscription_started"
+          // (compteur analytics gonflé, jamais un souci de facturation/
+          // accès). Best-effort, comme le reste de ce webhook : une
+          // erreur ici ne doit jamais faire échouer l'activation réelle.
+          const { data: alreadyLogged } = await admin
             .from("user_events")
-            .insert({ user_id: userId, event_type: "subscription_started", metadata: { customerId } });
-          if (eventError) {
-            console.error("Stripe webhook: subscription_started event insert failed", eventError, { userId });
+            .select("id")
+            .eq("user_id", userId)
+            .eq("event_type", "subscription_started")
+            .contains("metadata", { customerId })
+            .limit(1)
+            .maybeSingle();
+          if (!alreadyLogged) {
+            const { error: eventError } = await admin
+              .from("user_events")
+              .insert({ user_id: userId, event_type: "subscription_started", metadata: { customerId } });
+            if (eventError) {
+              console.error("Stripe webhook: subscription_started event insert failed", eventError, { userId });
+            }
           }
         }
       } else {

@@ -33,8 +33,16 @@ const SwipeCard = forwardRef<
     score?: number;
     isTop: boolean;
     onExited: (direction: SwipeDirection) => void;
+    // Déclenché quand un DRAG physique (pas un clic bouton) franchit le
+    // seuil -- doit passer par le même chemin que les boutons (voir
+    // handleSwipeIntent côté parent : enregistrement du swipe, quota,
+    // célébration de match). Sans ça, glisser une carte l'animait hors de
+    // l'écran sans jamais appeler recordSwipe -- swipe perdu côté serveur,
+    // quota gratuit contournable, offre qui réapparaît au chargement
+    // suivant. Bug réel trouvé à l'audit du 2026-09-25.
+    onSwipeIntent: (direction: SwipeDirection) => void;
   }
->(function SwipeCard({ offer, reasons, score, isTop, onExited }, ref) {
+>(function SwipeCard({ offer, reasons, score, isTop, onExited, onSwipeIntent }, ref) {
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-300, 300], [-18, 18]);
   const likeOpacity = useTransform(x, [20, 140], [0, 1]);
@@ -59,9 +67,9 @@ const SwipeCard = forwardRef<
       dragElastic={0.9}
       onDragEnd={(_, info) => {
         if (info.offset.x > SWIPE_THRESHOLD) {
-          swipeOut("like");
+          onSwipeIntent("like");
         } else if (info.offset.x < -SWIPE_THRESHOLD) {
-          swipeOut("pass");
+          onSwipeIntent("pass");
         } else {
           void animate(x, 0, { type: "spring", stiffness: 400, damping: 30 });
         }
@@ -480,6 +488,7 @@ function SwipeDeckInner({
                   score={scores[offer.id]}
                   isTop={isTop}
                   onExited={() => handleExited(offer.id)}
+                  onSwipeIntent={handleSwipeIntent}
                 />
               </motion.div>
             );

@@ -5,10 +5,16 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { GoogleButton } from "@/components/auth/GoogleButton";
+import { safeRedirectPath } from "@/lib/auth/safeRedirect";
 
 export function LoginForm() {
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") || "/swipe";
+  const next = safeRedirectPath(searchParams.get("next"), "/swipe");
+  // Posé par auth/callback/route.ts quand l'échange du code (lien de
+  // confirmation email expiré, ou retour Google en échec) rate -- sans ce
+  // message, la personne atterrissait sur un simple formulaire de
+  // connexion vide, sans comprendre pourquoi son lien ne l'a pas connectée.
+  const authError = searchParams.get("error") === "auth";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -60,6 +66,20 @@ export function LoginForm() {
 
   return (
     <div className="flex flex-col gap-4">
+      {authError && (
+        <p
+          className="text-sm"
+          style={{
+            margin: 0,
+            padding: "10px 12px",
+            borderRadius: 10,
+            background: "var(--color-accent-2-100)",
+            color: "var(--color-accent-2-800)",
+          }}
+        >
+          Ton lien de connexion a expiré ou n&apos;a pas pu être vérifié. Réessaie de te connecter ci-dessous.
+        </p>
+      )}
       <GoogleButton next={next} />
 
       <div className="flex items-center gap-3 text-xs" style={{ color: "color-mix(in srgb, var(--color-text) 45%, transparent)" }}>

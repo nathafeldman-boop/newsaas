@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { attachReferralIfNeeded } from "@/lib/referrals/attachReferral";
 import { attachAffiliateIfNeeded } from "@/lib/affiliates/attachAffiliate";
 import { notifyReferrerOfNewSignup } from "@/lib/resend/notifyReferrer";
+import { safeRedirectPath } from "@/lib/auth/safeRedirect";
 
 // Échange le code renvoyé par le lien de confirmation email / le retour
 // OAuth (Google) contre une session, puis redirige vers `next`.
@@ -11,7 +12,13 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code");
   const ref = searchParams.get("ref");
   const aff = searchParams.get("aff");
-  const next = searchParams.get("next") ?? "/onboarding";
+  // Un endpoint GET public reste appelable directement avec n'importe quel
+  // `next` forgé, indépendamment de ce que LoginForm/GoogleButton envoient
+  // normalement -- ne jamais faire confiance à la seule validation côté
+  // appelant. safeRedirectPath rejette aussi une valeur malformée qui
+  // ferait planter NextResponse.redirect (ex: on a vu une valeur non
+  // relative faire échouer la construction de l'URL de redirection).
+  const next = safeRedirectPath(searchParams.get("next"), "/onboarding");
 
   if (code) {
     const supabase = await createClient();

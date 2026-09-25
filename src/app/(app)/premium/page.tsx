@@ -9,6 +9,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   not_configured: "Le paiement n'est pas encore configuré, réessaie plus tard.",
   checkout_failed: "Impossible de démarrer le paiement, réessaie.",
   no_subscription: "Aucun abonnement actif à gérer.",
+  already_subscribed: "Tu as déjà un abonnement Premium actif — gère-le avec le bouton ci-dessous plutôt que d'en recréer un.",
 };
 
 const BENEFITS = [

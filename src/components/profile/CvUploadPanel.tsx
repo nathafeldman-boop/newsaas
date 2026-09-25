@@ -74,9 +74,14 @@ export function CvUploadPanel({
         className="mt-4 flex items-center justify-center gap-2 text-center cursor-pointer"
         style={{ border: "2px dashed var(--color-divider)", borderRadius: "var(--radius-lg)", padding: "22px 16px" }}
       >
+        {/* .doc (l'ancien format binaire Word, pas .docx) était accepté ici
+            mais src/lib/cv/extractText.ts ne sait extraire que PDF et DOCX --
+            un CV .doc s'uploadait "avec succès" puis échouait à chaque tentative
+            d'analyse, indéfiniment. Retiré plutôt que d'ajouter un vrai
+            parseur .doc pour un format de moins en moins utilisé. */}
         <input
           type="file"
-          accept=".pdf,.doc,.docx"
+          accept=".pdf,.docx"
           className="hidden"
           onChange={(e) => setCvFile(e.target.files?.[0] ?? null)}
         />

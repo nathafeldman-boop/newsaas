@@ -79,11 +79,26 @@ export async function updateSession(request: NextRequest) {
   // Utilisateur connecté mais onboarding pas terminé -> on le redirige, sauf
   // sur les pages déjà exemptées (onboarding lui-même, callbacks auth).
   if (!matchesPath(pathname, ONBOARDING_EXEMPT_PATHS)) {
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("onboarding_completed")
       .eq("id", user.id)
       .single();
+
+    // Ce middleware tourne sur CHAQUE navigation authentifiée : `profile`
+    // vaut `null` aussi bien sur un vrai profil pas encore créé QUE sur un
+    // pépin transitoire de requête (DB lente/indisponible un instant), et
+    // les deux étaient jusqu'ici indiscernables (erreur jamais loggée). On
+    // garde volontairement le fail-open (laisser passer plutôt que
+    // rediriger) : un fail-closed sur un blip transitoire renverrait TOUS
+    // les utilisateurs connectés vers /onboarding à chaque navigation
+    // pendant l'incident -- y compris ceux dont l'onboarding est déjà
+    // terminé depuis longtemps -- un rayon d'impact bien pire qu'un onboarding
+    // non terminé qui reste temporairement joignable. Le log rend au moins
+    // le problème diagnosticable au lieu de disparaître silencieusement.
+    if (profileError) {
+      console.error("updateSession: profile fetch failed", profileError, { userId: user.id, pathname });
+    }
 
     if (profile && !profile.onboarding_completed) {
       const redirectUrl = request.nextUrl.clone();

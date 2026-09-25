@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripeClient } from "@/lib/stripe/client";
+import { alertOrphanedStripeSubscription } from "@/lib/resend/alertOrphanedStripeSubscription";
 
 // Droit à l'effacement (RGPD, art. 17) : la politique de confidentialité
 // promet une suppression de compte en self-service depuis le profil --
@@ -31,13 +32,27 @@ export async function deleteAccountAction(formData: FormData) {
   // le prélèvement continuerait côté Stripe alors que plus personne ne
   // pourrait le voir ni l'annuler depuis l'app. Best-effort -- un souci
   // Stripe ne doit jamais empêcher quelqu'un d'exercer son droit à
-  // l'effacement, mais reste loggé pour un suivi manuel.
+  // l'effacement. Mais un simple console.error ne survit pas à la
+  // suppression du compte qui suit (stripe_subscription_id disparaît avec
+  // le profil) : sans alerte email, plus personne ne pourrait jamais
+  // retrouver cet abonnement pour l'annuler manuellement, et la carte
+  // continuerait d'être débitée indéfiniment. Bug réel trouvé à l'audit du
+  // 2026-09-25.
   if (profile?.stripe_subscription_id) {
     try {
       const stripe = getStripeClient();
       await stripe.subscriptions.cancel(profile.stripe_subscription_id);
     } catch (err) {
       console.error("deleteAccountAction: échec annulation Stripe", err);
+      try {
+        await alertOrphanedStripeSubscription({
+          userEmail: user.email ?? null,
+          stripeSubscriptionId: profile.stripe_subscription_id,
+          errorMessage: err instanceof Error ? err.message : String(err),
+        });
+      } catch (alertErr) {
+        console.error("deleteAccountAction: échec de l'alerte email aussi", alertErr);
+      }
     }
   }
 

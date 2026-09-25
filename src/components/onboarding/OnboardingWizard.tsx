@@ -1052,9 +1052,14 @@ export function OnboardingWizard({
                     padding: "34px 20px",
                   }}
                 >
+                  {/* .doc (ancien format binaire Word) retiré : extractText.ts
+                      ne sait extraire que PDF et DOCX -- voir CvUploadPanel.tsx
+                      pour le même correctif côté /profil (bug trouvé à
+                      l'audit du 2026-09-25, un .doc uploadé ici échouait
+                      ensuite indéfiniment à chaque tentative d'analyse). */}
                   <input
                     type="file"
-                    accept=".pdf,.doc,.docx"
+                    accept=".pdf,.docx"
                     className="hidden"
                     onChange={(e) => setCvFile(e.target.files?.[0] ?? null)}
                   />
@@ -1065,7 +1070,7 @@ export function OnboardingWizard({
                     {cvFile ? cvFile.name : "Clique pour choisir ton CV"}
                   </span>
                   <span style={{ fontSize: 12.5, fontWeight: 600, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                    PDF, DOC ou DOCX
+                    PDF ou DOCX
                   </span>
                 </label>
                 <div className="flex flex-col gap-2">
