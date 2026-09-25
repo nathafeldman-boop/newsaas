@@ -92,6 +92,17 @@ export async function createCheckoutSessionAction(formData: FormData) {
     mode: "subscription",
     customer: customerId,
     line_items: [{ price: priceId, quantity: 1 }],
+    // Carte uniquement : laissé aux méthodes de paiement dynamiques par
+    // défaut de Stripe (qui incluent Link), TOUS les renouvellements en
+    // échec constatés le 2026-09-25 payaient via "Link", pas une carte
+    // enregistrée directement (voir échange avec Nathan -- décline
+    // générique de la banque, payment_intent_generic_payment_failed, sur
+    // des abonnements qui renouvelaient pourtant à une date tout à fait
+    // normale). Ne corrige pas les abonnements déjà sur Link aujourd'hui
+    // (rien à faire côté Checkout pour eux, seul le portail Stripe permet
+    // de changer leur moyen de paiement), mais évite d'en créer de
+    // nouveaux tant que l'hypothèse Link n'est pas formellement écartée.
+    payment_method_types: ["card"],
     // session_id transmis à /premium/success : filet de secours qui
     // resynchronise l'abonnement à la volée si le webhook Stripe n'est
     // jamais arrivé ou a échoué (voir ce fichier pour le contexte -- un
