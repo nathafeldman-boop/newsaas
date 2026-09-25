@@ -244,8 +244,47 @@ a:hover > .card, button:hover > .card,
 }
 .animate-in { animation: fade-in-up 0.35s ease both; }
 
+/* — landing page hero decoration (redesign) — */
+@keyframes lp-float {
+  0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)); }
+  50% { transform: translateY(-14px) rotate(var(--r, 0deg)); }
+}
+@keyframes lp-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(40px, -30px) scale(1.08); }
+}
+@keyframes lp-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@keyframes lp-wiggle {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+@keyframes lp-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 45%, transparent); }
+  100% { box-shadow: 0 0 0 14px color-mix(in srgb, var(--color-accent) 0%, transparent); }
+}
+@keyframes lp-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes lp-ring {
+  0% { stroke-dashoffset: 238.8; }
+  60%, 100% { stroke-dashoffset: 14.3; }
+}
+.lp-float { animation: lp-float 5s ease-in-out infinite; }
+.lp-drift { animation: lp-drift 16s ease-in-out infinite; }
+.lp-marquee { animation: lp-marquee 38s linear infinite; }
+.lp-wiggle { animation: lp-wiggle 3.2s ease-in-out infinite; }
+.lp-pulse { animation: lp-pulse 1.8s ease-out infinite; }
+.lp-spin { animation: lp-spin 60s linear infinite; }
+.lp-ring { animation: lp-ring 4s cubic-bezier(.2,.7,.2,1) infinite; }
+
 @media (prefers-reduced-motion: reduce) {
-  .btn, .card, .tag, .seg-opt, .animate-in { transition: none !important; animation: none !important; }
+  .btn, .card, .tag, .seg-opt, .animate-in,
+  .lp-float, .lp-drift, .lp-marquee, .lp-wiggle, .lp-pulse, .lp-spin, .lp-ring {
+    transition: none !important; animation: none !important;
+  }
 }
 
 /* — navigation — */
