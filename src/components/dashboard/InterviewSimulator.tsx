@@ -51,7 +51,16 @@ export function InterviewSimulator({
 
   if (!isPremium) {
     return (
-      <div className="card elev-sm" style={{ padding: "var(--space-6)", textAlign: "center" }}>
+      <div
+        className="elev-sm"
+        style={{
+          padding: "var(--space-6)",
+          textAlign: "center",
+          borderRadius: "calc(var(--radius-lg) * 1.15)",
+          background: "var(--color-text)",
+          color: "var(--color-bg)",
+        }}
+      >
         <p style={{ fontSize: 32, margin: 0 }}>🎤</p>
         <p style={{ fontFamily: "var(--font-heading)", fontSize: 17, margin: "10px 0 0" }}>
           Simulateur d&apos;entretien
@@ -60,7 +69,7 @@ export function InterviewSimulator({
           style={{
             fontSize: 13,
             margin: "6px 0 0",
-            color: "color-mix(in srgb, var(--color-text) 65%, transparent)",
+            color: "var(--color-neutral-300)",
           }}
         >
           Entraîne-toi avec un entretien à choix multiples adapté à ton domaine, sur 3 niveaux de
@@ -114,13 +123,21 @@ export function InterviewSimulator({
     const question = questions[currentIndex];
     const selected = answers[currentIndex];
     return (
-      <div className="card elev-sm" style={{ padding: "var(--space-6)" }}>
+      <div
+        className="elev-sm"
+        style={{
+          padding: "var(--space-6)",
+          borderRadius: "calc(var(--radius-lg) * 1.15)",
+          background: "var(--color-text)",
+          color: "var(--color-bg)",
+        }}
+      >
         <p
           style={{
             fontSize: 11,
             letterSpacing: "0.06em",
             textTransform: "uppercase",
-            color: "color-mix(in srgb, var(--color-text) 55%, transparent)",
+            color: "var(--color-neutral-300)",
             margin: 0,
           }}
         >
@@ -131,7 +148,7 @@ export function InterviewSimulator({
           style={{
             height: 4,
             borderRadius: 999,
-            background: "var(--color-accent-100)",
+            background: "var(--color-neutral-900)",
             marginTop: 8,
             overflow: "hidden",
           }}
@@ -140,7 +157,7 @@ export function InterviewSimulator({
             style={{
               height: "100%",
               width: `${((currentIndex + 1) / questions.length) * 100}%`,
-              background: "var(--color-accent)",
+              background: "var(--color-accent-400)",
               transition: "width 0.25s ease",
             }}
           />
@@ -162,8 +179,9 @@ export function InterviewSimulator({
                 style={{
                   padding: "12px 14px",
                   borderRadius: 12,
-                  border: `1.5px solid ${isSelected ? "var(--color-accent)" : "var(--color-divider)"}`,
-                  background: isSelected ? "var(--color-accent-100)" : "var(--color-surface)",
+                  border: `1.5px solid ${isSelected ? "var(--color-accent-400)" : "var(--color-neutral-800)"}`,
+                  background: isSelected ? "var(--color-accent-800)" : "var(--color-neutral-900)",
+                  color: "var(--color-bg)",
                   fontSize: 13.5,
                   cursor: "pointer",
                 }}
@@ -200,7 +218,15 @@ export function InterviewSimulator({
     const resultMessage = getInterviewResultMessage(score, attemptCount, `${domainId}::${level}`);
 
     return (
-      <div className="card elev-sm" style={{ padding: "var(--space-6)" }}>
+      <div
+        className="elev-sm"
+        style={{
+          padding: "var(--space-6)",
+          borderRadius: "calc(var(--radius-lg) * 1.15)",
+          background: "var(--color-text)",
+          color: "var(--color-bg)",
+        }}
+      >
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <div
             style={{
@@ -209,7 +235,7 @@ export function InterviewSimulator({
               height: 72,
               borderRadius: "50%",
               flexShrink: 0,
-              background: `conic-gradient(var(--color-accent) 0% ${score}%, var(--color-accent-100) ${score}% 100%)`,
+              background: `conic-gradient(var(--color-accent-400) 0% ${score}%, var(--color-neutral-900) ${score}% 100%)`,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -220,7 +246,7 @@ export function InterviewSimulator({
                 width: 58,
                 height: 58,
                 borderRadius: "50%",
-                background: "var(--color-surface)",
+                background: "var(--color-text)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -239,7 +265,7 @@ export function InterviewSimulator({
               style={{
                 fontSize: 13,
                 margin: "4px 0 0",
-                color: "color-mix(in srgb, var(--color-text) 65%, transparent)",
+                color: "var(--color-neutral-300)",
               }}
             >
               Entretien {level} · {domainLabel}
@@ -248,26 +274,26 @@ export function InterviewSimulator({
         </div>
 
         {wrongOnes.length === 0 ? (
-          <p style={{ fontSize: 13.5, marginTop: 18 }}>{resultMessage}</p>
+          <p style={{ fontSize: 13.5, marginTop: 18, color: "var(--color-accent-200)" }}>{resultMessage}</p>
         ) : (
           <div className="mt-5 flex flex-col gap-4">
-            <p style={{ fontSize: 13, fontWeight: 600, margin: 0 }}>{resultMessage}</p>
+            <p style={{ fontSize: 13, fontWeight: 600, margin: 0, color: "var(--color-accent-200)" }}>{resultMessage}</p>
             {wrongOnes.map(({ q, i }) => (
               <div
                 key={i}
                 style={{
                   padding: "12px 14px",
                   borderRadius: 12,
-                  background: "var(--color-accent-2-100)",
+                  background: "var(--color-neutral-900)",
                 }}
               >
-                <p style={{ fontSize: 13, fontWeight: 600, margin: 0, color: "var(--color-accent-2-800)" }}>
+                <p style={{ fontSize: 13, fontWeight: 600, margin: 0, color: "var(--color-bg)" }}>
                   {q.question}
                 </p>
-                <p style={{ fontSize: 12.5, margin: "6px 0 0", color: "var(--color-accent-2-800)" }}>
+                <p style={{ fontSize: 12.5, margin: "6px 0 0", color: "var(--color-accent-200)" }}>
                   ✅ Bonne réponse : {q.options[q.correctIndex]}
                 </p>
-                <p style={{ fontSize: 12.5, margin: "4px 0 0", color: "var(--color-accent-2-800)", opacity: 0.85 }}>
+                <p style={{ fontSize: 12.5, margin: "4px 0 0", color: "var(--color-neutral-300)", opacity: 0.85 }}>
                   {q.explanation}
                 </p>
               </div>
@@ -275,7 +301,12 @@ export function InterviewSimulator({
           </div>
         )}
 
-        <button type="button" onClick={restart} className="btn btn-secondary mt-5" style={{ whiteSpace: "nowrap" }}>
+        <button
+          type="button"
+          onClick={restart}
+          className="btn btn-secondary mt-5"
+          style={{ whiteSpace: "nowrap", color: "var(--color-bg)", borderColor: "var(--color-neutral-800)" }}
+        >
           Recommencer un entretien
         </button>
       </div>
@@ -284,7 +315,15 @@ export function InterviewSimulator({
 
   // phase === "setup"
   return (
-    <div className="card elev-sm" style={{ padding: "var(--space-6)" }}>
+    <div
+      className="elev-sm"
+      style={{
+        padding: "var(--space-6)",
+        borderRadius: "calc(var(--radius-lg) * 1.15)",
+        background: "var(--color-text)",
+        color: "var(--color-bg)",
+      }}
+    >
       <p style={{ fontFamily: "var(--font-heading)", fontSize: 17, margin: 0 }}>
         🎤 Simulateur d&apos;entretien
       </p>
@@ -292,7 +331,7 @@ export function InterviewSimulator({
         style={{
           fontSize: 13,
           margin: "6px 0 0",
-          color: "color-mix(in srgb, var(--color-text) 65%, transparent)",
+          color: "var(--color-neutral-300)",
         }}
       >
         Choisis un domaine et un niveau, réponds au quiz, et découvre ton score avec des
@@ -308,9 +347,10 @@ export function InterviewSimulator({
           style={{
             padding: "10px 12px",
             borderRadius: 10,
-            border: "1px solid var(--color-divider)",
+            border: "1px solid var(--color-neutral-800)",
             fontSize: 13.5,
-            background: "var(--color-surface)",
+            background: "var(--color-neutral-900)",
+            color: "var(--color-bg)",
           }}
         >
           {INTERVIEW_DOMAINS.map((d) => (
@@ -332,8 +372,9 @@ export function InterviewSimulator({
               style={{
                 padding: "10px 8px",
                 borderRadius: 10,
-                border: `1.5px solid ${level === l.value ? "var(--color-accent)" : "var(--color-divider)"}`,
-                background: level === l.value ? "var(--color-accent-100)" : "var(--color-surface)",
+                border: `1.5px solid ${level === l.value ? "var(--color-accent-400)" : "var(--color-neutral-800)"}`,
+                background: level === l.value ? "var(--color-accent-800)" : "var(--color-neutral-900)",
+                color: "var(--color-bg)",
                 fontSize: 12.5,
                 fontWeight: 600,
                 cursor: "pointer",

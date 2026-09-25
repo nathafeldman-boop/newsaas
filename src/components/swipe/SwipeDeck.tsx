@@ -69,7 +69,7 @@ const SwipeCard = forwardRef<
     >
       <div
         className="card elev-lg relative h-full w-full overflow-hidden"
-        style={{ padding: 0, background: "var(--color-surface)" }}
+        style={{ padding: 0, background: "var(--color-neutral-100)" }}
       >
         {isTop && (
           <>
@@ -105,7 +105,7 @@ const SwipeCard = forwardRef<
                 transform: "rotate(12deg)",
                 border: "3px solid var(--color-neutral-500)",
                 color: "var(--color-neutral-600)",
-                background: "var(--color-surface)",
+                background: "var(--color-neutral-100)",
                 borderRadius: 10,
                 padding: "2px 12px",
                 fontSize: 20,
@@ -166,7 +166,7 @@ function MatchModal({
             style={{
               width: "100%",
               maxWidth: 360,
-              background: "var(--color-surface)",
+              background: "var(--color-neutral-100)",
               borderRadius: 28,
               padding: "28px 22px 20px",
               textAlign: "center",

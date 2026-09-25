@@ -31,7 +31,7 @@ export function OfferListCard({
     <div
       className="flex flex-col gap-3"
       style={{
-        background: "var(--color-surface)",
+        background: "var(--color-neutral-100)",
         borderRadius: 22,
         padding: 16,
         boxShadow: "var(--shadow-sm)",

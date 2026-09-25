@@ -20,9 +20,10 @@ export function BottomNav({ favoritesBadge = 0 }: { favoritesBadge?: number }) {
     <nav
       className="sm:hidden fixed inset-x-0 bottom-0 z-20 flex items-center justify-around px-2 pb-[calc(6px+env(safe-area-inset-bottom))] pt-2"
       style={{
-        background: "var(--color-surface)",
-        borderTop: "1px solid var(--color-divider)",
-        boxShadow: "var(--shadow-md)",
+        background: "color-mix(in srgb, var(--color-neutral-100) 90%, transparent)",
+        backdropFilter: "blur(16px)",
+        WebkitBackdropFilter: "blur(16px)",
+        borderTop: "1px solid color-mix(in srgb, var(--color-text) 8%, transparent)",
       }}
     >
       {ITEMS.map((item) => {
