@@ -66,6 +66,15 @@ function AnimatedCount({ target, durationMs }: { target: number; durationMs: num
   return <>{value.toLocaleString("fr-FR")}</>;
 }
 
+// Messages affichés en boucle pendant la sauvegarde finale (étape "outro") --
+// purement cosmétique (aucun ne décrit une étape technique distincte), sert
+// juste à faire sentir que l'app travaille pendant les ~1.8s d'animation.
+const OUTRO_LOAD_MESSAGES = [
+  "On analyse les offres actives…",
+  "On calcule tes scores de compatibilité…",
+  "On trie ton deck du jour…",
+];
+
 const slideVariants: Variants = {
   enter: (direction: number) => ({ x: direction > 0 ? 48 : -48, opacity: 0 }),
   center: { x: 0, opacity: 1 },
@@ -166,9 +175,20 @@ export function OnboardingWizard({
 }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [direction, setDirection] = useState(1);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const stepId = STEP_IDS[stepIndex];
+
+  // Séquence de l'étape "outro" (voir design mobile) : sauvegarde réelle du
+  // profil en tâche de fond pendant une petite animation de chargement,
+  // plutôt qu'un bouton "Enregistrement..." -- fait sentir que l'app
+  // travaille, et la carte de récap ne s'affiche qu'une fois les vraies
+  // données confirmées en base.
+  const [outroPhase, setOutroPhase] = useState<"loading" | "error" | "done">("loading");
+  const [loadMsgIndex, setLoadMsgIndex] = useState(0);
+  // Jamais une formule fictive (cf. CLAUDE.md, jamais de stat inventée) :
+  // vrai décompte des offres actives dans les secteurs choisis, requêté
+  // juste après l'enregistrement du profil.
+  const [foundCount, setFoundCount] = useState(0);
 
   const [skills, setSkills] = useState<string[]>(initialProfile?.skills ?? []);
   const [sectors, setSectors] = useState<string[]>(initialProfile?.sectors ?? []);
@@ -266,9 +286,9 @@ export function OnboardingWizard({
     setStepIndex((i) => Math.max(i - 1, 0));
   }
 
-  async function finish() {
-    setSaving(true);
-    setError(null);
+  async function persistProfile(): Promise<
+    { ok: true; foundCount: number } | { ok: false; error: string }
+  > {
     const supabase = createClient();
 
     let cvPath = initialProfile?.cv_path ?? null;
@@ -282,9 +302,7 @@ export function OnboardingWizard({
         .upload(path, cvFile, { upsert: true });
 
       if (uploadError) {
-        setSaving(false);
-        setError("Le CV n'a pas pu être envoyé : " + uploadError.message);
-        return;
+        return { ok: false, error: "Le CV n'a pas pu être envoyé : " + uploadError.message };
       }
       cvPath = path;
       cvUploadedAt = new Date().toISOString();
@@ -317,26 +335,66 @@ export function OnboardingWizard({
       })
       .eq("id", userId);
 
-    setSaving(false);
-
     if (updateError) {
-      setError(updateError.message);
-      return;
+      return { ok: false, error: updateError.message };
     }
 
     void logOnboardingEvent(userId, "onboarding_step_completed", "outro");
 
-    // Skip l'aller-retour réseau pour l'immense majorité des comptes qui
-    // n'ont pas de parrain -- seul ce cas a besoin d'être attendu (un
-    // window.location juste après pourrait sinon annuler la requête en
-    // vol). Navigation complète, pas router.push -- voir LoginForm pour le
-    // symptôme (cache client resservant l'état pré-connexion/pré-onboarding).
     if (initialProfile?.referred_by) {
       await markReferralGrantedAction(userId);
     }
-    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-    window.location.href = "/swipe";
+
+    let count = 0;
+    if (sectors.length > 0) {
+      const { count: activeCount } = await supabase
+        .from("offers")
+        .select("id", { count: "exact", head: true })
+        .eq("is_active", true)
+        .in("sector", sectors);
+      count = activeCount ?? 0;
+    }
+
+    return { ok: true, foundCount: count };
   }
+
+  async function runOutroSequence() {
+    setOutroPhase("loading");
+    setError(null);
+    setLoadMsgIndex(0);
+    const messageInterval = setInterval(() => {
+      setLoadMsgIndex((i) => (i + 1) % OUTRO_LOAD_MESSAGES.length);
+    }, 800);
+
+    // Durée mini pour laisser l'animation le temps de se voir (le vrai
+    // enregistrement est souvent plus rapide que ça) -- même principe que le
+    // prototype de design (~2.5s), pas une vraie latence réseau.
+    const [result] = await Promise.all([
+      persistProfile(),
+      new Promise((resolve) => setTimeout(resolve, 1800)),
+    ]);
+    clearInterval(messageInterval);
+
+    if (!result.ok) {
+      setError(result.error);
+      setOutroPhase("error");
+      return;
+    }
+    setFoundCount(result.foundCount);
+    setOutroPhase("done");
+  }
+
+  // Revenir sur "outro" après avoir édité une étape via le récap doit
+  // rejouer l'animation et resauvegarder -- outroPhase doit donc pouvoir
+  // repasser à "loading" de façon synchrone à chaque arrivée sur l'étape,
+  // pas seulement au premier montage.
+  useEffect(() => {
+    if (stepId === "outro") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      void runOutroSequence();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stepId]);
 
   const progressIndex = PROGRESS_STEPS.indexOf(stepId);
   const showChrome = stepId !== "intro" && stepId !== "outro" && stepId !== "trust";
@@ -448,7 +506,133 @@ export function OnboardingWizard({
                     pointerEvents: "none",
                   }}
                 />
-                <div style={{ position: "relative", marginTop: 24 }}>
+                <div
+                  aria-hidden
+                  style={{
+                    position: "relative",
+                    height: 190,
+                    marginTop: 4,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <div
+                    className="lp-spin"
+                    style={{
+                      position: "absolute",
+                      width: 150,
+                      height: 150,
+                      borderRadius: "50%",
+                      border: "1px dashed color-mix(in srgb, var(--color-accent) 40%, transparent)",
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: "absolute",
+                      width: 100,
+                      height: 128,
+                      borderRadius: 18,
+                      background: "var(--color-surface)",
+                      transform: "rotate(-11deg) translateX(-28px)",
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: "absolute",
+                      width: 100,
+                      height: 128,
+                      borderRadius: 18,
+                      background: "var(--color-surface)",
+                      boxShadow: "var(--shadow-sm)",
+                      transform: "rotate(8deg) translateX(28px)",
+                    }}
+                  />
+                  <div
+                    className="lp-float"
+                    style={{
+                      position: "relative",
+                      width: 108,
+                      height: 134,
+                      borderRadius: 20,
+                      background: "var(--color-surface)",
+                      boxShadow: "var(--shadow-lg)",
+                      overflow: "hidden",
+                      ["--r" as string]: "-2deg",
+                    }}
+                  >
+                    <div style={{ height: 42, background: "linear-gradient(125deg, var(--color-accent), var(--color-accent-2))" }} />
+                    <div style={{ padding: 8 }}>
+                      <div style={{ height: 6, width: "85%", borderRadius: 3, background: "var(--color-text)" }} />
+                      <div style={{ height: 6, width: "55%", borderRadius: 3, background: "var(--color-text)", marginTop: 4 }} />
+                      <div className="flex gap-1" style={{ marginTop: 8 }}>
+                        <div style={{ flex: 1, height: 18, borderRadius: 5, background: "var(--color-bg)" }} />
+                        <div style={{ flex: 1, height: 18, borderRadius: 5, background: "var(--color-bg)" }} />
+                        <div style={{ flex: 1, height: 18, borderRadius: 5, background: "var(--color-bg)" }} />
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    className="lp-float"
+                    style={{
+                      position: "absolute",
+                      right: 4,
+                      top: 18,
+                      border: "2.5px solid var(--color-accent)",
+                      color: "var(--color-accent)",
+                      background: "var(--color-accent-100)",
+                      borderRadius: 8,
+                      padding: "1px 8px",
+                      fontSize: 13,
+                      fontWeight: 800,
+                      ["--r" as string]: "9deg",
+                    }}
+                  >
+                    LIKE
+                  </div>
+                  <div
+                    className="lp-float"
+                    style={{
+                      position: "absolute",
+                      left: 6,
+                      bottom: 22,
+                      width: 36,
+                      height: 36,
+                      borderRadius: 12,
+                      background: "linear-gradient(135deg, var(--color-accent), var(--color-accent-2))",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      boxShadow: "0 8px 18px color-mix(in srgb, var(--color-accent) 35%, transparent)",
+                      ["--r" as string]: "-7deg",
+                      animationDelay: "0.6s",
+                    }}
+                  >
+                    <span aria-hidden style={{ fontSize: 16 }}>❤️</span>
+                  </div>
+                  <div
+                    className="lp-float"
+                    style={{
+                      position: "absolute",
+                      right: 0,
+                      bottom: 6,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      background: "var(--color-neutral-900)",
+                      color: "var(--color-bg)",
+                      padding: "4px 9px",
+                      borderRadius: 999,
+                      fontSize: 10.5,
+                      fontWeight: 700,
+                      ["--r" as string]: "3deg",
+                      animationDelay: "0.3s",
+                    }}
+                  >
+                    ⚡ 2 minutes
+                  </div>
+                </div>
+                <div style={{ position: "relative", marginTop: 8 }}>
                   <h1 style={{ fontSize: 30, margin: 0, lineHeight: 1.15, letterSpacing: "-0.01em" }}>
                     Bienvenue sur Stageio
                   </h1>
@@ -549,20 +733,54 @@ export function OnboardingWizard({
                   style={{ position: "relative" }}
                 >
                   <motion.div
-                    initial={{ scale: 0.6, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ type: "spring", stiffness: 260, damping: 18 }}
-                    style={{ fontSize: 46 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.1 }}
+                    className="flex"
                     aria-hidden
                   >
-                    🤝
+                    {["L", "T", "I"].map((letter, i) => (
+                      <span
+                        key={letter}
+                        className="flex items-center justify-center"
+                        style={{
+                          width: 52,
+                          height: 52,
+                          borderRadius: "50%",
+                          background: i === 0 ? "var(--color-accent)" : i === 1 ? "var(--color-accent-2)" : "var(--color-neutral-700)",
+                          color: "var(--color-bg)",
+                          border: "4px solid var(--color-bg)",
+                          marginLeft: i === 0 ? 0 : -14,
+                          fontSize: 17,
+                          fontWeight: 800,
+                        }}
+                      >
+                        {letter}
+                      </span>
+                    ))}
+                    <span
+                      className="flex items-center justify-center"
+                      style={{
+                        width: 52,
+                        height: 52,
+                        borderRadius: "50%",
+                        background: "var(--color-accent-200)",
+                        color: "var(--color-accent-800)",
+                        border: "4px solid var(--color-bg)",
+                        marginLeft: -14,
+                        fontSize: 18,
+                        fontWeight: 800,
+                      }}
+                    >
+                      +
+                    </span>
                   </motion.div>
                   <p
                     style={{
                       fontFamily: "var(--font-heading)",
                       fontSize: 40,
                       fontWeight: 800,
-                      margin: "16px 0 0",
+                      margin: "22px 0 0",
                       letterSpacing: "-0.01em",
                     }}
                   >
@@ -782,6 +1000,82 @@ export function OnboardingWizard({
 
             {stepId === "outro" && (
               <div className="flex flex-1 flex-col px-2" style={{ position: "relative", overflow: "hidden" }}>
+                {outroPhase === "loading" && (
+                  <div className="flex flex-1 flex-col items-center justify-center text-center">
+                    <div style={{ position: "relative", width: 104, height: 104 }} aria-hidden>
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          borderRadius: "50%",
+                          border: "6px solid var(--color-surface)",
+                          borderTopColor: "var(--color-accent)",
+                        }}
+                      />
+                      <div
+                        style={{
+                          position: "absolute",
+                          inset: 16,
+                          borderRadius: "50%",
+                          background: "var(--color-surface)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          boxShadow: "var(--shadow-sm)",
+                        }}
+                      >
+                        <span style={{ fontSize: 30 }}>🎯</span>
+                      </div>
+                    </div>
+                    <p style={{ margin: "24px 0 0", fontSize: 19, fontWeight: 800, letterSpacing: "-0.02em" }}>
+                      On prépare ton deck…
+                    </p>
+                    <AnimatePresence mode="wait">
+                      <motion.p
+                        key={loadMsgIndex}
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        style={{
+                          margin: "8px 0 0",
+                          fontSize: 14,
+                          color: "color-mix(in srgb, var(--color-text) 65%, transparent)",
+                        }}
+                      >
+                        {OUTRO_LOAD_MESSAGES[loadMsgIndex]}
+                      </motion.p>
+                    </AnimatePresence>
+                  </div>
+                )}
+
+                {outroPhase === "error" && (
+                  <div className="flex flex-1 flex-col items-center justify-center text-center px-4">
+                    <span aria-hidden style={{ fontSize: 38 }}>
+                      ⚠️
+                    </span>
+                    <p style={{ marginTop: 14, fontSize: 15.5, fontWeight: 700 }}>Un problème est survenu</p>
+                    {error && (
+                      <p
+                        style={{
+                          marginTop: 6,
+                          fontSize: 13,
+                          color: "color-mix(in srgb, var(--color-text) 65%, transparent)",
+                        }}
+                      >
+                        {error}
+                      </p>
+                    )}
+                    <button type="button" onClick={() => void runOutroSequence()} className="btn btn-primary mt-6">
+                      Réessayer
+                    </button>
+                  </div>
+                )}
+
+                {outroPhase === "done" && (
+                  <>
                 <div
                   aria-hidden
                   style={{
@@ -800,12 +1094,22 @@ export function OnboardingWizard({
                     initial={{ scale: 0.7, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ type: "spring", stiffness: 260, damping: 18 }}
-                    style={{ fontSize: 52 }}
                     aria-hidden
+                    style={{
+                      width: 68,
+                      height: 68,
+                      margin: "0 auto",
+                      borderRadius: 22,
+                      background: "linear-gradient(135deg, var(--color-accent), var(--color-accent-2))",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 30,
+                    }}
                   >
                     🎉
                   </motion.div>
-                  <h1 style={{ fontSize: 26, margin: "12px 0 0" }}>Tout est prêt !</h1>
+                  <h1 style={{ fontSize: 26, margin: "14px 0 0" }}>Tout est prêt !</h1>
                   <p
                     style={{
                       fontSize: 14.5,
@@ -814,8 +1118,11 @@ export function OnboardingWizard({
                       color: "color-mix(in srgb, var(--color-text) 65%, transparent)",
                     }}
                   >
-                    On a tout ce qu&apos;il faut pour te montrer les{" "}
-                    <Highlight delay={0.35}>meilleures offres</Highlight>.
+                    <strong style={{ color: "var(--color-text)" }}>
+                      {foundCount} offre{foundCount > 1 ? "s" : ""}
+                    </strong>{" "}
+                    {foundCount > 1 ? "matchent" : "matche"} déjà{" "}
+                    <Highlight delay={0.35}>ton profil</Highlight>.
                   </p>
                 </div>
 
@@ -957,20 +1264,19 @@ export function OnboardingWizard({
 
                 <div className="flex-1" style={{ minHeight: 20 }} />
 
-                {error && (
-                  <p className="text-sm" style={{ color: "var(--color-accent-700)", textAlign: "center" }}>
-                    {error}
-                  </p>
-                )}
                 <button
                   type="button"
-                  disabled={saving}
-                  onClick={finish}
+                  onClick={() => {
+                    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+                    window.location.href = "/swipe";
+                  }}
                   className="btn btn-primary btn-block"
                   style={{ position: "relative" }}
                 >
-                  {saving ? "Enregistrement..." : "Voir mes offres"}
+                  Voir mes offres
                 </button>
+                  </>
+                )}
               </div>
             )}
 

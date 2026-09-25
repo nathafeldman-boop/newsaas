@@ -30,6 +30,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const pathname = headersList.get("x-pathname") ?? "";
 
   let shouldRedirectToPaywall = false;
+  // Badge "Favoris" de la BottomNav (voir design mobile) : nombre d'offres
+  // likées pas encore candidatées -- calculé sur TOUTE page authentifiée
+  // (pas seulement les pages soumises au paywall), contrairement au check
+  // de quota plus bas qui, lui, ne tourne jamais sur les pages exemptées.
+  let favoritesBadge = 0;
 
   try {
     const supabase = await createClient();
@@ -69,12 +74,23 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         console.error("AppLayout last_active_path update failed", pathError);
       }
 
+      const [{ data: swiped }, { data: applications }] = await Promise.all([
+        supabase.from("swipes").select("offer_id, direction, created_at").eq("user_id", user.id),
+        supabase.from("applications").select("offer_id").eq("user_id", user.id),
+      ]);
+
+      const appliedOfferIds = new Set((applications ?? []).map((a) => a.offer_id));
+      const likedOfferIds = new Set(
+        (swiped ?? []).filter((s) => s.direction === "like").map((s) => s.offer_id),
+      );
+      favoritesBadge = [...likedOfferIds].filter((id) => !appliedOfferIds.has(id)).length;
+
       if (!isExempt(pathname) && !isAdminEmail(user.email)) {
-        const [{ data: profile }, { data: swiped }, { data: applications }] = await Promise.all([
-          supabase.from("profiles").select("subscription_status").eq("id", user.id).single(),
-          supabase.from("swipes").select("offer_id, created_at").eq("user_id", user.id),
-          supabase.from("applications").select("offer_id").eq("user_id", user.id),
-        ]);
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("subscription_status")
+          .eq("id", user.id)
+          .single();
 
         shouldRedirectToPaywall = computeQuotaStatus(
           profile,
@@ -102,7 +118,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 pb-24 sm:pb-8">
         <PageTransition>{children}</PageTransition>
       </main>
-      <BottomNav />
+      <BottomNav favoritesBadge={favoritesBadge} />
     </div>
   );
 }

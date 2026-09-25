@@ -13,7 +13,7 @@ const ITEMS = [
   { href: "/profil", label: "Profil", icon: "👤" },
 ];
 
-export function BottomNav() {
+export function BottomNav({ favoritesBadge = 0 }: { favoritesBadge?: number }) {
   const pathname = usePathname();
 
   return (
@@ -62,6 +62,31 @@ export function BottomNav() {
               >
                 {item.icon}
               </motion.span>
+              {item.href === "/favoris" && favoritesBadge > 0 && (
+                <span
+                  aria-hidden
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    right: 8,
+                    minWidth: 16,
+                    height: 16,
+                    padding: "0 4px",
+                    boxSizing: "border-box",
+                    borderRadius: 999,
+                    background: "var(--color-accent)",
+                    color: "var(--color-bg)",
+                    fontSize: 9.5,
+                    fontWeight: 800,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    border: "2px solid var(--color-surface)",
+                  }}
+                >
+                  {favoritesBadge}
+                </span>
+              )}
             </span>
             <span className={cn("text-[10.5px]", active && "font-bold")}>{item.label}</span>
           </Link>

@@ -125,33 +125,121 @@ const SwipeCard = forwardRef<
   );
 });
 
-function MatchCelebration({ show }: { show: boolean }) {
+function MatchModal({
+  offer,
+  score,
+  onApply,
+  onClose,
+}: {
+  offer: Offer | null;
+  score: number;
+  onApply: () => void;
+  onClose: () => void;
+}) {
   return (
     <AnimatePresence>
-      {show && (
+      {offer && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.6, y: 10 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.8, y: -14 }}
-          transition={{ type: "spring", stiffness: 350, damping: 20 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
           style={{
-            position: "absolute",
-            top: 18,
-            left: "50%",
-            translateX: "-50%",
-            zIndex: 30,
-            pointerEvents: "none",
-            background: "var(--color-accent-2)",
-            color: "var(--color-bg)",
-            fontFamily: "var(--font-heading)",
-            fontSize: 15,
-            padding: "10px 20px",
-            borderRadius: 999,
-            boxShadow: "var(--shadow-lg)",
-            whiteSpace: "nowrap",
+            position: "fixed",
+            inset: 0,
+            zIndex: 100,
+            background: "color-mix(in srgb, var(--color-neutral-900) 55%, transparent)",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 24,
           }}
         >
-          ✨ Excellent match !
+          <motion.div
+            initial={{ scale: 0.85, opacity: 0, y: 10 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 340, damping: 26 }}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%",
+              maxWidth: 360,
+              background: "var(--color-surface)",
+              borderRadius: 28,
+              padding: "28px 22px 20px",
+              textAlign: "center",
+              boxShadow: "var(--shadow-lg)",
+            }}
+          >
+            <span
+              aria-hidden
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 64,
+                height: 64,
+                borderRadius: 20,
+                background: "linear-gradient(135deg, var(--color-accent), var(--color-accent-2))",
+                fontSize: 30,
+              }}
+            >
+              🎉
+            </span>
+            <p
+              style={{
+                margin: "16px 0 0",
+                fontSize: 12,
+                fontWeight: 800,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: "var(--color-accent-700)",
+              }}
+            >
+              {score}% de compatibilité
+            </p>
+            <h2 style={{ margin: "6px 0 0", fontSize: 27, fontWeight: 800, letterSpacing: "-0.03em" }}>
+              Excellent match !
+            </h2>
+            <p
+              style={{
+                margin: "8px 0 0",
+                fontSize: 14,
+                lineHeight: 1.5,
+                color: "color-mix(in srgb, var(--color-text) 68%, transparent)",
+              }}
+            >
+              Ton profil colle presque parfaitement à <strong style={{ color: "var(--color-text)" }}>{offer.title}</strong>{" "}
+              chez {offer.company}.
+            </p>
+            <button
+              type="button"
+              onClick={onApply}
+              className="btn btn-gradient btn-block"
+              style={{ marginTop: 20 }}
+            >
+              ✈️ Postuler maintenant
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                marginTop: 8,
+                width: "100%",
+                border: "none",
+                background: "none",
+                cursor: "pointer",
+                padding: 10,
+                fontSize: 14,
+                fontWeight: 700,
+                color: "color-mix(in srgb, var(--color-text) 60%, transparent)",
+              }}
+            >
+              Continuer à swiper
+            </button>
+          </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
@@ -204,7 +292,11 @@ function SwipeDeckInner({
   const router = useRouter();
   const [stack, setStack] = useState(offers);
   const [, setSwipesToday] = useState(initialSwipesToday);
-  const [celebrating, setCelebrating] = useState(false);
+  // Offre à l'origine du modal de célébration (≥ CELEBRATION_THRESHOLD) --
+  // on garde l'offre entière (pas juste un booléen) pour pouvoir afficher
+  // son titre/entreprise et proposer "Postuler maintenant" directement
+  // depuis le modal, comme le fait le prototype de design.
+  const [celebratingOffer, setCelebratingOffer] = useState<Offer | null>(null);
   // Un swipe à la fois pour un compte gratuit : le quota est vérifié côté
   // serveur à chaque insertion (trigger enforce_swipe_quota), donc tant que
   // la réponse du swipe en cours n'est pas revenue, on ne sait pas encore
@@ -212,7 +304,6 @@ function SwipeDeckInner({
   // d'enchaîner plusieurs cartes avant que le blocage ne soit détecté.
   const swipeInFlight = useRef(false);
   const topCardRef = useRef<SwipeCardHandle>(null);
-  const celebrationTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const visible = stack.slice(0, 3);
   const eta = useNextOffersEta();
@@ -252,12 +343,6 @@ function SwipeDeckInner({
     }
   }
 
-  function triggerCelebration() {
-    setCelebrating(true);
-    if (celebrationTimeout.current) clearTimeout(celebrationTimeout.current);
-    celebrationTimeout.current = setTimeout(() => setCelebrating(false), 1300);
-  }
-
   function handleSwipeIntent(direction: SwipeDirection) {
     if (quotaReached && !isPremium) return;
     if (!isPremium && swipeInFlight.current) return;
@@ -268,9 +353,27 @@ function SwipeDeckInner({
     setSwipesToday((n) => n + 1);
     onBrowseSwipe?.();
     if (direction === "like" && (scores[offer.id] ?? 0) >= CELEBRATION_THRESHOLD) {
-      triggerCelebration();
+      setCelebratingOffer(offer);
     }
     topCardRef.current?.swipeOut(direction);
+  }
+
+  // Bouton "postuler" du milieu (voir design mobile) : enregistre le like
+  // exactement comme handleSwipeIntent("like"), puis part directement sur
+  // la vraie page de candidature (lettre IA, statut) -- pas d'écran "postulé"
+  // fictif comme dans le prototype, la page /candidature réelle fait le
+  // travail. La carte n'a pas besoin d'animation de sortie puisqu'on quitte
+  // l'écran tout de suite après.
+  function handleApplyIntent() {
+    if (quotaReached && !isPremium) return;
+    if (!isPremium && swipeInFlight.current) return;
+    const offer = stack[0];
+    if (!offer) return;
+    if (!isPremium) swipeInFlight.current = true;
+    void recordSwipe(offer, "like");
+    setSwipesToday((n) => n + 1);
+    onBrowseSwipe?.();
+    router.push(`/candidature/${offer.id}`);
   }
 
   function handleExited(offerId: string) {
@@ -345,7 +448,15 @@ function SwipeDeckInner({
   return (
     <div className="flex w-full flex-col items-center">
       <div className="relative h-[clamp(360px,66dvh,520px)] w-full max-w-sm">
-        <MatchCelebration show={celebrating} />
+        <MatchModal
+          offer={celebratingOffer}
+          score={celebratingOffer ? (scores[celebratingOffer.id] ?? 0) : 0}
+          onApply={() => {
+            if (!celebratingOffer) return;
+            router.push(`/candidature/${celebratingOffer.id}`);
+          }}
+          onClose={() => setCelebratingOffer(null)}
+        />
         {visible
           .slice()
           .reverse()
@@ -375,10 +486,7 @@ function SwipeDeckInner({
           })}
       </div>
 
-      {/* Juste passer/aimer ici : postuler et voir l'offre externe vivent sur
-          /favoris une fois l'offre likée, pas sur l'écran de swipe lui-même
-          -- swipe reste le geste rapide, candidater est une décision à part. */}
-      <div className="mt-7 flex items-center gap-7">
+      <div className="mt-7 flex items-center gap-5">
         <button
           type="button"
           onClick={() => handleSwipeIntent("pass")}
@@ -387,6 +495,23 @@ function SwipeDeckInner({
           style={{ width: 58, height: 58, borderRadius: "50%", fontSize: 22 }}
         >
           ✕
+        </button>
+        <button
+          type="button"
+          onClick={handleApplyIntent}
+          aria-label="Postuler"
+          className="btn btn-icon"
+          style={{
+            width: 48,
+            height: 48,
+            borderRadius: "50%",
+            fontSize: 18,
+            border: "1px solid color-mix(in srgb, var(--color-accent-2) 35%, transparent)",
+            background: "var(--color-accent-2-100)",
+            color: "var(--color-accent-2-700)",
+          }}
+        >
+          ✈️
         </button>
         <button
           type="button"
