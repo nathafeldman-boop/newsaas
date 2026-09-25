@@ -46,6 +46,15 @@ export async function syncSubscriptionToProfile(
   // /admin) avant que la migration correspondante ne soit collée en base
   // -- un UPDATE avec une colonne inconnue échoue en bloc côté Postgres,
   // pas juste sur le champ fautif.
+  // incomplete_payment_reminder_sent_at est un flag "envoyé une fois pour
+  // toutes" (voir notifyIncompletePaymentOnce) -- sans le réinitialiser ici,
+  // quelqu'un dont un PREMIER souci de paiement a été résolu ne recevrait
+  // plus jamais d'email si un renouvellement ULTÉRIEUR échouait à son tour
+  // (webhook déjà idempotent dessus, donc silencieux). Remis à zéro dès que
+  // l'abonnement redevient actif/trialing, pour qu'un futur souci déclenche
+  // une nouvelle relance.
+  const isHealthy = subscription.status === "active" || subscription.status === "trialing";
+
   const { error, count } = await admin
     .from("profiles")
     .update(
@@ -53,6 +62,7 @@ export async function syncSubscriptionToProfile(
         stripe_subscription_id: subscription.id,
         subscription_status: subscription.status,
         current_period_end: periodEndOf(subscription),
+        ...(isHealthy ? { incomplete_payment_reminder_sent_at: null } : {}),
       },
       { count: "exact" },
     )

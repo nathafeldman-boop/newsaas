@@ -34,11 +34,20 @@ async function syncSubscription(subscription: Stripe.Subscription): Promise<{ ok
     return { ok: false };
   }
 
-  // Abonnement bloqué en 'incomplete' (3D Secure jamais confirmé, carte
-  // refusée au premier essai...) : le client n'est jamais devenu Premium et
-  // ne le saura pas tout seul -- on le relance dès qu'on voit ce statut,
-  // sans attendre un cron (idempotent, voir notifyIncompletePaymentOnce).
-  if (subscription.status === "incomplete") {
+  // Abonnement bloqué en 'incomplete' (première facture jamais confirmée :
+  // 3D Secure pas complété, carte refusée au premier essai...) OU en
+  // 'past_due' (un RENOUVELLEMENT a échoué sur un abonnement déjà actif
+  // jusque-là -- même cause possible, 3D Secure côté banque exigé sur un
+  // prélèvement hors session) : dans les deux cas le client perd l'accès
+  // Premium sans le savoir tout seul. Avant ce correctif, seul 'incomplete'
+  // déclenchait une relance -- un renouvellement en échec ('past_due')
+  // n'envoyait STRICTEMENT AUCUNE notification, ni au client ni à personne
+  // d'autre : la personne perdait juste son accès en silence. Bug réel
+  // trouvé le 2026-09-25 suite à un pic de renouvellements en échec
+  // signalé par Nathan (voir RETENTION_AUDIT.md). Idempotent (voir
+  // notifyIncompletePaymentOnce), donc sans risque de doublon si le
+  // statut oscille entre les deux avant d'être résolu.
+  if (subscription.status === "incomplete" || subscription.status === "past_due") {
     const { error: notifyError } = await notifyIncompletePaymentByCustomerId(customerId);
     if (notifyError) {
       console.error("Stripe webhook: notifyIncompletePayment failed", notifyError, { customerId });

@@ -11,6 +11,8 @@ import {
 const STATUS_LABEL: Record<string, string> = {
   active: "Actif",
   trialing: "Essai",
+  past_due: "Renouvellement en échec",
+  incomplete: "Paiement jamais finalisé",
 };
 
 function fmt(date: string | null | undefined): string {
@@ -71,6 +73,20 @@ export default async function AdminPremiumPage({
 
   const rows = profiles ?? [];
 
+  // Visibilité directe sur les comptes dont le paiement est en souci
+  // (renouvellement en échec = "past_due", ou jamais finalisé au premier
+  // paiement = "incomplete") -- inexistante avant ce correctif : cette page
+  // ne listait QUE les abonnés actifs/essai, aucun moyen de voir d'un coup
+  // d'œil combien de comptes sont concernés ni lesquels. Ajouté suite au
+  // pic de renouvellements en échec signalé par Nathan le 2026-09-25.
+  const { data: paymentIssueProfiles } = await admin
+    .from("profiles")
+    .select("id, full_name, email, subscription_status, current_period_end, incomplete_payment_reminder_sent_at")
+    .in("subscription_status", ["past_due", "incomplete"])
+    .order("current_period_end", { ascending: false, nullsFirst: false });
+
+  const paymentIssueRows = paymentIssueProfiles ?? [];
+
   // Borne haute : mêmes filtres de premier niveau que l'action d'envoi,
   // sans le raffinement "≥ FREE_WEEKLY_SWIPE_QUOTA swipes" (qui nécessite
   // une requête par profil) -- affichée comme "jusqu'à N" plutôt qu'un
@@ -122,6 +138,45 @@ export default async function AdminPremiumPage({
           <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>
             Envoyé à {weeklySent}/{weeklyTotal} candidat(s).
           </p>
+        </div>
+      )}
+
+      {paymentIssueRows.length > 0 && (
+        <div className="card" style={{ padding: "var(--space-4)", marginBottom: 20, border: "1.5px solid var(--color-accent-2)" }}>
+          <p style={{ fontWeight: 700, margin: 0, fontSize: 15 }}>
+            ⚠️ {paymentIssueRows.length} compte(s) avec un souci de paiement
+          </p>
+          <p style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "4px 0 0" }}>
+            Renouvellement en échec ou jamais finalisé (carte à réautoriser, refusée, expirée...).
+            Chacun reçoit un email automatique (une seule fois tant que le souci n&apos;est pas résolu) l&apos;invitant
+            à mettre à jour sa carte depuis /premium.
+          </p>
+          <div className="mt-3 flex flex-col gap-2">
+            {paymentIssueRows.map((p) => (
+              <Link
+                key={p.id}
+                href={`/admin/users/${p.id}`}
+                className="flex items-center justify-between gap-3 no-underline"
+                style={{
+                  color: "inherit",
+                  padding: "10px 12px",
+                  borderRadius: 10,
+                  background: "var(--color-neutral-100)",
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontWeight: 600, margin: 0, fontSize: 13.5 }}>{p.full_name || p.email}</p>
+                  <p style={{ fontSize: 11.5, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "2px 0 0" }}>
+                    {p.email} · échéance {fmt(p.current_period_end)}
+                    {p.incomplete_payment_reminder_sent_at ? " · relancé par email" : " · pas encore relancé"}
+                  </p>
+                </div>
+                <span className="tag tag-neutral" style={{ flexShrink: 0, whiteSpace: "nowrap" }}>
+                  {STATUS_LABEL[p.subscription_status ?? ""] ?? p.subscription_status}
+                </span>
+              </Link>
+            ))}
+          </div>
         </div>
       )}
 

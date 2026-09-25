@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isPremium } from "@/lib/subscription/isPremium";
-import { createCheckoutSessionAction } from "./actions";
+import { createCheckoutSessionAction, createPortalSessionAction } from "./actions";
 import { AccessCodeForm } from "@/components/premium/AccessCodeForm";
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -91,6 +91,19 @@ export default async function PremiumPage({
 
   const premium = isPremium(profile);
   const quotaReached = limite === "1";
+  // Un abonnement dont le renouvellement a échoué (carte à ré-authentifier,
+  // refusée, expirée...) passe en "past_due" côté Stripe -- isPremium()
+  // l'exclut à raison (accès effectivement coupé), mais avant ce correctif
+  // ça renvoyait la personne directement sur la page d'ACQUISITION (choisir
+  // une offre, payer), sans un mot sur le fait qu'elle a déjà un abonnement
+  // à réparer plutôt qu'à en recréer un. Le seul chemin visible était donc
+  // de repasser par un tout nouveau paiement -- risque réel de double
+  // abonnement actif si l'ancien finit par se rétablir tout seul (retries
+  // automatiques Stripe). Trouvé le 2026-09-25 suite à un pic de
+  // renouvellements en échec signalé par Nathan.
+  const paymentIssue =
+    !premium &&
+    (profile?.subscription_status === "past_due" || profile?.subscription_status === "incomplete");
 
   return (
     <div className="mx-auto flex max-w-md flex-1 items-center py-6">
@@ -159,6 +172,51 @@ export default async function PremiumPage({
           >
             Gérer mon abonnement
           </Link>
+        </div>
+      ) : paymentIssue ? (
+        <div className="flex flex-1 flex-col items-center justify-center px-4 py-10 text-center animate-in">
+          <div
+            aria-hidden
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: 20,
+              background: "var(--color-accent-2-100)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              marginBottom: 20,
+              fontSize: 28,
+            }}
+          >
+            ⚠️
+          </div>
+          <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0 }}>Souci avec ton paiement</h1>
+          <p
+            style={{
+              fontSize: 14,
+              lineHeight: 1.55,
+              maxWidth: "30ch",
+              margin: "8px 0 0",
+              color: "color-mix(in srgb, var(--color-text) 62%, transparent)",
+            }}
+          >
+            Le renouvellement de ton abonnement Premium n&apos;a pas abouti (carte à
+            réautoriser, refusée ou expirée). Ton accès Premium est suspendu en attendant —
+            mets à jour ta carte pour le récupérer, sans repayer depuis zéro.
+          </p>
+          <form action={createPortalSessionAction} className="w-full">
+            <button
+              type="submit"
+              className="btn btn-primary btn-block"
+              style={{ height: 50, borderRadius: 999, fontSize: 15, fontWeight: 700, marginTop: 24 }}
+            >
+              Mettre à jour ma carte
+            </button>
+          </form>
+          <p style={{ fontSize: 12.5, margin: "14px 0 0", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+            Un souci persiste ? <a href="mailto:contact@stageio.fr">contact@stageio.fr</a>
+          </p>
         </div>
       ) : (
         <>
