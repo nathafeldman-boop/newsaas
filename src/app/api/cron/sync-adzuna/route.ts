@@ -19,55 +19,58 @@ import { computeOfferQualityScore } from "@/lib/offers/quality";
 
 export const maxDuration = 60;
 
-// Volume relevé fortement le 26/09 (demande explicite de Nathan : "rajoute
-// des milliers d'offres", suite à un catalogue trop vite épuisé sous le hard
-// paywall -- la navigation n'est plus rationnée par un quota, voir
-// RETENTION_AUDIT.md). Chaque page = 50 résultats bruts (RESULTS_PER_PAGE
-// côté client Adzuna), avant classification/qualité/dédup -- le volume net
-// réellement ajouté au catalogue est plus bas, mais ce paramètre est le
-// levier direct pour l'augmenter. Pondéré comme avant entre les 3 requêtes :
-// "stage" est structurellement sur-représenté sur un agrégateur généraliste,
-// "alternance"/"apprentissage" ont besoin de plus de profondeur pour un volume
-// net comparable une fois classifyContractType appliqué.
+// Volume poussé au maximum raisonnable le 26/09 (demande explicite de
+// Nathan : "rajoute des milliers d'offres", puis "fait le maximum" --
+// catalogue trop vite épuisé sous le hard paywall, la navigation n'est plus
+// rationnée par un quota, voir RETENTION_AUDIT.md). Chaque page = 50
+// résultats bruts (RESULTS_PER_PAGE côté client Adzuna), avant
+// classification/qualité/dédup -- le volume net réellement ajouté au
+// catalogue est plus bas, mais ce paramètre est le levier direct pour
+// l'augmenter. Pondéré comme avant entre les 3 requêtes : "stage" est
+// structurellement sur-représenté sur un agrégateur généraliste,
+// "alternance"/"apprentissage" ont besoin de plus de profondeur pour un
+// volume net comparable une fois classifyContractType appliqué. Chaque
+// requête s'arrête d'elle-même dès qu'une page ne renvoie plus rien (voir
+// runStream ci-dessous) : monter ces plafonds ne gaspille jamais d'appels
+// une fois le vrai stock de résultats Adzuna épuisé pour une requête donnée.
 //
-// ATTENTION quota Adzuna : ce compte était en plan "Trial Access" (quota
-// limité, souvent quelques centaines d'appels/mois d'après la doc Adzuna) --
-// ce volume (~90 appels/jour, voir plus bas) peut largement dépasser un
-// quota d'essai en quelques jours. Le code dégrade sans planter si Adzuna
-// répond 429/403 (voir runStream ci-dessous, une erreur par page n'interrompt
-// que cette page/requête, jamais tout le run), mais si le volume retombe
-// après un pic initial, c'est le signal qu'il faut vérifier la page "Stats"
-// du dashboard Adzuna et passer sur un plan payant.
+// ATTENTION quota Adzuna : ce compte était en plan "Trial Access", quota
+// limité d'après la doc Adzuna (souvent quelques centaines d'appels/mois) --
+// ce volume (~130 appels/jour, voir plus bas) le dépasse largement, sciemment
+// (demande explicite "fait le maximum"). Le code dégrade sans planter si
+// Adzuna répond 429/403 (voir runStream ci-dessous, une erreur par page
+// n'interrompt que cette page/requête, jamais tout le run) : au pire, le
+// volume plafonne à ce que le quota réel permet plutôt que de continuer à
+// grimper. Vérifier la page "Stats" du dashboard Adzuna pour voir où ça
+// plafonne réellement, et passer sur un plan payant si ce volume doit tenir
+// dans la durée plutôt que produire un pic initial puis retomber.
 const QUERIES: { what: string; pages: number; where?: string }[] = [
-  { what: "alternance", pages: 14 },
-  { what: "apprentissage", pages: 8 },
-  { what: "stage", pages: 10 },
+  { what: "alternance", pages: 25 },
+  { what: "apprentissage", pages: 15 },
+  { what: "stage", pages: 20 },
 ];
 
 // Les requêtes génériques ci-dessus, sans filtre "where", sont classées par
 // Adzuna par pertinence/date -- ce qui favorise mécaniquement l'Île-de-France
 // où se concentre l'essentiel du volume d'offres. Résultat : un profil basé
 // à Lyon ou Marseille voyait très peu d'offres réellement proches de lui.
-// Couvre désormais CITIES_PER_RUN villes par run (au lieu d'une seule) --
-// cycle complet sur TOP_CITIES en ceil(12/CITIES_PER_RUN) jours au lieu de
-// 12. Basé sur le nombre de jours depuis l'epoch plutôt que le jour du
-// mois/de l'année : reste stable même si un run de cron est manqué, et ne
-// dérive pas d'une année sur l'autre (365 n'est pas un multiple de 12).
-const CITIES_PER_RUN = 4;
-const CITY_PAGES_PER_QUERY = 2;
-const dayIndex = Math.floor(Date.now() / 86_400_000);
-const CITIES_OF_THE_RUN = Array.from(
-  { length: CITIES_PER_RUN },
-  (_, i) => TOP_CITIES[(dayIndex * CITIES_PER_RUN + i) % TOP_CITIES.length],
-);
+// Couvre désormais LES 12 VILLES de TOP_CITIES à chaque run (plus de
+// rotation nécessaire au niveau "maximum") -- chaque ville, chaque stream
+// tournant en parallèle des autres (voir Promise.all plus bas), ne coûte
+// donc rien en temps d'exécution, seulement en appels Adzuna.
+const CITY_PAGES_PER_QUERY = 3;
+const CITIES_OF_THE_RUN = TOP_CITIES;
 const CITY_QUERIES: { what: string; pages: number; where: string }[] = CITIES_OF_THE_RUN.flatMap(
   (city) => [
     { what: "alternance", pages: CITY_PAGES_PER_QUERY, where: city },
     { what: "stage", pages: CITY_PAGES_PER_QUERY, where: city },
   ],
 );
-// Total : (14+8+10) + 4 villes x 2 requêtes x 2 pages = 32 + 16 = 48
-// appels Adzuna par run, x1 run/jour (vercel.json) = ~1440/mois.
+// Total : (25+15+20) + 12 villes x 2 requêtes x 3 pages = 60 + 72 = 132
+// appels Adzuna par run, x1 run/jour (vercel.json) = ~3960/mois. Le plus
+// long stream individuel (alternance générique, 25 pages séquentielles)
+// reste largement dans le budget maxDuration=60s ; les 12 villes tournent
+// toutes en parallèle du reste, donc n'allongent jamais ce temps.
 
 const STALE_AFTER_DAYS = 10;
 // Filtre de sécurité en plus de max_days_old côté requête (searchAdzunaPage) :

@@ -11,11 +11,16 @@ import { ingestOffer } from "@/lib/offers/ingestOffer";
 // milliers d'offres"), ceci couvre les sources qu'un agrégateur généraliste
 // indexe mal (petites entreprises, jobboards spécialisés alternance).
 //
-// Volume relevé modérément le 26/09 (4→6 requêtes/jour, URLs/requête
-// inchangé) en complément du gros du volume ajouté côté Adzuna -- resté
-// volontairement plus prudent qu'Adzuna : chaque offre ici coûte un appel
-// Claude (recherche web + extraction), largement plus cher par offre qu'une
-// page Adzuna (50 offres/appel).
+// Volume poussé au maximum le 26/09 (demande explicite de Nathan : "fait le
+// maximum", après une première hausse plus modérée -- voir sync-adzuna pour
+// le gros du volume). Toutes les QUERIES tournent désormais chaque jour (pas
+// de rotation, 8/8) avec 8 URLs demandées par requête -- 8 = le plafond
+// max_uses du tool web_search côté discoverOfferUrlsWithAnthropic.ts, aucun
+// intérêt à demander plus, ce budget de recherche ne peut de toute façon pas
+// en remonter davantage en une seule conversation Claude. Reste plus coûteux
+// par offre qu'Adzuna (un appel Claude -- recherche web + extraction -- par
+// offre, contre une page Adzuna à 50 offres/appel), donc complémentaire, pas
+// le levier principal de volume.
 
 export const maxDuration = 60;
 
@@ -30,8 +35,8 @@ const QUERIES = [
   "alternance product manager junior",
 ] as const;
 
-const QUERIES_PER_RUN = 6;
-const URLS_PER_QUERY = 4;
+const QUERIES_PER_RUN = QUERIES.length;
+const URLS_PER_QUERY = 8;
 
 function pickQueriesForToday(): string[] {
   const dayOfYear = Math.floor(
