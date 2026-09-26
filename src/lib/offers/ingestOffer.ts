@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { extractOfferFromText } from "@/lib/mistral/extractOffer";
+import { extractOfferFromText } from "@/lib/offers/extractOfferWithAnthropic";
 import { computeOfferFingerprint } from "@/lib/offers/fingerprint";
 import { computeOfferQualityScore } from "@/lib/offers/quality";
 import type { ContractType, Offer } from "@/types/database";
@@ -79,6 +79,13 @@ export async function ingestOffer(
     .upsert(
       {
         ...offerFields,
+        // Valeur d'enum historique ("mistral_ingest") gardée telle quelle
+        // après le passage à Claude (Anthropic) le 2026-09-26 : offer_source
+        // est un enum Postgres, y ajouter une valeur demanderait une
+        // migration de plus pour un simple changement de nom interne, sans
+        // bénéfice utilisateur (jamais affiché tel quel). Ce chemin
+        // d'ingestion reste identifiable par ce tag, peu importe le
+        // fournisseur IA derrière au fil du temps.
         source: "mistral_ingest",
         source_url: sourceUrl ?? null,
         external_id: externalId,

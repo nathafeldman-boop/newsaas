@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { getMistralClient, getMistralModel } from "@/lib/mistral/client";
+import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+import { getAnthropicClient, getAnthropicModel, ANTHROPIC_TIMEOUT_MS } from "@/lib/anthropic/client";
 
 const classificationSchema = z.object({
   is_recruiting_reply: z.boolean(),
@@ -12,13 +13,6 @@ export type EmailClassification = z.infer<typeof classificationSchema>;
 const SYSTEM_PROMPT = `Tu analyses un email reçu par un candidat qui a postulé à des
 offres d'alternance/stage, pour savoir s'il s'agit d'une réponse de recruteur liée à
 l'une de ses candidatures en cours, et si oui si la réponse est positive ou négative.
-
-Réponds UNIQUEMENT avec un JSON de cette forme, sans texte autour :
-{
-  "is_recruiting_reply": boolean,
-  "matched_company": string | null,
-  "sentiment": "positive" | "negative" | "neutral" | null
-}
 
 Règles :
 - "is_recruiting_reply" = true seulement si l'email est clairement une réponse d'un
@@ -40,8 +34,8 @@ export async function classifyEmailReply(
   email: { from: string | null; subject: string | null; snippet: string },
   candidateCompanies: string[],
 ): Promise<EmailClassification> {
-  const client = getMistralClient();
-  const model = getMistralModel();
+  const client = getAnthropicClient();
+  const model = getAnthropicModel();
 
   const userContent = [
     `Entreprises auxquelles ce candidat a postulé (liste fermée) : ${candidateCompanies.join(", ") || "(aucune)"}`,
@@ -50,27 +44,21 @@ export async function classifyEmailReply(
     `Extrait : ${email.snippet}`,
   ].join("\n");
 
-  const result = await client.chat.complete({
-    model,
-    temperature: 0.1,
-    responseFormat: { type: "json_object" },
-    messages: [
-      { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: userContent },
-    ],
-  });
+  const response = await client.messages.parse(
+    {
+      model,
+      max_tokens: 500,
+      system: SYSTEM_PROMPT,
+      temperature: 0.1,
+      messages: [{ role: "user", content: userContent }],
+      output_config: { format: zodOutputFormat(classificationSchema) },
+    },
+    { timeout: ANTHROPIC_TIMEOUT_MS },
+  );
 
-  const content = result.choices?.[0]?.message?.content;
-  const text = Array.isArray(content)
-    ? content.map((c) => ("text" in c ? c.text : "")).join("")
-    : (content ?? "");
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    throw new Error("Mistral n'a pas renvoyé de JSON exploitable.");
+  if (!response.parsed_output) {
+    throw new Error("Claude n'a pas renvoyé de JSON exploitable.");
   }
 
-  return classificationSchema.parse(parsed);
+  return response.parsed_output;
 }

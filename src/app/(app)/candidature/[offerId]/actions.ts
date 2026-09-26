@@ -2,9 +2,9 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { generateStaticCoverLetter, type CoverLetterExtra } from "@/lib/coverLetter/staticGenerator";
-import { generateCoverLetterWithGemini } from "@/lib/coverLetter/generateWithGemini";
-import { isGeminiConfigured } from "@/lib/gemini/client";
-import { PROFILE_FOR_AI_COLUMNS } from "@/lib/gemini/profileContext";
+import { generateCoverLetterWithAnthropic } from "@/lib/coverLetter/generateWithAnthropic";
+import { isAnthropicConfigured } from "@/lib/anthropic/client";
+import { PROFILE_FOR_AI_COLUMNS } from "@/lib/ai/profileContext";
 import { isPremium } from "@/lib/subscription/isPremium";
 import { logServerEvent } from "@/lib/analytics/logServerEvent";
 
@@ -18,16 +18,18 @@ export type GenerateCoverLetterResult =
 // qui l'accompagne, pour le quota) est toujours enregistrée -- seule la
 // lettre est réservée aux membres Premium.
 //
-// Gemini en priorité quand configuré (voir .env.example), avec le profil
-// onboarding complet en contexte (mêmes champs que l'algo de matching des
-// swipes -- demande explicite de Nathan avant de démarrer cette intégration) ;
-// repli automatique et silencieux sur le générateur 100% statique (voir
-// staticGenerator.ts) dès que Gemini échoue, dépasse son timeout ou n'est pas
-// configuré -- jamais un simple appel IA seul en bout de chaîne : la version
-// Mistral plantait pour tous les Premium depuis le 4 septembre (quota à 0
-// req/min, hors de notre contrôle), et une fonctionnalité Premium phare
-// indisponible pendant des jours a été identifiée comme cause directe de
-// mauvais avis et de churn.
+// Claude (Anthropic) en priorité quand configuré (voir .env.example), avec le
+// profil onboarding complet en contexte (mêmes champs que l'algo de matching
+// des swipes -- demande explicite de Nathan avant de démarrer cette
+// intégration) ; repli automatique et silencieux sur le générateur 100%
+// statique (voir staticGenerator.ts) dès que Claude échoue, dépasse son
+// timeout ou n'est pas configuré -- jamais un simple appel IA seul en bout de
+// chaîne : la version Mistral plantait pour tous les Premium depuis le 4
+// septembre (quota à 0 req/min, hors de notre contrôle), et une
+// fonctionnalité Premium phare indisponible pendant des jours a été
+// identifiée comme cause directe de mauvais avis et de churn. Gemini/Mistral
+// retirés le 2026-09-26 (nouvelle panne fournisseur signalée par Nathan) au
+// profit de Claude.
 export async function generateCoverLetterAction(
   offerId: string,
   extra?: CoverLetterExtra,
@@ -98,13 +100,13 @@ export async function generateCoverLetterAction(
   }
 
   let letter: string | null = null;
-  let letterSource: "gemini" | "static" = "static";
-  if (isGeminiConfigured()) {
+  let letterSource: "anthropic" | "static" = "static";
+  if (isAnthropicConfigured()) {
     try {
-      letter = await generateCoverLetterWithGemini(offer, profile, profile?.cv_text ?? null, extra);
-      letterSource = "gemini";
+      letter = await generateCoverLetterWithAnthropic(offer, profile, profile?.cv_text ?? null, extra);
+      letterSource = "anthropic";
     } catch (err) {
-      console.error("generateCoverLetterAction: Gemini a échoué, repli sur le générateur statique", err);
+      console.error("generateCoverLetterAction: Claude a échoué, repli sur le générateur statique", err);
     }
   }
   if (!letter) {

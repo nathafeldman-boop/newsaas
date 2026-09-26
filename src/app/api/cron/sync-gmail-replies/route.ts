@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { refreshGmailAccessToken, listRecentMessages } from "@/lib/google/gmailClient";
-import { classifyEmailReply } from "@/lib/mistral/classifyEmailReply";
+import { classifyEmailReply } from "@/lib/google/classifyEmailReplyWithAnthropic";
 import type { ApplicationStatus } from "@/types/database";
 
 // Sync périodique (voir vercel.json) : pour chaque boîte Gmail connectée,

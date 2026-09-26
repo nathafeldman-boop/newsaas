@@ -1,11 +1,13 @@
 import type { Profile } from "@/types/database";
 
 // Même ensemble de champs onboarding que l'algo de matching des swipes (voir
-// computeMatchScore dans src/lib/matching/score.ts) : Gemini doit "connaître"
-// le candidat aussi bien que l'algo qui choisit les offres qu'on lui montre,
-// pas seulement un sous-ensemble -- demande explicite de Nathan avant de
-// commencer l'intégration. Utilisé à la fois par la lettre de motivation et
-// l'audit CV pour ne pas dupliquer deux ensembles de champs qui dérivent.
+// computeMatchScore dans src/lib/matching/score.ts) : le modèle doit
+// "connaître" le candidat aussi bien que l'algo qui choisit les offres
+// qu'on lui montre, pas seulement un sous-ensemble -- demande explicite de
+// Nathan avant de commencer l'intégration IA. Utilisé à la fois par la
+// lettre de motivation et l'audit CV pour ne pas dupliquer deux ensembles
+// de champs qui dérivent. Relocalisé depuis lib/gemini/ (provider-neutre
+// depuis le passage à Anthropic, voir generateWithAnthropic.ts).
 export type ProfileForAI = Pick<
   Profile,
   | "full_name"

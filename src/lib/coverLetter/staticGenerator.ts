@@ -2,10 +2,10 @@ import type { Offer, Profile } from "@/types/database";
 
 // Générateur de lettre de motivation entièrement statique -- ZÉRO appel IA.
 // Remplace l'ancienne version Mistral (src/lib/mistral/generateCoverLetter.ts,
-// conservée mais plus utilisée) suite à la panne de quota Mistral (429
-// persistant depuis le 4 septembre) qui rendait la fonctionnalité Premium
-// phare totalement indisponible -- cause directe de mauvais avis et de
-// churn. Même logique que le simulateur d'entretien (voir
+// supprimée depuis -- dead code déjà avant sa suppression) suite à la panne
+// de quota Mistral (429 persistant depuis le 4 septembre) qui rendait la
+// fonctionnalité Premium phare totalement indisponible -- cause directe de
+// mauvais avis et de churn. Même logique que le simulateur d'entretien (voir
 // src/lib/interview/questionBank.ts) : du contenu écrit à la main, assemblé
 // par templating, plutôt qu'une dépendance externe qui peut tomber en panne
 // sans qu'on y puisse rien.

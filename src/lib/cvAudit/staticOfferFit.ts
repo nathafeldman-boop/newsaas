@@ -1,9 +1,9 @@
 import type { OfferFit } from "@/lib/cvAudit/offerFitSchema";
 import type { Offer, Profile } from "@/types/database";
 
-// Repli statique de generateOfferFitWithGemini -- ZÉRO appel IA, même
+// Repli statique de generateOfferFitWithAnthropic -- ZÉRO appel IA, même
 // doctrine de fiabilité que staticAudit.ts/staticGenerator.ts. Volontairement
-// plus modeste que la version Gemini (recoupement de compétences déclarées
+// plus modeste que la version Claude (recoupement de compétences déclarées
 // plutôt qu'une vraie lecture du CV) : mieux vaut un résultat honnête et
 // limité que d'inventer des détails qu'on ne peut pas extraire de façon
 // fiable sans IA.

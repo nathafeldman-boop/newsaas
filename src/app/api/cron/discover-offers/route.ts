@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { discoverOfferUrls } from "@/lib/mistral/discoverOfferUrls";
-import { ingestOffer } from "@/lib/mistral/ingestOffer";
+import { discoverOfferUrls } from "@/lib/offers/discoverOfferUrlsWithAnthropic";
+import { ingestOffer } from "@/lib/offers/ingestOffer";
 
 // Sync périodique (voir vercel.json) : demande à Mistral (recherche web
 // native) de repérer des annonces réelles par secteur, puis fait repasser

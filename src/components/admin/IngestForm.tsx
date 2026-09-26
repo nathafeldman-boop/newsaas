@@ -47,7 +47,7 @@ export function IngestForm() {
       <div className="field">
         <label htmlFor="contractTypeHint">Indice type de contrat (optionnel)</label>
         <select id="contractTypeHint" name="contractTypeHint" className="input">
-          <option value="">Laisser Mistral déterminer</option>
+          <option value="">Laisser Claude déterminer</option>
           <option value="alternance">Alternance</option>
           <option value="stage">Stage</option>
         </select>
@@ -75,7 +75,7 @@ export function IngestForm() {
       )}
 
       <button type="submit" disabled={pending} className="btn btn-primary btn-block">
-        {pending ? "Analyse par Mistral..." : "Analyser et ajouter"}
+        {pending ? "Analyse par Claude..." : "Analyser et ajouter"}
       </button>
     </form>
   );

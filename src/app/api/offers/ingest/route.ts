@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { ingestOffer } from "@/lib/mistral/ingestOffer";
+import { ingestOffer } from "@/lib/offers/ingestOffer";
 
 // Un fetch + un appel Mistral par URL, séquentiellement : sans ceci la route
 // tourne sur le défaut Vercel (10s), dépassé dès qu'on envoie plus de

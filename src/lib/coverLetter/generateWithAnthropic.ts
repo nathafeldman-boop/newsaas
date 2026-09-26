@@ -1,5 +1,5 @@
-import { getGeminiClient, getGeminiModel, GEMINI_TIMEOUT_MS } from "@/lib/gemini/client";
-import { buildProfileContextLines, type ProfileForAI } from "@/lib/gemini/profileContext";
+import { getAnthropicClient, getAnthropicModel, ANTHROPIC_TIMEOUT_MS } from "@/lib/anthropic/client";
+import { buildProfileContextLines, type ProfileForAI } from "@/lib/ai/profileContext";
 import type { CoverLetterExtra } from "@/lib/coverLetter/staticGenerator";
 import type { Offer } from "@/types/database";
 
@@ -62,28 +62,30 @@ function buildUserPrompt(
   return lines.join("\n");
 }
 
-export async function generateCoverLetterWithGemini(
+export async function generateCoverLetterWithAnthropic(
   offer: OfferInput,
   profile: ProfileForAI,
   cvText: string | null,
   extra?: CoverLetterExtra,
 ): Promise<string> {
-  const ai = getGeminiClient();
-  const model = getGeminiModel();
+  const client = getAnthropicClient();
+  const model = getAnthropicModel();
 
-  const response = await ai.models.generateContent({
-    model,
-    contents: buildUserPrompt(offer, profile, cvText, extra),
-    config: {
-      systemInstruction: SYSTEM_PROMPT,
+  const response = await client.messages.create(
+    {
+      model,
+      max_tokens: 1000,
+      system: SYSTEM_PROMPT,
       temperature: 0.6,
-      httpOptions: { timeout: GEMINI_TIMEOUT_MS },
+      messages: [{ role: "user", content: buildUserPrompt(offer, profile, cvText, extra) }],
     },
-  });
+    { timeout: ANTHROPIC_TIMEOUT_MS },
+  );
 
-  const text = response.text?.trim();
+  const textBlock = response.content.find((b) => b.type === "text");
+  const text = textBlock?.text.trim();
   if (!text) {
-    throw new Error("Gemini n'a pas renvoyé de lettre exploitable.");
+    throw new Error("Claude n'a pas renvoyé de lettre exploitable.");
   }
   return text;
 }

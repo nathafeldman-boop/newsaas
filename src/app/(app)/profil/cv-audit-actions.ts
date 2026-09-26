@@ -3,9 +3,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { extractCvText } from "@/lib/cv/extractText";
 import { auditCvTextStatic } from "@/lib/cvAudit/staticAudit";
-import { auditCvWithGemini } from "@/lib/cvAudit/generateWithGemini";
-import { isGeminiConfigured } from "@/lib/gemini/client";
-import { PROFILE_FOR_AI_COLUMNS } from "@/lib/gemini/profileContext";
+import { auditCvWithAnthropic } from "@/lib/cvAudit/generateWithAnthropic";
+import { isAnthropicConfigured } from "@/lib/anthropic/client";
+import { PROFILE_FOR_AI_COLUMNS } from "@/lib/ai/profileContext";
 import { isPremium } from "@/lib/subscription/isPremium";
 import { logServerEvent } from "@/lib/analytics/logServerEvent";
 import type { CvAudit } from "@/lib/cvAudit/schema";
@@ -15,14 +15,16 @@ export type CvAuditState =
   | { status: "error"; message: string }
   | ({ status: "success" } & CvAudit);
 
-// Gemini en priorité quand configuré (voir .env.example), avec le profil
-// onboarding complet en contexte (mêmes champs que l'algo de matching des
-// swipes -- demande explicite de Nathan avant de démarrer cette intégration) ;
-// repli automatique et silencieux sur l'analyse 100% heuristique
-// (staticAudit.ts) dès que Gemini échoue, dépasse son timeout ou n'est pas
-// configuré. Même contrainte de fiabilité que la lettre de motivation (voir
-// actions.ts du dossier candidature) -- une fonctionnalité Premium ne doit
-// jamais dépendre d'un quota tiers hors de notre contrôle.
+// Claude (Anthropic) en priorité quand configuré (voir .env.example), avec le
+// profil onboarding complet en contexte (mêmes champs que l'algo de matching
+// des swipes -- demande explicite de Nathan avant de démarrer cette
+// intégration) ; repli automatique et silencieux sur l'analyse 100%
+// heuristique (staticAudit.ts) dès que Claude échoue, dépasse son timeout ou
+// n'est pas configuré. Même contrainte de fiabilité que la lettre de
+// motivation (voir actions.ts du dossier candidature) -- une fonctionnalité
+// Premium ne doit jamais dépendre d'un quota tiers hors de notre contrôle.
+// Gemini/Mistral retirés le 2026-09-26 (panne côté fournisseur signalée par
+// Nathan) au profit de Claude.
 export async function auditCvAction(
   _prevState: CvAuditState,
   _formData: FormData,
@@ -94,13 +96,13 @@ export async function auditCvAction(
   }
 
   try {
-    if (isGeminiConfigured()) {
+    if (isAnthropicConfigured()) {
       try {
-        const audit = await auditCvWithGemini(text, profile);
-        await logServerEvent(supabase, user.id, "cv_analyzed", { source: "gemini", score: audit.score });
+        const audit = await auditCvWithAnthropic(text, profile);
+        await logServerEvent(supabase, user.id, "cv_analyzed", { source: "anthropic", score: audit.score });
         return { status: "success", ...audit };
       } catch (err) {
-        console.error("auditCvAction: Gemini a échoué, repli sur l'analyse statique", err);
+        console.error("auditCvAction: Claude a échoué, repli sur l'analyse statique", err);
       }
     }
 

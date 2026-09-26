@@ -2,8 +2,8 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { isPremium } from "@/lib/subscription/isPremium";
-import { isGeminiConfigured } from "@/lib/gemini/client";
-import { generateOfferFitWithGemini } from "@/lib/cvAudit/generateOfferFitWithGemini";
+import { isAnthropicConfigured } from "@/lib/anthropic/client";
+import { generateOfferFitWithAnthropic } from "@/lib/cvAudit/generateOfferFitWithAnthropic";
 import { computeStaticOfferFit } from "@/lib/cvAudit/staticOfferFit";
 import { logServerEvent } from "@/lib/analytics/logServerEvent";
 import type { OfferFit } from "@/lib/cvAudit/offerFitSchema";
@@ -15,7 +15,7 @@ export type OfferFitState =
 
 // "Analyser mon CV pour cette offre" (section 14) : compare explicitement le
 // CV au texte de CETTE offre plutôt que d'auditer le CV seul -- même
-// doctrine hybride Gemini + repli statique que le reste des fonctionnalités
+// doctrine hybride Claude + repli statique que le reste des fonctionnalités
 // IA du produit (voir cv-audit-actions.ts).
 export async function analyzeOfferFitAction(offerId: string): Promise<OfferFitState> {
   const supabase = await createClient();
@@ -42,13 +42,13 @@ export async function analyzeOfferFitAction(offerId: string): Promise<OfferFitSt
   }
 
   let result: OfferFit;
-  let source: "gemini" | "static" = "static";
-  if (isGeminiConfigured()) {
+  let source: "anthropic" | "static" = "static";
+  if (isAnthropicConfigured()) {
     try {
-      result = await generateOfferFitWithGemini(profile.cv_text, offer);
-      source = "gemini";
+      result = await generateOfferFitWithAnthropic(profile.cv_text, offer);
+      source = "anthropic";
     } catch (err) {
-      console.error("analyzeOfferFitAction: Gemini a échoué, repli statique", err);
+      console.error("analyzeOfferFitAction: Claude a échoué, repli statique", err);
       result = computeStaticOfferFit(profile.skills, offer);
     }
   } else {

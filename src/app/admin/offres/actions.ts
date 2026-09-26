@@ -1,7 +1,7 @@
 "use server";
 
 import { assertAdminSession } from "@/lib/admin/accessCode";
-import { ingestOffer } from "@/lib/mistral/ingestOffer";
+import { ingestOffer } from "@/lib/offers/ingestOffer";
 import type { ContractType } from "@/types/database";
 
 export type BulkResult = {
