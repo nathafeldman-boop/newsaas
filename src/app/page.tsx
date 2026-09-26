@@ -340,29 +340,9 @@ export default async function LandingPage() {
           }}
         >
           <Reveal>
-            <span
-              className="flex items-center gap-2"
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                padding: "6px 14px 6px 6px",
-                borderRadius: 999,
-                background: "var(--color-surface)",
-                boxShadow: "0 1px 2px color-mix(in srgb, var(--color-text) 12%, transparent)",
-              }}
-            >
-              <span
-                aria-hidden
-                className="lp-pulse flex items-center justify-center"
-                style={{ width: 22, height: 22, borderRadius: "50%", background: "var(--color-accent)", fontSize: 12 }}
-              >
-                🔥
-              </span>
-              L&apos;app Tinder de l&apos;alternance et du stage
-            </span>
             <h1
               style={{
-                margin: "22px 0 0",
+                margin: 0,
                 fontSize: "clamp(40px,6.4vw,78px)",
                 lineHeight: 1,
                 fontWeight: 800,
