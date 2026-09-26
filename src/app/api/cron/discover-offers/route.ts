@@ -2,16 +2,20 @@ import { NextResponse, type NextRequest } from "next/server";
 import { discoverOfferUrls } from "@/lib/offers/discoverOfferUrlsWithAnthropic";
 import { ingestOffer } from "@/lib/offers/ingestOffer";
 
-// Sync périodique (voir vercel.json) : demande à Mistral (recherche web
+// Sync périodique (voir vercel.json) : demande à Claude (recherche web
 // native) de repérer des annonces réelles par secteur, puis fait repasser
 // chaque URL trouvée par le pipeline d'ingestion existant (fetch de la
-// vraie page + extraction Mistral classique + upsert). Complémentaire à
-// /api/cron/sync-adzuna : Adzuna couvre le volume, ceci couvre les sources
-// qu'un agrégateur généraliste indexe mal (petites entreprises, jobboards
-// spécialisés alternance).
+// vraie page + extraction Claude classique + upsert). Complémentaire à
+// /api/cron/sync-adzuna : Adzuna couvre le gros du volume (levé fortement le
+// 26/09, voir ce fichier -- demande explicite de Nathan "rajoute des
+// milliers d'offres"), ceci couvre les sources qu'un agrégateur généraliste
+// indexe mal (petites entreprises, jobboards spécialisés alternance).
 //
-// Volume volontairement modeste (coût Mistral) : quelques requêtes par
-// jour, rotation par jour de l'année sur la liste de secteurs.
+// Volume relevé modérément le 26/09 (4→6 requêtes/jour, URLs/requête
+// inchangé) en complément du gros du volume ajouté côté Adzuna -- resté
+// volontairement plus prudent qu'Adzuna : chaque offre ici coûte un appel
+// Claude (recherche web + extraction), largement plus cher par offre qu'une
+// page Adzuna (50 offres/appel).
 
 export const maxDuration = 60;
 
@@ -26,7 +30,7 @@ const QUERIES = [
   "alternance product manager junior",
 ] as const;
 
-const QUERIES_PER_RUN = 4;
+const QUERIES_PER_RUN = 6;
 const URLS_PER_QUERY = 4;
 
 function pickQueriesForToday(): string[] {
@@ -54,12 +58,12 @@ export async function GET(request: NextRequest) {
   type Result = { query: string; url: string; ok: boolean; error?: string };
 
   // Les pipelines par requête (découverte + ingestion) tournent en
-  // parallèle, au lieu d'un enchaînement 100% séquentiel -- jusqu'à 20
-  // appels réseau (Mistral + fetch de pages tierces) l'un après l'autre
-  // faisaient régulièrement dépasser les 60s (maxDuration, plafond Vercel
-  // Hobby), perdant tout le run et les offres du jour restantes (vu en
-  // prod plusieurs fois, y compris avant toute panne Mistral). Le volume
-  // total de requêtes Mistral ne change pas, seule leur simultanéité augmente.
+  // parallèle, au lieu d'un enchaînement 100% séquentiel -- jusqu'à 24 (6x4)
+  // appels réseau (Claude + fetch de pages tierces) l'un après l'autre
+  // dépasseraient largement les 60s (maxDuration, plafond Vercel Hobby),
+  // perdant tout le run et les offres du jour restantes (vu en prod
+  // plusieurs fois avec l'ancien fournisseur, avant même toute panne). Le
+  // volume total de requêtes ne change pas, seule leur simultanéité augmente.
   const perQueryResults = await Promise.all(
     queries.map(async (query): Promise<Result[]> => {
       let urls: string[];

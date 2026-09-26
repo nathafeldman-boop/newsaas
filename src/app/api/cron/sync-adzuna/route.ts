@@ -8,8 +8,9 @@ import { computeOfferQualityScore } from "@/lib/offers/quality";
 
 // Sync périodique (voir vercel.json) : ramène des offres alternance/stage
 // depuis Adzuna par lots, upsert dans "offers" (source=adzuna), et désactive
-// les offres adzuna qui n'ont pas été revues depuis 7 jours (probablement
-// pourvues ou retirées — Adzuna ne fournit pas de statut "encore en ligne").
+// les offres adzuna qui n'ont pas été revues depuis STALE_AFTER_DAYS jours
+// (probablement pourvues ou retirées — Adzuna ne fournit pas de statut
+// "encore en ligne").
 //
 // Chaque annonce est classée alternance/stage par analyse du titre/texte
 // (Adzuna est un agrégateur généraliste, pas de champ dédié pour les
@@ -18,48 +19,128 @@ import { computeOfferQualityScore } from "@/lib/offers/quality";
 
 export const maxDuration = 60;
 
-// Volume pondéré plutôt qu'égal entre les deux requêtes : les alternances
-// sont structurellement sous-représentées sur un agrégateur généraliste
-// comme Adzuna (le mot "stage" apparaît dans énormément plus d'annonces
-// -- stages courts, "stage" au sens formation, etc. -- que "alternance"),
-// donc un nombre de pages égal produisait mécaniquement moins d'offres
-// alternance que stage une fois classifyContractType appliqué. "apprentissage"
-// est une requête à part entière (pas juste un synonyme dans le regex de
-// classification) pour élargir le filet sur les annonces qui ne disent
-// jamais littéralement "alternance".
+// Volume relevé fortement le 26/09 (demande explicite de Nathan : "rajoute
+// des milliers d'offres", suite à un catalogue trop vite épuisé sous le hard
+// paywall -- la navigation n'est plus rationnée par un quota, voir
+// RETENTION_AUDIT.md). Chaque page = 50 résultats bruts (RESULTS_PER_PAGE
+// côté client Adzuna), avant classification/qualité/dédup -- le volume net
+// réellement ajouté au catalogue est plus bas, mais ce paramètre est le
+// levier direct pour l'augmenter. Pondéré comme avant entre les 3 requêtes :
+// "stage" est structurellement sur-représenté sur un agrégateur généraliste,
+// "alternance"/"apprentissage" ont besoin de plus de profondeur pour un volume
+// net comparable une fois classifyContractType appliqué.
+//
+// ATTENTION quota Adzuna : ce compte était en plan "Trial Access" (quota
+// limité, souvent quelques centaines d'appels/mois d'après la doc Adzuna) --
+// ce volume (~90 appels/jour, voir plus bas) peut largement dépasser un
+// quota d'essai en quelques jours. Le code dégrade sans planter si Adzuna
+// répond 429/403 (voir runStream ci-dessous, une erreur par page n'interrompt
+// que cette page/requête, jamais tout le run), mais si le volume retombe
+// après un pic initial, c'est le signal qu'il faut vérifier la page "Stats"
+// du dashboard Adzuna et passer sur un plan payant.
 const QUERIES: { what: string; pages: number; where?: string }[] = [
-  { what: "alternance", pages: 4 },
-  { what: "apprentissage", pages: 2 },
-  { what: "stage", pages: 3 },
+  { what: "alternance", pages: 14 },
+  { what: "apprentissage", pages: 8 },
+  { what: "stage", pages: 10 },
 ];
-// Conservateur tant que le compte Adzuna est en plan "Trial Access" (quota
-// limité, souvent quelques centaines d'appels/mois). 11 appels/jour au total
-// (9 génériques ci-dessus + 2 ciblés ville ci-dessous) x 1 run/jour
-// (vercel.json) = ~330/mois. Augmenter une fois le plan/quota réel connu
-// (page "Stats" du dashboard Adzuna).
 
 // Les requêtes génériques ci-dessus, sans filtre "where", sont classées par
 // Adzuna par pertinence/date -- ce qui favorise mécaniquement l'Île-de-France
 // où se concentre l'essentiel du volume d'offres. Résultat : un profil basé
 // à Lyon ou Marseille voyait très peu d'offres réellement proches de lui.
-// Plutôt que de multiplier chaque requête par les 12 métropoles de
-// TOP_CITIES (dépasserait largement le quota), on cible une seule ville par
-// jour à tour de rôle -- cycle complet tous les 12 jours -- avec le budget
-// libéré par la réduction des requêtes génériques ci-dessus (5→4 et 3→2
-// pages). Basé sur le nombre de jours depuis l'epoch plutôt que le jour du
+// Couvre désormais CITIES_PER_RUN villes par run (au lieu d'une seule) --
+// cycle complet sur TOP_CITIES en ceil(12/CITIES_PER_RUN) jours au lieu de
+// 12. Basé sur le nombre de jours depuis l'epoch plutôt que le jour du
 // mois/de l'année : reste stable même si un run de cron est manqué, et ne
 // dérive pas d'une année sur l'autre (365 n'est pas un multiple de 12).
-const CITY_OF_THE_DAY = TOP_CITIES[Math.floor(Date.now() / 86_400_000) % TOP_CITIES.length];
-const CITY_QUERIES: { what: string; pages: number; where: string }[] = [
-  { what: "alternance", pages: 1, where: CITY_OF_THE_DAY },
-  { what: "stage", pages: 1, where: CITY_OF_THE_DAY },
-];
+const CITIES_PER_RUN = 4;
+const CITY_PAGES_PER_QUERY = 2;
+const dayIndex = Math.floor(Date.now() / 86_400_000);
+const CITIES_OF_THE_RUN = Array.from(
+  { length: CITIES_PER_RUN },
+  (_, i) => TOP_CITIES[(dayIndex * CITIES_PER_RUN + i) % TOP_CITIES.length],
+);
+const CITY_QUERIES: { what: string; pages: number; where: string }[] = CITIES_OF_THE_RUN.flatMap(
+  (city) => [
+    { what: "alternance", pages: CITY_PAGES_PER_QUERY, where: city },
+    { what: "stage", pages: CITY_PAGES_PER_QUERY, where: city },
+  ],
+);
+// Total : (14+8+10) + 4 villes x 2 requêtes x 2 pages = 32 + 16 = 48
+// appels Adzuna par run, x1 run/jour (vercel.json) = ~1440/mois.
 
 const STALE_AFTER_DAYS = 10;
 // Filtre de sécurité en plus de max_days_old côté requête (searchAdzunaPage) :
 // une annonce alternance/stage de plusieurs mois est presque certainement
 // pourvue, on ne veut jamais la sauvegarder même si l'API la renvoie encore.
 const MAX_PUBLISHED_AGE_DAYS = 30;
+
+type StreamResult = { fetched: number; mapped: number; upserted: number; errors: string[] };
+
+// Une requête (what/pages/where) = un "stream" indépendant, exécuté en
+// parallèle des autres (voir Promise.all plus bas) -- pages payload lâchées
+// dans le budget maxDuration=60s (plafond Vercel Hobby) : à ce volume,
+// tout enchaîner séquentiellement (comme avant le 26/09) dépasserait
+// largement 60s et perdrait tout le run, offres déjà upsert comprises côté
+// requêtes suivantes jamais atteintes. Même correctif déjà appliqué à
+// /api/cron/discover-offers pour la même raison. La pagination À L'INTÉRIEUR
+// d'un stream reste séquentielle (page N+1 dépend de savoir si N a renvoyé
+// des résultats) ; c'est l'exécution ENTRE streams qui devient concurrente.
+async function runStream(
+  admin: ReturnType<typeof createAdminClient>,
+  syncStartedAt: string,
+  what: string,
+  pages: number,
+  where?: string,
+): Promise<StreamResult> {
+  let fetched = 0;
+  let mapped = 0;
+  let upserted = 0;
+  const errors: string[] = [];
+
+  const ageCutoff = new Date();
+  ageCutoff.setDate(ageCutoff.getDate() - MAX_PUBLISHED_AGE_DAYS);
+
+  for (let page = 1; page <= pages; page++) {
+    let jobs;
+    try {
+      jobs = await searchAdzunaPage(what, page, where);
+    } catch (err) {
+      errors.push(
+        `${what}${where ? ` @ ${where}` : ""} page ${page}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      break; // page suivante inutile si celle-ci a échoué (ex: quota, auth)
+    }
+
+    if (jobs.length === 0) break; // plus de résultats pour cette requête
+    fetched += jobs.length;
+
+    const rows = jobs
+      .map(mapAdzunaJob)
+      .filter((o): o is NonNullable<typeof o> => o !== null)
+      .filter((o) => new Date(o.published_at) >= ageCutoff)
+      .map((o) => ({
+        ...o,
+        last_seen_at: syncStartedAt,
+        content_fingerprint: computeOfferFingerprint(o.title, o.company),
+        quality_score: computeOfferQualityScore(o),
+      }));
+    mapped += rows.length;
+
+    if (rows.length > 0) {
+      const { error } = await admin
+        .from("offers")
+        .upsert(rows, { onConflict: "source,external_id" });
+      if (error) {
+        errors.push(`upsert ${what}${where ? ` @ ${where}` : ""} page ${page}: ${error.message}`);
+      } else {
+        upserted += rows.length;
+      }
+    }
+  }
+
+  return { fetched, mapped, upserted, errors };
+}
 
 export async function GET(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -73,51 +154,16 @@ export async function GET(request: NextRequest) {
   const syncStartedAt = new Date().toISOString();
   const admin = createAdminClient();
 
-  let fetched = 0;
-  let mapped = 0;
-  let upserted = 0;
-  const errors: string[] = [];
+  const streamResults = await Promise.all(
+    [...QUERIES, ...CITY_QUERIES].map(({ what, pages, where }) =>
+      runStream(admin, syncStartedAt, what, pages, where),
+    ),
+  );
 
-  for (const { what, pages, where } of [...QUERIES, ...CITY_QUERIES]) {
-    for (let page = 1; page <= pages; page++) {
-      let jobs;
-      try {
-        jobs = await searchAdzunaPage(what, page, where);
-      } catch (err) {
-        errors.push(err instanceof Error ? err.message : String(err));
-        break; // page suivante inutile si celle-ci a échoué (ex: quota, auth)
-      }
-
-      if (jobs.length === 0) break; // plus de résultats pour cette requête
-      fetched += jobs.length;
-
-      const ageCutoff = new Date();
-      ageCutoff.setDate(ageCutoff.getDate() - MAX_PUBLISHED_AGE_DAYS);
-
-      const rows = jobs
-        .map(mapAdzunaJob)
-        .filter((o): o is NonNullable<typeof o> => o !== null)
-        .filter((o) => new Date(o.published_at) >= ageCutoff)
-        .map((o) => ({
-          ...o,
-          last_seen_at: syncStartedAt,
-          content_fingerprint: computeOfferFingerprint(o.title, o.company),
-          quality_score: computeOfferQualityScore(o),
-        }));
-      mapped += rows.length;
-
-      if (rows.length > 0) {
-        const { error } = await admin
-          .from("offers")
-          .upsert(rows, { onConflict: "source,external_id" });
-        if (error) {
-          errors.push(`upsert page ${page} (${what}): ${error.message}`);
-        } else {
-          upserted += rows.length;
-        }
-      }
-    }
-  }
+  const fetched = streamResults.reduce((sum, r) => sum + r.fetched, 0);
+  const mapped = streamResults.reduce((sum, r) => sum + r.mapped, 0);
+  const upserted = streamResults.reduce((sum, r) => sum + r.upserted, 0);
+  const errors = streamResults.flatMap((r) => r.errors);
 
   const staleCutoff = new Date();
   staleCutoff.setDate(staleCutoff.getDate() - STALE_AFTER_DAYS);
@@ -136,7 +182,7 @@ export async function GET(request: NextRequest) {
     mapped,
     upserted,
     deactivated: deactivated?.length ?? 0,
-    cityOfTheDay: CITY_OF_THE_DAY,
+    citiesOfTheRun: CITIES_OF_THE_RUN,
     errors,
   });
 }
