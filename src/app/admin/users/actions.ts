@@ -8,7 +8,6 @@ import { notifyPremiumFixed } from "@/lib/resend/notifyPremiumFixed";
 import { notifyIncompletePaymentOnce } from "@/lib/stripe/notifyIncompletePayment";
 import { notifyWeeklyOffer } from "@/lib/resend/notifyWeeklyOffer";
 import { isPremium } from "@/lib/subscription/isPremium";
-import { FREE_WEEKLY_SWIPE_QUOTA } from "@/lib/subscription/quota";
 import { getStripeClient } from "@/lib/stripe/client";
 import { creditInvoicePayment } from "@/lib/stripe/creditInvoicePayment";
 import { syncSubscriptionToProfile } from "@/lib/stripe/syncSubscription";
@@ -277,9 +276,12 @@ export async function sendIncompletePaymentReminderAction(formData: FormData) {
 // voir /premium) : prévient tous les inscrits déjà passés par le mur
 // payant sans avoir pris Premium. "Passé par le mur" n'a pas de tracking
 // dédié (site_visits n'est pas fiable pour ça, voir ailleurs) -- on
-// retombe sur le signal le plus proche disponible en base : au moins
-// FREE_WEEKLY_SWIPE_QUOTA swipes de découverte au compteur, ce qui suffit
-// en pratique à avoir buté sur le quota gratuit au moins une fois.
+// retombe sur le signal le plus proche disponible en base : au moins un
+// swipe au compteur, ce qui suffit en pratique à avoir déjà utilisé
+// l'appli. Campagne ponctuelle liée au lancement de l'offre hebdomadaire,
+// retirée depuis (voir hard paywall, RETENTION_AUDIT.md) -- gardée en l'état
+// pour l'historique, le seuil n'a plus besoin de suivre un quota qui
+// n'existe plus.
 //
 // Idempotence : "vérifier puis envoyer puis marquer" n'est PAS sûr en
 // concurrence -- deux clics rapprochés (le bouton ne montre aucun retour
@@ -327,7 +329,7 @@ export async function sendWeeklyOfferAnnouncementAction() {
       .select("id", { count: "exact", head: true })
       .eq("user_id", profile.id);
 
-    if ((count ?? 0) < FREE_WEEKLY_SWIPE_QUOTA) continue;
+    if ((count ?? 0) < 1) continue;
 
     const { data: claimed, error: claimError } = await admin
       .from("profiles")

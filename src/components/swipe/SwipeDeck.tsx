@@ -32,17 +32,22 @@ const SwipeCard = forwardRef<
     reasons?: string[];
     score?: number;
     isTop: boolean;
+    isPremium: boolean;
     onExited: (direction: SwipeDirection) => void;
     // Déclenché quand un DRAG physique (pas un clic bouton) franchit le
     // seuil -- doit passer par le même chemin que les boutons (voir
-    // handleSwipeIntent côté parent : enregistrement du swipe, quota,
-    // célébration de match). Sans ça, glisser une carte l'animait hors de
-    // l'écran sans jamais appeler recordSwipe -- swipe perdu côté serveur,
-    // quota gratuit contournable, offre qui réapparaît au chargement
-    // suivant. Bug réel trouvé à l'audit du 2026-09-25.
-    onSwipeIntent: (direction: SwipeDirection) => void;
+    // handleSwipeIntent côté parent : enregistrement du swipe, célébration
+    // de match). Sans ça, glisser une carte l'animait hors de l'écran sans
+    // jamais appeler recordSwipe -- swipe perdu côté serveur, offre qui
+    // réapparaît au chargement suivant. Bug réel trouvé à l'audit du
+    // 2026-09-25.
+    //
+    // Retourne false quand l'action est refusée (like/candidature sans
+    // Premium, voir hard paywall) : dans ce cas la carte n'est jamais
+    // éjectée, seul le clic/drag est intercepté et redirigé vers /premium.
+    onSwipeIntent: (direction: SwipeDirection) => boolean;
   }
->(function SwipeCard({ offer, reasons, score, isTop, onExited, onSwipeIntent }, ref) {
+>(function SwipeCard({ offer, reasons, score, isTop, isPremium, onExited, onSwipeIntent }, ref) {
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-300, 300], [-18, 18]);
   const likeOpacity = useTransform(x, [20, 140], [0, 1]);
@@ -67,7 +72,8 @@ const SwipeCard = forwardRef<
       dragElastic={0.9}
       onDragEnd={(_, info) => {
         if (info.offset.x > SWIPE_THRESHOLD) {
-          onSwipeIntent("like");
+          const accepted = onSwipeIntent("like");
+          if (!accepted) void animate(x, 0, { type: "spring", stiffness: 400, damping: 30 });
         } else if (info.offset.x < -SWIPE_THRESHOLD) {
           onSwipeIntent("pass");
         } else {
@@ -127,7 +133,7 @@ const SwipeCard = forwardRef<
             </motion.span>
           </>
         )}
-        <OfferCardContent offer={offer} reasons={reasons} score={score} />
+        <OfferCardContent offer={offer} reasons={reasons} score={score} isPremium={isPremium} />
       </div>
     </motion.div>
   );
@@ -281,9 +287,6 @@ function SwipeDeckInner({
   userId,
   initialSwipesToday,
   isPremium,
-  quotaReached,
-  onQuotaReached,
-  onBrowseSwipe,
   onStackChange,
 }: {
   offers: Offer[];
@@ -292,9 +295,6 @@ function SwipeDeckInner({
   userId: string;
   initialSwipesToday: number;
   isPremium: boolean;
-  quotaReached: boolean;
-  onQuotaReached: () => void;
-  onBrowseSwipe?: () => void;
   onStackChange?: (count: number) => void;
 }) {
   const router = useRouter();
@@ -305,12 +305,6 @@ function SwipeDeckInner({
   // son titre/entreprise et proposer "Postuler maintenant" directement
   // depuis le modal, comme le fait le prototype de design.
   const [celebratingOffer, setCelebratingOffer] = useState<Offer | null>(null);
-  // Un swipe à la fois pour un compte gratuit : le quota est vérifié côté
-  // serveur à chaque insertion (trigger enforce_swipe_quota), donc tant que
-  // la réponse du swipe en cours n'est pas revenue, on ne sait pas encore
-  // s'il a été accepté -- sans ce verrou, dragguer/cliquer vite permettait
-  // d'enchaîner plusieurs cartes avant que le blocage ne soit détecté.
-  const swipeInFlight = useRef(false);
   const topCardRef = useRef<SwipeCardHandle>(null);
 
   const visible = stack.slice(0, 3);
@@ -334,53 +328,56 @@ function SwipeDeckInner({
         { user_id: userId, offer_id: offer.id, direction },
         { onConflict: "user_id,offer_id" },
       );
-    swipeInFlight.current = false;
-    if (error?.message.includes("SWIPE_QUOTA_REACHED")) {
-      onQuotaReached();
-      // Direct vers la vraie page paywall plutôt que la carte de blocage
-      // inline : dès que le quota tombe, on est déjà censé y être (voir la
-      // redirection équivalente au niveau layout pour toute autre page).
-      router.push("/premium?limite=1");
-    } else if (error) {
+    if (error) {
       // La carte est déjà retirée de l'écran de façon optimiste (voir
       // topCardRef.current?.swipeOut ci-dessous) avant même que cette
-      // requête ne reparte -- sans ce log, un swipe qui échoue pour une
-      // autre raison que le quota disparaît silencieusement (aucune trace
-      // ni côté utilisateur ni côté serveur).
+      // requête ne reparte -- sans ce log, un swipe qui échoue disparaît
+      // silencieusement (aucune trace ni côté utilisateur ni côté serveur).
       console.error("recordSwipe failed", error, { offerId: offer.id, direction });
     }
   }
 
-  function handleSwipeIntent(direction: SwipeDirection) {
-    if (quotaReached && !isPremium) return;
-    if (!isPremium && swipeInFlight.current) return;
+  // Hard paywall (pas d'essai gratuit, voir RETENTION_AUDIT.md) : "pass" est
+  // de la pure navigation, jamais limité -- un compte gratuit peut parcourir
+  // tout le deck. "like" (= mettre en favori) est réservé aux Premium ; pour
+  // un compte gratuit, on n'enregistre jamais le swipe et on renvoie tout de
+  // suite vers /premium plutôt que de laisser la carte sortir de l'écran
+  // (voir SwipeCard : la carte revient au centre quand ceci renvoie false).
+  // Miroir du trigger SQL enforce_swipe_quota (voir supabase/migrations) qui
+  // referait le même refus si jamais ce check client était contourné.
+  function handleSwipeIntent(direction: SwipeDirection): boolean {
     const offer = stack[0];
-    if (!offer) return;
-    if (!isPremium) swipeInFlight.current = true;
+    if (!offer) return false;
+
+    if (direction === "like" && !isPremium) {
+      void logButtonClick(userId, "premium_cta", { source: "swipe_like" });
+      router.push("/premium?source=swipe_like");
+      return false;
+    }
+
     void recordSwipe(offer, direction);
     setSwipesToday((n) => n + 1);
-    onBrowseSwipe?.();
     if (direction === "like" && (scores[offer.id] ?? 0) >= CELEBRATION_THRESHOLD) {
       setCelebratingOffer(offer);
     }
     topCardRef.current?.swipeOut(direction);
+    return true;
   }
 
-  // Bouton "postuler" du milieu (voir design mobile) : enregistre le like
-  // exactement comme handleSwipeIntent("like"), puis part directement sur
-  // la vraie page de candidature (lettre IA, statut) -- pas d'écran "postulé"
-  // fictif comme dans le prototype, la page /candidature réelle fait le
-  // travail. La carte n'a pas besoin d'animation de sortie puisqu'on quitte
-  // l'écran tout de suite après.
+  // Bouton "postuler" du milieu (voir design mobile) : réservé aux Premium
+  // au même titre que "like" -- candidater n'est plus gratuit (voir hard
+  // paywall). Pour un compte gratuit, renvoie directement vers /premium sans
+  // toucher à la carte ni enregistrer quoi que ce soit.
   function handleApplyIntent() {
-    if (quotaReached && !isPremium) return;
-    if (!isPremium && swipeInFlight.current) return;
+    if (!isPremium) {
+      void logButtonClick(userId, "premium_cta", { source: "swipe_apply" });
+      router.push("/premium?source=swipe_apply");
+      return;
+    }
     const offer = stack[0];
     if (!offer) return;
-    if (!isPremium) swipeInFlight.current = true;
     void recordSwipe(offer, "like");
     setSwipesToday((n) => n + 1);
-    onBrowseSwipe?.();
     router.push(`/candidature/${offer.id}`);
   }
 
@@ -388,50 +385,13 @@ function SwipeDeckInner({
     setStack((prev) => prev.filter((o) => o.id !== offerId));
   }
 
-  // Quota atteint OU plus rien à swiper : pour un compte gratuit, dans les
-  // deux cas il n'y a plus rien à faire ici sans passer Premium — un
-  // "reviens plus tard" passif serait une impasse plutôt qu'une relance.
-  if (!isPremium && (quotaReached || visible.length === 0)) {
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center text-center px-6 py-16">
-        <motion.div
-          initial={{ scale: 0.6, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: "spring", stiffness: 280, damping: 18 }}
-          aria-hidden
-          style={{
-            width: 72,
-            height: 72,
-            borderRadius: 20,
-            background: "var(--color-accent-100)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 32,
-          }}
-        >
-          🔒
-        </motion.div>
-        <h2 style={{ fontSize: 22, marginTop: 20 }}>
-          {quotaReached ? "Tu as utilisé tes swipes gratuits" : "Plus d'offres pour l'instant"}
-        </h2>
-        <p style={{ marginTop: 8, maxWidth: "34ch", color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
-          {quotaReached
-            ? "Passe Premium pour swiper sans limite et générer tes lettres de motivation à volonté. Tu peux toujours candidater librement aux offres déjà vues."
-            : "On en ajoute régulièrement. Passe Premium pour swiper sans limite dès qu'elles arrivent, et débloquer les lettres de motivation générées par IA."}
-        </p>
-        <PremiumCtaLink userId={userId} source="swipe_quota" className="btn btn-gradient mt-6">
-          Passer en illimité
-        </PremiumCtaLink>
-      </div>
-    );
-  }
-
+  // Deck épuisé : plus rien à parcourir pour l'instant. Sous hard paywall,
+  // un compte gratuit peut arriver ici aussi (la navigation n'est plus
+  // plafonnée) -- même écran pour tout le monde, seul le CTA change : un
+  // Premium est renvoyé s'entraîner à l'entretien, un compte gratuit vers
+  // /premium (il n'a encore rien pu liker/candidater tant qu'il ne l'a pas
+  // pris).
   if (visible.length === 0) {
-    // N'est atteignable que par un compte Premium : le bloc juste au-dessus
-    // renvoie déjà tout compte gratuit (quota ou deck vide) avant d'arriver
-    // ici -- voir sa condition `!isPremium && (quotaReached || visible.
-    // length === 0)`.
     return (
       <div className="flex flex-1 flex-col items-center justify-center text-center px-6 py-20">
         <p className="text-4xl">🎉</p>
@@ -439,16 +399,29 @@ function SwipeDeckInner({
         <p style={{ marginTop: 8, color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
           {eta ? `De nouvelles offres arrivent ${eta}.` : "On en ajoute régulièrement."}
         </p>
-        <p style={{ marginTop: 6, fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
-          En attendant, entraîne-toi pour ton prochain entretien.
-        </p>
-        <Link
-          href="/dashboard"
-          className="btn btn-gradient mt-6"
-          onClick={() => void logButtonClick(userId, "interview_practice_cta", { source: "swipe_empty_deck" })}
-        >
-          🎤 M&apos;entraîner à l&apos;entretien
-        </Link>
+        {isPremium ? (
+          <>
+            <p style={{ marginTop: 6, fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
+              En attendant, entraîne-toi pour ton prochain entretien.
+            </p>
+            <Link
+              href="/dashboard"
+              className="btn btn-gradient mt-6"
+              onClick={() => void logButtonClick(userId, "interview_practice_cta", { source: "swipe_empty_deck" })}
+            >
+              🎤 M&apos;entraîner à l&apos;entretien
+            </Link>
+          </>
+        ) : (
+          <>
+            <p style={{ marginTop: 6, maxWidth: "34ch", fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
+              Passe Premium pour liker, candidater et générer tes lettres de motivation à volonté.
+            </p>
+            <PremiumCtaLink userId={userId} source="swipe_empty_deck" className="btn btn-gradient mt-6">
+              Passer Premium
+            </PremiumCtaLink>
+          </>
+        )}
       </div>
     );
   }
@@ -487,6 +460,7 @@ function SwipeDeckInner({
                   reasons={reasons[offer.id]}
                   score={scores[offer.id]}
                   isTop={isTop}
+                  isPremium={isPremium}
                   onExited={() => handleExited(offer.id)}
                   onSwipeIntent={handleSwipeIntent}
                 />
@@ -552,8 +526,6 @@ export function SwipeDeck({
   userId,
   swipesToday = 0,
   isPremium = false,
-  quotaReached = false,
-  remainingSwipes = null,
   cityBanner = null,
   sectorLabel = null,
   applicationStreak = 0,
@@ -564,63 +536,20 @@ export function SwipeDeck({
   userId: string;
   swipesToday?: number;
   isPremium?: boolean;
-  quotaReached?: boolean;
-  remainingSwipes?: number | null;
   cityBanner?: string | null;
   sectorLabel?: string | null;
   applicationStreak?: number;
 }) {
   const [contractFilter, setContractFilter] = useState<ContractType | "all">("all");
   // Compteur d'offres restantes DANS LE DECK EN COURS, affiché juste
-  // au-dessus des cartes -- vit ici (pas dans SwipeDeckInner) pour la même
-  // raison que `remaining`/`quotaHit` plus bas : SwipeDeckInner est remonté
-  // à chaque changement de filtre Stage/Alternance, donc son propre state
-  // `stack` ne peut pas nourrir directement un texte qui doit rester
-  // affiché en continu. Initialisé à la taille du deck non filtré : la
-  // valeur exacte pour le filtre "all" par défaut, corrigée immédiatement
+  // au-dessus des cartes -- vit ici (pas dans SwipeDeckInner) : ce dernier
+  // est remonté à chaque changement de filtre Stage/Alternance, donc son
+  // propre state `stack` ne peut pas nourrir directement un texte qui doit
+  // rester affiché en continu. Initialisé à la taille du deck non filtré :
+  // la valeur exacte pour le filtre "all" par défaut, corrigée immédiatement
   // par le premier appel de `onStackChange` sinon (montage ou changement de
   // filtre).
   const [cardsLeft, setCardsLeft] = useState(offers.length);
-  // Compteur de swipes restants affiché en haut de l'écran (pill "📱 3") :
-  // vit ici plutôt que dans SwipeDeckInner car ce dernier est remonté
-  // (key={contractFilter}) à chaque changement de filtre Stage/Alternance,
-  // ce qui réinitialiserait le compteur alors que le quota, lui, ne l'est
-  // pas.
-  const [remaining, setRemaining] = useState(remainingSwipes);
-  // Même raison que `remaining` ci-dessus : si ce flag vivait dans
-  // SwipeDeckInner (comme avant), changer de filtre une fois le quota
-  // atteint le remontait avec sa valeur initiale (donc "non atteint") et
-  // débloquait le swipe -- bug réel signalé en prod ("plus de 10 swipes
-  // gratuits"). Hissé ici, il ne peut plus être remis à zéro par un simple
-  // changement de filtre.
-  const [quotaHit, setQuotaHit] = useState(quotaReached);
-  // `quotaHit` ne devient vrai qu'après un swipe REJETÉ par le serveur --
-  // mais le compteur `remaining` touche déjà 0 sur le DERNIER swipe accepté,
-  // avant tout rejet. Si le pool d'offres restant est petit, cette dernière
-  // carte swipée peut aussi vider `stack` en même temps : l'écran de blocage
-  // s'affichait alors quand même (via visible.length===0) mais avec le
-  // mauvais message ("Plus d'offres" au lieu de "Tu as utilisé tes swipes
-  // gratuits"), puisque `quotaHit` seul ne reflète pas encore la réalité --
-  // bug réel signalé en prod. `remaining === 0` est un signal tout aussi
-  // fiable (décrémenté en miroir exact des vrais swipes de découverte) et
-  // disponible immédiatement, sans attendre un rejet.
-  const quotaReallyReached = quotaHit || remaining === 0;
-
-  const router = useRouter();
-  // Dès que le quota est réellement atteint côté client, on pousse tout de
-  // suite vers le vrai paywall (/premium) au lieu d'attendre soit un swipe
-  // rejeté par le serveur (impossible en pratique : l'écran de blocage
-  // inline ci-dessous masque déjà les boutons de swipe une fois le quota
-  // atteint, donc aucun nouveau swipe ne peut être tenté pour déclencher ce
-  // rejet), soit un rafraîchissement de page qui relance le check serveur
-  // dans AppLayout -- sans ça l'utilisateur restait coincé sur l'écran de
-  // blocage "léger" de /swipe au lieu du paywall direct, bug réel signalé
-  // en prod.
-  useEffect(() => {
-    if (quotaReallyReached && !isPremium) {
-      router.push("/premium?limite=1");
-    }
-  }, [quotaReallyReached, isPremium, router]);
 
   const filteredOffers =
     contractFilter === "all"
@@ -652,12 +581,16 @@ export function SwipeDeck({
         )}
       </div>
 
-      {(remaining !== null || sectorLabel || applicationStreak > 0) && (
+      {(!isPremium || sectorLabel || applicationStreak > 0) && (
         <div className="mt-4 mb-1 flex items-center gap-2">
-          {remaining !== null && (
-            <span className="tag tag-accent" style={{ fontVariantNumeric: "tabular-nums" }}>
-              📱 {remaining}
-            </span>
+          {!isPremium && (
+            // Hard paywall (pas d'essai gratuit) : rappel permanent plutôt
+            // qu'un compteur de swipes restants (retiré, la navigation n'est
+            // plus plafonnée) -- la carte elle-même porte déjà le flou/teaser
+            // (voir OfferCard), ce tag rappelle juste pourquoi.
+            <PremiumCtaLink userId={userId} source="swipe_banner" className="tag tag-accent">
+              🔒 Premium débloque like &amp; candidature
+            </PremiumCtaLink>
           )}
           {sectorLabel && <span className="tag tag-neutral">{sectorLabel}</span>}
           {applicationStreak > 0 && (
@@ -721,11 +654,6 @@ export function SwipeDeck({
         userId={userId}
         initialSwipesToday={swipesToday}
         isPremium={isPremium}
-        quotaReached={quotaReallyReached}
-        onQuotaReached={() => setQuotaHit(true)}
-        onBrowseSwipe={() =>
-          setRemaining((n) => (n === null ? n : Math.max(0, n - 1)))
-        }
         onStackChange={setCardsLeft}
       />
     </div>

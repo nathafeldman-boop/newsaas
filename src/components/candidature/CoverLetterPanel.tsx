@@ -69,10 +69,12 @@ export function CoverLetterPanel({
   }
 
   // La candidature elle-même est déjà enregistrée côté serveur dès l'ouverture
-  // de cette page (voir generateCoverLetterAction), indépendamment du succès
-  // de la génération -- ne jamais bloquer l'accès au lien de candidature
-  // externe à cause d'un échec de sauvegarde de la lettre. Seul le court
-  // instant de chargement initial justifie de désactiver le bouton.
+  // de cette page pour un compte Premium (voir generateCoverLetterAction),
+  // indépendamment du succès de la génération -- ne jamais bloquer l'accès
+  // au lien de candidature externe à cause d'un échec de sauvegarde de la
+  // lettre. Pour un compte gratuit (status "premium_required"), rien n'est
+  // enregistré : le bouton externe est masqué plus bas plutôt que de laisser
+  // candidater sans Premium en contournant juste la lettre.
   const applyDisabled = status === "loading" && !letter;
 
   return (
@@ -123,7 +125,8 @@ export function CoverLetterPanel({
               🔒
             </span>
             <p style={{ fontSize: 13, margin: 0 }}>
-              La lettre de motivation personnalisée est réservée aux membres Premium.
+              Candidater (et la lettre de motivation personnalisée qui va avec) est réservé aux
+              membres Premium.
             </p>
             <PremiumCtaLink userId={userId} source="cover_letter" className="btn btn-gradient mt-2">
               Passer Premium
@@ -205,39 +208,40 @@ export function CoverLetterPanel({
         )}
       </AnimatePresence>
 
-      {applyUrl ? (
-        <>
-          <button
-            type="button"
-            onClick={handleApplyOnSite}
-            disabled={applyDisabled}
-            className="btn btn-primary btn-block"
-          >
-            Postuler sur le site ↗
-          </button>
-          <p
-            style={{
-              fontSize: 11,
-              textAlign: "center",
-              margin: 0,
-              color: "color-mix(in srgb, var(--color-text) 55%, transparent)",
-            }}
-          >
-            {status === "premium_required" || status === "error" || !letter
-              ? "On ouvre la page de l'offre — pas de lettre à coller cette fois."
-              : copied
-                ? "Lettre copiée — colle-la sur le site qui vient de s'ouvrir pour finaliser."
-                : "On copie ta lettre et on ouvre la page de l'offre : colle-la pour finaliser."}
-          </p>
-        </>
-      ) : (
-        status !== "loading" && (
-          <p className="tag tag-accent-2" style={{ padding: "8px 14px", fontSize: 13, display: "block" }}>
-            Ce recruteur n&apos;a pas de lien externe — ta candidature est enregistrée, on lui a
-            noté ton intérêt.
-          </p>
-        )
-      )}
+      {status !== "premium_required" &&
+        (applyUrl ? (
+          <>
+            <button
+              type="button"
+              onClick={handleApplyOnSite}
+              disabled={applyDisabled}
+              className="btn btn-primary btn-block"
+            >
+              Postuler sur le site ↗
+            </button>
+            <p
+              style={{
+                fontSize: 11,
+                textAlign: "center",
+                margin: 0,
+                color: "color-mix(in srgb, var(--color-text) 55%, transparent)",
+              }}
+            >
+              {status === "error" || !letter
+                ? "On ouvre la page de l'offre — pas de lettre à coller cette fois."
+                : copied
+                  ? "Lettre copiée — colle-la sur le site qui vient de s'ouvrir pour finaliser."
+                  : "On copie ta lettre et on ouvre la page de l'offre : colle-la pour finaliser."}
+            </p>
+          </>
+        ) : (
+          status !== "loading" && (
+            <p className="tag tag-accent-2" style={{ padding: "8px 14px", fontSize: 13, display: "block" }}>
+              Ce recruteur n&apos;a pas de lien externe — ta candidature est enregistrée, on lui a
+              noté ton intérêt.
+            </p>
+          )
+        ))}
     </div>
   );
 }

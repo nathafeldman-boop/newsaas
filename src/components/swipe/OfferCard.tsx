@@ -138,7 +138,22 @@ function companyInitials(company: string): string {
 
 const mutedText = "color-mix(in srgb, var(--color-text) 60%, transparent)";
 
-export function InfoCell({ icon, label, value }: { icon: string; label: string; value: string }) {
+// `blurred` (défaut false, sans impact sur la démo publique SwipeDemo.tsx qui
+// ne le passe jamais) : teaser hard paywall (voir OfferCardContent) -- flou
+// CSS pur, la valeur réelle reste dans le DOM (pas remplacée par un
+// placeholder), exactement ce que "voilà tout ce qui est alléchant, le reste
+// flouté" décrit.
+export function InfoCell({
+  icon,
+  label,
+  value,
+  blurred = false,
+}: {
+  icon: string;
+  label: string;
+  value: string;
+  blurred?: boolean;
+}) {
   return (
     <div style={{ minWidth: 0, background: "var(--color-bg)", borderRadius: 14, padding: "10px 10px 9px" }}>
       <span aria-hidden style={{ fontSize: 15 }}>
@@ -165,6 +180,7 @@ export function InfoCell({ icon, label, value }: { icon: string; label: string; 
           whiteSpace: "nowrap",
           overflow: "hidden",
           textOverflow: "ellipsis",
+          ...(blurred ? { filter: "blur(5px)", userSelect: "none" as const } : {}),
         }}
       >
         {value}
@@ -173,16 +189,26 @@ export function InfoCell({ icon, label, value }: { icon: string; label: string; 
   );
 }
 
+// Teaser hard paywall (26/09, voir RETENTION_AUDIT.md) : un compte gratuit
+// voit les cartes ("ils peuvent voir les cartes avec toutes les offres qui
+// sont mises") mais seuls le titre et le salaire restent lisibles -- tout le
+// reste (entreprise, ville, tags, score, raisons, description) est flouté.
+// Spec confirmée par Nathan : "Titre + salaire visibles, le reste flouté".
+const teaserBlur = { filter: "blur(6px)", userSelect: "none" as const };
+
 export function OfferCardContent({
   offer,
   reasons,
   score,
+  isPremium = true,
 }: {
   offer: Offer;
   reasons?: string[];
   score?: number;
+  isPremium?: boolean;
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const locked = !isPremium;
   const typeLabel = offer.contract_type === "alternance" ? "Alternance" : "Stage";
   const tags = [offer.sector, offer.remote_policy].filter(
     (t): t is string => Boolean(t),
@@ -228,6 +254,30 @@ export function OfferCardContent({
             border: "1px solid rgba(242,248,249,.14)",
           }}
         />
+        {locked && (
+          <span
+            aria-hidden
+            style={{
+              position: "absolute",
+              left: 12,
+              top: 12,
+              zIndex: 1,
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              fontSize: 10.5,
+              fontWeight: 800,
+              letterSpacing: "0.04em",
+              textTransform: "uppercase",
+              color: "#fff",
+              background: "rgba(20,30,28,.32)",
+              borderRadius: 999,
+              padding: "4px 9px",
+            }}
+          >
+            🔒 Premium
+          </span>
+        )}
         <div
           aria-hidden
           style={{
@@ -243,11 +293,12 @@ export function OfferCardContent({
             fontWeight: 800,
             fontSize: 15,
             fontFamily: "var(--font-heading)",
+            ...(locked ? teaserBlur : {}),
           }}
         >
           {companyInitials(offer.company)}
         </div>
-        <div style={{ minWidth: 0, flex: 1, paddingTop: 2 }}>
+        <div style={{ minWidth: 0, flex: 1, paddingTop: locked ? 16 : 2 }}>
           <p
             style={{
               margin: 0,
@@ -257,6 +308,7 @@ export function OfferCardContent({
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
+              ...(locked ? teaserBlur : {}),
             }}
           >
             {offer.company}
@@ -269,16 +321,21 @@ export function OfferCardContent({
               display: "flex",
               alignItems: "center",
               gap: 4,
+              ...(locked ? teaserBlur : {}),
             }}
           >
             📍 {offer.location}
           </p>
         </div>
-        {typeof score === "number" && <MatchRing score={score} />}
+        {typeof score === "number" && (
+          <div style={locked ? teaserBlur : undefined}>
+            <MatchRing score={score} />
+          </div>
+        )}
       </div>
 
       <div className="flex flex-1 flex-col overflow-y-auto" style={{ padding: "16px 20px 18px" }}>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1.5" style={locked ? teaserBlur : undefined}>
           <span className="tag tag-accent">{typeLabel}</span>
           {freshnessLabel && <span className="tag tag-accent-2">✨ {freshnessLabel}</span>}
           {tags.map((tag) => (
@@ -303,6 +360,7 @@ export function OfferCardContent({
               fontSize: 12.5,
               fontWeight: 700,
               color: "var(--color-accent-700)",
+              ...(locked ? teaserBlur : {}),
             }}
           >
             ✨ {hypeMessage}
@@ -310,15 +368,15 @@ export function OfferCardContent({
         )}
 
         <div className="grid grid-cols-3 gap-2" style={{ marginTop: 14 }}>
-          <InfoCell icon="🗓" label="Début" value={offer.start_date ? formatStartDate(offer.start_date) : "Flexible"} />
-          <InfoCell icon="⏱" label="Durée" value={offer.duration ?? "Non précisé"} />
+          <InfoCell icon="🗓" label="Début" value={offer.start_date ? formatStartDate(offer.start_date) : "Flexible"} blurred={locked} />
+          <InfoCell icon="⏱" label="Durée" value={offer.duration ?? "Non précisé"} blurred={locked} />
           <InfoCell icon="💰" label="Salaire" value={offer.salary ?? "Non précisé"} />
         </div>
 
         {reasons && reasons.length > 0 && (
           <div style={{ marginTop: 16 }}>
-            <p style={{ margin: 0, fontSize: 12.5, fontWeight: 700 }}>✨ Pourquoi cette offre pour toi</p>
-            <div className="flex flex-col gap-1.5" style={{ marginTop: 8 }}>
+            <p style={{ margin: 0, fontSize: 12.5, fontWeight: 700, ...(locked ? teaserBlur : {}) }}>✨ Pourquoi cette offre pour toi</p>
+            <div className="flex flex-col gap-1.5" style={{ marginTop: 8, ...(locked ? teaserBlur : {}) }}>
               {reasons.map((reason) => (
                 <p
                   key={reason}
@@ -341,6 +399,7 @@ export function OfferCardContent({
               fontSize: 13,
               lineHeight: 1.55,
               color: "color-mix(in srgb, var(--color-text) 78%, transparent)",
+              ...(locked ? teaserBlur : {}),
               ...(detailsOpen
                 ? {}
                 : {
@@ -353,7 +412,20 @@ export function OfferCardContent({
           >
             {offer.description}
           </p>
-          {!detailsOpen && (
+          {locked ? (
+            <span
+              style={{
+                marginTop: 6,
+                display: "inline-block",
+                fontSize: 12.5,
+                fontWeight: 700,
+                color: "var(--color-accent-700)",
+              }}
+            >
+              🔒 Description complète avec Premium
+            </span>
+          ) : (
+            !detailsOpen && (
             <button
               type="button"
               onClick={() => setDetailsOpen(true)}
@@ -370,6 +442,7 @@ export function OfferCardContent({
             >
               Voir les détails →
             </button>
+            )
           )}
         </div>
       </div>

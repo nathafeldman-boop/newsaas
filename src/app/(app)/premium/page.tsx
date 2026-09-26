@@ -14,7 +14,7 @@ const ERROR_MESSAGES: Record<string, string> = {
 
 const BENEFITS = [
   {
-    label: "Swipes illimités",
+    label: "Liker & mettre en favori",
     icon: (
       <path
         d="M6 9a4.5 4.5 0 100 6 6 6 0 004-1.7 6 6 0 004 1.7 4.5 4.5 0 100-6 6 6 0 00-4 1.7A6 6 0 006 9z"
@@ -73,9 +73,9 @@ function BenefitIcon({ children }: { children: React.ReactNode }) {
 export default async function PremiumPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; limite?: string }>;
+  searchParams: Promise<{ error?: string; source?: string }>;
 }) {
-  const { error, limite } = await searchParams;
+  const { error, source } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -90,7 +90,11 @@ export default async function PremiumPage({
     .single();
 
   const premium = isPremium(profile);
-  const quotaReached = limite === "1";
+  // Hard paywall (26/09, voir RETENTION_AUDIT.md) : plus de quota de swipes,
+  // donc plus de "?limite=1" -- SwipeDeck redirige ici avec "?source=" dès
+  // qu'un compte gratuit tente une action réservée (like/candidature), pour
+  // afficher un rappel contextuel plutôt qu'un vague "swipes épuisés".
+  const blockedAction = source === "swipe_like" || source === "swipe_apply";
   // Un abonnement dont le renouvellement a échoué (carte à ré-authentifier,
   // refusée, expirée...) passe en "past_due" côté Stripe -- isPremium()
   // l'exclut à raison (accès effectivement coupé), mais avant ce correctif
@@ -151,7 +155,7 @@ export default async function PremiumPage({
               color: "color-mix(in srgb, var(--color-text) 62%, transparent)",
             }}
           >
-            Swipes illimités, candidatures illimitées et audit CV sont débloqués.
+            Like, favoris, candidatures illimitées et audit CV sont débloqués.
           </p>
           <Link
             href="/premium/annuler"
@@ -221,7 +225,7 @@ export default async function PremiumPage({
       ) : (
         <>
           <div className="flex-1">
-            {quotaReached && (
+            {blockedAction && (
               <div
                 className="flex items-start gap-2.5 animate-in"
                 style={{
@@ -252,7 +256,9 @@ export default async function PremiumPage({
                   </svg>
                 </div>
                 <div style={{ fontSize: 12.5, lineHeight: 1.45 }}>
-                  <div style={{ fontWeight: 600 }}>Tu as utilisé tes swipes gratuits cette semaine.</div>
+                  <div style={{ fontWeight: 600 }}>
+                    {source === "swipe_apply" ? "Candidater est réservé aux membres Premium." : "Liker (= mettre en favori) est réservé aux membres Premium."}
+                  </div>
                   <div style={{ color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginTop: 2 }}>
                     Premium te permet de continuer immédiatement.
                   </div>
@@ -487,20 +493,18 @@ export default async function PremiumPage({
               .
             </p>
 
-            {!quotaReached && (
-              <Link
-                href="/swipe"
-                style={{
-                  display: "block",
-                  textAlign: "center",
-                  fontSize: 11.5,
-                  marginTop: 10,
-                  color: "color-mix(in srgb, var(--color-text) 45%, transparent)",
-                }}
-              >
-                Continuer avec l&apos;offre gratuite
-              </Link>
-            )}
+            <Link
+              href="/swipe"
+              style={{
+                display: "block",
+                textAlign: "center",
+                fontSize: 11.5,
+                marginTop: 10,
+                color: "color-mix(in srgb, var(--color-text) 45%, transparent)",
+              }}
+            >
+              Continuer à parcourir gratuitement
+            </Link>
           </div>
         </>
       )}

@@ -4,10 +4,9 @@ import { SwipeDeck } from "@/components/swipe/SwipeDeck";
 import { SearchCompletedCard } from "@/components/swipe/SearchCompletedCard";
 import { computeMatchScore, computeMatchReasons, computeCvMatchBonus, isNearbyCity } from "@/lib/matching/score";
 import { buildLearnedAffinity, type SwipeHistoryEntry } from "@/lib/matching/learning";
-import { computeQuotaStatus, FREE_WEEKLY_SWIPE_QUOTA } from "@/lib/subscription/quota";
+import { isPremium } from "@/lib/subscription/isPremium";
 import { computeApplicationStreak } from "@/lib/engagement/applicationStreak";
 import { fetchActiveOffers } from "@/lib/offers/fetchActiveOffers";
-import type { Offer } from "@/types/database";
 
 export default async function SwipePage() {
   const supabase = await createClient();
@@ -89,14 +88,7 @@ export default async function SwipePage() {
     (s) => new Date(s.created_at) >= todayStart,
   ).length;
 
-  const { premium, quotaReached, browseSwipesThisWeek } = computeQuotaStatus(
-    profile,
-    swiped ?? [],
-    applications ?? [],
-  );
-  const remainingSwipes = premium
-    ? null
-    : Math.max(0, FREE_WEEKLY_SWIPE_QUOTA - browseSwipesThisWeek);
+  const premium = isPremium(profile);
 
   // Taille du deck réellement montré, une fois trié par pertinence. Remis à
   // 30 (revert du 8/09 -> 20, jamais concluant) : remise à l'identique de
@@ -110,31 +102,32 @@ export default async function SwipePage() {
   // dernières publiées.
   const CANDIDATE_POOL_SIZE = 600;
 
-  let offers: Offer[] = [];
+  // Hard paywall (pas d'essai gratuit, voir RETENTION_AUDIT.md) : la
+  // navigation dans le deck n'est plus plafonnée, y compris pour un compte
+  // gratuit -- seules les actions (like, candidature) sont réservées au
+  // Premium (voir SwipeDeck). Donc on récupère toujours les offres, qu'on
+  // soit Premium ou pas.
+  //
+  // Pas de filtre dur par looking_for ici : le sélecteur Stage/Alternance/
+  // Les deux dans SwipeDeck doit pouvoir montrer les deux types même si
+  // l'utilisateur n'a coché qu'un seul lors de l'onboarding. La préférence
+  // continue de peser sur le tri via computeMatchScore.
+  //
+  // Filtre dur par secteur : demandé explicitement à l'onboarding
+  // (obligatoire depuis peu), donc on ne montre que les offres dans le(s)
+  // secteur(s) choisi(s) plutôt que de le laisser peser juste sur le tri.
+  // Les comptes créés avant que ce champ soit obligatoire (sectors vide)
+  // ne sont pas filtrés, sinon leur deck se viderait d'un coup.
+  const hardSectors = profile && profile.sectors.length > 0 ? profile.sectors : [];
+  let offers = await fetchActiveOffers(supabase, { excludeIds, sectors: hardSectors, limit: CANDIDATE_POOL_SIZE });
 
-  if (!quotaReached) {
-    // Pas de filtre dur par looking_for ici : le sélecteur Stage/Alternance/
-    // Les deux dans SwipeDeck doit pouvoir montrer les deux types même si
-    // l'utilisateur n'a coché qu'un seul lors de l'onboarding. La préférence
-    // continue de peser sur le tri via computeMatchScore.
-    //
-    // Filtre dur par secteur : demandé explicitement à l'onboarding
-    // (obligatoire depuis peu), donc on ne montre que les offres dans le(s)
-    // secteur(s) choisi(s) plutôt que de le laisser peser juste sur le tri.
-    // Les comptes créés avant que ce champ soit obligatoire (sectors vide)
-    // ne sont pas filtrés, sinon leur deck se viderait d'un coup.
-    const hardSectors = profile && profile.sectors.length > 0 ? profile.sectors : [];
-    offers = await fetchActiveOffers(supabase, { excludeIds, sectors: hardSectors, limit: CANDIDATE_POOL_SIZE });
-
-    // Filet de sécurité : si le filtre secteur ne renvoie rien (secteur trop
-    // niche, catalogue encore mince dessus...), un compte gratuit qui n'a
-    // pourtant pas encore atteint son quota se retrouvait avec un deck vide
-    // -- donc directement sur l'écran "Plus d'offres" au style paywall,
-    // sans avoir pu swiper une seule fois. On retente sans le filtre secteur
-    // plutôt que de bloquer sur un filtre qu'on a nous-même ajouté.
-    if (offers.length === 0 && hardSectors.length > 0) {
-      offers = await fetchActiveOffers(supabase, { excludeIds, limit: CANDIDATE_POOL_SIZE });
-    }
+  // Filet de sécurité : si le filtre secteur ne renvoie rien (secteur trop
+  // niche, catalogue encore mince dessus...), on se retrouvait avec un deck
+  // vide -- donc directement sur l'écran "Plus d'offres" sans avoir pu
+  // parcourir une seule carte. On retente sans le filtre secteur plutôt que
+  // de bloquer sur un filtre qu'on a nous-même ajouté.
+  if (offers.length === 0 && hardSectors.length > 0) {
+    offers = await fetchActiveOffers(supabase, { excludeIds, limit: CANDIDATE_POOL_SIZE });
   }
 
   // Score de base (réponses onboarding) + bonus appris de l'historique réel
@@ -262,8 +255,6 @@ export default async function SwipePage() {
         userId={user.id}
         swipesToday={swipesToday}
         isPremium={premium}
-        quotaReached={quotaReached}
-        remainingSwipes={remainingSwipes}
         cityBanner={cityBanner}
         sectorLabel={sectorLabel}
         applicationStreak={applicationStreak}

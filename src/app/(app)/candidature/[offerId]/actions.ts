@@ -14,9 +14,12 @@ export type GenerateCoverLetterResult =
   | { status: "error"; message: string };
 
 // Déclenché à l'ouverture de /candidature/[offerId] (et sur "Régénérer").
-// Candidater reste illimité même sans Premium : la candidature (+ le swipe
-// qui l'accompagne, pour le quota) est toujours enregistrée -- seule la
-// lettre est réservée aux membres Premium.
+// Hard paywall (26/09, voir RETENTION_AUDIT.md) : candidater est désormais
+// réservé aux Premium, comme le reste des actions -- ni l'application ni le
+// swipe "like" qui l'accompagne ne sont enregistrés pour un compte gratuit.
+// Miroir du trigger SQL enforce_premium_application (voir
+// supabase/migrations) qui referait le même refus si ce check applicatif
+// était contourné.
 //
 // Claude (Anthropic) en priorité quand configuré (voir .env.example), avec le
 // profil onboarding complet en contexte (mêmes champs que l'algo de matching
@@ -61,6 +64,10 @@ export async function generateCoverLetterAction(
     return { status: "error", message: "Offre introuvable." };
   }
 
+  if (!isPremium(profile)) {
+    return { status: "premium_required" };
+  }
+
   const { data: existing } = await supabase
     .from("applications")
     .select("id")
@@ -93,10 +100,6 @@ export async function generateCoverLetterAction(
     );
   if (swipeError) {
     console.error("generateCoverLetterAction: swipes upsert failed", swipeError, { userId: user.id, offerId });
-  }
-
-  if (!isPremium(profile)) {
-    return { status: "premium_required" };
   }
 
   let letter: string | null = null;
