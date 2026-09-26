@@ -13,7 +13,7 @@ export async function notifyPremiumFixed(email: string, fullName: string | null)
     to: email,
     subject: "On a corrigé le souci — ton Premium est actif 🎉",
     html: `<p>Salut${fullName ? ` ${fullName}` : ""},</p>
-<p>On a eu un souci technique qui a empêché ton abonnement Premium de s'activer juste après ton paiement. C'est corrigé : ton compte est maintenant Premium (swipes illimités, audit CV illimité).</p>
+<p>On a eu un souci technique qui a empêché ton abonnement Premium de s'activer juste après ton paiement. C'est corrigé : ton compte est maintenant Premium (like, candidatures illimitées, audit CV illimité).</p>
 <p>On est vraiment désolés pour la gêne occasionnée. Si quoi que ce soit ne fonctionne pas comme prévu, réponds directement à cet email, on s'en occupe immédiatement.</p>
 <p>Merci pour ta confiance,<br />L'équipe Stageio</p>`,
   });

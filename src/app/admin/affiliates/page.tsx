@@ -68,7 +68,7 @@ export default async function AdminAffiliatesPage() {
     <div>
       <h1 style={{ fontSize: 26, margin: "0 0 6px" }}>Programme d&apos;affiliation</h1>
       <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "0 0 20px" }}>
-        50% de commission sur les formules hebdo (3,50€) et mensuelle (7,99€), jamais la quotidienne.
+        50% de commission sur les formules mensuelle (7,99€) et à vie (70€).
       </p>
 
       <h2 style={{ fontSize: 16, margin: "0 0 10px" }}>Candidatures en attente ({pending.length})</h2>

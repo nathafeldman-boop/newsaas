@@ -7,6 +7,7 @@ const SUBSCRIPTION_LABEL: Record<string, string> = {
   active: "Payant (actif)",
   trialing: "Payant (essai)",
   comp: "Offert (code d'accès)",
+  lifetime: "Payant (à vie)",
   past_due: "Impayé",
   canceled: "Annulé",
 };

@@ -157,25 +157,34 @@ export default async function PremiumPage({
           >
             Like, favoris, candidatures illimitées et audit CV sont débloqués.
           </p>
-          <Link
-            href="/premium/annuler"
-            className="btn btn-block"
-            style={{
-              height: 50,
-              borderRadius: 999,
-              border: "1.5px solid var(--color-accent)",
-              background: "transparent",
-              color: "var(--color-accent-700)",
-              fontSize: 15,
-              fontWeight: 700,
-              marginTop: 28,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            Gérer mon abonnement
-          </Link>
+          {profile?.subscription_status === "lifetime" ? (
+            <p
+              className="tag tag-accent"
+              style={{ marginTop: 28, padding: "10px 16px", fontSize: 13.5 }}
+            >
+              🎉 Accès à vie — paiement unique, rien à gérer ni à renouveler.
+            </p>
+          ) : (
+            <Link
+              href="/premium/annuler"
+              className="btn btn-block"
+              style={{
+                height: 50,
+                borderRadius: 999,
+                border: "1.5px solid var(--color-accent)",
+                background: "transparent",
+                color: "var(--color-accent-700)",
+                fontSize: 15,
+                fontWeight: 700,
+                marginTop: 28,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              Gérer mon abonnement
+            </Link>
+          )}
         </div>
       ) : paymentIssue ? (
         <div className="flex flex-1 flex-col items-center justify-center px-4 py-10 text-center animate-in">
@@ -383,7 +392,7 @@ export default async function PremiumPage({
               </div>
             </div>
 
-            {process.env.STRIPE_PRICE_ID_WEEKLY && (
+            {process.env.STRIPE_PRICE_ID_LIFETIME && (
               <div
                 className="animate-in"
                 style={{
@@ -395,19 +404,19 @@ export default async function PremiumPage({
                 }}
               >
                 <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: "0.06em", color: "color-mix(in srgb, var(--color-text) 55%, transparent)", textTransform: "uppercase" }}>
-                  Formule hebdomadaire
+                  🎉 Accès à vie
                 </div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 6 }}>
-                  <span style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.02em" }}>3,50 €</span>
+                  <span style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.02em" }}>70 €</span>
                   <span style={{ fontSize: 13.5, fontWeight: 500, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                    / semaine
+                    paiement unique
                   </span>
                 </div>
                 <div style={{ fontSize: 12, marginTop: 4, marginBottom: 14, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                  Idéal pour tester Premium sur une candidature urgente.
+                  Une fois, jamais de renouvellement -- pratique si tu comptes trouver ton alternance rapidement.
                 </div>
                 <form action={createCheckoutSessionAction}>
-                  <input type="hidden" name="plan" value="weekly" />
+                  <input type="hidden" name="plan" value="lifetime" />
                   <button
                     type="submit"
                     className="btn btn-block"
@@ -421,7 +430,7 @@ export default async function PremiumPage({
                       fontWeight: 700,
                     }}
                   >
-                    Choisir l&apos;hebdomadaire
+                    Choisir l&apos;accès à vie
                   </button>
                 </form>
               </div>
@@ -486,7 +495,7 @@ export default async function PremiumPage({
                 color: "color-mix(in srgb, var(--color-text) 50%, transparent)",
               }}
             >
-              En t&apos;abonnant, tu acceptes les{" "}
+              En continuant, tu acceptes les{" "}
               <Link href="/legal/cgv" style={{ color: "var(--color-accent-700)", textDecoration: "underline" }}>
                 CGV
               </Link>

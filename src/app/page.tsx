@@ -75,7 +75,7 @@ const FAQ = [
   {
     question: "Est-ce que Stageio est gratuit ?",
     answer:
-      "L'inscription et la création de profil sont gratuites. Le compte gratuit a un quota de swipes par semaine, mais candidater à une offre déjà vue reste toujours gratuit et illimité. L'abonnement Premium (7,99€/mois, sans engagement) débloque les swipes illimités, la lettre de motivation générée par IA et l'audit de CV.",
+      "L'inscription et la création de profil sont gratuites, et tu peux parcourir tout le catalogue d'offres sans limite. Liker une offre, candidater et générer une lettre de motivation par IA sont réservés aux membres Premium (7,99€/mois sans engagement, ou 70€ en paiement unique pour un accès à vie).",
   },
   {
     question: "Stageio propose des stages ou des alternances ?",
@@ -229,9 +229,9 @@ export default async function LandingPage() {
 
   const testimonials = realTestimonials.length >= 3 ? realTestimonials : FALLBACK_TESTIMONIALS;
   const webApplicationJsonLd = buildWebApplicationJsonLd(reviewStats);
-  // Même condition que /premium : tant que le Price hebdomadaire n'est pas
+  // Même condition que /premium : tant que le Price à vie n'est pas
   // configuré côté Stripe, cette formule ne s'affiche nulle part.
-  const weeklyAvailable = !!process.env.STRIPE_PRICE_ID_WEEKLY?.trim();
+  const lifetimeAvailable = !!process.env.STRIPE_PRICE_ID_LIFETIME?.trim();
 
   return (
     <div style={{ minHeight: "100vh", overflowX: "hidden", position: "relative" }}>
@@ -1343,7 +1343,7 @@ export default async function LandingPage() {
           </Reveal>
           <div
             className="mt-8 grid gap-6"
-            style={{ gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,300px),1fr))", maxWidth: weeklyAvailable ? 980 : 780 }}
+            style={{ gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,300px),1fr))", maxWidth: lifetimeAvailable ? 980 : 780 }}
           >
             <Reveal delay={0.05}>
               <div
@@ -1358,7 +1358,7 @@ export default async function LandingPage() {
                 <p style={{ margin: 0, fontSize: 16, fontWeight: 800 }}>Gratuit</p>
                 <p style={{ margin: "10px 0 0", fontSize: 42, fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1 }}>0 €</p>
                 <div className="flex flex-col gap-2.5" style={{ margin: "20px 0 24px", flex: 1 }}>
-                  {["Quota de swipes chaque semaine", "Candidatures illimitées aux offres vues", "Favoris et suivi de candidatures"].map((line) => (
+                  {["Parcours illimité de toutes les offres", "Aperçu de chaque offre (titre + salaire)", "Passe Premium pour liker, candidater et tout débloquer"].map((line) => (
                     <p key={line} className="flex items-center gap-2.5" style={{ margin: 0, fontSize: 14, color: "color-mix(in srgb, var(--color-text) 82%, transparent)" }}>
                       <span aria-hidden style={{ color: "var(--color-accent)" }}>✓</span>
                       {line}
@@ -1399,7 +1399,7 @@ export default async function LandingPage() {
                   7,99 €<span style={{ fontSize: 14, fontWeight: 600, color: "var(--color-neutral-400)" }}> /mois</span>
                 </p>
                 <div className="flex flex-col gap-2.5" style={{ position: "relative", margin: "20px 0 24px", flex: 1 }}>
-                  {["Swipes illimités", "Lettres de motivation IA", "Audit de CV et matching sur ton CV", "Simulateur d'entretien"].map((line) => (
+                  {["Like & candidatures illimités", "Lettres de motivation IA", "Audit de CV et matching sur ton CV", "Simulateur d'entretien"].map((line) => (
                     <p key={line} className="flex items-center gap-2.5" style={{ margin: 0, fontSize: 14, color: "var(--color-neutral-200)" }}>
                       <span aria-hidden style={{ color: "var(--color-accent-300)" }}>✓</span>
                       {line}
@@ -1415,7 +1415,7 @@ export default async function LandingPage() {
               </div>
             </Reveal>
 
-            {weeklyAvailable && (
+            {lifetimeAvailable && (
               <Reveal delay={0.15}>
                 <div
                   className="flex h-full flex-col"
@@ -1427,16 +1427,16 @@ export default async function LandingPage() {
                   }}
                 >
                   <p style={{ margin: 0, fontSize: 13, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", color: mutedText }}>
-                    Formule hebdomadaire
+                    🎉 Accès à vie
                   </p>
                   <p style={{ margin: "10px 0 0", fontSize: 32, fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1 }}>
-                    3,50 €<span style={{ fontSize: 13, fontWeight: 600, color: mutedText }}> /semaine</span>
+                    70 €<span style={{ fontSize: 13, fontWeight: 600, color: mutedText }}> paiement unique</span>
                   </p>
                   <p style={{ margin: "10px 0 24px", fontSize: 13.5, color: mutedText, flex: 1 }}>
-                    Idéal pour tester Premium sur une candidature urgente.
+                    Une fois, jamais de renouvellement.
                   </p>
                   <Link href="/inscription" className="btn btn-secondary" style={{ textAlign: "center" }}>
-                    Choisir l&apos;hebdomadaire
+                    Choisir l&apos;accès à vie
                   </Link>
                 </div>
               </Reveal>

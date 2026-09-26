@@ -5,12 +5,12 @@ import {
   reconcileAllInvoicesAction,
   reconcileAllSubscriptionsAction,
   sendIncompletePaymentReminderAction,
-  sendWeeklyOfferAnnouncementAction,
 } from "@/app/admin/users/actions";
 
 const STATUS_LABEL: Record<string, string> = {
-  active: "Actif",
+  active: "Actif (mensuel)",
   trialing: "Essai",
+  lifetime: "À vie",
   past_due: "Renouvellement en échec",
   incomplete: "Paiement jamais finalisé",
 };
@@ -37,8 +37,6 @@ export default async function AdminPremiumPage({
   searchParams,
 }: {
   searchParams: Promise<{
-    weekly_sent?: string;
-    weekly_total?: string;
     reconcile_checked?: string;
     reconcile_recovered?: string;
     reconcile_failed?: string;
@@ -50,8 +48,6 @@ export default async function AdminPremiumPage({
   }>;
 }) {
   const {
-    weekly_sent: weeklySent,
-    weekly_total: weeklyTotal,
     reconcile_checked: reconcileChecked,
     reconcile_recovered: reconcileRecovered,
     reconcile_failed: reconcileFailed,
@@ -68,7 +64,7 @@ export default async function AdminPremiumPage({
     .select(
       "id, full_name, email, subscription_status, premium_activated_at, total_paid_cents, created_at, last_active_at",
     )
-    .in("subscription_status", ["active", "trialing"])
+    .in("subscription_status", ["active", "trialing", "lifetime"])
     .order("premium_activated_at", { ascending: false, nullsFirst: false });
 
   const rows = profiles ?? [];
@@ -86,22 +82,6 @@ export default async function AdminPremiumPage({
     .order("current_period_end", { ascending: false, nullsFirst: false });
 
   const paymentIssueRows = paymentIssueProfiles ?? [];
-
-  // Borne haute : mêmes filtres de premier niveau que l'action d'envoi,
-  // sans le raffinement "≥ FREE_WEEKLY_SWIPE_QUOTA swipes" (qui nécessite
-  // une requête par profil) -- affichée comme "jusqu'à N" plutôt qu'un
-  // compte exact pour ne pas alourdir le chargement de la page. Le gros
-  // des profils gratuits ont subscription_status = null (jamais souscrit) :
-  // un simple ".not(...in...)" les exclurait à tort, puisque NULL NOT IN
-  // (...) ne vaut jamais "vrai" en SQL -- d'où le ".or" qui traite le null
-  // explicitement comme non-Premium.
-  const { count: weeklyOfferCandidatesUpperBound } = await admin
-    .from("profiles")
-    .select("id", { count: "exact", head: true })
-    .eq("onboarding_completed", true)
-    .is("weekly_offer_announced_at", null)
-    .not("email", "is", null)
-    .or("subscription_status.is.null,subscription_status.not.in.(active,trialing,comp)");
 
   const sessionCounts = await Promise.all(
     rows.map((p) =>
@@ -122,24 +102,8 @@ export default async function AdminPremiumPage({
         </Link>
       </div>
       <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "0 0 20px" }}>
-        {rows.length} abonné(s) payant(s) (statut actif ou essai, hors codes offerts).
+        {rows.length} abonné(s) payant(s) (mensuel, essai ou à vie, hors codes offerts).
       </p>
-
-      {weeklySent !== undefined && (
-        <div
-          className="card"
-          style={{
-            padding: "var(--space-4)",
-            marginBottom: 12,
-            background: "var(--color-accent-100)",
-            color: "var(--color-accent-700)",
-          }}
-        >
-          <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>
-            Envoyé à {weeklySent}/{weeklyTotal} candidat(s).
-          </p>
-        </div>
-      )}
 
       {paymentIssueRows.length > 0 && (
         <div className="card" style={{ padding: "var(--space-4)", marginBottom: 20, border: "1.5px solid var(--color-accent-2)" }}>
@@ -274,23 +238,6 @@ export default async function AdminPremiumPage({
       </form>
 
       <form
-        action={sendWeeklyOfferAnnouncementAction}
-        className="card"
-        style={{ padding: "var(--space-4)", marginBottom: 12, gap: 10 }}
-      >
-        <p style={{ fontWeight: 600, margin: 0, fontSize: 14 }}>Annoncer l&apos;offre hebdomadaire</p>
-        <p style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>
-          Envoie un email annonçant Premium à 3,50€/semaine à tous les inscrits non-Premium ayant déjà
-          épuisé leurs swipes gratuits (jusqu&apos;à {weeklyOfferCandidatesUpperBound ?? 0} candidat(s), le
-          nombre réel de destinataires peut être plus bas). Sans effet sur un compte déjà notifié — si
-          l&apos;envoi s&apos;interrompt (gros volume), relancer reprend juste là où ça s&apos;est arrêté.
-        </p>
-        <button type="submit" className="btn btn-secondary" style={{ alignSelf: "flex-start" }}>
-          Envoyer l&apos;annonce à tous
-        </button>
-      </form>
-
-      <form
         action={sendIncompletePaymentReminderAction}
         className="card"
         style={{ padding: "var(--space-4)", marginBottom: 20, gap: 10 }}
@@ -376,8 +323,13 @@ export default async function AdminPremiumPage({
               {ltvMissing && (
                 <form action={fixMissingLtvAction} className="mt-3">
                   <input type="hidden" name="userId" value={p.id} />
+                  <input
+                    type="hidden"
+                    name="amountCents"
+                    value={p.subscription_status === "lifetime" ? 7000 : 799}
+                  />
                   <button type="submit" className="btn btn-secondary" style={{ padding: "6px 12px", fontSize: 12 }}>
-                    LTV à 0€ malgré paiement → Corriger (7,99€)
+                    LTV à 0€ malgré paiement → Corriger ({p.subscription_status === "lifetime" ? "70" : "7,99"}€)
                   </button>
                 </form>
               )}

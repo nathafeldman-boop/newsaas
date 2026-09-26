@@ -452,3 +452,71 @@ via Playwright contre une page de preview temporaire avec des données
 factices, supprimée avant commit). Un test manuel en conditions réelles
 (vrai compte, vrai paiement test Stripe) reste recommandé avant de
 considérer ces correctifs à 100% validés en production.
+
+## Incident paiements + refonte pricing/paywall (2026-09-26)
+
+Suite à un pic de renouvellements en échec signalé par Nathan (~10-15
+paiements, un seul réussi à 3,50€, le reste en échec ou bloqué) :
+investigation détaillée dans l'historique de commits du même jour
+(`syncSubscription`/webhook). Résumé : `past_due` (renouvellement en échec
+sur un abonnement déjà actif) ne déclenchait STRICTEMENT AUCUNE
+notification ni côté client ni côté admin -- seul `incomplete` (jamais
+activé) était couvert. Corrigé sur 3 fronts (webhook, email, UI /premium +
+panneau admin). Piste "prix modifiés manuellement" explorée puis
+abandonnée (une souscription créée 2 jours avant l'incident a échoué sur
+sa toute première échéance, parfaitement normale -- disprouve la théorie).
+Stripe Link identifié comme le seul point commun net (3/3 échecs
+observés) -- checkout restreint à `payment_method_types: ["card"]`.
+Conclusion de Nathan, retenue comme hypothèse dominante la plus probable :
+la clientèle (étudiants) n'a simplement pas les fonds au moment du
+prélèvement -- pas un bug technique.
+
+Décision produit qui en découle (avec l'associé de Nathan), en 3 volets :
+
+1. **Migration IA Gemini/Mistral → Anthropic Claude** : les deux
+   fournisseurs étaient en panne. Toutes les fonctionnalités IA (audit CV,
+   matching CV↔offre, lettres de motivation, ingestion/découverte
+   d'offres, classification des réponses email) passent par Claude, avec
+   les mêmes replis statiques qu'avant (doctrine hybride inchangée --
+   panne fournisseur ≠ fonctionnalité Premium cassée).
+2. **Hard paywall, aucun essai gratuit** : le quota hebdomadaire de swipes
+   gratuits (3/semaine) est retiré. Un compte gratuit parcourt tout le
+   deck sans limite, mais ne peut plus liker (= mettre en favori) ni
+   candidater -- ces deux actions redirigent vers `/premium`. Chaque carte
+   passe en mode teaser pour un compte gratuit : titre + salaire lisibles,
+   le reste (entreprise, ville, tags, score, raisons, description) flouté
+   en CSS. Appliqué à la fois côté client (SwipeDeck, redirections
+   immédiates) et côté base (triggers SQL `enforce_swipe_quota` /
+   `enforce_premium_application`) pour ne pas dépendre uniquement d'un
+   contournement du check applicatif.
+3. **Refonte de la tarification Stripe** : la formule hebdomadaire
+   (3,50€/semaine, celle-là même concentrant l'essentiel des échecs de
+   paiement observés) est retirée. Une formule à vie (70€, paiement
+   unique, `mode: "payment"` + `invoice_creation` côté Stripe pour
+   réutiliser telle quelle toute la plomberie LTV/commission d'affiliation
+   pensée pour des factures d'abonnement) est ajoutée aux côtés du mensuel
+   existant (7,99€, inchangé) -- rationnel explicite de Nathan : cash-flow
+   immédiat, aucun risque de paiement récurrent en échec sur ce palier, et
+   pas d'attente de plusieurs mois de renouvellement pour un public qui
+   churn dès qu'il trouve son alternance/stage.
+
+Suppression associée : la campagne ponctuelle "annoncer l'offre
+hebdomadaire" (bouton admin + action + email) faisait la publicité d'un
+plan qui n'existe plus une fois retiré -- gardée, elle serait devenue un
+vrai bug (email actif pointant vers une offre introuvable), pas juste du
+code mort inoffensif.
+
+**Toujours en attente d'action de Nathan** :
+- Ajouter une vraie `ANTHROPIC_API_KEY` en production (Vercel) -- ce
+  sandbox ne peut pas le faire.
+- Créer le nouveau Price Stripe à 70€ (paiement unique, pas récurrent) et
+  renseigner `STRIPE_PRICE_ID_LIFETIME` en production.
+- Appliquer manuellement les deux nouvelles migrations SQL
+  (`20260926000000_hard_paywall_no_free_actions.sql` et
+  `20260926000001_lifetime_plan.sql`) via le SQL Editor Supabase -- ce
+  sandbox n'a pas d'accès réseau au projet live (même limite que toutes
+  les migrations précédentes de cet historique).
+- Un test manuel en conditions réelles (vrai compte gratuit vs Premium vs
+  achat à vie test Stripe) reste recommandé avant de considérer ce paywall
+  à 100% validé en production, pour la même raison que d'habitude :
+  aucun accès réseau au projet Supabase/Stripe réel depuis ce sandbox.

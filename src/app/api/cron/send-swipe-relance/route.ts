@@ -59,10 +59,10 @@ export async function GET(request: NextRequest) {
   for (const profile of candidates) {
     if (!profile.email) continue;
 
-    // Marque le compte "pris" avant d'envoyer (UPDATE conditionnel, comme
-    // sendWeeklyOfferAnnouncementAction) : une exécution qui chevauche la
-    // précédente (retry manuel pendant qu'un run cron traîne encore) ne
-    // peut jamais doublonner l'envoi sur le même compte.
+    // Marque le compte "pris" avant d'envoyer (UPDATE conditionnel) : une
+    // exécution qui chevauche la précédente (retry manuel pendant qu'un run
+    // cron traîne encore) ne peut jamais doublonner l'envoi sur le même
+    // compte.
     const { data: claimed, error: claimError } = await admin
       .from("profiles")
       .update({ swipe_relance_sent_at: new Date().toISOString() })

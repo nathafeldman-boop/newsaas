@@ -1,19 +1,22 @@
 import type Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-// 50% sur hebdo et mensuel, jamais sur la quotidienne (marge trop fine
-// après commission pour être rentable sur ce palier). Éligibilité décidée
-// en comparant directement l'ID de Price Stripe de la facture aux mêmes
-// variables d'env qui pilotent déjà le checkout (STRIPE_PRICE_ID_WEEKLY /
-// STRIPE_PRICE_ID) -- plus fiable qu'un "recurring.interval", qui n'est de
-// toute façon pas présent sur la ligne de facture sans expansion Stripe
-// explicite côté webhook.
+// 50% sur mensuel et à vie (formule hebdomadaire retirée le 26/09, voir
+// premium/actions.ts). Éligibilité décidée en comparant directement l'ID de
+// Price Stripe de la facture aux mêmes variables d'env qui pilotent déjà le
+// checkout (STRIPE_PRICE_ID / STRIPE_PRICE_ID_LIFETIME) -- plus fiable qu'un
+// "recurring.interval", qui n'est de toute façon pas présent sur la ligne de
+// facture sans expansion Stripe explicite côté webhook (et absent par
+// nature sur un paiement unique). L'achat à vie génère une vraie Facture
+// Stripe via invoice_creation (voir premium/actions.ts) : il arrive donc ici
+// exactement comme n'importe quel renouvellement mensuel.
 const COMMISSION_RATE = 0.5;
 
-function planLabelForPriceId(priceId: string | null): "week" | "month" | null {
+function planLabelForPriceId(priceId: string | null): "week" | "month" | "lifetime" | null {
   if (!priceId) return null;
   if (priceId === process.env.STRIPE_PRICE_ID_WEEKLY?.trim()) return "week";
   if (priceId === process.env.STRIPE_PRICE_ID?.trim()) return "month";
+  if (priceId === process.env.STRIPE_PRICE_ID_LIFETIME?.trim()) return "lifetime";
   return null;
 }
 

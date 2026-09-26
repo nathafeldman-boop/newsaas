@@ -19,6 +19,7 @@ const STATUS_LABEL: Record<string, string> = {
   active: "Payant",
   trialing: "Essai",
   comp: "Offert",
+  lifetime: "À vie",
 };
 
 function fmtDate(date: string): string {
@@ -132,7 +133,11 @@ export default async function AdminDashboardPage({
   // ARR = somme des abonnements actifs/essai annualisés selon leur vraie
   // cadence Stripe (subscription_price_cents/interval, posés par le webhook
   // -- voir syncSubscription.ts). "comp" (codes offerts) exclu : aucun
-  // revenu réel derrière.
+  // revenu réel derrière. "lifetime" (paiement unique, voir premium/
+  // actions.ts) exclu aussi, pour la raison inverse : revenu bien réel, mais
+  // par définition non récurrent -- déjà compté une fois dans Revenu cumulé
+  // (total_paid_cents), l'inclure ici en l'annualisant surestimerait l'ARR
+  // chaque année suivante pour un paiement qui n'a eu lieu qu'une fois.
   const ANNUALIZATION_BY_INTERVAL: Record<string, number> = { day: 365, week: 52, month: 12, year: 1 };
   const DEFAULT_MONTHLY_PRICE_CENTS = 799;
 
@@ -164,7 +169,7 @@ export default async function AdminDashboardPage({
     admin.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", todayStart.toISOString()),
     admin.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", weekAgo.toISOString()),
     admin.from("profiles").select("id", { count: "exact", head: true }).gte("last_active_at", onlineSince.toISOString()),
-    admin.from("profiles").select("id", { count: "exact", head: true }).in("subscription_status", ["active", "trialing"]),
+    admin.from("profiles").select("id", { count: "exact", head: true }).in("subscription_status", ["active", "trialing", "lifetime"]),
     admin.from("profiles").select("id", { count: "exact", head: true }).eq("subscription_status", "comp"),
     // Agrégation côté base (voir migration 20260914000000) plutôt qu'un
     // SELECT total_paid_cents sur toute la table : "profiles" a fini par
@@ -245,7 +250,8 @@ export default async function AdminDashboardPage({
       isPremium:
         p.subscription_status === "active" ||
         p.subscription_status === "trialing" ||
-        p.subscription_status === "comp",
+        p.subscription_status === "comp" ||
+        p.subscription_status === "lifetime",
     })),
     period,
   );

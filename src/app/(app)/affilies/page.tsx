@@ -44,8 +44,8 @@ export default async function AffiliesPage({
       <div className="mx-auto w-full max-w-[520px]">
         <h1 style={{ fontSize: 28, margin: 0 }}>Programme d&apos;affiliation</h1>
         <p style={{ fontSize: 14, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "8px 0 0", lineHeight: 1.5 }}>
-          Touche <strong>50% de commission</strong> sur chaque abonnement hebdomadaire (3,50€) ou
-          mensuel (7,99€) que tu apportes à Stageio, sur toute la durée de l&apos;abonnement.
+          Touche <strong>50% de commission</strong> sur chaque abonnement mensuel (7,99€, à
+          chaque renouvellement) ou accès à vie (70€, en une fois) que tu apportes à Stageio.
         </p>
 
         <div className="card elev-sm mt-6" style={{ padding: "var(--space-5)" }}>
@@ -53,7 +53,7 @@ export default async function AffiliesPage({
           <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, lineHeight: 1.7 }}>
             <li>Candidate ci-dessous (validation manuelle par l&apos;équipe Stageio).</li>
             <li>Une fois approuvé·e, tu reçois ton lien d&apos;affiliation unique.</li>
-            <li>Chaque personne qui s&apos;abonne (hebdo ou mensuel) via ton lien te rapporte 50%.</li>
+            <li>Chaque personne qui passe Premium (mensuel ou à vie) via ton lien te rapporte 50%.</li>
             <li>Suis tes gains en temps réel depuis ce tableau de bord.</li>
           </ul>
         </div>
@@ -141,7 +141,7 @@ export default async function AffiliesPage({
     <div className="mx-auto w-full max-w-[560px]">
       <h1 style={{ fontSize: 28, margin: 0 }}>Ton espace affilié</h1>
       <p style={{ fontSize: 14, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "6px 0 0" }}>
-        50% de commission sur chaque abonnement hebdo ou mensuel apporté via ton lien.
+        50% de commission sur chaque abonnement mensuel ou accès à vie apporté via ton lien.
       </p>
 
       <div className="mt-6">
@@ -203,7 +203,7 @@ export default async function AffiliesPage({
                   <p style={{ fontSize: 13, margin: 0 }}>
                     {(c.commission_cents / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €{" "}
                     <span style={{ fontSize: 11, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                      ({c.plan_interval === "week" ? "hebdo" : "mensuel"})
+                      ({c.plan_interval === "week" ? "hebdo" : c.plan_interval === "lifetime" ? "à vie" : "mensuel"})
                     </span>
                   </p>
                   <p style={{ fontSize: 11, margin: "2px 0 0", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>

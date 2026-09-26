@@ -39,6 +39,11 @@ async function reconcileFromSession(sessionId: string, userId: string) {
 
     const customerId =
       typeof session.customer === "string" ? session.customer : session.customer?.id;
+    // mode "payment" = achat à vie (voir premium/actions.ts) : pas de
+    // subscription Stripe à synchroniser plus bas, on pose directement le
+    // statut ici -- même distinction que dans le webhook
+    // (checkout.session.completed).
+    const isLifetimePurchase = session.mode === "payment";
     if (customerId) {
       const admin = createAdminClient();
       const { data: profile } = await admin
@@ -56,6 +61,7 @@ async function reconcileFromSession(sessionId: string, userId: string) {
           ...(profile && !profile.premium_activated_at
             ? { premium_activated_at: new Date().toISOString() }
             : {}),
+          ...(isLifetimePurchase ? { subscription_status: "lifetime" } : {}),
         })
         .eq("id", userId);
       if (error) {
@@ -130,7 +136,7 @@ export default async function PremiumSuccessPage({
       <p className="text-4xl">🎉</p>
       <h1 style={{ fontSize: 24, margin: "16px 0 0" }}>Bienvenue dans Premium</h1>
       <p style={{ fontSize: 14, margin: "10px 0 24px" }}>
-        Ton abonnement est actif. Swipes illimités et audit CV sont débloqués.
+        Ton accès Premium est actif. Like, candidatures illimitées et audit CV sont débloqués.
       </p>
       <Link href="/swipe" className="btn btn-primary">
         Retourner au swipe

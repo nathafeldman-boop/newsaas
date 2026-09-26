@@ -86,12 +86,23 @@ export async function POST(request: NextRequest) {
         typeof session.customer === "string" ? session.customer : session.customer?.id;
       const subscriptionId =
         typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
+      // mode "payment" = achat à vie (70€, paiement unique -- voir
+      // premium/actions.ts) : pas de subscriptionId, jamais de subscription
+      // Stripe derrière. On le distingue ici pour logger le bon event
+      // analytics et poser directement subscription_status="lifetime" plus
+      // bas, plutôt que de laisser cette session tomber dans le vide comme
+      // une "subscription_started" sans abonnement.
+      const isLifetimePurchase = session.mode === "payment";
 
       if (userId && customerId) {
         const admin = createAdminClient();
         const { error } = await admin
           .from("profiles")
-          .update({ stripe_customer_id: customerId, premium_activated_at: new Date().toISOString() })
+          .update({
+            stripe_customer_id: customerId,
+            premium_activated_at: new Date().toISOString(),
+            ...(isLifetimePurchase ? { subscription_status: "lifetime" } : {}),
+          })
           .eq("id", userId);
         if (error) {
           console.error("Stripe webhook: checkout.session.completed profile update failed", error, {
@@ -105,20 +116,21 @@ export async function POST(request: NextRequest) {
           // (compteur analytics gonflé, jamais un souci de facturation/
           // accès). Best-effort, comme le reste de ce webhook : une
           // erreur ici ne doit jamais faire échouer l'activation réelle.
+          const eventType = isLifetimePurchase ? "lifetime_purchased" : "subscription_started";
           const { data: alreadyLogged } = await admin
             .from("user_events")
             .select("id")
             .eq("user_id", userId)
-            .eq("event_type", "subscription_started")
+            .eq("event_type", eventType)
             .contains("metadata", { customerId })
             .limit(1)
             .maybeSingle();
           if (!alreadyLogged) {
             const { error: eventError } = await admin
               .from("user_events")
-              .insert({ user_id: userId, event_type: "subscription_started", metadata: { customerId } });
+              .insert({ user_id: userId, event_type: eventType, metadata: { customerId } });
             if (eventError) {
-              console.error("Stripe webhook: subscription_started event insert failed", eventError, { userId });
+              console.error("Stripe webhook: event insert failed", eventError, { userId, eventType });
             }
           }
         }

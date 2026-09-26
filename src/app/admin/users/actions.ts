@@ -6,8 +6,6 @@ import { assertAdminSession } from "@/lib/admin/accessCode";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notifyPremiumFixed } from "@/lib/resend/notifyPremiumFixed";
 import { notifyIncompletePaymentOnce } from "@/lib/stripe/notifyIncompletePayment";
-import { notifyWeeklyOffer } from "@/lib/resend/notifyWeeklyOffer";
-import { isPremium } from "@/lib/subscription/isPremium";
 import { getStripeClient } from "@/lib/stripe/client";
 import { creditInvoicePayment } from "@/lib/stripe/creditInvoicePayment";
 import { syncSubscriptionToProfile } from "@/lib/stripe/syncSubscription";
@@ -63,18 +61,22 @@ export async function grantPremiumAndNotifyAction(formData: FormData) {
 // (3+ paiements réels confirmés, un seul reflété avant correction manuelle) :
 // /premium/success crédite maintenant le paiement à la volée pour toute
 // NOUVELLE conversion, mais les comptes déjà touchés avant ce correctif
-// restent à corriger une fois à la main. 799 = 7,99€, le seul prix pratiqué.
-const CURRENT_PRICE_CENTS = 799;
+// restent à corriger une fois à la main. 799 = 7,99€ (mensuel) ; 7000 = 70€
+// (accès à vie, voir premium/actions.ts) -- deux prix possibles depuis le
+// 26/09, donc le bon montant est désormais choisi côté appelant (voir
+// admin/premium/page.tsx) selon subscription_status plutôt que deviné ici.
+const MONTHLY_PRICE_CENTS = 799;
 
 export async function fixMissingLtvAction(formData: FormData) {
   await assertAdminSession();
   const userId = formData.get("userId") as string;
   if (!userId) return;
+  const amountCents = Number(formData.get("amountCents")) || MONTHLY_PRICE_CENTS;
 
   const admin = createAdminClient();
   const { error } = await admin
     .from("profiles")
-    .update({ total_paid_cents: CURRENT_PRICE_CENTS })
+    .update({ total_paid_cents: amountCents })
     .eq("id", userId)
     .eq("total_paid_cents", 0);
 
@@ -272,101 +274,10 @@ export async function sendIncompletePaymentReminderAction(formData: FormData) {
   revalidatePath("/admin/premium");
 }
 
-// Relance en masse au lancement de l'offre hebdomadaire (3,50€/semaine,
-// voir /premium) : prévient tous les inscrits déjà passés par le mur
-// payant sans avoir pris Premium. "Passé par le mur" n'a pas de tracking
-// dédié (site_visits n'est pas fiable pour ça, voir ailleurs) -- on
-// retombe sur le signal le plus proche disponible en base : au moins un
-// swipe au compteur, ce qui suffit en pratique à avoir déjà utilisé
-// l'appli. Campagne ponctuelle liée au lancement de l'offre hebdomadaire,
-// retirée depuis (voir hard paywall, RETENTION_AUDIT.md) -- gardée en l'état
-// pour l'historique, le seuil n'a plus besoin de suivre un quota qui
-// n'existe plus.
-//
-// Idempotence : "vérifier puis envoyer puis marquer" n'est PAS sûr en
-// concurrence -- deux clics rapprochés (le bouton ne montre aucun retour
-// visuel pendant l'envoi, ce qui invite justement à recliquer) lancent
-// deux exécutions qui liraient toutes les deux "pas encore annoncé" avant
-// que l'une ou l'autre n'ait eu le temps d'écrire sa marque, et
-// enverraient donc le mail deux fois au même compte -- exactement ce qui
-// s'est produit en prod (deux clics à 8s d'écart, 163 puis 153 envoyés,
-// le pool de candidats n'ayant quasiment pas bougé entre les deux). Le
-// correctif : la marque est posée par un UPDATE conditionnel (WHERE ...
-// IS NULL) AVANT l'envoi, et seule l'exécution qui a réellement gagné la
-// course (la ligne a été affectée) envoie le mail -- l'autre voit 0 ligne
-// affectée et passe au suivant, sans jamais doublonner un envoi.
-export async function sendWeeklyOfferAnnouncementAction() {
-  await assertAdminSession();
-  const admin = createAdminClient();
-
-  // Bornée par prudence : "profiles" a déjà dépassé 1000 lignes, et cette
-  // campagne ponctuelle filtre sur un sous-ensemble (onboarding terminé,
-  // pas encore annoncé) qui peut s'en approcher -- .order("id") garantit
-  // qu'un éventuel dépassement laisse toujours le même reste de côté
-  // (repris au prochain clic) plutôt qu'un sous-ensemble arbitraire.
-  const { data: profiles, error } = await admin
-    .from("profiles")
-    .select("id, email, full_name, subscription_status")
-    .eq("onboarding_completed", true)
-    .is("weekly_offer_announced_at", null)
-    .not("email", "is", null)
-    .order("id")
-    .limit(5000);
-
-  if (error) {
-    console.error("sendWeeklyOfferAnnouncementAction: query failed", error);
-    return;
-  }
-
-  const candidates = (profiles ?? []).filter((p) => !isPremium(p));
-
-  let sent = 0;
-  for (const profile of candidates) {
-    if (!profile.email) continue;
-
-    const { count } = await admin
-      .from("swipes")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", profile.id);
-
-    if ((count ?? 0) < 1) continue;
-
-    const { data: claimed, error: claimError } = await admin
-      .from("profiles")
-      .update({ weekly_offer_announced_at: new Date().toISOString() })
-      .eq("id", profile.id)
-      .is("weekly_offer_announced_at", null)
-      .select("id");
-
-    if (claimError) {
-      console.error("sendWeeklyOfferAnnouncementAction: claim failed for", profile.id, claimError);
-      continue;
-    }
-    // 0 ligne affectée = une autre exécution (ou un clic précédent) a déjà
-    // pris ce compte entre le SELECT ci-dessus et cet UPDATE -- on ne
-    // renvoie surtout pas le mail.
-    if (!claimed || claimed.length === 0) continue;
-
-    try {
-      await notifyWeeklyOffer(profile.email, profile.full_name);
-      sent += 1;
-    } catch (sendError) {
-      console.error("sendWeeklyOfferAnnouncementAction: envoi échoué pour", profile.id, sendError);
-      // Le mail n'est pas parti mais la marque est déjà posée -- on la
-      // relâche pour qu'un prochain déclenchement retente ce compte
-      // plutôt que de le considérer notifié à tort.
-      await admin
-        .from("profiles")
-        .update({ weekly_offer_announced_at: null })
-        .eq("id", profile.id);
-    }
-  }
-
-  console.log(`sendWeeklyOfferAnnouncementAction: envoyé à ${sent}/${candidates.length} candidat(s)`);
-  revalidatePath("/admin/premium");
-  // Le formulaire ne montrait jusqu'ici aucun retour après le clic (juste
-  // un revalidatePath invisible) -- exactement ce qui a mené à cliquer
-  // deux fois de suite en pensant que rien ne s'était passé. Un résultat
-  // visible via l'URL règle ça, en plus du fix d'idempotence ci-dessus.
-  redirect(`/admin/premium?weekly_sent=${sent}&weekly_total=${candidates.length}`);
-}
+// sendWeeklyOfferAnnouncementAction (campagne ponctuelle annonçant le
+// lancement de l'offre hebdomadaire à 3,50€/semaine) supprimée le 26/09 :
+// cette formule est retirée (voir hard paywall, RETENTION_AUDIT.md), l'email
+// qu'elle envoyait ("Nouveau sur Stageio : Premium à 3,50€ la semaine")
+// pointait vers une offre qui n'existe plus sur /premium -- la garder
+// aurait été un vrai bug (email actif faisant la publicité d'un plan qui ne
+// peut plus être acheté), pas juste du code mort inoffensif.

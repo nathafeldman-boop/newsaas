@@ -55,25 +55,33 @@ export async function createCheckoutSessionAction(formData: FormData) {
     .eq("id", user.id)
     .single();
   if (
-    existingProfile?.stripe_subscription_id &&
-    (existingProfile.subscription_status === "active" || existingProfile.subscription_status === "trialing")
+    (existingProfile?.stripe_subscription_id &&
+      (existingProfile.subscription_status === "active" || existingProfile.subscription_status === "trialing")) ||
+    // "lifetime" n'a jamais de stripe_subscription_id (paiement unique, pas
+    // d'abonnement Stripe) -- check à part : un accès à vie déjà acquis ne
+    // doit jamais pouvoir en racheter un second, ni repasser sur le mensuel.
+    existingProfile?.subscription_status === "lifetime"
   ) {
     redirect("/premium?error=already_subscribed");
   }
 
   // "plan" est posé par un input hidden dans chaque carte de prix (voir
-  // /premium) -- weekly reste optionnel : tant que sa variable Stripe
-  // correspondante n'est pas configurée, seule l'offre mensuelle
-  // (comportement historique, sans ce champ) reste disponible.
+  // /premium). Formule hebdomadaire retirée le 26/09 (décision produit avec
+  // l'associé de Nathan, voir RETENTION_AUDIT.md) : elle générait
+  // l'essentiel des paiements en échec observés le 25/09 (petits montants
+  // récurrents, clientèle étudiante -- voir l'échange avec Nathan) et le
+  // hard paywall rend de toute façon "tester Premium sur une candidature
+  // urgente" sans objet. Remplacée par une formule à vie (paiement unique).
   // Formule quotidienne définitivement retirée (demande Nathan du 24/09,
   // après le délai de 24h annoncé le 22/09) : rejetée explicitement plutôt
   // que silencieusement retombée sur le mensuel, au cas où un onglet resté
-  // ouvert ou un lien direct tenterait quand même ce plan.
+  // ouvert ou un lien direct tenterait quand même ces anciens plans.
   const plan = formData.get("plan");
-  if (plan === "daily") {
+  if (plan === "daily" || plan === "weekly") {
     redirect("/premium?error=not_configured");
   }
-  const rawPriceId = plan === "weekly" ? process.env.STRIPE_PRICE_ID_WEEKLY : process.env.STRIPE_PRICE_ID;
+  const isLifetime = plan === "lifetime";
+  const rawPriceId = isLifetime ? process.env.STRIPE_PRICE_ID_LIFETIME : process.env.STRIPE_PRICE_ID;
   // .trim() : Stripe rejette un ID avec un espace superflu ("No such
   // price") sans distinguer ça d'un ID réellement invalide -- un simple
   // copier-coller depuis le dashboard Stripe vers Vercel embarque parfois
@@ -89,7 +97,7 @@ export async function createCheckoutSessionAction(formData: FormData) {
   const stripe = getStripeClient();
 
   const session = await stripe.checkout.sessions.create({
-    mode: "subscription",
+    mode: isLifetime ? "payment" : "subscription",
     customer: customerId,
     line_items: [{ price: priceId, quantity: 1 }],
     // Carte uniquement : laissé aux méthodes de paiement dynamiques par
@@ -104,13 +112,26 @@ export async function createCheckoutSessionAction(formData: FormData) {
     // nouveaux tant que l'hypothèse Link n'est pas formellement écartée.
     payment_method_types: ["card"],
     // session_id transmis à /premium/success : filet de secours qui
-    // resynchronise l'abonnement à la volée si le webhook Stripe n'est
-    // jamais arrivé ou a échoué (voir ce fichier pour le contexte -- un
-    // paiement réel resté sans effet, découvert en prod).
+    // resynchronise l'abonnement (ou l'achat à vie) à la volée si le
+    // webhook Stripe n'est jamais arrivé ou a échoué (voir ce fichier pour
+    // le contexte -- un paiement réel resté sans effet, découvert en prod).
     success_url: `${SITE_URL}/premium/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${SITE_URL}/premium`,
     client_reference_id: user.id,
-    subscription_data: { metadata: { supabase_user_id: user.id } },
+    ...(isLifetime
+      ? {
+          // mode "payment" n'a pas de subscription_data -- payment_intent_data
+          // est l'équivalent pour y accrocher le même metadata. invoice_creation
+          // génère une vraie Facture Stripe pour cet achat ponctuel : sans ça,
+          // le webhook invoice.paid (qui crédite le LTV et la commission
+          // affilié, voir creditInvoicePayment/creditAffiliateCommission) ne se
+          // déclencherait jamais pour un paiement one-shot -- toute la
+          // plomberie existante (pensée pour des factures d'abonnement) reste
+          // ainsi valable sans dupliquer sa logique pour ce nouveau mode.
+          payment_intent_data: { metadata: { supabase_user_id: user.id } },
+          invoice_creation: { enabled: true },
+        }
+      : { subscription_data: { metadata: { supabase_user_id: user.id } } }),
   });
 
   if (!session.url) redirect("/premium?error=checkout_failed");
