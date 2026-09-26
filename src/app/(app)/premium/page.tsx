@@ -2,8 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isPremium } from "@/lib/subscription/isPremium";
-import { createCheckoutSessionAction, createPortalSessionAction } from "./actions";
-import { AccessCodeForm } from "@/components/premium/AccessCodeForm";
+import { createPortalSessionAction } from "./actions";
+import { PricingSelector } from "@/components/premium/PricingSelector";
 
 const ERROR_MESSAGES: Record<string, string> = {
   not_configured: "Le paiement n'est pas encore configuré, réessaie plus tard.",
@@ -234,43 +234,75 @@ export default async function PremiumPage({
       ) : (
         <>
           <div className="flex-1">
+            {/* Header : marque + badge PREMIUM + fermeture -- maquette
+                fournie par Nathan ("Paywall Stageio — 1b", 26/09). Le X
+                remplace le lien texte "Continuer à parcourir gratuitement"
+                qui vivait en bas de page (retiré, redondant avec ceci). */}
+            <div className="flex items-center justify-between animate-in">
+              <div className="flex items-center gap-2">
+                <span aria-hidden style={{ width: 9, height: 9, borderRadius: "50%", background: "var(--color-accent)" }} />
+                <span style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontWeight: 800, letterSpacing: "-0.02em" }}>
+                  Stageio
+                </span>
+                <span
+                  className="tag tag-accent"
+                  style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: "0.03em", padding: "3px 9px" }}
+                >
+                  PREMIUM
+                </span>
+              </div>
+              <Link
+                href="/swipe"
+                aria-label="Fermer et continuer à parcourir gratuitement"
+                style={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "var(--color-surface)",
+                  color: "color-mix(in srgb, var(--color-text) 70%, transparent)",
+                  flexShrink: 0,
+                }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                  <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </Link>
+            </div>
+
             {blockedAction && (
               <div
-                className="flex items-start gap-2.5 animate-in"
+                className="flex items-center gap-2.5 animate-in"
                 style={{
                   background: "var(--color-surface)",
                   border: "1px solid var(--color-divider)",
                   borderRadius: 14,
-                  padding: "12px 14px",
-                  marginBottom: 18,
+                  padding: "11px 14px",
+                  marginTop: 16,
                 }}
               >
                 <div
                   aria-hidden
                   style={{
-                    width: 26,
-                    height: 26,
-                    borderRadius: 8,
+                    width: 24,
+                    height: 24,
+                    borderRadius: 7,
                     background: "var(--color-accent-100)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     flexShrink: 0,
-                    marginTop: 1,
                   }}
                 >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
                     <rect x="5" y="11" width="14" height="9" rx="2" stroke="var(--color-accent-700)" strokeWidth="2" />
                     <path d="M8 11V7a4 4 0 118 0v4" stroke="var(--color-accent-700)" strokeWidth="2" fill="none" />
                   </svg>
                 </div>
-                <div style={{ fontSize: 12.5, lineHeight: 1.45 }}>
-                  <div style={{ fontWeight: 600 }}>
-                    {source === "swipe_apply" ? "Candidater est réservé aux membres Premium." : "Liker (= mettre en favori) est réservé aux membres Premium."}
-                  </div>
-                  <div style={{ color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginTop: 2 }}>
-                    Premium te permet de continuer immédiatement.
-                  </div>
+                <div style={{ fontSize: 12.5, fontWeight: 600, lineHeight: 1.4 }}>
+                  {source === "swipe_apply" ? "Candidater est réservé aux membres Premium." : "Liker (= mettre en favori) est réservé aux membres Premium."}
                 </div>
               </div>
             )}
@@ -305,19 +337,6 @@ export default async function PremiumPage({
               </div>
             </div>
 
-            <span
-              className="tag animate-in"
-              style={{
-                background: "var(--color-accent-100)",
-                color: "var(--color-accent-800)",
-                fontWeight: 700,
-                letterSpacing: "0.02em",
-                gap: 6,
-              }}
-            >
-              ✨ STAGEIO PREMIUM
-            </span>
-
             <h1
               className="animate-in"
               style={{ fontSize: 25, fontWeight: 800, lineHeight: 1.22, letterSpacing: "-0.01em", margin: "14px 0 0" }}
@@ -337,183 +356,29 @@ export default async function PremiumPage({
               Débloque toutes les opportunités et les outils pour maximiser tes chances.
             </p>
 
-            <div className="animate-in flex flex-col" style={{ marginTop: 20 }}>
+            {/* Grille 2x2 (au lieu d'une liste verticale) -- maquette
+                fournie par Nathan. */}
+            <div className="animate-in grid grid-cols-2 gap-2.5" style={{ marginTop: 20 }}>
               {BENEFITS.map((b) => (
-                <div key={b.label} className="flex items-center gap-3" style={{ padding: "8px 0" }}>
+                <div
+                  key={b.label}
+                  style={{
+                    padding: "13px 12px",
+                    borderRadius: 16,
+                    border: "1px solid var(--color-divider)",
+                    background: "var(--color-surface)",
+                  }}
+                >
                   <BenefitIcon>{b.icon}</BenefitIcon>
-                  <div style={{ fontSize: 13.5, fontWeight: 600 }}>{b.label}</div>
+                  <div style={{ fontSize: 12.5, fontWeight: 700, marginTop: 8, lineHeight: 1.3 }}>{b.label}</div>
                 </div>
               ))}
             </div>
 
-            <div
-              className="animate-in"
-              style={{
-                position: "relative",
-                marginTop: 22,
-                background: "var(--color-surface)",
-                borderRadius: 20,
-                border: "1.5px solid var(--color-accent-300)",
-                boxShadow: "0 0 0 4px var(--color-accent-100), var(--shadow-md)",
-                padding: 20,
-              }}
-            >
-              <div
-                aria-hidden
-                style={{
-                  position: "absolute",
-                  top: -11,
-                  right: 16,
-                  width: 24,
-                  height: 24,
-                  borderRadius: 999,
-                  background: "var(--color-accent)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  boxShadow: "0 2px 6px color-mix(in srgb, var(--color-accent) 40%, transparent)",
-                }}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                  <path d="M20 6L9 17l-5-5" stroke="var(--color-bg)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
-              <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: "0.06em", color: "var(--color-accent-700)", textTransform: "uppercase" }}>
-                Premium
-              </div>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 6 }}>
-                <span style={{ fontSize: 38, fontWeight: 800, letterSpacing: "-0.02em" }}>7,99 €</span>
-                <span style={{ fontSize: 13.5, fontWeight: 500, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                  / mois
-                </span>
-              </div>
-              <div style={{ fontSize: 12, marginTop: 4, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                Résiliable à tout moment.
-              </div>
-            </div>
-
-            {process.env.STRIPE_PRICE_ID_LIFETIME && (
-              <div
-                className="animate-in"
-                style={{
-                  marginTop: 12,
-                  background: "var(--color-surface)",
-                  borderRadius: 20,
-                  border: "1.5px solid var(--color-divider)",
-                  padding: 20,
-                }}
-              >
-                <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: "0.06em", color: "color-mix(in srgb, var(--color-text) 55%, transparent)", textTransform: "uppercase" }}>
-                  🎉 Accès à vie
-                </div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 6 }}>
-                  <span style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.02em" }}>70 €</span>
-                  <span style={{ fontSize: 13.5, fontWeight: 500, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                    paiement unique
-                  </span>
-                </div>
-                <div style={{ fontSize: 12, marginTop: 4, marginBottom: 14, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                  Une fois, jamais de renouvellement -- pratique si tu comptes trouver ton alternance rapidement.
-                </div>
-                <form action={createCheckoutSessionAction}>
-                  <input type="hidden" name="plan" value="lifetime" />
-                  <button
-                    type="submit"
-                    className="btn btn-block"
-                    style={{
-                      height: 46,
-                      border: "1.5px solid var(--color-accent)",
-                      borderRadius: 999,
-                      background: "transparent",
-                      color: "var(--color-accent-700)",
-                      fontSize: 14,
-                      fontWeight: 700,
-                    }}
-                  >
-                    Choisir l&apos;accès à vie
-                  </button>
-                </form>
-              </div>
-            )}
-
-          </div>
-
-          <div style={{ paddingTop: 20 }}>
-            {error && (
-              <p
-                style={{
-                  fontSize: 12,
-                  marginBottom: 12,
-                  background: "var(--color-surface)",
-                  border: "1px solid var(--color-divider)",
-                  padding: 10,
-                  borderRadius: 8,
-                }}
-              >
-                {ERROR_MESSAGES[error] ?? "Une erreur est survenue."}
-              </p>
-            )}
-
-            <form action={createCheckoutSessionAction}>
-              <input type="hidden" name="plan" value="monthly" />
-              <button
-                type="submit"
-                className="btn btn-block"
-                style={{
-                  height: 52,
-                  border: "none",
-                  borderRadius: 999,
-                  background: "linear-gradient(135deg, var(--color-accent), var(--color-accent-700))",
-                  color: "var(--color-bg)",
-                  fontSize: 15.5,
-                  fontWeight: 700,
-                  letterSpacing: "-0.01em",
-                  boxShadow: "0 10px 22px color-mix(in srgb, var(--color-accent) 35%, transparent)",
-                }}
-              >
-                Débloquer Premium
-              </button>
-            </form>
-
-            <div
-              className="flex items-center justify-center gap-2"
-              style={{ marginTop: 10, fontSize: 11.5, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}
-            >
-              <span>🔒 Paiement sécurisé</span>
-              <span style={{ opacity: 0.5 }}>·</span>
-              <span>Résiliable à tout moment</span>
-            </div>
-
-            <AccessCodeForm />
-
-            <p
-              style={{
-                fontSize: 10.5,
-                textAlign: "center",
-                lineHeight: 1.4,
-                margin: "12px 0 0",
-                color: "color-mix(in srgb, var(--color-text) 50%, transparent)",
-              }}
-            >
-              En continuant, tu acceptes les{" "}
-              <Link href="/legal/cgv" style={{ color: "var(--color-accent-700)", textDecoration: "underline" }}>
-                CGV
-              </Link>
-              .
-            </p>
-
-            <Link
-              href="/swipe"
-              style={{
-                display: "block",
-                textAlign: "center",
-                fontSize: 11.5,
-                marginTop: 10,
-                color: "color-mix(in srgb, var(--color-text) 45%, transparent)",
-              }}
-            >
-              Continuer à parcourir gratuitement
-            </Link>
+            <PricingSelector
+              lifetimeAvailable={!!process.env.STRIPE_PRICE_ID_LIFETIME}
+              errorMessage={error ? (ERROR_MESSAGES[error] ?? "Une erreur est survenue.") : null}
+            />
           </div>
         </>
       )}
