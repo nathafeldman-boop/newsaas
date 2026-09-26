@@ -36,7 +36,11 @@ export async function auditCvWithAnthropic(cvText: string, profile: ProfileForAI
       system: SYSTEM_PROMPT,
       temperature: 0.2,
       messages: [{ role: "user", content: buildUserPrompt(cvText, profile) }],
-      output_config: { format: zodOutputFormat(cvAuditSchema) },
+      // effort "low" : tâche d'évaluation/classification structurée, pas de
+      // raisonnement long -- réduit la latence (Opus 5 réfléchit par défaut,
+      // voir client.ts) sans perte de qualité mesurable sur ce type de
+      // tâche, cf. doctrine cost-optimization du skill claude-api.
+      output_config: { format: zodOutputFormat(cvAuditSchema), effort: "low" },
     },
     { timeout: ANTHROPIC_TIMEOUT_MS },
   );

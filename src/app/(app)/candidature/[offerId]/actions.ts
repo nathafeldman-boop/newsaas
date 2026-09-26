@@ -8,6 +8,10 @@ import { PROFILE_FOR_AI_COLUMNS } from "@/lib/ai/profileContext";
 import { isPremium } from "@/lib/subscription/isPremium";
 import { logServerEvent } from "@/lib/analytics/logServerEvent";
 
+// maxDuration ne peut pas être exporté ici (fichier "use server", voir le
+// commentaire équivalent dans profil/cv-audit-actions.ts) -- posé sur
+// src/app/(app)/candidature/[offerId]/page.tsx à la place.
+
 export type GenerateCoverLetterResult =
   | { status: "success"; letter: string }
   | { status: "premium_required" }

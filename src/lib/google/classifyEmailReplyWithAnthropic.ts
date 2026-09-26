@@ -51,7 +51,9 @@ export async function classifyEmailReply(
       system: SYSTEM_PROMPT,
       temperature: 0.1,
       messages: [{ role: "user", content: userContent }],
-      output_config: { format: zodOutputFormat(classificationSchema) },
+      // effort "low" : classification pure, pas de raisonnement long -- voir
+      // cvAudit/generateWithAnthropic.ts pour le raisonnement complet.
+      output_config: { format: zodOutputFormat(classificationSchema), effort: "low" },
     },
     { timeout: ANTHROPIC_TIMEOUT_MS },
   );

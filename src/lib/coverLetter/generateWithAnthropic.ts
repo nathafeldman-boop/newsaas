@@ -78,6 +78,12 @@ export async function generateCoverLetterWithAnthropic(
       system: SYSTEM_PROMPT,
       temperature: 0.6,
       messages: [{ role: "user", content: buildUserPrompt(offer, profile, cvText, extra) }],
+      // effort "medium" : génération créative mais courte (170-240 mots),
+      // pas un problème de raisonnement long -- réduit la latence (Opus 5
+      // réfléchit par défaut, voir client.ts) tout en gardant plus de marge
+      // qualité que "low" (voir cvAudit/generateWithAnthropic.ts, tâche de
+      // pure évaluation là où celle-ci est rédactionnelle).
+      output_config: { effort: "medium" },
     },
     { timeout: ANTHROPIC_TIMEOUT_MS },
   );

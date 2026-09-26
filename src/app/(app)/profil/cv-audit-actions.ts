@@ -10,6 +10,14 @@ import { isPremium } from "@/lib/subscription/isPremium";
 import { logServerEvent } from "@/lib/analytics/logServerEvent";
 import type { CvAudit } from "@/lib/cvAudit/schema";
 
+// maxDuration ne peut PAS être exporté depuis ce fichier : un fichier "use
+// server" ne peut exporter QUE des fonctions serveur (async) -- exporter
+// aussi une config casse silencieusement TOUT le module ("no exports at
+// all", déjà documenté dans admin/users/actions.ts). Posé à la place sur
+// src/app/(app)/cv/page.tsx, qui rend le panneau appelant cette action --
+// voir ce fichier pour le raisonnement complet (pourquoi 60s est
+// nécessaire).
+
 export type CvAuditState =
   | { status: "idle" }
   | { status: "error"; message: string }

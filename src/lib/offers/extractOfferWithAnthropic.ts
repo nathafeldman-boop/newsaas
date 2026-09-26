@@ -88,7 +88,9 @@ export async function extractOfferFromText(
       system: SYSTEM_PROMPT,
       temperature: 0.1,
       messages: [{ role: "user", content: userContent }],
-      output_config: { format: zodOutputFormat(extractedOfferSchema) },
+      // effort "low" : extraction structurée, pas de raisonnement long --
+      // voir cvAudit/generateWithAnthropic.ts pour le raisonnement complet.
+      output_config: { format: zodOutputFormat(extractedOfferSchema), effort: "low" },
     },
     { timeout: ANTHROPIC_TIMEOUT_MS },
   );

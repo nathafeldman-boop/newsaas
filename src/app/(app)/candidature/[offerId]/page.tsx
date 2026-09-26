@@ -5,6 +5,15 @@ import { CoverLetterPanel } from "@/components/candidature/CoverLetterPanel";
 import { CvOfferMatchPanel } from "@/components/candidature/CvOfferMatchPanel";
 import { isPremium } from "@/lib/subscription/isPremium";
 
+// CoverLetterPanel et CvOfferMatchPanel ci-dessous déclenchent respectivement
+// generateCoverLetterAction et analyzeOfferFitAction, qui appellent Claude
+// Opus 5 -- voir le commentaire équivalent dans src/app/(app)/cv/page.tsx
+// pour le raisonnement complet (réflexion adaptative activée par défaut,
+// donc plus lente que Gemini/Mistral avant lui ; sans ceci la Server Action
+// tourne sur le défaut Vercel 10s et se fait tuer avant même que le repli
+// statique n'ait sa chance).
+export const maxDuration = 60;
+
 export default async function CandidaturePage({
   params,
 }: {

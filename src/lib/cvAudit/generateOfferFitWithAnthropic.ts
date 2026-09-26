@@ -42,7 +42,9 @@ export async function generateOfferFitWithAnthropic(cvText: string, offer: Offer
       system: SYSTEM_PROMPT,
       temperature: 0.2,
       messages: [{ role: "user", content: buildUserPrompt(cvText, offer) }],
-      output_config: { format: zodOutputFormat(offerFitSchema) },
+      // effort "low" : voir generateWithAnthropic.ts (cvAudit) pour le
+      // raisonnement -- même type de tâche (comparaison/scoring structuré).
+      output_config: { format: zodOutputFormat(offerFitSchema), effort: "low" },
     },
     { timeout: ANTHROPIC_TIMEOUT_MS },
   );
