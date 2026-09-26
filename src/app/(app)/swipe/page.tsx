@@ -45,8 +45,28 @@ export default async function SwipePage() {
     supabase.from("applications").select("offer_id, applied_at").eq("user_id", user.id),
   ]);
 
-  const excludeIds = (swiped ?? []).map((s) => s.offer_id);
   const appliedOfferIds = new Set((applications ?? []).map((a) => a.offer_id));
+
+  // Un "pass" n'exclut plus une offre pour toujours : sous le hard paywall,
+  // la navigation est illimitée (voir RETENTION_AUDIT.md, 26/09), donc un
+  // compte actif peut désormais parcourir tout le pool disponible en une
+  // seule session -- avant, le quota hebdomadaire (3 swipes/semaine)
+  // rationnait mécaniquement l'exposition et ce problème n'était jamais
+  // visible. Un "pass" vieux de plus de RECYCLE_PASS_AFTER_DAYS peut donc
+  // réapparaître (le catalogue tourne trop lentement, vu le volume prudent
+  // d'ingestion quotidienne -- sync-adzuna/discover-offers -- pour se
+  // permettre d'exclure définitivement chaque offre passée une fois).
+  // "like" (= favori) et toute offre déjà candidatée restent, eux, exclus
+  // pour toujours : les revoir dans le deck n'aurait aucun sens.
+  const RECYCLE_PASS_AFTER_DAYS = 14;
+  const recycleCutoff = new Date();
+  recycleCutoff.setDate(recycleCutoff.getDate() - RECYCLE_PASS_AFTER_DAYS);
+  const excludeIds = (swiped ?? [])
+    .filter((s) => {
+      if (s.direction === "like" || appliedOfferIds.has(s.offer_id)) return true;
+      return new Date(s.created_at) >= recycleCutoff;
+    })
+    .map((s) => s.offer_id);
 
   // Série de jours consécutifs avec au moins une candidature réelle -- voir
   // src/lib/engagement/applicationStreak.ts. Affichée sur le deck pour

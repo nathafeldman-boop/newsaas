@@ -325,7 +325,13 @@ function SwipeDeckInner({
     const { error } = await supabase
       .from("swipes")
       .upsert(
-        { user_id: userId, offer_id: offer.id, direction },
+        // created_at explicite : un "pass" recyclé (voir RECYCLE_PASS_AFTER_
+        // DAYS dans swipe/page.tsx) qui se fait re-passer doit relancer son
+        // propre délai avant de pouvoir réapparaître -- sans ça, l'upsert
+        // Postgres ne touche jamais created_at sur un conflit (colonne
+        // absente du payload par défaut) et l'offre resterait éligible à
+        // ressortir à chaque chargement au lieu d'attendre à nouveau le délai.
+        { user_id: userId, offer_id: offer.id, direction, created_at: new Date().toISOString() },
         { onConflict: "user_id,offer_id" },
       );
     if (error) {
