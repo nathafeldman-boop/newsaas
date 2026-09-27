@@ -9,8 +9,10 @@ import { GoogleButton } from "@/components/auth/GoogleButton";
 
 export function RegisterForm({
   initialAffiliateCode,
+  initialUtmSource,
 }: {
   initialAffiliateCode?: string | null;
+  initialUtmSource?: string | null;
 } = {}) {
   const searchParams = useSearchParams();
   const referredByCode = searchParams.get("ref");
@@ -18,6 +20,8 @@ export function RegisterForm({
   // retombe sur le code résolu côté serveur (cookie aff_code, voir page.tsx)
   // pour le cas où le lien affilié amène sur la home avant l'inscription.
   const affiliateCode = searchParams.get("aff") ?? initialAffiliateCode ?? null;
+  // Même logique pour l'attribution publicitaire (voir proxy.ts + page.tsx).
+  const utmSource = searchParams.get("utm_source") ?? initialUtmSource ?? null;
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -52,6 +56,7 @@ export function RegisterForm({
           full_name: fullName,
           referred_by_code: referredByCode ?? undefined,
           affiliate_code: affiliateCode ?? undefined,
+          utm_source: utmSource ?? undefined,
         },
       },
     });

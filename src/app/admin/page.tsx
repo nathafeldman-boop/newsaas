@@ -164,6 +164,8 @@ export default async function AdminDashboardPage({
     { data: visits, error: visitsError },
     { data: funnelStats, error: funnelStatsError },
     { data: reviewRows, error: reviewsError },
+    { data: visitsToday, error: visitsTodayError },
+    { data: signupsTodayRows, error: signupsTodayRowsError },
   ] = await Promise.all([
     admin.from("profiles").select("id", { count: "exact", head: true }),
     admin.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", todayStart.toISOString()),
@@ -212,6 +214,11 @@ export default async function AdminDashboardPage({
     // grande ne doit jamais tronquer silencieusement avgRating) même si le
     // volume actuel est très en dessous de 1000.
     admin.from("reviews").select("*").order("created_at", { ascending: false }).limit(5000),
+    // Attribution pub (voir migration 20260927000000_utm_tracking.sql) :
+    // bornées à aujourd'hui, donc jamais assez de lignes pour retomber dans
+    // le piège Max Rows 1000 décrit plus haut.
+    admin.from("site_visits").select("visitor_id, utm_source").gte("created_at", todayStart.toISOString()),
+    admin.from("profiles").select("utm_source").gte("created_at", todayStart.toISOString()),
   ]);
 
   // supabase-js ne throw jamais sur une erreur Postgres (ex: colonne pas
@@ -226,6 +233,8 @@ export default async function AdminDashboardPage({
   if (visitsError) console.error("AdminDashboardPage: visits query failed", visitsError);
   if (funnelStatsError) console.error("AdminDashboardPage: onboarding funnel query failed", funnelStatsError);
   if (reviewsError) console.error("AdminDashboardPage: reviews query failed", reviewsError);
+  if (visitsTodayError) console.error("AdminDashboardPage: visits today query failed", visitsTodayError);
+  if (signupsTodayRowsError) console.error("AdminDashboardPage: signups today query failed", signupsTodayRowsError);
 
   const paidPremium = paidPremiumCount ?? 0;
   const compPremium = compPremiumCount ?? 0;
@@ -257,6 +266,27 @@ export default async function AdminDashboardPage({
   );
 
   const weekdayAverages = computeWeekdayAverages(visits ?? []);
+
+  // Répartition par source aujourd'hui : seul moyen de répondre à "j'ai eu
+  // 106 clics TikTok mais 6 inscrits" avec des vraies données plutôt qu'une
+  // supposition -- visiteurs distincts (une même personne qui recharge la
+  // page ne doit pas compter deux fois) vs inscriptions, groupés par
+  // utm_source (voir migration 20260927000000_utm_tracking.sql).
+  const UNKNOWN_SOURCE = "direct / inconnu";
+  const visitorsBySource = new Map<string, Set<string>>();
+  for (const v of visitsToday ?? []) {
+    const source = v.utm_source || UNKNOWN_SOURCE;
+    if (!visitorsBySource.has(source)) visitorsBySource.set(source, new Set());
+    visitorsBySource.get(source)!.add(v.visitor_id);
+  }
+  const signupsBySource = new Map<string, number>();
+  for (const p of signupsTodayRows ?? []) {
+    const source = p.utm_source || UNKNOWN_SOURCE;
+    signupsBySource.set(source, (signupsBySource.get(source) ?? 0) + 1);
+  }
+  const acquisitionSources = [...new Set([...visitorsBySource.keys(), ...signupsBySource.keys()])].sort(
+    (a, b) => (visitorsBySource.get(b)?.size ?? 0) - (visitorsBySource.get(a)?.size ?? 0),
+  );
 
   const stepStats = new Map<StepId, { viewed: number; completed: number }>();
   for (const id of STEP_IDS) stepStats.set(id, { viewed: 0, completed: 0 });
@@ -330,6 +360,36 @@ export default async function AdminDashboardPage({
           ))}
         </div>
         <LineAreaChart data={chartData} total={periodProfiles.length} />
+      </SectionCard>
+
+      <SectionCard
+        title="Acquisition — aujourd'hui"
+        subtitle="Visiteurs distincts et inscriptions du jour, par source publicitaire (utm_source). Nécessite des liens ?utm_source=... — un clic sans ce paramètre atterrit dans « direct / inconnu »."
+      >
+        {acquisitionSources.length === 0 ? (
+          <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>
+            Aucune visite aujourd&apos;hui.
+          </p>
+        ) : (
+          <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ textAlign: "left", color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
+                <th style={{ padding: "4px 0", fontWeight: 500 }}>Source</th>
+                <th style={{ padding: "4px 0", fontWeight: 500 }}>Visiteurs</th>
+                <th style={{ padding: "4px 0", fontWeight: 500 }}>Inscriptions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {acquisitionSources.map((source) => (
+                <tr key={source} style={{ borderTop: "1px solid var(--color-divider)" }}>
+                  <td style={{ padding: "6px 0", fontWeight: source === UNKNOWN_SOURCE ? 400 : 700 }}>{source}</td>
+                  <td style={{ padding: "6px 0" }}>{visitorsBySource.get(source)?.size ?? 0}</td>
+                  <td style={{ padding: "6px 0" }}>{signupsBySource.get(source) ?? 0}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </SectionCard>
 
       <SectionCard

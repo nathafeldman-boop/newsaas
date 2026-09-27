@@ -6,15 +6,17 @@ import { RegisterForm } from "@/components/auth/RegisterForm";
 export default async function InscriptionPage({
   searchParams,
 }: {
-  searchParams: Promise<{ aff?: string }>;
+  searchParams: Promise<{ aff?: string; utm_source?: string }>;
 }) {
-  const { aff } = await searchParams;
+  const { aff, utm_source: utmSourceParam } = await searchParams;
   // Fallback cookie (voir proxy.ts) : le lien affilié amène désormais sur la
   // home plutôt que directement ici, donc "aff" n'est plus forcément présent
   // dans l'URL de cette page -- sans ce fallback, l'attribution se perdrait
   // dès que la personne clique un CTA de la landing avant de s'inscrire.
   const cookieStore = await cookies();
   const affiliateCode = aff ?? cookieStore.get("aff_code")?.value ?? null;
+  // Même logique pour l'attribution publicitaire (utm_source) : voir proxy.ts.
+  const utmSource = utmSourceParam ?? cookieStore.get("utm_source")?.value ?? null;
 
   return (
     <div className="flex-1 flex items-center justify-center px-6 py-12">
@@ -34,7 +36,7 @@ export default async function InscriptionPage({
         </p>
         <div className="mt-6">
           <Suspense>
-            <RegisterForm initialAffiliateCode={affiliateCode} />
+            <RegisterForm initialAffiliateCode={affiliateCode} initialUtmSource={utmSource} />
           </Suspense>
         </div>
       </div>

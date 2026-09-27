@@ -63,6 +63,7 @@ export type Profile = {
   daily_offer_announced_at: string | null;
   swipe_relance_sent_at: string | null;
   affiliate_id: string | null;
+  utm_source: string | null;
   search_completed_at: string | null;
   search_completed_reason: string | null;
   created_at: string;
@@ -177,6 +178,9 @@ export type SiteVisit = {
   id: string;
   visitor_id: string;
   path: string;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
   created_at: string;
 };
 

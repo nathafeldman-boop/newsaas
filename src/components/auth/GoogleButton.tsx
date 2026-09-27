@@ -1,7 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+
+// Google refuse activement l'OAuth depuis les navigateurs "in-app" des
+// réseaux sociaux (erreur "disallowed_useragent" côté Google, pas côté
+// nous) -- TikTok, Instagram, Facebook, Messenger, Line, WeChat, Snapchat
+// ouvrent tous les liens externes dans leur propre WebView plutôt que le
+// navigateur du téléphone. Identifié le 27/09 comme cause probable de la
+// chute clics pub -> inscriptions (Nathan : 106 clics TikTok, 6 inscrits) :
+// quelqu'un qui clique "Continuer avec Google" depuis l'appli TikTok tombe
+// sur un échec silencieux-ish (le bouton se réinitialise avec une erreur que
+// beaucoup n'auront pas la patience de lire) plutôt que de simplement se
+// rabattre sur le formulaire email, qui lui fonctionne dans n'importe quel
+// WebView.
+const IN_APP_BROWSER_PATTERN =
+  /TikTok|BytedanceWebview|musical_ly|FBAN|FBAV|Instagram|Line\/|MicroMessenger|Snapchat/i;
+
+function isInAppBrowser(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return IN_APP_BROWSER_PATTERN.test(navigator.userAgent);
+}
 
 export function GoogleButton({
   referredByCode,
@@ -14,6 +33,17 @@ export function GoogleButton({
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Faux par défaut puis corrigé après montage (useEffect, jamais pendant le
+  // rendu) : `navigator` n'existe pas côté serveur, donc évaluer ceci
+  // pendant le rendu produirait un mismatch d'hydratation. Un utilisateur
+  // hors WebView voit le bouton normal pendant une fraction de seconde puis
+  // rien ne change ; un utilisateur en WebView le voit disparaître presque
+  // immédiatement, avant d'avoir eu la chance de cliquer.
+  const [blockedInAppBrowser, setBlockedInAppBrowser] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (isInAppBrowser()) setBlockedInAppBrowser(true);
+  }, []);
 
   async function handleClick() {
     setLoading(true);
@@ -43,6 +73,24 @@ export function GoogleButton({
       setLoading(false);
       setError(error.message);
     }
+  }
+
+  if (blockedInAppBrowser) {
+    return (
+      <p
+        className="text-sm"
+        style={{
+          margin: 0,
+          padding: "10px 14px",
+          borderRadius: "var(--radius-md, 8px)",
+          background: "color-mix(in srgb, var(--color-text) 6%, transparent)",
+          color: "color-mix(in srgb, var(--color-text) 70%, transparent)",
+        }}
+      >
+        La connexion Google ne fonctionne pas dans le navigateur intégré de cette appli (TikTok, Instagram...).
+        Utilise le formulaire ci-dessous, ou ouvre ce lien dans Safari/Chrome.
+      </p>
+    );
   }
 
   return (

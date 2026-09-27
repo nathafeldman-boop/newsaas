@@ -12,12 +12,19 @@ export async function logVisit(
   visitorId: string,
   path: string,
   userAgent: string | null,
+  utm?: { source: string | null; medium: string | null; campaign: string | null },
 ): Promise<void> {
   if (userAgent && BOT_UA_PATTERN.test(userAgent)) return;
 
   try {
     const admin = createAdminClient();
-    const { error } = await admin.from("site_visits").insert({ visitor_id: visitorId, path });
+    const { error } = await admin.from("site_visits").insert({
+      visitor_id: visitorId,
+      path,
+      utm_source: utm?.source ?? null,
+      utm_medium: utm?.medium ?? null,
+      utm_campaign: utm?.campaign ?? null,
+    });
     if (error) {
       console.error("logVisit insert failed", error);
     }
