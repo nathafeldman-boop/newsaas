@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { markReferralGrantedAction } from "@/app/onboarding/actions";
@@ -328,13 +328,38 @@ export function OnboardingWizard({
     return null;
   }
 
+  // Garde-fou pour advanceStep ci-dessous : un second tap sur une autre
+  // tuile de la même étape avant l'écoulement du délai, ou un "Continuer"
+  // manuel tapé entre-temps, ne doit jamais déclencher DEUX avances
+  // (sauterait carrément l'étape suivante -- sans state, deux setStepIndex
+  // fonctionnels programmés s'additionneraient l'un après l'autre).
+  const pendingAdvanceRef = useRef<number | null>(null);
+  useEffect(() => {
+    return () => {
+      if (pendingAdvanceRef.current) window.clearTimeout(pendingAdvanceRef.current);
+    };
+  }, []);
+  function cancelPendingAdvance() {
+    if (pendingAdvanceRef.current) {
+      window.clearTimeout(pendingAdvanceRef.current);
+      pendingAdvanceRef.current = null;
+    }
+  }
+
   function goToStep(id: StepId) {
+    // Pas de cancelPendingAdvance() ici : goToStep ne sert qu'aux liens
+    // "modifier" du récap (étape "outro"), bien après qu'un éventuel délai
+    // d'auto-avance (320ms, voir advanceStep) d'une étape à choix unique
+    // soit de toute façon déjà écoulé -- l'ajouter ferait lire la ref
+    // depuis ce tableau de closures construit pendant le rendu (voir
+    // react-hooks/refs), pour un cas qui ne peut pas se produire ici.
     setError(null);
     setDirection(-1);
     setStepIndex(STEP_IDS.indexOf(id));
   }
 
   function goNext() {
+    cancelPendingAdvance();
     const err = validateCurrentStep();
     if (err) {
       setError(err);
@@ -347,9 +372,29 @@ export function OnboardingWizard({
   }
 
   function goBack() {
+    cancelPendingAdvance();
     setError(null);
     setDirection(-1);
     setStepIndex((i) => Math.max(i - 1, 0));
+  }
+
+  // Avance sans repasser par validateCurrentStep() (qui lirait l'ancienne
+  // valeur du state React -- setMobility()/etc. n'a pas encore été
+  // appliqué au moment où ce callback est programmé) : utilisé uniquement
+  // juste après avoir tapé une tuile à choix unique (mobilité, dispo,
+  // niveau), où on sait déjà avec certitude que l'étape vient de devenir
+  // valide grâce à la valeur tout juste posée. Délai court pour laisser le
+  // temps de voir la tuile passer à l'état "actif" avant que l'écran ne
+  // change -- sans ça la sélection est invisible, la transition mange tout.
+  function advanceStep(completedStepId: StepId) {
+    cancelPendingAdvance();
+    pendingAdvanceRef.current = window.setTimeout(() => {
+      pendingAdvanceRef.current = null;
+      setError(null);
+      void logOnboardingEvent(userId, "onboarding_step_completed", completedStepId);
+      setDirection(1);
+      setStepIndex((i) => Math.min(i + 1, STEP_IDS.length - 1));
+    }, 320);
   }
 
   async function persistProfile(): Promise<
@@ -963,7 +1008,10 @@ export function OnboardingWizard({
                       icon={opt.icon}
                       sub={MOBILITY_SUBTEXT[opt.value]}
                       active={mobility === opt.value}
-                      onClick={() => setMobility(opt.value)}
+                      onClick={() => {
+                        setMobility(opt.value);
+                        advanceStep("mobility");
+                      }}
                     />
                   ))}
                 </div>
@@ -983,7 +1031,14 @@ export function OnboardingWizard({
                       <button
                         key={level}
                         type="button"
-                        onClick={() => setEducationLevel(level)}
+                        onClick={() => {
+                          setEducationLevel(level);
+                          // L'autre champ de cette même étape (voir plus bas)
+                          // -- s'il est déjà rempli, ce tap complète la paire
+                          // et l'étape devient valide ; sinon on attend
+                          // encore le niveau d'expérience.
+                          if (experienceLevel) advanceStep("level");
+                        }}
                         className={educationLevel === level ? "tag flex items-center gap-1.5" : "tag tag-neutral flex items-center gap-1.5"}
                         style={{
                           padding: "7px 14px",
@@ -1009,7 +1064,10 @@ export function OnboardingWizard({
                         label={opt.value}
                         icon={opt.icon}
                         active={experienceLevel === opt.value}
-                        onClick={() => setExperienceLevel(opt.value)}
+                        onClick={() => {
+                          setExperienceLevel(opt.value);
+                          if (educationLevel) advanceStep("level");
+                        }}
                       />
                     ))}
                   </div>
@@ -1030,7 +1088,10 @@ export function OnboardingWizard({
                       label={opt.label}
                       icon={opt.icon}
                       active={availabilityLabel === opt.label}
-                      onClick={() => setAvailabilityLabel(opt.label)}
+                      onClick={() => {
+                        setAvailabilityLabel(opt.label);
+                        advanceStep("dispo");
+                      }}
                     />
                   ))}
                 </div>
@@ -1379,7 +1440,16 @@ export function OnboardingWizard({
                     🎯
                   </span>
                   <span style={{ fontSize: 12, fontWeight: 700, color: "var(--color-text)", whiteSpace: "nowrap" }}>
-                    Matching précis à {precision}%
+                    Matching précis à{" "}
+                    <motion.span
+                      key={precision}
+                      initial={{ scale: 1.35, color: "var(--color-accent)" }}
+                      animate={{ scale: 1, color: "var(--color-text)" }}
+                      transition={{ duration: 0.4, ease: [0.2, 0.7, 0.2, 1] }}
+                      style={{ display: "inline-block" }}
+                    >
+                      {precision}%
+                    </motion.span>
                   </span>
                   <div
                     style={{
