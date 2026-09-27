@@ -36,7 +36,7 @@ export default function CGVPage() {
         <p>L&apos;accès Premium est proposé selon deux formules, au choix :</p>
         <ul style={{ margin: "8px 0 0", paddingLeft: 20 }}>
           <li><strong>7,99&nbsp;€ / mois</strong>, renouvelable automatiquement chaque mois ;</li>
-          <li><strong>70&nbsp;€</strong>, en un paiement unique, donnant un accès Premium à vie (sans renouvellement, sans limite de durée).</li>
+          <li><strong>39,99&nbsp;€</strong>, en un paiement unique, donnant un accès Premium à vie (sans renouvellement, sans limite de durée).</li>
         </ul>
         <p style={{ marginTop: 8 }}>
           {" "}

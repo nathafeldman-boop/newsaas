@@ -323,13 +323,18 @@ export default async function AdminPremiumPage({
               {ltvMissing && (
                 <form action={fixMissingLtvAction} className="mt-3">
                   <input type="hidden" name="userId" value={p.id} />
+                  {/* Suppose le prix à vie ACTUEL (39,99€ depuis le 27/09,
+                      70€ avant) -- un achat à vie antérieur au 27/09 qui
+                      tomberait sur ce bug rare devrait être corrigé à la
+                      main (montant exact vérifiable sur le paiement Stripe
+                      correspondant) plutôt qu'avec ce bouton. */}
                   <input
                     type="hidden"
                     name="amountCents"
-                    value={p.subscription_status === "lifetime" ? 7000 : 799}
+                    value={p.subscription_status === "lifetime" ? 3999 : 799}
                   />
                   <button type="submit" className="btn btn-secondary" style={{ padding: "6px 12px", fontSize: 12 }}>
-                    LTV à 0€ malgré paiement → Corriger ({p.subscription_status === "lifetime" ? "70" : "7,99"}€)
+                    LTV à 0€ malgré paiement → Corriger ({p.subscription_status === "lifetime" ? "39,99" : "7,99"}€)
                   </button>
                 </form>
               )}

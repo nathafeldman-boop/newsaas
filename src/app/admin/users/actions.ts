@@ -61,10 +61,11 @@ export async function grantPremiumAndNotifyAction(formData: FormData) {
 // (3+ paiements réels confirmés, un seul reflété avant correction manuelle) :
 // /premium/success crédite maintenant le paiement à la volée pour toute
 // NOUVELLE conversion, mais les comptes déjà touchés avant ce correctif
-// restent à corriger une fois à la main. 799 = 7,99€ (mensuel) ; 7000 = 70€
-// (accès à vie, voir premium/actions.ts) -- deux prix possibles depuis le
-// 26/09, donc le bon montant est désormais choisi côté appelant (voir
-// admin/premium/page.tsx) selon subscription_status plutôt que deviné ici.
+// restent à corriger une fois à la main. 799 = 7,99€ (mensuel) ; 3999 =
+// 39,99€ (accès à vie, voir premium/actions.ts -- 70€ avant le 27/09) --
+// plusieurs prix possibles selon la formule et la date d'achat, donc le bon
+// montant est désormais choisi côté appelant (voir admin/premium/page.tsx)
+// selon subscription_status plutôt que deviné ici.
 const MONTHLY_PRICE_CENTS = 799;
 
 export async function fixMissingLtvAction(formData: FormData) {

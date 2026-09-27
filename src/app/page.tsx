@@ -75,7 +75,7 @@ const FAQ = [
   {
     question: "Est-ce que Stageio est gratuit ?",
     answer:
-      "L'inscription et la création de profil sont gratuites, et tu peux parcourir tout le catalogue d'offres sans limite. Liker une offre, candidater et générer une lettre de motivation par IA sont réservés aux membres Premium (7,99€/mois sans engagement, ou 70€ en paiement unique pour un accès à vie).",
+      "L'inscription et la création de profil sont gratuites, et tu peux parcourir tout le catalogue d'offres sans limite. Liker une offre, candidater et générer une lettre de motivation par IA sont réservés aux membres Premium (7,99€/mois sans engagement, ou 39,99€ en paiement unique pour un accès à vie).",
   },
   {
     question: "Stageio propose des stages ou des alternances ?",
@@ -1410,7 +1410,7 @@ export default async function LandingPage() {
                     🎉 Accès à vie
                   </p>
                   <p style={{ margin: "10px 0 0", fontSize: 32, fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1 }}>
-                    70 €<span style={{ fontSize: 13, fontWeight: 600, color: mutedText }}> paiement unique</span>
+                    39,99 €<span style={{ fontSize: 13, fontWeight: 600, color: mutedText }}> paiement unique</span>
                   </p>
                   <p style={{ margin: "10px 0 24px", fontSize: 13.5, color: mutedText, flex: 1 }}>
                     Une fois, jamais de renouvellement.

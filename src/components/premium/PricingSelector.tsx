@@ -104,7 +104,7 @@ export function PricingSelector({
             onSelect={() => setPlan("lifetime")}
             label="Accès à vie"
             sublabel="Paiement unique, jamais de renouvellement"
-            price="70 €"
+            price="39,99 €"
           />
         )}
       </div>
