@@ -39,7 +39,7 @@ function daysBetween(a: string, b: string): number {
 // computeMatchScore) -- alors que "Lyon" et "Villeurbanne", c'est le même
 // bassin d'emploi. Pas de données lat/long en base, donc pas de vraie
 // distance géographique possible : on retombe sur une liste des villes de
-// l'agglomération pour chacune des 12 métropoles proposées à l'onboarding
+// l'agglomération pour chacune des 13 métropoles proposées à l'onboarding
 // (TOP_CITIES).
 const METRO_CLUSTERS: string[][] = [
   ["Paris", "Boulogne-Billancourt", "Neuilly-sur-Seine", "Levallois-Perret", "Saint-Denis", "Montreuil", "Issy-les-Moulineaux", "Vincennes", "Nanterre", "Créteil", "Aubervilliers", "Ivry-sur-Seine", "Clichy", "Courbevoie", "La Défense"],
@@ -54,6 +54,7 @@ const METRO_CLUSTERS: string[][] = [
   ["Rennes", "Cesson-Sévigné", "Saint-Grégoire", "Bruz", "Chantepie"],
   ["Montpellier", "Castelnau-le-Lez", "Lattes", "Juvignac", "Pérols"],
   ["Grenoble", "Saint-Martin-d'Hères", "Échirolles", "Fontaine", "Meylan", "Eybens"],
+  ["Perpignan", "Cabestany", "Saint-Estève", "Le Soler", "Canet-en-Roussillon", "Bompas", "Toulouges"],
 ];
 
 function findMetroCluster(cityLower: string): string[] | null {

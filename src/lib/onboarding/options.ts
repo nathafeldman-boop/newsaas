@@ -187,6 +187,7 @@ export const TOP_CITIES = [
   "Rennes",
   "Montpellier",
   "Grenoble",
+  "Perpignan",
 ];
 
 // Les 101 départements français (96 métropolitains + 5 d'outre-mer) --

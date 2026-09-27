@@ -54,7 +54,7 @@ const QUERIES: { what: string; pages: number; where?: string }[] = [
 // Adzuna par pertinence/date -- ce qui favorise mécaniquement l'Île-de-France
 // où se concentre l'essentiel du volume d'offres. Résultat : un profil basé
 // à Lyon ou Marseille voyait très peu d'offres réellement proches de lui.
-// Couvre désormais LES 12 VILLES de TOP_CITIES à chaque run (plus de
+// Couvre désormais LES 13 VILLES de TOP_CITIES à chaque run (plus de
 // rotation nécessaire au niveau "maximum") -- chaque ville, chaque stream
 // tournant en parallèle des autres (voir Promise.all plus bas), ne coûte
 // donc rien en temps d'exécution, seulement en appels Adzuna.
