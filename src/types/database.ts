@@ -62,6 +62,7 @@ export type Profile = {
   weekly_offer_announced_at: string | null;
   daily_offer_announced_at: string | null;
   swipe_relance_sent_at: string | null;
+  inactive_campaign_emails_sent: number;
   affiliate_id: string | null;
   utm_source: string | null;
   search_completed_at: string | null;

@@ -27,6 +27,10 @@
     {
       "path": "/api/cron/send-swipe-relance",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/inactive-winback",
+      "schedule": "0 10 * * *"
     }
   ]
 }

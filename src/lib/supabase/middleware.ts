@@ -20,6 +20,7 @@ const PUBLIC_PATHS = [
   "/llms.txt",
   "/admin",
   "/compte-supprime",
+  "/desabonnement",
 ];
 const ONBOARDING_EXEMPT_PATHS = ["/onboarding", "/auth", "/admin"];
 
