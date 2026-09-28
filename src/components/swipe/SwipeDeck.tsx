@@ -343,21 +343,24 @@ function SwipeDeckInner({
     }
   }
 
-  // Hard paywall (pas d'essai gratuit, voir RETENTION_AUDIT.md) : "pass" est
-  // de la pure navigation, jamais limité -- un compte gratuit peut parcourir
-  // tout le deck. "like" (= mettre en favori) est réservé aux Premium ; pour
-  // un compte gratuit, on n'enregistre jamais le swipe et on renvoie tout de
-  // suite vers /premium plutôt que de laisser la carte sortir de l'écran
-  // (voir SwipeCard : la carte revient au centre quand ceci renvoie false).
-  // Miroir du trigger SQL enforce_swipe_quota (voir supabase/migrations) qui
-  // referait le même refus si jamais ce check client était contourné.
+  // Hard paywall, durci le 28/09 (demande explicite de Nathan : "envoie le
+  // paywall à chaque swipe") : "pass" n'est plus une exception -- un compte
+  // gratuit ne peut plus swiper DU TOUT, même passer une offre, sans être
+  // renvoyé vers /premium. Avant ce changement, "pass" était volontairement
+  // laissé libre ("ils peuvent voir les cartes", voir l'historique de
+  // enforce_swipe_quota) ; ce n'est plus le cas. On n'enregistre jamais le
+  // swipe et on renvoie tout de suite vers /premium plutôt que de laisser la
+  // carte sortir de l'écran (voir SwipeCard : la carte revient au centre
+  // quand ceci renvoie false). Miroir du trigger SQL enforce_swipe_quota
+  // (voir supabase/migrations) qui referait le même refus si jamais ce
+  // check client était contourné.
   function handleSwipeIntent(direction: SwipeDirection): boolean {
     const offer = stack[0];
     if (!offer) return false;
 
-    if (direction === "like" && !isPremium) {
-      void logButtonClick(userId, "premium_cta", { source: "swipe_like" });
-      router.push("/premium?source=swipe_like");
+    if (!isPremium) {
+      void logButtonClick(userId, "premium_cta", { source: `swipe_${direction}` });
+      router.push(`/premium?source=swipe_${direction}`);
       return false;
     }
 

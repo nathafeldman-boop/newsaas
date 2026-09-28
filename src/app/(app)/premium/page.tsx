@@ -90,11 +90,14 @@ export default async function PremiumPage({
     .single();
 
   const premium = isPremium(profile);
-  // Hard paywall (26/09, voir RETENTION_AUDIT.md) : plus de quota de swipes,
-  // donc plus de "?limite=1" -- SwipeDeck redirige ici avec "?source=" dès
-  // qu'un compte gratuit tente une action réservée (like/candidature), pour
-  // afficher un rappel contextuel plutôt qu'un vague "swipes épuisés".
-  const blockedAction = source === "swipe_like" || source === "swipe_apply";
+  // Hard paywall (26/09, durci le 28/09 -- voir RETENTION_AUDIT.md) : plus
+  // de quota de swipes, donc plus de "?limite=1" -- SwipeDeck redirige ici
+  // avec "?source=" dès qu'un compte gratuit tente une action réservée
+  // (swipe dans n'importe quel sens, candidature), pour afficher un rappel
+  // contextuel plutôt qu'un vague "swipes épuisés". "swipe_pass" ajouté le
+  // 28/09 : passer une offre est désormais réservé aux Premium au même
+  // titre que liker.
+  const blockedAction = source === "swipe_like" || source === "swipe_pass" || source === "swipe_apply";
   // Un abonnement dont le renouvellement a échoué (carte à ré-authentifier,
   // refusée, expirée...) passe en "past_due" côté Stripe -- isPremium()
   // l'exclut à raison (accès effectivement coupé), mais avant ce correctif
@@ -302,7 +305,11 @@ export default async function PremiumPage({
                   </svg>
                 </div>
                 <div style={{ fontSize: 12.5, fontWeight: 600, lineHeight: 1.4 }}>
-                  {source === "swipe_apply" ? "Candidater est réservé aux membres Premium." : "Liker (= mettre en favori) est réservé aux membres Premium."}
+                  {source === "swipe_apply"
+                    ? "Candidater est réservé aux membres Premium."
+                    : source === "swipe_pass"
+                      ? "Swiper les offres est réservé aux membres Premium."
+                      : "Liker (= mettre en favori) est réservé aux membres Premium."}
                 </div>
               </div>
             )}
