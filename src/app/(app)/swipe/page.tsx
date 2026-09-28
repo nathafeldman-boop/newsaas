@@ -102,11 +102,12 @@ export default async function SwipePage() {
   }
   const affinity = buildLearnedAffinity(swipeHistory);
 
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-  const swipesToday = (swiped ?? []).filter(
-    (s) => new Date(s.created_at) >= todayStart,
-  ).length;
+  // Essai gratuit (28/09) : 3 swipes au TOTAL, jamais renouvelés -- donc un
+  // vrai décompte à vie, pas "aujourd'hui" (l'ancien quota hebdo/journalier
+  // a été explicitement abandonné). `swiped` est plafonné à 500 lignes
+  // (voir la requête plus haut) : largement suffisant pour ce qui n'a besoin
+  // que de comparer à FREE_SWIPE_LIMIT (3).
+  const totalSwipesEver = (swiped ?? []).length;
 
   const premium = isPremium(profile);
 
@@ -122,10 +123,10 @@ export default async function SwipePage() {
   // dernières publiées.
   const CANDIDATE_POOL_SIZE = 600;
 
-  // Hard paywall (pas d'essai gratuit, voir RETENTION_AUDIT.md) : la
-  // navigation dans le deck n'est plus plafonnée, y compris pour un compte
-  // gratuit -- seules les actions (like, candidature) sont réservées au
-  // Premium (voir SwipeDeck). Donc on récupère toujours les offres, qu'on
+  // Hard paywall + essai gratuit de 3 swipes (28/09, voir FREE_SWIPE_LIMIT
+  // dans SwipeDeck.tsx) : la récupération/le tri des offres ne dépend jamais
+  // du statut Premium -- seul le nombre de swipes déjà consommés limite
+  // l'INTERACTION côté SwipeDeck. Donc on récupère toujours les offres, qu'on
   // soit Premium ou pas.
   //
   // Pas de filtre dur par looking_for ici : le sélecteur Stage/Alternance/
@@ -273,7 +274,7 @@ export default async function SwipePage() {
         scores={scores}
         reasons={reasons}
         userId={user.id}
-        swipesToday={swipesToday}
+        totalSwipesEver={totalSwipesEver}
         isPremium={premium}
         cityBanner={cityBanner}
         sectorLabel={sectorLabel}

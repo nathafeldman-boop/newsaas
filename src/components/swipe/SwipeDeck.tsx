@@ -280,26 +280,40 @@ function useNextOffersEta(): string | null {
   return eta;
 }
 
+// Essai gratuit (28/09, décision finale de Nathan après être revenu deux
+// fois dans la même journée sur "paywall à chaque swipe") : 3 swipes au
+// total, jamais renouvelés -- pas 3/jour ni 3/semaine. "like" reste lui
+// TOUJOURS réservé Premium, quota ou pas (inchangé depuis le 26/09) : les 3
+// swipes gratuits ne concernent que le "pass" (navigation).
+const FREE_SWIPE_LIMIT = 3;
+
 function SwipeDeckInner({
   offers,
   scores,
   reasons,
   userId,
-  initialSwipesToday,
+  initialTotalSwipes,
   isPremium,
   onStackChange,
+  onSwipesUsedChange,
 }: {
   offers: Offer[];
   scores: Record<string, number>;
   reasons: Record<string, string[]>;
   userId: string;
-  initialSwipesToday: number;
+  initialTotalSwipes: number;
   isPremium: boolean;
   onStackChange?: (count: number) => void;
+  onSwipesUsedChange?: (count: number) => void;
 }) {
   const router = useRouter();
   const [stack, setStack] = useState(offers);
-  const [, setSwipesToday] = useState(initialSwipesToday);
+  const [swipesUsed, setSwipesUsed] = useState(initialTotalSwipes);
+
+  useEffect(() => {
+    onSwipesUsedChange?.(swipesUsed);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [swipesUsed]);
   // Offre à l'origine du modal de célébration (≥ CELEBRATION_THRESHOLD) --
   // on garde l'offre entière (pas juste un booléen) pour pouvoir afficher
   // son titre/entreprise et proposer "Postuler maintenant" directement
@@ -343,29 +357,35 @@ function SwipeDeckInner({
     }
   }
 
-  // Hard paywall, durci le 28/09 (demande explicite de Nathan : "envoie le
-  // paywall à chaque swipe") : "pass" n'est plus une exception -- un compte
-  // gratuit ne peut plus swiper DU TOUT, même passer une offre, sans être
-  // renvoyé vers /premium. Avant ce changement, "pass" était volontairement
-  // laissé libre ("ils peuvent voir les cartes", voir l'historique de
-  // enforce_swipe_quota) ; ce n'est plus le cas. On n'enregistre jamais le
-  // swipe et on renvoie tout de suite vers /premium plutôt que de laisser la
-  // carte sortir de l'écran (voir SwipeCard : la carte revient au centre
-  // quand ceci renvoie false). Miroir du trigger SQL enforce_swipe_quota
-  // (voir supabase/migrations) qui referait le même refus si jamais ce
-  // check client était contourné.
+  // Hard paywall + essai gratuit (28/09, décision finale de Nathan -- voir
+  // FREE_SWIPE_LIMIT) : "like" reste TOUJOURS réservé Premium (inchangé
+  // depuis le 26/09, jamais compté dans le quota puisqu'il est de toute
+  // façon bloqué avant). "pass" (navigation) est libre pour les
+  // FREE_SWIPE_LIMIT premiers swipes au total, puis bloqué comme le reste.
+  // Dans les deux cas, on n'enregistre jamais le swipe et on renvoie tout de
+  // suite vers /premium plutôt que de laisser la carte sortir de l'écran
+  // (voir SwipeCard : la carte revient au centre quand ceci renvoie false).
+  // Miroir du trigger SQL enforce_swipe_quota (voir supabase/migrations) qui
+  // referait le même refus si jamais ce check client était contourné.
   function handleSwipeIntent(direction: SwipeDirection): boolean {
     const offer = stack[0];
     if (!offer) return false;
 
     if (!isPremium) {
-      void logButtonClick(userId, "premium_cta", { source: `swipe_${direction}` });
-      router.push(`/premium?source=swipe_${direction}`);
-      return false;
+      if (direction === "like") {
+        void logButtonClick(userId, "premium_cta", { source: "swipe_like" });
+        router.push("/premium?source=swipe_like");
+        return false;
+      }
+      if (swipesUsed >= FREE_SWIPE_LIMIT) {
+        void logButtonClick(userId, "premium_cta", { source: "swipe_limit" });
+        router.push("/premium?source=swipe_limit");
+        return false;
+      }
     }
 
     void recordSwipe(offer, direction);
-    setSwipesToday((n) => n + 1);
+    setSwipesUsed((n) => n + 1);
     if (direction === "like" && (scores[offer.id] ?? 0) >= CELEBRATION_THRESHOLD) {
       setCelebratingOffer(offer);
     }
@@ -386,7 +406,7 @@ function SwipeDeckInner({
     const offer = stack[0];
     if (!offer) return;
     void recordSwipe(offer, "like");
-    setSwipesToday((n) => n + 1);
+    setSwipesUsed((n) => n + 1);
     router.push(`/candidature/${offer.id}`);
   }
 
@@ -533,7 +553,7 @@ export function SwipeDeck({
   scores,
   reasons = {},
   userId,
-  swipesToday = 0,
+  totalSwipesEver = 0,
   isPremium = false,
   cityBanner = null,
   sectorLabel = null,
@@ -543,7 +563,7 @@ export function SwipeDeck({
   scores: Record<string, number>;
   reasons?: Record<string, string[]>;
   userId: string;
-  swipesToday?: number;
+  totalSwipesEver?: number;
   isPremium?: boolean;
   cityBanner?: string | null;
   sectorLabel?: string | null;
@@ -559,6 +579,11 @@ export function SwipeDeck({
   // par le premier appel de `onStackChange` sinon (montage ou changement de
   // filtre).
   const [cardsLeft, setCardsLeft] = useState(offers.length);
+  // Nombre de swipes déjà utilisés sur les FREE_SWIPE_LIMIT gratuits --
+  // même raison de vivre ici plutôt que dans SwipeDeckInner que cardsLeft
+  // ci-dessus (remonté à chaque changement de filtre).
+  const [swipesUsed, setSwipesUsed] = useState(totalSwipesEver);
+  const freeSwipesLeft = Math.max(0, FREE_SWIPE_LIMIT - swipesUsed);
 
   const filteredOffers =
     contractFilter === "all"
@@ -593,12 +618,10 @@ export function SwipeDeck({
       {(!isPremium || sectorLabel || applicationStreak > 0) && (
         <div className="mt-4 mb-1 flex items-center gap-2">
           {!isPremium && (
-            // Hard paywall (pas d'essai gratuit) : rappel permanent plutôt
-            // qu'un compteur de swipes restants (retiré, la navigation n'est
-            // plus plafonnée) -- la carte elle-même porte déjà le flou/teaser
-            // (voir OfferCard), ce tag rappelle juste pourquoi.
             <PremiumCtaLink userId={userId} source="swipe_banner" className="tag tag-accent">
-              🔒 Premium débloque like &amp; candidature
+              {freeSwipesLeft > 0
+                ? `🔓 ${freeSwipesLeft} swipe${freeSwipesLeft > 1 ? "s" : ""} gratuit${freeSwipesLeft > 1 ? "s" : ""} restant${freeSwipesLeft > 1 ? "s" : ""}`
+                : "🔒 Essai gratuit terminé — passe Premium"}
             </PremiumCtaLink>
           )}
           {sectorLabel && <span className="tag tag-neutral">{sectorLabel}</span>}
@@ -661,9 +684,10 @@ export function SwipeDeck({
         scores={scores}
         reasons={reasons}
         userId={userId}
-        initialSwipesToday={swipesToday}
+        initialTotalSwipes={swipesUsed}
         isPremium={isPremium}
         onStackChange={setCardsLeft}
+        onSwipesUsedChange={setSwipesUsed}
       />
     </div>
   );
