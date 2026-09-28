@@ -31,6 +31,10 @@
     {
       "path": "/api/cron/inactive-winback",
       "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/sync-france-travail",
+      "schedule": "30 4 * * *"
     }
   ]
 }

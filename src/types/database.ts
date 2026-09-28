@@ -17,7 +17,7 @@ export type ApplicationStatus =
   | "entretien"
   | "acceptee"
   | "refusee";
-export type OfferSource = "demo" | "manuel" | "mistral_ingest" | "adzuna";
+export type OfferSource = "demo" | "manuel" | "mistral_ingest" | "adzuna" | "france_travail";
 export type EmailProvider = "gmail";
 export type EmailReplySentiment = "positive" | "negative" | "neutral";
 
