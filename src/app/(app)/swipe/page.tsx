@@ -218,13 +218,21 @@ export default async function SwipePage() {
     ? (affinity.sampleSize >= 8 ? 68 : 60)
     : (affinity.sampleSize >= 8 ? 58 : 40);
 
-  // Même logique de filet de sécurité que ci-dessus : si ce filtre viderait
-  // un pool pourtant non vide, on préfère montrer les offres quand même
-  // (déjà triées par score, donc les moins hors-sujet en premier) plutôt que
-  // de renvoyer un compte gratuit vers l'écran de blocage sans un seul swipe.
+  // Filet de sécurité : si ce filtre ne laisserait qu'une poignée d'offres,
+  // on préfère montrer le pool complet quand même (déjà trié par score,
+  // donc les moins hors-sujet en premier). Seuil sur un MINIMUM (10), pas
+  // sur "vide" (>0) comme avant le 29/09 : la pénalité de localisation
+  // (-30, voir computeMatchScore) plafonne au score plancher (30) toute
+  // offre hors de la ville exacte du profil dès qu'aucune mobilité élargie
+  // n'est déclarée -- un profil qui n'a QUE 1-2 offres littéralement dans sa
+  // ville, sur 13 dans son secteur au national, tombait sous "> 0" et ne
+  // voyait donc jamais que ces 1-2 cartes avant de se retrouver sur l'écran
+  // "plus d'offres", malgré un vrai pool bien plus large derrière (signalé
+  // par Nathan le 29/09 : "je swipe une seule fois et il n'y en a plus").
+  const MIN_RELEVANT_POOL = 10;
   const filteredByRelevance = rankedOffers.filter((o) => (scores[o.id] ?? 0) > relevanceThreshold);
   const relevantOffers =
-    hasPreferences && filteredByRelevance.length > 0 ? filteredByRelevance : rankedOffers;
+    hasPreferences && filteredByRelevance.length >= MIN_RELEVANT_POOL ? filteredByRelevance : rankedOffers;
 
   const sortedOffers = relevantOffers.slice(0, DECK_SIZE);
 
