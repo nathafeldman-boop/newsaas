@@ -168,21 +168,21 @@ export default async function PremiumPage({
               🎉 Accès à vie — paiement unique, rien à gérer ni à renouveler.
             </p>
           ) : (
+            // Reste cliquable et visible (jamais caché) mais volontairement
+            // discret -- avant ce changement, "Gérer mon abonnement" (qui
+            // mène à l'écran de résiliation) était le seul CTA de la page,
+            // stylé comme un bouton principal plein-largeur. Nathan (29/09) :
+            // l'app ne doit pas pousser vers la résiliation dès qu'on arrive
+            // ici, sans pour autant la dissimuler.
             <Link
               href="/premium/annuler"
-              className="btn btn-block"
               style={{
-                height: 50,
-                borderRadius: 999,
-                border: "1.5px solid var(--color-accent)",
-                background: "transparent",
-                color: "var(--color-accent-700)",
-                fontSize: 15,
-                fontWeight: 700,
                 marginTop: 28,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                fontSize: 13,
+                fontWeight: 600,
+                color: "color-mix(in srgb, var(--color-text) 55%, transparent)",
+                textDecoration: "underline",
+                textUnderlineOffset: 3,
               }}
             >
               Gérer mon abonnement
