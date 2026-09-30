@@ -70,7 +70,7 @@ export async function discoverOfferUrls(query: string, count = 5): Promise<strin
   ];
 
   let response = await client.messages.create(
-    { model, max_tokens: 3000, system: SYSTEM_PROMPT, temperature: 0.2, tools, messages },
+    { model, max_tokens: 3000, system: SYSTEM_PROMPT, tools, messages },
     { timeout: ANTHROPIC_TIMEOUT_MS },
   );
 
@@ -81,7 +81,7 @@ export async function discoverOfferUrls(query: string, count = 5): Promise<strin
   if (response.stop_reason === "pause_turn") {
     messages.push({ role: "assistant", content: response.content });
     response = await client.messages.create(
-      { model, max_tokens: 3000, system: SYSTEM_PROMPT, temperature: 0.2, tools, messages },
+      { model, max_tokens: 3000, system: SYSTEM_PROMPT, tools, messages },
       { timeout: ANTHROPIC_TIMEOUT_MS },
     );
   }

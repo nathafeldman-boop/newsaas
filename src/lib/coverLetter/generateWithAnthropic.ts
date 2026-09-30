@@ -76,7 +76,6 @@ export async function generateCoverLetterWithAnthropic(
       model,
       max_tokens: 1000,
       system: SYSTEM_PROMPT,
-      temperature: 0.6,
       messages: [{ role: "user", content: buildUserPrompt(offer, profile, cvText, extra) }],
       // effort "medium" : génération créative mais courte (170-240 mots),
       // pas un problème de raisonnement long -- réduit la latence (Opus 5

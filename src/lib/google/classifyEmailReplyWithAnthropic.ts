@@ -49,7 +49,6 @@ export async function classifyEmailReply(
       model,
       max_tokens: 500,
       system: SYSTEM_PROMPT,
-      temperature: 0.1,
       messages: [{ role: "user", content: userContent }],
       // effort "low" : classification pure, pas de raisonnement long -- voir
       // cvAudit/generateWithAnthropic.ts pour le raisonnement complet.

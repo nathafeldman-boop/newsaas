@@ -34,7 +34,6 @@ export async function auditCvWithAnthropic(cvText: string, profile: ProfileForAI
       model,
       max_tokens: 2000,
       system: SYSTEM_PROMPT,
-      temperature: 0.2,
       messages: [{ role: "user", content: buildUserPrompt(cvText, profile) }],
       // effort "low" : tâche d'évaluation/classification structurée, pas de
       // raisonnement long -- réduit la latence (Opus 5 réfléchit par défaut,

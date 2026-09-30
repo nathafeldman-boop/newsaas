@@ -40,7 +40,6 @@ export async function generateOfferFitWithAnthropic(cvText: string, offer: Offer
       model,
       max_tokens: 1500,
       system: SYSTEM_PROMPT,
-      temperature: 0.2,
       messages: [{ role: "user", content: buildUserPrompt(cvText, offer) }],
       // effort "low" : voir generateWithAnthropic.ts (cvAudit) pour le
       // raisonnement -- même type de tâche (comparaison/scoring structuré).

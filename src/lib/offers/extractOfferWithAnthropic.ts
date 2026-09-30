@@ -86,7 +86,6 @@ export async function extractOfferFromText(
       model,
       max_tokens: 2000,
       system: SYSTEM_PROMPT,
-      temperature: 0.1,
       messages: [{ role: "user", content: userContent }],
       // effort "low" : extraction structurée, pas de raisonnement long --
       // voir cvAudit/generateWithAnthropic.ts pour le raisonnement complet.
