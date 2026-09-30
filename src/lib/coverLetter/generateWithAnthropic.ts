@@ -77,12 +77,16 @@ export async function generateCoverLetterWithAnthropic(
       max_tokens: 1000,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: buildUserPrompt(offer, profile, cvText, extra) }],
-      // effort "medium" : génération créative mais courte (170-240 mots),
-      // pas un problème de raisonnement long -- réduit la latence (Opus 5
-      // réfléchit par défaut, voir client.ts) tout en gardant plus de marge
-      // qualité que "low" (voir cvAudit/generateWithAnthropic.ts, tâche de
-      // pure évaluation là où celle-ci est rédactionnelle).
-      output_config: { effort: "medium" },
+      // effort "medium" -> "low" (30/09, Nathan : génération trop lente).
+      // Opus 5 réfléchit par défaut quel que soit l'effort (voir client.ts) ;
+      // "low" réduit la profondeur de cette réflexion, le principal poste de
+      // latence ici, sans désactiver le thinking -- le désactiver carrément
+      // (thinking: {type: "disabled"}) est déconseillé sur Opus 5 : ça peut
+      // faire fuiter des balises <thinking> dans le texte renvoyé, pire
+      // qu'une lettre lente ici. Tâche courte et cadrée (170-240 mots, gabarit
+      // de lettre de motivation) : pas le type de génération créative qui
+      // profite vraiment d'un effort plus élevé.
+      output_config: { effort: "low" },
     },
     { timeout: ANTHROPIC_TIMEOUT_MS },
   );
