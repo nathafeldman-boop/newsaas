@@ -1,7 +1,15 @@
-import { getAnthropicClient, getAnthropicModel, ANTHROPIC_TIMEOUT_MS } from "@/lib/anthropic/client";
+import { getAnthropicClient, ANTHROPIC_TIMEOUT_MS } from "@/lib/anthropic/client";
 import { buildProfileContextLines, type ProfileForAI } from "@/lib/ai/profileContext";
 import type { CoverLetterExtra } from "@/lib/coverLetter/staticGenerator";
 import type { Offer } from "@/types/database";
+
+// Modèle dédié à cet appel (plutôt que getAnthropicModel(), partagé avec
+// l'audit CV, l'extraction/découverte d'offres et la classification email) :
+// Nathan a validé le 30/09 le passage sur Sonnet pour la lettre de
+// motivation spécifiquement, après que le passage "medium" -> "low" sur
+// Opus 5 n'ait pas suffi -- les 5 autres appels restent sur Opus 5, ce
+// changement ne les concerne pas.
+const COVER_LETTER_MODEL = "claude-sonnet-5-5";
 
 const SYSTEM_PROMPT = `Tu es un conseiller carrière qui rédige, pour des étudiants et jeunes
 diplômés français, une lettre de motivation courte et percutante pour candidater à une
@@ -69,23 +77,18 @@ export async function generateCoverLetterWithAnthropic(
   extra?: CoverLetterExtra,
 ): Promise<string> {
   const client = getAnthropicClient();
-  const model = getAnthropicModel();
 
   const response = await client.messages.create(
     {
-      model,
+      model: COVER_LETTER_MODEL,
       max_tokens: 1000,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: buildUserPrompt(offer, profile, cvText, extra) }],
-      // effort "medium" -> "low" (30/09, Nathan : génération trop lente).
-      // Opus 5 réfléchit par défaut quel que soit l'effort (voir client.ts) ;
-      // "low" réduit la profondeur de cette réflexion, le principal poste de
-      // latence ici, sans désactiver le thinking -- le désactiver carrément
-      // (thinking: {type: "disabled"}) est déconseillé sur Opus 5 : ça peut
-      // faire fuiter des balises <thinking> dans le texte renvoyé, pire
-      // qu'une lettre lente ici. Tâche courte et cadrée (170-240 mots, gabarit
-      // de lettre de motivation) : pas le type de génération créative qui
-      // profite vraiment d'un effort plus élevé.
+      // effort "low" : tâche courte et cadrée (170-240 mots, gabarit de
+      // lettre de motivation), pas le type de génération créative qui
+      // profite d'un effort plus élevé -- et sur Sonnet 5.5 (contrairement à
+      // Opus 5), "low" correspond au point de départ recommandé pour ce
+      // genre de tâche proche du chat plutôt que du raisonnement agentique.
       output_config: { effort: "low" },
     },
     { timeout: ANTHROPIC_TIMEOUT_MS },
