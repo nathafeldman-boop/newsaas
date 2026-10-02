@@ -15,7 +15,9 @@ import type { ContractType } from "@/types/database";
 // premières sur d'autres critères (ville, compétences...). Pas la peine de
 // couvrir les 113 : on ajoute ici les secteurs les plus probables sur un
 // agrégateur généraliste.
-const SECTOR_KEYWORDS: Record<string, RegExp> = {
+// Exporté (en plus de guessSector) pour servir de vocabulaire fermé aux
+// pages /offres/secteur/[secteur] -- voir lib/offers/segments.ts.
+export const SECTOR_KEYWORDS: Record<string, RegExp> = {
   Informatique: /\b(it|software|developer|développeur|informatique|tech)\b/i,
   Data: /\b(data|analyst|analytics)\b/i,
   Design: /\b(design|creative|ux|ui)\b/i,

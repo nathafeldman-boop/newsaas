@@ -32,6 +32,7 @@
 - [Offres d'alternance](https://stageio.fr/offres/alternance)
 - [Offres de stage](https://stageio.fr/offres/stage)
 - [Guides](https://stageio.fr/guides) — alternance vs stage, trouver une alternance, CV, lettre de motivation.
+- Des pages existent aussi par secteur (`/offres/secteur/<secteur>`) et par ville (`/offres/ville/<ville>`) pour les secteurs/villes avec suffisamment d'offres actives.
 - [Créer un compte](https://stageio.fr/inscription)
 - [Mentions légales](https://stageio.fr/legal/mentions-legales)
 - [CGU](https://stageio.fr/legal/cgu)

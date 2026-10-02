@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { fetchPublicOffers } from "@/lib/offers/fetchPublicOffers";
+import { getSectorSegments, getCitySegments } from "@/lib/offers/segments";
 import { PublicOffersGrid } from "@/components/offers/PublicOffersGrid";
 import { OffersSegmentNav } from "@/components/offers/OffersSegmentNav";
+import { SegmentChips } from "@/components/offers/SegmentChips";
 import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -28,7 +30,11 @@ export default async function PublicOffersIndex({
   }
 
   const page = Math.max(1, Number(pageParam) || 1);
-  const { offers, count, totalPages } = await fetchPublicOffers(undefined, page);
+  const [{ offers, count, totalPages }, sectorSegments, citySegments] = await Promise.all([
+    fetchPublicOffers(undefined, page),
+    getSectorSegments(),
+    getCitySegments(),
+  ]);
 
   return (
     <div className="mx-auto max-w-4xl px-5 py-10 sm:px-9">
@@ -38,6 +44,8 @@ export default async function PublicOffersIndex({
       </p>
 
       <OffersSegmentNav />
+      <SegmentChips title="Par secteur" basePath="/offres/secteur" segments={sectorSegments} />
+      <SegmentChips title="Par ville" basePath="/offres/ville" segments={citySegments} />
       <PublicOffersGrid offers={offers} page={page} totalPages={totalPages} basePath="/offres" />
     </div>
   );

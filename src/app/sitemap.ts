@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { offerPath } from "@/lib/offers/publicUrl";
+import { getSectorSegments, getCitySegments } from "@/lib/offers/segments";
 import { GUIDES } from "@/lib/guides/guidesData";
 import { SITE_URL } from "@/lib/site";
 
@@ -11,12 +12,16 @@ const MAX_OFFERS = 45000;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = await createClient();
-  const { data: offers } = await supabase
-    .from("offers")
-    .select("id, title, company, location, published_at")
-    .eq("is_active", true)
-    .order("published_at", { ascending: false })
-    .limit(MAX_OFFERS);
+  const [{ data: offers }, sectorSegments, citySegments] = await Promise.all([
+    supabase
+      .from("offers")
+      .select("id, title, company, location, published_at")
+      .eq("is_active", true)
+      .order("published_at", { ascending: false })
+      .limit(MAX_OFFERS),
+    getSectorSegments(),
+    getCitySegments(),
+  ]);
 
   const staticEntries: MetadataRoute.Sitemap = [
     { url: `${SITE_URL}/`, changeFrequency: "daily", priority: 1 },
@@ -47,5 +52,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  return [...staticEntries, ...offerEntries, ...guideEntries];
+  const sectorEntries: MetadataRoute.Sitemap = sectorSegments.map((segment) => ({
+    url: `${SITE_URL}/offres/secteur/${segment.slug}`,
+    changeFrequency: "daily",
+    priority: 0.6,
+  }));
+
+  const cityEntries: MetadataRoute.Sitemap = citySegments.map((segment) => ({
+    url: `${SITE_URL}/offres/ville/${segment.slug}`,
+    changeFrequency: "daily",
+    priority: 0.6,
+  }));
+
+  return [...staticEntries, ...offerEntries, ...guideEntries, ...sectorEntries, ...cityEntries];
 }
