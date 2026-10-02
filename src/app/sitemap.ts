@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { offerPath } from "@/lib/offers/publicUrl";
+import { GUIDES } from "@/lib/guides/guidesData";
 import { SITE_URL } from "@/lib/site";
 
 // Plafond très au-dessus du volume actuel, largement sous la limite de
@@ -22,6 +23,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/offres`, changeFrequency: "hourly", priority: 0.9 },
     { url: `${SITE_URL}/offres/alternance`, changeFrequency: "hourly", priority: 0.8 },
     { url: `${SITE_URL}/offres/stage`, changeFrequency: "hourly", priority: 0.8 },
+    { url: `${SITE_URL}/guides`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${SITE_URL}/legal`, changeFrequency: "yearly", priority: 0.2 },
     { url: `${SITE_URL}/legal/mentions-legales`, changeFrequency: "yearly", priority: 0.1 },
     { url: `${SITE_URL}/legal/cgu`, changeFrequency: "yearly", priority: 0.1 },
@@ -38,5 +40,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  return [...staticEntries, ...offerEntries];
+  const guideEntries: MetadataRoute.Sitemap = GUIDES.map((guide) => ({
+    url: `${SITE_URL}/guides/${guide.slug}`,
+    lastModified: guide.updatedAt,
+    changeFrequency: "monthly",
+    priority: 0.6,
+  }));
+
+  return [...staticEntries, ...offerEntries, ...guideEntries];
 }

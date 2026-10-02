@@ -15,6 +15,7 @@ const PUBLIC_PATHS = [
   "/auth",
   "/legal",
   "/offres",
+  "/guides",
   "/robots.txt",
   "/sitemap.xml",
   "/llms.txt",

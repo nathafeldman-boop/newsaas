@@ -1524,6 +1524,7 @@ export default async function LandingPage() {
             Stageio
           </span>
           {[
+            { href: "/guides", label: "Guides" },
             { href: "/affilies", label: "Devenir affilié" },
             { href: "/legal/mentions-legales", label: "Mentions légales" },
             { href: "/legal/cgu", label: "CGU" },
