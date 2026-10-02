@@ -32,11 +32,15 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const offer = await getOffer(slug);
-  if (!offer) return { title: "Offre introuvable" };
+  if (!offer) return { title: "Offre introuvable", robots: { index: false, follow: true } };
 
   const title = `${offer.title} — ${offer.company} (${offer.contract_type}) | Stageio`;
   const description = offer.description.slice(0, 155);
   const url = `${SITE_URL}${offerPath(offer)}`;
+  // Image par offre quand elle existe (Adzuna/France Travail/manuel) --
+  // sinon on n'écrit pas la clé, les metadata héritent de l'og-image par
+  // défaut du layout racine plutôt que de n'avoir aucune image du tout.
+  const ogImages = offer.image_url ? [offer.image_url] : undefined;
 
   return {
     title,
@@ -47,7 +51,9 @@ export async function generateMetadata({
       description,
       url,
       type: "website",
+      ...(ogImages ? { images: ogImages } : {}),
     },
+    ...(ogImages ? { twitter: { card: "summary_large_image", images: ogImages } } : {}),
   };
 }
 

@@ -9,6 +9,9 @@ import { Reveal } from "@/components/ui/Reveal";
 import { Highlight } from "@/components/ui/Highlight";
 
 export const metadata: Metadata = {
+  title: "Stageio — trouve ton alternance ou ton stage en swipant",
+  description:
+    "Swipe les offres d'alternance et de stage qui matchent ton profil, candidate en un geste et génère ta lettre de motivation par IA. Inscription gratuite.",
   alternates: { canonical: "/" },
 };
 
