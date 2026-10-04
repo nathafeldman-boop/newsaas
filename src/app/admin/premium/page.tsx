@@ -5,6 +5,7 @@ import {
   linkOrphanedStripeCustomerAction,
   reconcileAllInvoicesAction,
   reconcileAllSubscriptionsAction,
+  sendCheckoutAbandonedReminderAction,
   sendIncompletePaymentReminderAction,
 } from "@/app/admin/users/actions";
 
@@ -61,6 +62,9 @@ export default async function AdminPremiumPage({
     orphan_resynced?: string;
     orphan_invoices?: string;
     orphan_error?: string;
+    abandoned_sent?: string;
+    abandoned_failed?: string;
+    abandoned_error?: string;
   }>;
 }) {
   const {
@@ -78,6 +82,9 @@ export default async function AdminPremiumPage({
     orphan_resynced: orphanResynced,
     orphan_invoices: orphanInvoices,
     orphan_error: orphanError,
+    abandoned_sent: abandonedSent,
+    abandoned_failed: abandonedFailed,
+    abandoned_error: abandonedError,
   } = await searchParams;
   const admin = createAdminClient();
 
@@ -256,6 +263,51 @@ export default async function AdminPremiumPage({
         </p>
         <button type="submit" className="btn btn-secondary" style={{ alignSelf: "flex-start" }}>
           Lancer la réconciliation
+        </button>
+      </form>
+
+      {abandonedError !== undefined && (
+        <div
+          className="card"
+          style={{ padding: "var(--space-4)", marginBottom: 12, background: "var(--color-accent-100)" }}
+        >
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>
+            La relance a échoué avant de démarrer (voir les logs).
+          </p>
+        </div>
+      )}
+
+      {abandonedSent !== undefined && (
+        <div
+          className="card"
+          style={{
+            padding: "var(--space-4)",
+            marginBottom: 12,
+            background: "var(--color-accent-100)",
+            color: "var(--color-accent-700)",
+          }}
+        >
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>
+            {abandonedSent} relance(s) envoyée(s)
+            {Number(abandonedFailed) > 0 ? ` — ${abandonedFailed} échec(s) (voir logs)` : ""}.
+          </p>
+        </div>
+      )}
+
+      <form
+        action={sendCheckoutAbandonedReminderAction}
+        className="card"
+        style={{ padding: "var(--space-4)", marginBottom: 12, gap: 10 }}
+      >
+        <p style={{ fontWeight: 600, margin: 0, fontSize: 14 }}>Relancer les paniers abandonnés</p>
+        <p style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>
+          Envoie un email à tous les comptes qui ont cliqué sur un plan Premium (client Stripe créé)
+          mais n&apos;ont jamais terminé le paiement. Construit la liste depuis la base à chaque clic
+          -- ne touche jamais un compte déjà relancé une première fois, ni un compte devenu Premium
+          entre-temps.
+        </p>
+        <button type="submit" className="btn btn-secondary" style={{ alignSelf: "flex-start" }}>
+          Envoyer les relances
         </button>
       </form>
 

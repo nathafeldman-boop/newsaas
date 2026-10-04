@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { assertAdminSession } from "@/lib/admin/accessCode";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notifyPremiumFixed } from "@/lib/resend/notifyPremiumFixed";
+import { notifyCheckoutAbandoned } from "@/lib/resend/notifyCheckoutAbandoned";
 import { notifyIncompletePaymentOnce } from "@/lib/stripe/notifyIncompletePayment";
 import { getStripeClient } from "@/lib/stripe/client";
 import { creditInvoicePayment } from "@/lib/stripe/creditInvoicePayment";
@@ -343,6 +344,61 @@ export async function linkOrphanedStripeCustomerAction(formData: FormData) {
   redirect(
     `/admin/premium?orphan_linked=1&orphan_customer=${customerId}&orphan_resynced=${resynced ? 1 : 0}&orphan_invoices=${invoicesCredited}`,
   );
+}
+
+// Relance "panier abandonné" demandée par Nathan (04/10, après avoir vu la
+// liste des clients Stripe sans paiement) : tous les comptes qui ont cliqué
+// sur un plan Premium (stripe_customer_id posé par getOrCreateStripeCustomer,
+// voir premium/actions.ts) mais ne sont jamais devenus Premium. Construit la
+// liste depuis la base plutôt que depuis les emails du dashboard Stripe :
+// ne rate personne, et ne recontacte jamais quelqu'un déjà devenu Premium
+// entre-temps par un autre chemin (code admin "comp", paiement réussi après
+// coup...). checkout_abandoned_reminder_sent_at rend l'action rejouable sans
+// jamais spammer deux fois le même compte.
+export async function sendCheckoutAbandonedReminderAction() {
+  await assertAdminSession();
+  const admin = createAdminClient();
+
+  const { data: profiles, error: profilesError } = await admin
+    .from("profiles")
+    .select("id, email, full_name")
+    .not("stripe_customer_id", "is", null)
+    .not("subscription_status", "in", "(active,trialing,comp,lifetime)")
+    .is("checkout_abandoned_reminder_sent_at", null)
+    .not("email", "is", null)
+    .order("id")
+    .limit(2000);
+
+  if (profilesError) {
+    console.error("sendCheckoutAbandonedReminderAction: query failed", profilesError);
+    redirect("/admin/premium?abandoned_error=1");
+  }
+
+  let sent = 0;
+  let failed = 0;
+
+  for (const profile of profiles ?? []) {
+    if (!profile.email) continue;
+    try {
+      await notifyCheckoutAbandoned(profile.email, profile.full_name);
+      const { error } = await admin
+        .from("profiles")
+        .update({ checkout_abandoned_reminder_sent_at: new Date().toISOString() })
+        .eq("id", profile.id);
+      if (error) {
+        console.error("sendCheckoutAbandonedReminderAction: flag update failed", error, {
+          profileId: profile.id,
+        });
+      }
+      sent += 1;
+    } catch (emailError) {
+      failed += 1;
+      console.error("sendCheckoutAbandonedReminderAction: envoi échoué", emailError, { profileId: profile.id });
+    }
+  }
+
+  revalidatePath("/admin/premium");
+  redirect(`/admin/premium?abandoned_sent=${sent}&abandoned_failed=${failed}`);
 }
 
 // Déclenchement manuel pour un cas repéré à la main dans le dashboard
