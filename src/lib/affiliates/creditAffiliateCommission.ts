@@ -28,10 +28,26 @@ function planLabelForPriceId(priceId: string | null): "week" | "month" | "lifeti
  * de profil, cette fonction n'est jamais appelée, et Stripe retentera le
  * même webhook plus tard.
  */
+// Règle de Nathan : l'affilié touche sa commission sur la vente, une seule
+// fois -- jamais sur les renouvellements mensuels ni sur un changement de
+// formule. invoice.paid se déclenche pourtant à CHAQUE facture (premier
+// paiement, puis chaque mois) : sans ce filtre, 50 % de chaque
+// renouvellement partait en commission.
+const NON_COMMISSIONABLE_BILLING_REASONS = new Set(["subscription_cycle", "subscription_update", "subscription_threshold"]);
+
 export async function creditAffiliateCommission(
   invoice: Stripe.Invoice,
   customerId: string,
 ): Promise<{ error?: string }> {
+  if (invoice.billing_reason && NON_COMMISSIONABLE_BILLING_REASONS.has(invoice.billing_reason)) {
+    console.log("creditAffiliateCommission: renouvellement, pas de commission", {
+      invoiceId: invoice.id,
+      customerId,
+      billingReason: invoice.billing_reason,
+    });
+    return {};
+  }
+
   const priceRef = invoice.lines.data[0]?.pricing?.price_details?.price;
   const priceId = typeof priceRef === "string" ? priceRef : (priceRef?.id ?? null);
   const planInterval = planLabelForPriceId(priceId);
