@@ -2,10 +2,20 @@ import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   fixMissingLtvAction,
+  linkOrphanedStripeCustomerAction,
   reconcileAllInvoicesAction,
   reconcileAllSubscriptionsAction,
   sendIncompletePaymentReminderAction,
 } from "@/app/admin/users/actions";
+
+const ORPHAN_ERROR_LABEL: Record<string, string> = {
+  missing_id: "Indique un ID client Stripe (cus_...).",
+  stripe_not_found: "Stripe ne connaît pas cet ID client.",
+  no_email: "Ce client Stripe n'a aucun email renseigné -- impossible de le relier.",
+  no_profile: "Aucun compte Stageio avec cet email.",
+  conflict: "Ce compte Stageio est déjà lié à un AUTRE client Stripe -- vérifie à la main.",
+  link_failed: "La liaison a échoué (voir les logs).",
+};
 
 const STATUS_LABEL: Record<string, string> = {
   active: "Actif (mensuel)",
@@ -45,6 +55,12 @@ export default async function AdminPremiumPage({
     subreconcile_resynced?: string;
     subreconcile_failed?: string;
     subreconcile_error?: string;
+    orphan_linked?: string;
+    orphan_customer?: string;
+    orphan_email?: string;
+    orphan_resynced?: string;
+    orphan_invoices?: string;
+    orphan_error?: string;
   }>;
 }) {
   const {
@@ -56,6 +72,12 @@ export default async function AdminPremiumPage({
     subreconcile_resynced: subreconcileResynced,
     subreconcile_failed: subreconcileFailed,
     subreconcile_error: subreconcileError,
+    orphan_linked: orphanLinked,
+    orphan_customer: orphanCustomer,
+    orphan_email: orphanEmail,
+    orphan_resynced: orphanResynced,
+    orphan_invoices: orphanInvoices,
+    orphan_error: orphanError,
   } = await searchParams;
   const admin = createAdminClient();
 
@@ -235,6 +257,63 @@ export default async function AdminPremiumPage({
         <button type="submit" className="btn btn-secondary" style={{ alignSelf: "flex-start" }}>
           Lancer la réconciliation
         </button>
+      </form>
+
+      {orphanError !== undefined && (
+        <div
+          className="card"
+          style={{ padding: "var(--space-4)", marginBottom: 12, background: "var(--color-accent-100)" }}
+        >
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>
+            {ORPHAN_ERROR_LABEL[orphanError] ?? "Échec (voir les logs)."}
+            {orphanCustomer ? ` (${orphanCustomer}${orphanEmail ? `, ${orphanEmail}` : ""})` : ""}
+          </p>
+        </div>
+      )}
+
+      {orphanLinked !== undefined && (
+        <div
+          className="card"
+          style={{
+            padding: "var(--space-4)",
+            marginBottom: 12,
+            background: "var(--color-accent-100)",
+            color: "var(--color-accent-700)",
+          }}
+        >
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>
+            {orphanCustomer} relié avec succès
+            {Number(orphanResynced) === 1 ? ", abonnement resynchronisé" : ""}
+            {Number(orphanInvoices) > 0 ? `, ${orphanInvoices} facture(s) créditée(s)` : ""}.
+          </p>
+        </div>
+      )}
+
+      <form
+        action={linkOrphanedStripeCustomerAction}
+        className="card"
+        style={{ padding: "var(--space-4)", marginBottom: 12, gap: 10 }}
+      >
+        <p style={{ fontWeight: 600, margin: 0, fontSize: 14 }}>Relier un client Stripe orphelin</p>
+        <p style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>
+          Pour un customerId Stripe (cus_...) vu dans le dashboard Stripe mais jamais lié à un compte
+          Stageio (stripe_customer_id jamais posé -- voir le correctif du 04/10 dans le webhook pour
+          la cause). Retrouve le compte par email, pose le lien, puis resynchronise abonnement et
+          factures payées. Sans effet si déjà lié correctement.
+        </p>
+        <div className="flex gap-2" style={{ marginTop: 4 }}>
+          <input
+            type="text"
+            name="customerId"
+            required
+            placeholder="cus_..."
+            className="input"
+            style={{ flex: 1 }}
+          />
+          <button type="submit" className="btn btn-secondary" style={{ whiteSpace: "nowrap" }}>
+            Relier
+          </button>
+        </div>
       </form>
 
       <form

@@ -242,6 +242,109 @@ export async function reconcileAllSubscriptionsAction() {
   );
 }
 
+// Recours pour l'autre moitié du bug corrigé dans le webhook le 04/10
+// (checkout.session.completed dont l'UPDATE profiles ne matchait aucune
+// ligne, sans jamais lever d'erreur) : reconcileAllSubscriptionsAction et
+// reconcileAllInvoicesAction ci-dessus ne couvrent QUE les profils qui ont
+// déjà un stripe_customer_id posé -- inutile ici puisque c'est précisément
+// ce champ qui n'a jamais été écrit. Part du customerId Stripe brut (visible
+// dans le dashboard Stripe, voir la conversation avec Nathan du 04/10),
+// retrouve le profil par email, pose le lien manquant, puis rejoue la même
+// synchro idempotente que le webhook (abonnement récurrent ET factures
+// payées -- un achat à vie n'a pas d'abonnement Stripe, seulement une
+// facture, voir premium/actions.ts).
+export async function linkOrphanedStripeCustomerAction(formData: FormData) {
+  await assertAdminSession();
+  const customerId = (formData.get("customerId") as string)?.trim();
+  if (!customerId) redirect("/admin/premium?orphan_error=missing_id");
+
+  const admin = createAdminClient();
+  const stripe = getStripeClient();
+
+  let email: string | null = null;
+  try {
+    const customer = await stripe.customers.retrieve(customerId);
+    email = customer.deleted ? null : customer.email;
+  } catch (err) {
+    console.error("linkOrphanedStripeCustomerAction: Stripe customer fetch failed", err, { customerId });
+    redirect(`/admin/premium?orphan_error=stripe_not_found&orphan_customer=${customerId}`);
+  }
+  if (!email) redirect(`/admin/premium?orphan_error=no_email&orphan_customer=${customerId}`);
+
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("id, stripe_customer_id")
+    .eq("email", email)
+    .maybeSingle();
+  if (!profile) {
+    redirect(
+      `/admin/premium?orphan_error=no_profile&orphan_customer=${customerId}&orphan_email=${encodeURIComponent(email)}`,
+    );
+  }
+  if (profile.stripe_customer_id && profile.stripe_customer_id !== customerId) {
+    // Jamais écraser un lien existant à l'aveugle : un profil déjà lié à un
+    // AUTRE customerId mérite une vérification manuelle, pas une correction
+    // automatique qui pourrait se tromper de client.
+    console.error("linkOrphanedStripeCustomerAction: profil déjà lié à un autre client Stripe", {
+      profileId: profile.id,
+      existing: profile.stripe_customer_id,
+      customerId,
+    });
+    redirect(`/admin/premium?orphan_error=conflict&orphan_customer=${customerId}`);
+  }
+
+  const { error: linkError } = await admin
+    .from("profiles")
+    .update({ stripe_customer_id: customerId })
+    .eq("id", profile.id);
+  if (linkError) {
+    console.error("linkOrphanedStripeCustomerAction: lien échoué", linkError, { customerId, profileId: profile.id });
+    redirect(`/admin/premium?orphan_error=link_failed&orphan_customer=${customerId}`);
+  }
+
+  let resynced = false;
+  const subscriptions = await stripe.subscriptions.list({ customer: customerId, limit: 1 });
+  const subscription = subscriptions.data[0];
+  if (subscription) {
+    const { matched } = await syncSubscriptionToProfile(subscription);
+    resynced = matched;
+  }
+
+  const invoices = await stripe.invoices.list({ customer: customerId, status: "paid", limit: 10 });
+  let invoicesCredited = 0;
+  for (const invoice of invoices.data) {
+    if (invoice.amount_paid <= 0 || !invoice.id) continue;
+    const { credited, error } = await creditInvoicePayment(invoice.id, customerId, invoice.amount_paid);
+    if (error) {
+      console.error("linkOrphanedStripeCustomerAction: creditInvoicePayment échoué", error, {
+        customerId,
+        invoiceId: invoice.id,
+      });
+    } else if (credited) {
+      invoicesCredited += 1;
+    }
+  }
+
+  // Aucun abonnement récurrent mais au moins une facture payée = achat à vie
+  // (voir invoice_creation dans premium/actions.ts) -- n'écrase jamais un
+  // statut déjà posé par ailleurs (comp, etc.).
+  if (!subscription && invoices.data.length > 0) {
+    const { error: lifetimeError } = await admin
+      .from("profiles")
+      .update({ subscription_status: "lifetime", premium_activated_at: new Date().toISOString() })
+      .eq("id", profile.id)
+      .is("subscription_status", null);
+    if (lifetimeError) {
+      console.error("linkOrphanedStripeCustomerAction: statut lifetime échoué", lifetimeError, { customerId });
+    }
+  }
+
+  revalidatePath("/admin/premium");
+  redirect(
+    `/admin/premium?orphan_linked=1&orphan_customer=${customerId}&orphan_resynced=${resynced ? 1 : 0}&orphan_invoices=${invoicesCredited}`,
+  );
+}
+
 // Déclenchement manuel pour un cas repéré à la main dans le dashboard
 // Stripe (paiement "Incomplet") : le webhook envoie déjà ce mail
 // automatiquement dès qu'un abonnement passe en 'incomplete' (voir
