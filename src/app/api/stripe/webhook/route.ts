@@ -96,16 +96,37 @@ export async function POST(request: NextRequest) {
 
       if (userId && customerId) {
         const admin = createAdminClient();
-        const { error } = await admin
+        const { error, count } = await admin
           .from("profiles")
-          .update({
-            stripe_customer_id: customerId,
-            premium_activated_at: new Date().toISOString(),
-            ...(isLifetimePurchase ? { subscription_status: "lifetime" } : {}),
-          })
+          .update(
+            {
+              stripe_customer_id: customerId,
+              premium_activated_at: new Date().toISOString(),
+              ...(isLifetimePurchase ? { subscription_status: "lifetime" } : {}),
+            },
+            { count: "exact" },
+          )
           .eq("id", userId);
         if (error) {
           console.error("Stripe webhook: checkout.session.completed profile update failed", error, {
+            userId,
+            customerId,
+          });
+        } else if ((count ?? 0) === 0) {
+          // client_reference_id (posé au moment du checkout, voir
+          // premium/actions.ts) ne correspond à AUCUN profil -- update
+          // silencieusement no-op jusqu'ici (Postgres ne renvoie pas
+          // d'erreur pour un UPDATE qui matche 0 ligne), donc stripe_customer_id
+          // n'est jamais écrit nulle part. Le syncSubscription juste en
+          // dessous échoue alors avec "matched no profile", mais SANS jamais
+          // pouvoir se résoudre tout seul (contrairement au vrai cas de
+          // course event-sans-garantie-d'ordre documenté plus bas) : aucun
+          // futur event ne posera ce stripe_customer_id si ce userId
+          // n'existe pas. Trouvé le 04/10 : deux client Stripe coincés dans
+          // cet état depuis plusieurs jours, jamais loggé à la source avant
+          // ce correctif -- seul le symptôme en aval ("matched no profile")
+          // apparaissait, sans dire pourquoi ni que c'était permanent.
+          console.error("Stripe webhook: checkout.session.completed no profile matches client_reference_id", {
             userId,
             customerId,
           });
