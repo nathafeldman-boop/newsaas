@@ -25,7 +25,7 @@ export function slugify(text: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-function titleCase(text: string): string {
+export function titleCase(text: string): string {
   return text.replace(/\p{L}+/gu, (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
 }
 

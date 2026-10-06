@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { extractOfferId, offerPath, offerSlug } from "@/lib/offers/publicUrl";
-import { normalizeCityKey } from "@/lib/offers/segments";
+import { normalizeCityKey, titleCase } from "@/lib/offers/segments";
 import { getOfferContextLinks, type OfferContextLinks } from "@/lib/offers/similarOffers";
 import { SITE_URL } from "@/lib/site";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
@@ -65,7 +65,7 @@ function truncateOnWord(text: string, max: number): string {
 // 155 premiers caractères bruts de la description étaient souvent un texte
 // générique d'entreprise identique sur toutes ses offres.
 function offerMetaDescription(offer: Offer): string {
-  const city = normalizeCityKey(offer.location) || offer.location;
+  const city = titleCase(normalizeCityKey(offer.location)) || offer.location;
   const context = `${CONTRACT_LABEL[offer.contract_type]} chez ${offer.company} à ${city}${
     offer.duration ? ` (${offer.duration})` : ""
   }.`;
@@ -94,6 +94,11 @@ export async function generateMetadata({
     title,
     description,
     alternates: { canonical: url },
+    // Décision A (SEO_ROADMAP.md) : une fiche Adzuna n'est qu'un extrait de
+    // ~500 caractères identique à celui d'Adzuna et de dizaines d'autres
+    // sites. Accessible aux visiteurs et suivie (follow), mais hors index :
+    // ce sont les pages métier × ville, à contenu propre, qui portent le SEO.
+    ...(offer.source === "adzuna" ? { robots: { index: false, follow: true } } : {}),
     openGraph: {
       title: `${offer.title} chez ${offer.company}`,
       description,
@@ -195,13 +200,19 @@ const LISTING_LABEL: Record<Offer["contract_type"], string> = {
   stage: "Offres de stage",
 };
 
-// Fil d'Ariane identique en JSON-LD et à l'écran : Accueil > Offres de
-// stage > Lyon > l'offre (la ville seulement si sa page existe).
+// Fil d'Ariane identique en JSON-LD et à l'écran, calqué sur les pages
+// programmatiques : Accueil > Alternance > Alternance commercial >
+// Alternance commercial à Lyon > l'offre (chaque niveau seulement si sa
+// page existe). Fait remonter le "jus" des ~5 000 fiches vers les pages
+// métier × ville, celles qui doivent se positionner.
 function breadcrumbItems(offer: Offer, links: OfferContextLinks): { name: string; path: string }[] {
+  const { metier, city, metierCity } = links.programmatic;
+  const leaf = metierCity ?? city;
   return [
     { name: "Accueil", path: "/" },
-    { name: LISTING_LABEL[offer.contract_type], path: `/offres/${offer.contract_type}` },
-    ...(links.city ? [{ name: links.city.label, path: `/offres/ville/${links.city.slug}` }] : []),
+    { name: offer.contract_type === "alternance" ? "Alternance" : "Stage", path: `/${offer.contract_type}` },
+    ...(metier ? [{ name: metier.label, path: metier.href }] : []),
+    ...(leaf ? [{ name: leaf.label, path: leaf.href }] : []),
     { name: offer.title, path: offerPath(offer) },
   ];
 }
@@ -315,6 +326,13 @@ export default async function PublicOfferPage({
       )}
 
       <div className="mt-6 flex flex-wrap gap-2">
+        {[links.programmatic.metierCity, links.programmatic.metier, links.programmatic.city]
+          .filter((link): link is NonNullable<typeof link> => link !== null)
+          .map((link) => (
+            <Link key={link.href} href={link.href} className="tag tag-neutral">
+              {link.label} ({link.count})
+            </Link>
+          ))}
         {links.city && (
           <Link href={`/offres/ville/${links.city.slug}`} className="tag tag-neutral">
             Toutes les offres à {links.city.label} ({links.city.count})

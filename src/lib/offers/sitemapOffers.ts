@@ -3,7 +3,7 @@ import { offerPath } from "@/lib/offers/publicUrl";
 import { SITEMAP_MAX_URLS, type SitemapEntry } from "@/lib/seo/sitemapXml";
 import type { ContractType, Offer } from "@/types/database";
 
-// Toutes les offres actives d'un type, paginées par tranches de 1000 (le
+// Offres indexables (pas Adzuna, en noindex -- décision A) d'un type, paginées par tranches de 1000 (le
 // plafond PostgREST) : l'ancien sitemap demandait .limit(45000) en une
 // requête et ne recevait en réalité que 1000 offres sur ~5 000.
 export async function fetchOfferSitemapEntries(type: ContractType): Promise<SitemapEntry[]> {
@@ -15,6 +15,7 @@ export async function fetchOfferSitemapEntries(type: ContractType): Promise<Site
         .select("id, title, company, location, published_at")
         .eq("is_active", true)
         .eq("contract_type", type)
+        .neq("source", "adzuna")
         .order("id")
         .range(from, to),
     SITEMAP_MAX_URLS,

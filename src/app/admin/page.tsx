@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { submitIndexNowAction } from "@/app/admin/seo-actions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { startOfTodayParis } from "@/lib/date";
 import { STEP_IDS, STEP_LABELS, type StepId } from "@/lib/onboarding/steps";
@@ -100,9 +101,9 @@ function SectionCard({ title, subtitle, children }: { title: string; subtitle?: 
 export default async function AdminDashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ periode?: string }>;
+  searchParams: Promise<{ periode?: string; indexnow?: string; count?: string; message?: string }>;
 }) {
-  const { periode } = await searchParams;
+  const { periode, indexnow, count: indexNowCount, message: indexNowMessage } = await searchParams;
   const period: Period = (PERIODS as string[]).includes(periode ?? "") ? (periode as Period) : "30j";
 
   const admin = createAdminClient();
@@ -321,6 +322,19 @@ export default async function AdminDashboardPage({
   return (
     <div>
       <h1 style={{ fontSize: 26, margin: "0 0 20px" }}>Dashboard</h1>
+
+      {indexnow && (
+        <p className="card" style={{ padding: "var(--space-3)", marginBottom: 12, fontSize: 13 }}>
+          {indexnow === "ok"
+            ? `IndexNow : ${indexNowCount} URLs envoyées à Bing (indexation en quelques heures à quelques jours).`
+            : `IndexNow a échoué : ${indexNowMessage ?? "erreur inconnue"}.`}
+        </p>
+      )}
+      <form action={submitIndexNowAction} style={{ marginBottom: 16 }}>
+        <button type="submit" className="btn btn-secondary">
+          Envoyer le site à Bing (IndexNow)
+        </button>
+      </form>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <StatTile label="En ligne maintenant" value={String(onlineNow ?? 0)} accent href="/admin/online" />

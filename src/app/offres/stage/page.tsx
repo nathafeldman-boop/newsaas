@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { fetchPublicOffers } from "@/lib/offers/fetchPublicOffers";
@@ -37,6 +38,9 @@ export default async function StageOffersPage({
         tiennes.
       </p>
 
+      <p style={{ fontSize: 14, margin: "8px 0 0" }}>
+        <Link href="/stage">Offres de stage par métier et par ville</Link>
+      </p>
       <OffersSegmentNav active="stage" />
       <PublicOffersGrid offers={offers} page={page} totalPages={totalPages} basePath="/offres/stage" />
     </div>

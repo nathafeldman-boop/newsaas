@@ -1,0 +1,236 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import type { Metadata } from "next";
+import { PublicOffersGrid } from "@/components/offers/PublicOffersGrid";
+import {
+  fetchOffersByIds,
+  getHubModel,
+  listedPages,
+  pageIds,
+  resolveProgrammaticPage,
+  type SegmentLink,
+} from "@/lib/seo/programmaticPage";
+import { pagedPath, pagedTitle, parsePageParam } from "@/lib/seo/pagination";
+import { safeJsonLd } from "@/lib/seo/jsonLd";
+import { SITE_URL } from "@/lib/site";
+import { SMIC_MONTHLY_GROSS, formatEuros, internshipGratification, round2 } from "@/lib/salary/legalRates";
+import type { ContractType } from "@/types/database";
+
+type RouteProps = {
+  type: ContractType;
+  slug: string;
+  ville?: string;
+  pageParam?: string;
+};
+
+export async function programmaticMetadata({ type, slug, ville, pageParam }: RouteProps): Promise<Metadata> {
+  const model = await resolveProgrammaticPage(type, slug, ville);
+  if (!model) return { title: "Page introuvable", robots: { index: false, follow: true } };
+  const page = parsePageParam(pageParam);
+  const url = `${SITE_URL}${pagedPath(model.path, page)}`;
+  return {
+    title: pagedTitle(model.title, page),
+    description: page > 1 ? `${model.description} Page ${page}.` : model.description,
+    alternates: { canonical: url },
+    // Sous 10 offres : page utile au visiteur, mais trop mince pour Google.
+    robots: model.indexable ? undefined : { index: false, follow: true },
+    openGraph: { title: model.title, description: model.description, url, type: "website" },
+  };
+}
+
+function LinkChips({ title, links }: { title: string; links: SegmentLink[] }) {
+  if (links.length === 0) return null;
+  return (
+    <section className="mt-8">
+      <h2 style={{ fontSize: 18, margin: "0 0 10px" }}>{title}</h2>
+      <div className="flex flex-wrap gap-2">
+        {links.map((link) => (
+          <Link key={link.href} href={link.href} className="tag tag-neutral">
+            {link.label} ({link.count})
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+const statValue: React.CSSProperties = { fontSize: 24, fontWeight: 700, fontFamily: "var(--font-heading)", margin: 0 };
+const statLabel: React.CSSProperties = { fontSize: 12.5, margin: "2px 0 0" };
+
+export async function ProgrammaticPage({ type, slug, ville, pageParam }: RouteProps) {
+  const model = await resolveProgrammaticPage(type, slug, ville);
+  if (!model) notFound();
+
+  const page = parsePageParam(pageParam);
+  const totalPages = listedPages(model.stats);
+  if (page > totalPages) notFound();
+  const offers = await fetchOffersByIds(pageIds(model.stats, page));
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: model.breadcrumb.map((crumb, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: crumb.name,
+      item: `${SITE_URL}${crumb.path === "/" ? "" : crumb.path}`,
+    })),
+  };
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: model.faq.map((item) => ({
+      "@type": "Question",
+      name: item.q,
+      acceptedAnswer: { "@type": "Answer", text: item.a },
+    })),
+  };
+
+  const salaryStat =
+    model.stats.salaryMedian !== null
+      ? { value: formatEuros(model.stats.salaryMedian, 0), label: `salaire médian indiqué (${model.stats.salaryN} offres)` }
+      : type === "alternance"
+        ? { value: formatEuros(round2(SMIC_MONTHLY_GROSS * 0.43), 0), label: "minimum légal à 18-20 ans, 1re année" }
+        : { value: formatEuros(internshipGratification(35).gross, 0), label: "gratification minimale à temps plein" };
+
+  return (
+    <div className="mx-auto max-w-4xl px-5 py-10 sm:px-9">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(faqJsonLd) }} />
+
+      <nav aria-label="Fil d'Ariane" style={{ fontSize: 13 }}>
+        {model.breadcrumb.slice(0, -1).map((crumb, index) => (
+          <span key={crumb.path}>
+            {index > 0 && " › "}
+            <Link href={crumb.path}>{crumb.name}</Link>
+          </span>
+        ))}
+      </nav>
+
+      <h1 style={{ fontSize: 30, margin: "12px 0 0" }}>{model.h1}</h1>
+      <p style={{ fontSize: 15, margin: "10px 0 0" }}>{model.paragraphs[0]}</p>
+
+      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="card elev-sm">
+          <p style={statValue}>{model.stats.count.toLocaleString("fr-FR")}</p>
+          <p style={statLabel}>offres actives</p>
+        </div>
+        <div className="card elev-sm">
+          <p style={statValue}>{model.stats.companyCount.toLocaleString("fr-FR")}</p>
+          <p style={statLabel}>entreprises qui recrutent</p>
+        </div>
+        <div className="card elev-sm">
+          <p style={statValue}>{model.stats.recent7d.toLocaleString("fr-FR")}</p>
+          <p style={statLabel}>publiées cette semaine</p>
+        </div>
+        <div className="card elev-sm">
+          <p style={statValue}>{salaryStat.value}</p>
+          <p style={statLabel}>{salaryStat.label}</p>
+        </div>
+      </div>
+
+      <PublicOffersGrid offers={offers} page={page} totalPages={totalPages} basePath={model.path} />
+      {model.stats.count > model.stats.ids.length && (
+        <p style={{ fontSize: 14, marginTop: 16 }}>
+          Seules les {model.stats.ids.length} offres les plus récentes sont listées ici.{" "}
+          <Link href={`/offres/${type}`}>Voir toutes les offres {type === "alternance" ? "d'alternance" : "de stage"}</Link>.
+        </p>
+      )}
+
+      <section className="mt-10">
+        <h2 style={{ fontSize: 20, margin: "0 0 10px" }}>Ce qu&apos;il faut savoir</h2>
+        {model.paragraphs.slice(1).map((paragraph) => (
+          <p key={paragraph} style={{ fontSize: 14.5, margin: "0 0 10px" }}>
+            {paragraph}
+          </p>
+        ))}
+        <p style={{ fontSize: 14.5, margin: 0 }}>
+          <Link href="/outils/simulateur-salaire-alternance">
+            {type === "alternance" ? "Calculer mon salaire d'alternant" : "Calculer ma gratification de stage"}
+          </Link>
+          {" · "}
+          <Link href="/guides/trouver-une-alternance">Guide : trouver une alternance</Link>
+        </p>
+      </section>
+
+      {model.nearby && <LinkChips title={model.nearby.title} links={model.nearby.links} />}
+      {model.related && <LinkChips title={model.related.title} links={model.related.links} />}
+      {model.crossType && (
+        <p style={{ fontSize: 14, marginTop: 16 }}>
+          Voir aussi : <Link href={model.crossType.href}>{model.crossType.label}</Link> ({model.crossType.count} offres)
+        </p>
+      )}
+
+      <section className="mt-10">
+        <h2 style={{ fontSize: 20, margin: "0 0 12px" }}>Questions fréquentes</h2>
+        {model.faq.map((item) => (
+          <div key={item.q} style={{ marginBottom: 14 }}>
+            <h3 style={{ fontSize: 15.5, margin: "0 0 4px" }}>{item.q}</h3>
+            <p style={{ fontSize: 14, margin: 0 }}>{item.a}</p>
+          </div>
+        ))}
+      </section>
+
+      <div className="card elev-sm mt-8" style={{ padding: "var(--space-6)", textAlign: "center" }}>
+        <p style={{ fontSize: 15, margin: "0 0 12px" }}>
+          Ne rate plus aucune offre : crée ton profil, les nouvelles offres qui te correspondent arrivent dans ton
+          fil chaque jour.
+        </p>
+        <Link href="/inscription" className="btn btn-primary">
+          Créer mon compte gratuitement
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+const HUB_TEXT: Record<ContractType, { h1: string; intro: string; listPath: string }> = {
+  alternance: {
+    h1: "Offres d'alternance par métier et par ville",
+    intro: "offres d'alternance (apprentissage et contrat pro) actives en ce moment, classées par métier et par ville",
+    listPath: "/offres/alternance",
+  },
+  stage: {
+    h1: "Offres de stage par métier et par ville",
+    intro: "offres de stage actives en ce moment, classées par métier et par ville",
+    listPath: "/offres/stage",
+  },
+};
+
+export async function hubMetadata(type: ContractType): Promise<Metadata> {
+  const { index } = await getHubModel(type);
+  const text = HUB_TEXT[type];
+  return {
+    title: `${type === "alternance" ? "Alternance" : "Stage"} : ${index.total.toLocaleString("fr-FR")} offres par métier et par ville`,
+    description: `${index.total.toLocaleString("fr-FR")} ${text.intro}. Commercial, RH, marketing, développeur… à Paris, Lyon, Lille et partout en France.`,
+    alternates: { canonical: `${SITE_URL}/${type}` },
+  };
+}
+
+export async function ProgrammaticHub({ type }: { type: ContractType }) {
+  const { index, metiers, cities } = await getHubModel(type);
+  const text = HUB_TEXT[type];
+  return (
+    <div className="mx-auto max-w-4xl px-5 py-10 sm:px-9">
+      <nav aria-label="Fil d'Ariane" style={{ fontSize: 13 }}>
+        <Link href="/">Accueil</Link>
+      </nav>
+      <h1 style={{ fontSize: 30, margin: "12px 0 0" }}>{text.h1}</h1>
+      <p style={{ fontSize: 15, margin: "10px 0 0" }}>
+        <strong>{index.total.toLocaleString("fr-FR")}</strong> {text.intro}. Choisis ton métier ou ta ville, ou{" "}
+        <Link href={text.listPath}>parcours toutes les offres</Link>.
+      </p>
+      <LinkChips title="Par métier" links={metiers} />
+      <LinkChips title="Par ville" links={cities} />
+      <p style={{ fontSize: 14, marginTop: 24 }}>
+        <Link href="/outils/simulateur-salaire-alternance">Simulateur de salaire</Link>
+        {" · "}
+        <Link href={type === "alternance" ? "/stage" : "/alternance"}>
+          {type === "alternance" ? "Offres de stage par métier et par ville" : "Offres d'alternance par métier et par ville"}
+        </Link>
+        {" · "}
+        <Link href="/guides">Guides</Link>
+      </p>
+    </div>
+  );
+}

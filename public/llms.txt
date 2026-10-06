@@ -31,6 +31,8 @@
 - [Offres d'alternance et de stage](https://www.stageio.fr/offres) — catalogue public des offres actives, consultable sans compte.
 - [Offres d'alternance](https://www.stageio.fr/offres/alternance)
 - [Offres de stage](https://www.stageio.fr/offres/stage)
+- [Alternance par métier et par ville](https://www.stageio.fr/alternance) — nombre d'offres, entreprises qui recrutent et salaires par métier (commercial, RH, développeur…) et par ville, mis à jour chaque jour.
+- [Stage par métier et par ville](https://www.stageio.fr/stage)
 - [Guides](https://www.stageio.fr/guides) — alternance vs stage, trouver une alternance, CV, lettre de motivation.
 - [Simulateur de salaire en alternance 2026](https://www.stageio.fr/outils/simulateur-salaire-alternance) — salaire minimum brut et net d'un apprenti, d'un contrat pro ou d'un stagiaire selon l'âge et l'année de contrat (barèmes légaux, SMIC du 1er juin 2026).
 - Des pages existent aussi par secteur (`/offres/secteur/<secteur>`) et par ville (`/offres/ville/<ville>`) pour les secteurs/villes avec suffisamment d'offres actives.

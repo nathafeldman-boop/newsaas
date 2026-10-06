@@ -42,6 +42,9 @@ export default async function AlternanceOffersPage({
         <Link href="/outils/simulateur-salaire-alternance">Simule ton salaire d&apos;alternant</Link>.
       </p>
 
+      <p style={{ fontSize: 14, margin: "8px 0 0" }}>
+        <Link href="/alternance">Offres d&apos;alternance par métier et par ville</Link>
+      </p>
       <OffersSegmentNav active="alternance" />
       <PublicOffersGrid offers={offers} page={page} totalPages={totalPages} basePath="/offres/alternance" />
     </div>

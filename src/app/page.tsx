@@ -1523,6 +1523,8 @@ export default async function LandingPage() {
             Stageio
           </span>
           {[
+            { href: "/alternance", label: "Alternance par métier et ville" },
+            { href: "/stage", label: "Stage par métier et ville" },
             { href: "/guides", label: "Guides" },
             { href: "/outils/simulateur-salaire-alternance", label: "Simulateur de salaire" },
             { href: "/affilies", label: "Devenir affilié" },

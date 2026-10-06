@@ -1,6 +1,6 @@
 # SEO Stageio — audit & roadmap
 
-_Dernière mise à jour : 06/10/2026 — Phase 1 terminée ; maillage des fiches + simulateur de salaire livrés ; Phase 2 (pages programmatiques) en attente des décisions A–C (section 4)._
+_Dernière mise à jour : 06/10/2026 — Phase 1 terminée ; Phase 2 livrée (pages métier × ville, décision A appliquée) ; simulateur de salaire en ligne._
 
 ---
 
@@ -69,7 +69,16 @@ Légende statut : ✅ corrigé dans le commit Phase 1 · ❓ décision Nathan ·
 
 ---
 
-## 4. Décisions à prendre avant la Phase 2
+## 4. Décisions Phase 2 — statut (Nathan : « fais comme tu veux », 06/10)
+
+- **A — appliquée** : fiches Adzuna en `noindex, follow` et retirées des sitemaps ; seules les fiches France Travail (texte complet) restent indexables.
+- **B — appliquée sans redirection** : nouvelles pages `/alternance/...` et `/stage/...` ; les anciennes `/offres/secteur/*` et `/offres/ville/*` sont conservées telles quelles (pages mixtes alternance + stage), aucune URL supprimée ni redirigée.
+- **C — pas nécessaire pour l'instant** : métier et ville calculés à la volée et mis en cache 1 h (`src/lib/seo/programmaticIndex.ts`) au lieu d'une migration. À reconsidérer si le catalogue dépasse ~20 000 offres.
+- **D — appliquée** : seuils 10 / 3 (404 sous 3 offres ; pas de 410, Next ne le permet qu'au niveau du middleware et Google traite 404 et 410 presque pareil).
+- **E, F — toujours en attente** (faux témoignages, CGU des sources).
+- **G — appliquée** : pas de « candidats par offre ». Pas de « durée moyenne » non plus : ni Adzuna ni France Travail ne remplissent la durée aujourd'hui.
+
+### Texte d'origine des décisions
 
 **A. Les ~4 330 fiches Adzuna (contenu tronqué et dupliqué).** Recommandation : les passer en `noindex, follow` et les sortir du sitemap. Elles restent visibles pour les utilisateurs et continuent d'alimenter les pages programmatiques (listes, compteurs, stats). Seules les fiches France Travail (texte complet) restent indexables. Sans ça, on publie 4 000+ pages quasi identiques à celles d'Adzuna : c'est exactement le profil visé par la politique anti-spam « scaled content abuse », et la sanction touche tout le domaine.
 
@@ -172,7 +181,11 @@ Ce qui fait passer du bas au haut de la fourchette : les backlinks (aucun code n
 - [x] Phase 1 — correctifs rapides (commit « SEO phase 1 »)
 - [x] Maillage interne des fiches offres (fil d'Ariane, offres similaires, liens ville/secteur)
 - [x] Outil n°1 : simulateur de salaire alternance/contrat pro/stage (`/outils/simulateur-salaire-alternance`), lié depuis l'accueil, les guides, `/offres/alternance` et chaque fiche
-- [ ] Décisions A–G
-- [ ] Phase 2 — migration + pages programmatiques
+- [x] Décisions A, B (sans redirection), C (sans migration), D, G
+- [x] Phase 2 — pages `/alternance`, `/stage`, `/[type]/[metier]`, `/[type]/[ville]`, `/[type]/[metier]/[ville]` : offres réelles paginées, stats (offres, entreprises, publiées cette semaine, salaire médian France Travail), bloc éditorial calculé, FAQ + fil d'Ariane en JSON-LD, villes proches, métiers liés, lien alternance ↔ stage ; sitemap `sitemap-metiers-villes.xml` (pages ≥ 10 offres)
+- [x] Fiches offres reliées à leur page métier × ville (fil d'Ariane + liens)
+- [x] IndexNow (Bing / ChatGPT Search) : bouton « Envoyer le site à Bing » sur `/admin`
+- [ ] Décisions E, F
+- [ ] Pages `/entreprises/[entreprise]`
 - [ ] Phase 3 — 40 guides (10 rédigés) + 4 outils
 - [ ] Phase 4 — hubs, baromètre, Search Console, suivi 100 mots-clés, dashboard
