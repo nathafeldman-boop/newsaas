@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ShareButtons } from "@/components/share/ShareButtons";
 import type { Metadata } from "next";
 import { getProgrammaticIndex, cityPhrase, type ProgrammaticIndex } from "@/lib/seo/programmaticIndex";
 import { getCompanyIndex } from "@/lib/seo/companyIndex";
@@ -269,6 +270,12 @@ export default async function BarometrePage() {
           </p>
         </>
       )}
+
+      <ShareButtons
+        title="Partager le baromètre"
+        url={`${SITE_URL}${PATH}`}
+        text={`Baromètre ${YEAR} de l'alternance et des stages : les métiers et les villes qui recrutent le plus 👉`}
+      />
 
       <h2 style={h2}>Questions fréquentes</h2>
       {faq.map((item) => (

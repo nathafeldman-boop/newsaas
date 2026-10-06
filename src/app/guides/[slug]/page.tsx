@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ShareButtons } from "@/components/share/ShareButtons";
 import type { Metadata } from "next";
 import { getGuide, GUIDES } from "@/lib/guides/guidesData";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
@@ -185,6 +186,8 @@ export default async function GuidePage({
       {/* Maillage : chaque guide renvoie vers d'autres guides, les offres et
           l'outil -- sinon chaque guide est une impasse pour le visiteur
           comme pour Google. */}
+      <ShareButtons title="Partager ce guide" url={`${SITE_URL}/guides/${guide.slug}`} text={`${guide.title} 👉`} />
+
       <nav aria-label="À lire aussi" className="mt-8">
         <h2 style={{ fontSize: 18, margin: "0 0 10px" }}>À lire aussi</h2>
         <div className="flex flex-col gap-2">

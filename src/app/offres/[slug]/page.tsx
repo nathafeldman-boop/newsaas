@@ -8,6 +8,7 @@ import { normalizeCityKey, titleCase } from "@/lib/offers/segments";
 import { getOfferContextLinks, type OfferContextLinks } from "@/lib/offers/similarOffers";
 import { SITE_URL } from "@/lib/site";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
+import { ShareButtons } from "@/components/share/ShareButtons";
 import type { Offer } from "@/types/database";
 
 // ISR : chaque fiche est rendue à la 1re visite puis servie depuis le cache
@@ -187,7 +188,10 @@ function jobPostingJsonLd(offer: Offer) {
       "@type": "Place",
       address: {
         "@type": "PostalAddress",
-        addressLocality: offer.location,
+        // "75 - PARIS 08" (format France Travail) -> "Paris" : Google for Jobs
+        // rapproche la ville de ses données géographiques, un code de
+        // département collé au nom l'empêche de placer l'offre sur la carte.
+        addressLocality: titleCase(normalizeCityKey(offer.location)) || offer.location,
         addressCountry: "FR",
       },
     },
@@ -303,6 +307,11 @@ export default async function PublicOfferPage({
             Postuler à cette offre
           </a>
         )}
+        <ShareButtons
+          title="Cette offre peut intéresser un pote ?"
+          url={`${SITE_URL}${offerPath(offer)}`}
+          text={`${offer.title} chez ${offer.company} (${titleCase(normalizeCityKey(offer.location)) || offer.location}), regarde :`}
+        />
       </div>
 
       {links.similar.length > 0 && (

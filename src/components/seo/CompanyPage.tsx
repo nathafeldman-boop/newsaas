@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { PublicOffersGrid } from "@/components/offers/PublicOffersGrid";
+import { ShareButtons } from "@/components/share/ShareButtons";
 import { LinkChips } from "@/components/seo/ProgrammaticPage";
 import { getCompaniesHub, resolveCompanyPage } from "@/lib/seo/companyPage";
 import { fetchOffersByIds, listedPages, pageIds } from "@/lib/seo/programmaticPage";
@@ -96,6 +97,12 @@ export async function CompanyPage({ slug, pageParam }: { slug: string; pageParam
           ))}
         </section>
       )}
+
+      <ShareButtons
+        title="Partager"
+        url={`${SITE_URL}${model.path}`}
+        text={`${model.company.label} recrute : ${model.company.count} offres d'alternance et de stage 👉`}
+      />
 
       <LinkChips title={`Où ${model.company.label} recrute`} links={model.cityLinks} />
       <LinkChips title="Les métiers proposés" links={model.metierLinks} />

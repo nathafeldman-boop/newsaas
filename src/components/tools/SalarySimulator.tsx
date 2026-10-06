@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { ShareButtons } from "@/components/share/ShareButtons";
+import { SITE_URL } from "@/lib/site";
 import {
   AGE_LABEL,
   apprenticeSalary,
@@ -180,6 +182,16 @@ export function SalarySimulator() {
         </p>
         <p style={{ margin: "12px 0 0", fontSize: 13 }}>{result.explanation}</p>
       </div>
+
+      <ShareButtons
+        title="Partage ton résultat"
+        url={`${SITE_URL}/outils/simulateur-salaire-alternance`}
+        text={
+          contract === "stage"
+            ? `En stage je toucherai au moins ${formatEuros(result.gross, 0)} par mois 😮 Calcule ta gratification :`
+            : `En ${contract === "pro" ? "contrat pro" : "alternance"} je toucherai au moins ${formatEuros(result.gross, 0)} brut par mois 😮 Calcule ton salaire :`
+        }
+      />
 
       <Link
         href={contract === "stage" ? "/offres/stage" : "/offres/alternance"}

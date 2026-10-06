@@ -1,6 +1,7 @@
 import { type NextFetchEvent, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 import { logVisit } from "@/lib/analytics/logVisit";
+import { sourceFromReferrer } from "@/lib/analytics/referrerSource";
 import { logAffiliateClick } from "@/lib/affiliates/logAffiliateClick";
 
 const VISITOR_COOKIE = "sid";
@@ -49,11 +50,19 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
   // convertissent réellement (voir Nathan, 27/09 : 106 clics TikTok
   // rapportés vs 6 inscriptions, sans donnée pour départager clics
   // non-qualifiés / abandon avant inscription / bug technique).
-  const utmSource = request.nextUrl.searchParams.get("utm_source");
-  const utmMedium = request.nextUrl.searchParams.get("utm_medium");
+  const utmSourceParam = request.nextUrl.searchParams.get("utm_source");
+  // Pas d'utm_source : on déduit la source du site d'origine (Google, Bing,
+  // ChatGPT, TikTok...), pour que le trafic du référencement apparaisse enfin
+  // dans le tableau "par source" du dashboard (voir referrerSource.ts).
+  const organic = utmSourceParam ? null : sourceFromReferrer(request.headers.get("referer"));
+  const utmSource = utmSourceParam ?? organic?.source ?? null;
+  const utmMedium = request.nextUrl.searchParams.get("utm_medium") ?? organic?.medium ?? null;
   const utmCampaign = request.nextUrl.searchParams.get("utm_campaign");
-  if (utmSource) {
-    response.cookies.set(UTM_SOURCE_COOKIE, utmSource, {
+  // Un vrai paramètre utm (pub, lien partagé) écrase toujours le cookie ;
+  // une source déduite du referer ne le pose que s'il n'y en a pas déjà un
+  // (ne jamais effacer l'attribution d'une pub par une visite Google suivante).
+  if (utmSourceParam || (organic && !request.cookies.get(UTM_SOURCE_COOKIE))) {
+    response.cookies.set(UTM_SOURCE_COOKIE, utmSource!, {
       maxAge: UTM_COOKIE_MAX_AGE,
       httpOnly: true,
       sameSite: "lax",

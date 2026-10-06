@@ -378,7 +378,7 @@ export default async function AdminDashboardPage({
 
       <SectionCard
         title="Acquisition — aujourd'hui"
-        subtitle="Visiteurs distincts et inscriptions du jour, par source publicitaire (utm_source). Nécessite des liens ?utm_source=... — un clic sans ce paramètre atterrit dans « direct / inconnu »."
+        subtitle="Visiteurs distincts et inscriptions du jour, par source. Liens ?utm_source=... (pubs, partages) + détection automatique du site d'origine : google / bing = référencement, chatgpt / perplexity = IA, tiktok / instagram = réseaux. « direct / inconnu » = lien tapé ou appli sans référent."
       >
         {acquisitionSources.length === 0 ? (
           <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { PublicOffersGrid } from "@/components/offers/PublicOffersGrid";
+import { ShareButtons } from "@/components/share/ShareButtons";
 import {
   fetchOffersByIds,
   getHubModel,
@@ -152,6 +153,12 @@ export async function ProgrammaticPage({ type, slug, ville, pageParam }: RoutePr
           <Link href="/guides/trouver-une-alternance">Guide : trouver une alternance</Link>
         </p>
       </section>
+
+      <ShareButtons
+        title="Partager cette liste"
+        url={`${SITE_URL}${model.path}`}
+        text={`${model.stats.count} offres : ${model.h1} 👉`}
+      />
 
       {model.nearby && <LinkChips title={model.nearby.title} links={model.nearby.links} />}
       {model.related && <LinkChips title={model.related.title} links={model.related.links} />}
