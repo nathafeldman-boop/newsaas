@@ -186,6 +186,11 @@ Ce qui fait passer du bas au haut de la fourchette : les backlinks (aucun code n
 - [x] Fiches offres reliées à leur page métier × ville (fil d'Ariane + liens)
 - [x] IndexNow (Bing / ChatGPT Search) : bouton « Envoyer le site à Bing » sur `/admin`
 - [ ] Décisions E, F
-- [ ] Pages `/entreprises/[entreprise]`
+- [x] Pages `/entreprises` + `/entreprises/[entreprise]` (≥ 3 offres, indexées à partir de 10 ; écoles exclues — voir `src/lib/seo/schools.ts`)
+- [x] Baromètre 2026 `/barometre-alternance-stage` (métiers, villes, salaires indiqués, entreprises ; recalculé chaque heure, reprise libre avec lien = aimant à backlinks)
+- [x] Bloc « Explorer les offres » sur l'accueil (métiers, villes, entreprises) : découverte rapide des nouvelles pages par Google
+- [x] IndexNow opérationnel (1 257 URLs acceptées par Bing le 06/10)
+- [ ] Phase 3 : 6 guides supplémentaires (objectif 10), puis plan de 40
+- [ ] Filtrer les annonces d'écoles du catalogue lui-même (décision produit)
 - [ ] Phase 3 — 40 guides (10 rédigés) + 4 outils
 - [ ] Phase 4 — hubs, baromètre, Search Console, suivi 100 mots-clés, dashboard

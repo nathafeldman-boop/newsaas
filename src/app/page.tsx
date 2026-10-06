@@ -7,6 +7,9 @@ import { getPublicReviewStats, getPublicTestimonials, type PublicTestimonial } f
 import { SwipeDemo } from "@/components/landing/SwipeDemo";
 import { Reveal } from "@/components/ui/Reveal";
 import { Highlight } from "@/components/ui/Highlight";
+import { getProgrammaticIndex } from "@/lib/seo/programmaticIndex";
+import { getCompanyIndex } from "@/lib/seo/companyIndex";
+import { getMetier } from "@/lib/seo/metiers";
 
 export const metadata: Metadata = {
   title: "Stageio — trouve ton alternance ou ton stage en swipant",
@@ -186,13 +189,42 @@ const h2Style: React.CSSProperties = {
   lineHeight: 1.06,
 };
 
+type DiscoveryLink = { href: string; label: string };
+
+// Bloc de liens vers les pages métier, ville et entreprise : l'accueil est la
+// page la plus explorée par Google, c'est d'ici qu'il découvre le plus vite
+// les nouvelles pages. Best-effort : une erreur (ou un build sans base) masque
+// juste le bloc, jamais la page.
+async function getDiscoveryLinks(): Promise<{ metiers: DiscoveryLink[]; cities: DiscoveryLink[]; companies: DiscoveryLink[] } | null> {
+  try {
+    const [alternance, companies] = await Promise.all([getProgrammaticIndex("alternance"), getCompanyIndex()]);
+    return {
+      metiers: Object.values(alternance.metiers)
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 12)
+        .map((m) => ({ href: `/alternance/${m.slug}`, label: `Alternance ${getMetier(m.slug)?.label ?? m.slug}` })),
+      cities: Object.values(alternance.cities)
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 12)
+        .map((c) => ({ href: `/alternance/${c.slug}`, label: `Alternance ${/^(le|les)\s/i.test(c.label) ? c.label : `à ${c.label}`}` })),
+      companies: Object.values(companies.companies)
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10)
+        .map((c) => ({ href: `/entreprises/${c.slug}`, label: c.label })),
+    };
+  } catch (err) {
+    console.error("getDiscoveryLinks failed", err);
+    return null;
+  }
+}
+
 export default async function LandingPage() {
   // Client admin plutôt que le client lié aux cookies (@/lib/supabase/server) :
   // cette page n'affiche rien de spécifique au visiteur, et cookies() forcerait
   // un rendu dynamique par requête, rendant `revalidate` ci-dessus inopérant --
   // exactement le genre de lenteur que ce passage SEO cherche à éviter.
   const admin = createAdminClient();
-  const [{ count: activeOffersCount }, { count: alternanceCount }, reviewStats, realTestimonials] =
+  const [{ count: activeOffersCount }, { count: alternanceCount }, reviewStats, realTestimonials, discovery] =
     await Promise.all([
       admin.from("offers").select("id", { count: "exact", head: true }).eq("is_active", true),
       admin
@@ -202,6 +234,7 @@ export default async function LandingPage() {
         .eq("contract_type", "alternance"),
       getPublicReviewStats(),
       getPublicTestimonials(3),
+      getDiscoveryLinks(),
     ]);
 
   const alternanceShare =
@@ -1426,6 +1459,42 @@ export default async function LandingPage() {
           </div>
         </section>
 
+        {discovery && (
+          <section className="py-10">
+            <p style={eyebrow}>Explorer les offres</p>
+            <h2 style={{ ...h2Style, maxWidth: "20ch" }}>Par métier, par ville, par entreprise.</h2>
+            {[
+              { title: "Les métiers qui recrutent", links: discovery.metiers },
+              { title: "Les villes", links: discovery.cities },
+              { title: "Les entreprises qui publient le plus", links: discovery.companies },
+            ]
+              .filter((group) => group.links.length > 0)
+              .map((group) => (
+                <div key={group.title} style={{ marginTop: 20 }}>
+                  <p style={{ margin: "0 0 8px", fontWeight: 700, fontSize: 14 }}>{group.title}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {group.links.map((link) => (
+                      <Link key={link.href} href={link.href} className="tag tag-neutral">
+                        {link.label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            <p style={{ marginTop: 20, fontSize: 14 }}>
+              <Link href="/alternance">Toute l&apos;alternance par métier et ville</Link>
+              {" · "}
+              <Link href="/stage">Tous les stages par métier et ville</Link>
+              {" · "}
+              <Link href="/entreprises">Toutes les entreprises</Link>
+              {" · "}
+              <Link href="/barometre-alternance-stage">Baromètre 2026</Link>
+              {" · "}
+              <Link href="/outils/simulateur-salaire-alternance">Simulateur de salaire</Link>
+            </p>
+          </section>
+        )}
+
         {/* FAQ */}
         <section
           id="faq"
@@ -1525,6 +1594,8 @@ export default async function LandingPage() {
           {[
             { href: "/alternance", label: "Alternance par métier et ville" },
             { href: "/stage", label: "Stage par métier et ville" },
+            { href: "/entreprises", label: "Entreprises qui recrutent" },
+            { href: "/barometre-alternance-stage", label: "Baromètre 2026" },
             { href: "/guides", label: "Guides" },
             { href: "/outils/simulateur-salaire-alternance", label: "Simulateur de salaire" },
             { href: "/affilies", label: "Devenir affilié" },

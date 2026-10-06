@@ -38,7 +38,7 @@ export async function programmaticMetadata({ type, slug, ville, pageParam }: Rou
   };
 }
 
-function LinkChips({ title, links }: { title: string; links: SegmentLink[] }) {
+export function LinkChips({ title, links }: { title: string; links: SegmentLink[] }) {
   if (links.length === 0) return null;
   return (
     <section className="mt-8">
@@ -155,6 +155,7 @@ export async function ProgrammaticPage({ type, slug, ville, pageParam }: RoutePr
 
       {model.nearby && <LinkChips title={model.nearby.title} links={model.nearby.links} />}
       {model.related && <LinkChips title={model.related.title} links={model.related.links} />}
+      <LinkChips title="Les entreprises qui recrutent" links={model.companies} />
       {model.crossType && (
         <p style={{ fontSize: 14, marginTop: 16 }}>
           Voir aussi : <Link href={model.crossType.href}>{model.crossType.label}</Link> ({model.crossType.count} offres)

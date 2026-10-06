@@ -271,7 +271,7 @@ export default async function PublicOfferPage({
         <span className="tag tag-accent">{CONTRACT_LABEL[offer.contract_type]}</span>
         <h1 style={{ fontSize: 26, margin: "12px 0 4px" }}>{offer.title}</h1>
         <p style={{ fontSize: 15, fontFamily: "var(--font-heading)", margin: 0 }}>
-          {offer.company}
+          {links.company ? <Link href={links.company.href}>{offer.company}</Link> : offer.company}
         </p>
 
         <div className="mt-4 flex flex-wrap gap-2">
@@ -326,7 +326,7 @@ export default async function PublicOfferPage({
       )}
 
       <div className="mt-6 flex flex-wrap gap-2">
-        {[links.programmatic.metierCity, links.programmatic.metier, links.programmatic.city]
+        {[links.programmatic.metierCity, links.programmatic.metier, links.programmatic.city, links.company]
           .filter((link): link is NonNullable<typeof link> => link !== null)
           .map((link) => (
             <Link key={link.href} href={link.href} className="tag tag-neutral">

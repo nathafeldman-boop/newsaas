@@ -3,6 +3,7 @@ import { PUBLIC_OFFER_COLUMNS, type PublicOfferRow } from "@/lib/offers/fetchPub
 import { getCitySegments, getSectorSegments, normalizeCityKey, slugify, type CitySegment, type Segment } from "@/lib/offers/segments";
 import { classifyMetier } from "@/lib/seo/metiers";
 import { cityPhrase, getProgrammaticIndex } from "@/lib/seo/programmaticIndex";
+import { companySlug, getCompanyIndex } from "@/lib/seo/companyIndex";
 import type { Offer } from "@/types/database";
 
 const SIMILAR_OFFERS_LIMIT = 6;
@@ -16,7 +17,14 @@ export type OfferContextLinks = {
   // Pages /alternance/[metier], /alternance/[ville], /alternance/[metier]/[ville]
   // dont relève l'offre (seulement celles qui existent, >= 3 offres).
   programmatic: { metier: ProgrammaticLink | null; city: ProgrammaticLink | null; metierCity: ProgrammaticLink | null };
+  company: ProgrammaticLink | null;
 };
+
+async function getCompanyLink(offer: Offer): Promise<ProgrammaticLink | null> {
+  const index = await getCompanyIndex();
+  const entry = index.companies[companySlug(offer.company)];
+  return entry ? { href: `/entreprises/${entry.slug}`, label: `Toutes les offres chez ${entry.label}`, count: entry.count } : null;
+}
 
 const TYPE_LABEL = { alternance: "Alternance", stage: "Stage" } as const;
 
@@ -46,10 +54,11 @@ async function getProgrammaticLinks(offer: Offer): Promise<OfferContextLinks["pr
 // jamais empêcher l'affichage de la fiche elle-même.
 export async function getOfferContextLinks(offer: Offer): Promise<OfferContextLinks> {
   try {
-    const [citySegments, sectorSegments, programmatic] = await Promise.all([
+    const [citySegments, sectorSegments, programmatic, company] = await Promise.all([
       getCitySegments(),
       getSectorSegments(),
       getProgrammaticLinks(offer),
+      getCompanyLink(offer),
     ]);
     const city = citySegments.find((segment) => segment.locations.includes(offer.location)) ?? null;
     const sector = offer.sector ? (sectorSegments.find((segment) => segment.label === offer.sector) ?? null) : null;
@@ -80,9 +89,9 @@ export async function getOfferContextLinks(offer: Offer): Promise<OfferContextLi
       );
     }
 
-    return { city, sector, similar, programmatic };
+    return { city, sector, similar, programmatic, company };
   } catch (err) {
     console.error("getOfferContextLinks failed", err);
-    return { city: null, sector: null, similar: [], programmatic: { metier: null, city: null, metierCity: null } };
+    return { city: null, sector: null, similar: [], programmatic: { metier: null, city: null, metierCity: null }, company: null };
   }
 }

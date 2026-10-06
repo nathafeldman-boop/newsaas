@@ -13,6 +13,7 @@ const STATIC_PATHS = [
   "/offres/stage",
   "/guides",
   "/outils/simulateur-salaire-alternance",
+  "/barometre-alternance-stage",
   "/inscription",
   "/legal",
   "/legal/mentions-legales",

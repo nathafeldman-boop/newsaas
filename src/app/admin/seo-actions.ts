@@ -5,6 +5,7 @@ import { assertAdminSession } from "@/lib/admin/accessCode";
 import { submitToIndexNow } from "@/lib/seo/indexNow";
 import { fetchOfferSitemapEntries } from "@/lib/offers/sitemapOffers";
 import { getProgrammaticIndex, INDEXABLE_MIN_OFFERS } from "@/lib/seo/programmaticIndex";
+import { getCompanyIndex } from "@/lib/seo/companyIndex";
 import { GUIDES } from "@/lib/guides/guidesData";
 import { SITE_URL } from "@/lib/site";
 import type { ContractType } from "@/types/database";
@@ -18,8 +19,17 @@ const STATIC_PATHS = [
   "/stage",
   "/guides",
   "/outils/simulateur-salaire-alternance",
+  "/barometre-alternance-stage",
+  "/entreprises",
   "/inscription",
 ];
+
+async function companyPaths(): Promise<string[]> {
+  const index = await getCompanyIndex();
+  return Object.values(index.companies)
+    .filter((c) => c.count >= INDEXABLE_MIN_OFFERS)
+    .map((c) => `/entreprises/${c.slug}`);
+}
 
 async function programmaticPaths(type: ContractType): Promise<string[]> {
   const index = await getProgrammaticIndex(type);
@@ -38,9 +48,10 @@ export async function submitIndexNowAction() {
   await assertAdminSession();
   let result: { submitted: number; error?: string };
   try {
-    const [alternance, stage, offersAlternance, offersStage] = await Promise.all([
+    const [alternance, stage, companies, offersAlternance, offersStage] = await Promise.all([
       programmaticPaths("alternance"),
       programmaticPaths("stage"),
+      companyPaths(),
       fetchOfferSitemapEntries("alternance"),
       fetchOfferSitemapEntries("stage"),
     ]);
@@ -49,6 +60,7 @@ export async function submitIndexNowAction() {
       ...GUIDES.map((guide) => `/guides/${guide.slug}`),
       ...alternance,
       ...stage,
+      ...companies,
       ...offersAlternance.map((entry) => entry.path),
       ...offersStage.map((entry) => entry.path),
     ];

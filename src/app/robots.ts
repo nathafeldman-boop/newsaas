@@ -1,7 +1,18 @@
 import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/site";
 
-const PUBLIC_ALLOW = ["/", "/offres", "/alternance", "/stage", "/guides", "/outils", "/legal", "/inscription"];
+const PUBLIC_ALLOW = [
+  "/",
+  "/offres",
+  "/alternance",
+  "/stage",
+  "/entreprises",
+  "/barometre-alternance-stage",
+  "/guides",
+  "/outils",
+  "/legal",
+  "/inscription",
+];
 const PRIVATE_DISALLOW = [
   "/api/",
   "/admin/",

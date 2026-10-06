@@ -17,6 +17,7 @@ import {
   internshipGratification,
   round2,
 } from "@/lib/salary/legalRates";
+import { companySlug, getCompanyIndex } from "@/lib/seo/companyIndex";
 import type { ContractType } from "@/types/database";
 
 export type SegmentLink = { href: string; label: string; count: number };
@@ -35,6 +36,7 @@ export type ProgrammaticModel = {
   nearby: { title: string; links: SegmentLink[] } | null;
   related: { title: string; links: SegmentLink[] } | null;
   crossType: SegmentLink | null;
+  companies: SegmentLink[];
   metier: Metier | null;
   city: CityEntry | null;
 };
@@ -146,8 +148,19 @@ export async function resolveProgrammaticPage(
   slug: string,
   ville?: string,
 ): Promise<ProgrammaticModel | null> {
-  const [index, otherIndex] = await Promise.all([getProgrammaticIndex(type), getProgrammaticIndex(OTHER_TYPE[type])]);
-  return buildProgrammaticModel(index, otherIndex, slug, ville);
+  const [index, otherIndex, companyIndex] = await Promise.all([
+    getProgrammaticIndex(type),
+    getProgrammaticIndex(OTHER_TYPE[type]),
+    getCompanyIndex(),
+  ]);
+  const model = buildProgrammaticModel(index, otherIndex, slug, ville);
+  if (!model) return null;
+  // Entreprises du segment qui ont leur propre page /entreprises/[slug].
+  model.companies = model.stats.topCompanies
+    .map((c) => companyIndex.companies[companySlug(c.name)])
+    .filter((c): c is NonNullable<typeof c> => Boolean(c))
+    .map((c) => ({ href: `/entreprises/${c.slug}`, label: c.label, count: c.count }));
+  return model;
 }
 
 // Partie pure (testable sans base).
@@ -274,6 +287,7 @@ export function buildProgrammaticModel(
     nearby,
     related: related && related.links.length > 0 ? related : null,
     crossType,
+    companies: [],
     metier,
     city,
   };
@@ -291,11 +305,11 @@ export async function fetchOffersByIds(ids: string[]): Promise<PublicOfferRow[]>
   return ids.map((id) => byId.get(id)).filter((o): o is PublicOfferRow => Boolean(o));
 }
 
-export function pageIds(stats: SegmentStats, page: number): string[] {
+export function pageIds(stats: { ids: string[] }, page: number): string[] {
   return stats.ids.slice((page - 1) * PUBLIC_OFFERS_PAGE_SIZE, page * PUBLIC_OFFERS_PAGE_SIZE);
 }
 
-export function listedPages(stats: SegmentStats): number {
+export function listedPages(stats: { ids: string[] }): number {
   return Math.max(1, Math.ceil(stats.ids.length / PUBLIC_OFFERS_PAGE_SIZE));
 }
 

@@ -3,6 +3,7 @@ import { createPublicClient, fetchAllRows } from "@/lib/supabase/public";
 import { NOT_A_CITY, normalizeCityKey, slugify, titleCase } from "@/lib/offers/segments";
 import { PUBLIC_OFFERS_PAGE_SIZE } from "@/lib/offers/fetchPublicOffers";
 import { classifyMetier } from "@/lib/seo/metiers";
+import { isSchool } from "@/lib/seo/schools";
 import type { ContractType, OfferSource } from "@/types/database";
 
 // Seuils des pages programmatiques (décision D de SEO_ROADMAP.md) :
@@ -36,6 +37,7 @@ export type ProgrammaticIndex = {
   type: ContractType;
   generatedAt: string;
   total: number;
+  recent7d: number;
   cities: Record<string, CityEntry>;
   metiers: Record<string, MetierEntry>;
   combos: Record<string, ComboEntry>;
@@ -93,7 +95,9 @@ function add(acc: Accumulator, row: IndexRow, isRecent: boolean, salary: number 
   acc.count += 1;
   if (acc.ids.length < MAX_IDS_PER_SEGMENT) acc.ids.push(row.id);
   const company = row.company.trim();
-  if (company) acc.companies.set(company, (acc.companies.get(company) ?? 0) + 1);
+  // Les écoles qui publient des annonces pour remplir leurs cursus comptent
+  // dans le nombre d'offres, jamais dans les "entreprises qui recrutent".
+  if (company && !isSchool(company)) acc.companies.set(company, (acc.companies.get(company) ?? 0) + 1);
   if (isRecent) acc.recent7d += 1;
   if (salary !== null) acc.salaries.push(salary);
 }
@@ -143,8 +147,10 @@ export function buildIndex(type: ContractType, rows: IndexRow[], now = Date.now(
   const metiers = new Map<string, Accumulator>();
   const combos = new Map<string, Accumulator>();
 
+  let recentTotal = 0;
   for (const row of rows) {
     const isRecent = new Date(row.published_at).getTime() >= weekAgo;
+    if (isRecent) recentTotal += 1;
     const salary = row.source === "adzuna" ? null : parseMonthlySalary(row.salary);
     const metier = classifyMetier(row.title);
     const cityKey = row.location ? normalizeCityKey(row.location) : "";
@@ -175,6 +181,7 @@ export function buildIndex(type: ContractType, rows: IndexRow[], now = Date.now(
     type,
     generatedAt: new Date(now).toISOString(),
     total: rows.length,
+    recent7d: recentTotal,
     cities: {},
     metiers: {},
     combos: {},
@@ -195,7 +202,7 @@ export function buildIndex(type: ContractType, rows: IndexRow[], now = Date.now(
 // Un seul scan du catalogue par type et par heure, partagé par toutes les
 // pages /alternance/* et /stage/* (sinon chaque page vue relirait ~3 000
 // offres).
-const cachedIndex = unstable_cache(computeIndex, ["programmatic-index-v2"], { revalidate: 3600 });
+const cachedIndex = unstable_cache(computeIndex, ["programmatic-index-v3"], { revalidate: 3600 });
 
 export function getProgrammaticIndex(type: ContractType): Promise<ProgrammaticIndex> {
   return cachedIndex(type);
