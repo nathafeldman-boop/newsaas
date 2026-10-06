@@ -460,4 +460,359 @@ export const MORE_GUIDES: Guide[] = [
       },
     ],
   },
+  {
+    slug: "contrat-apprentissage-ou-contrat-pro",
+    title: "Contrat d'apprentissage ou contrat de professionnalisation : les différences en 2026",
+    metaDescription:
+      "Âge, durée, formation, salaire, diplôme : le comparatif clair entre contrat d'apprentissage et contrat de professionnalisation, pour choisir la bonne alternance en 2026.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    intro: [
+      "Les deux sont des contrats d'alternance : tu es salarié, tu alternes entreprise et formation, et ta formation est gratuite pour toi. Mais ils ne visent pas le même public, ne durent pas pareil et ne paient pas pareil. Le comparatif en un coup d'œil.",
+    ],
+    sections: [
+      {
+        heading: "Le comparatif en un tableau",
+        table: {
+          headers: ["", "Contrat d'apprentissage", "Contrat de professionnalisation"],
+          rows: [
+            ["Pour qui", "16 à 29 ans (jusqu'à la veille des 30 ans), avec des exceptions", "16 à 25 ans, demandeurs d'emploi de 26 ans et plus, bénéficiaires du RSA, de l'ASS ou de l'AAH"],
+            ["Objectif", "Un diplôme ou un titre professionnel (RNCP)", "Une qualification professionnelle (titre RNCP, CQP ou qualification reconnue par la branche)"],
+            ["Durée", "6 mois à 3 ans, selon la durée de la formation", "6 à 12 mois en général, jusqu'à 36 mois dans certains cas"],
+            ["Part de formation", "Au moins 25 % du temps", "15 à 25 % de la durée, 150 heures minimum"],
+            ["Salaire minimum", "27 % à 100 % du SMIC selon l'âge et l'année", "55 % à 80 % du SMIC avant 26 ans, au moins le SMIC après"],
+            ["Cotisations", "Allégées (rien jusqu'à 50 % du SMIC pour les contrats récents)", "Cotisations salariales normales"],
+          ],
+        },
+      },
+      {
+        heading: "Lequel choisir ?",
+        list: [
+          "Tu prépares un diplôme (BTS, bachelor, licence pro, master, diplôme d'ingénieur) : c'est presque toujours l'apprentissage.",
+          "Tu vises une formation courte et très professionnelle, ou tu as plus de 29 ans et tu es demandeur d'emploi : le contrat pro est souvent la seule option.",
+          "Côté salaire : le contrat pro paie plus en 1re année, mais l'apprentissage progresse chaque année et presque sans cotisations.",
+        ],
+      },
+      {
+        heading: "Ce qui est pareil dans les deux contrats",
+        list: [
+          "Tu es salarié : congés payés, mutuelle d'entreprise, droits à la retraite et au chômage.",
+          "Tu as un tuteur ou maître d'apprentissage dans l'entreprise.",
+          "Ta formation est financée : tu ne paies pas l'école.",
+          "Le temps passé en formation compte comme du temps de travail.",
+        ],
+      },
+      {
+        heading: "Les exceptions à la limite d'âge en apprentissage",
+        paragraphs: [
+          "Pas de limite d'âge pour les personnes en situation de handicap, les sportifs de haut niveau et les personnes qui ont un projet de création ou de reprise d'entreprise nécessitant le diplôme. La limite passe à 35 ans pour enchaîner sur un diplôme supérieur à celui déjà obtenu en apprentissage, ou si ton contrat précédent a été rompu pour une raison indépendante de ta volonté.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Quelle est la différence de salaire entre apprentissage et contrat pro ?",
+        a: "En apprentissage, le minimum va de 27 % à 100 % du SMIC selon ton âge et ton année de contrat. En contrat pro, il va de 55 % à 80 % du SMIC avant 26 ans, selon ton âge et ton niveau de diplôme, et au moins le SMIC à partir de 26 ans. Calcule ton montant avec le simulateur Stageio.",
+      },
+      {
+        q: "Peut-on faire un master en contrat de professionnalisation ?",
+        a: "C'est possible si le master est inscrit au RNCP et que l'école le propose, mais la grande majorité des masters en alternance se font en apprentissage.",
+      },
+      {
+        q: "Combien de temps dure un contrat d'apprentissage ?",
+        a: "Entre 6 mois et 3 ans : la durée correspond en principe à celle de la formation préparée.",
+      },
+    ],
+    sources: [
+      { label: "Durée du contrat d'apprentissage (Code du travail, L6222-7-1)", url: "https://code.travail.gouv.fr/code-du-travail/l6222-7-1" },
+      { label: "Contrat d'apprentissage (justice.fr)", url: "https://www.justice.fr/fiche/contrat-apprentissage" },
+      { label: "Contrat de professionnalisation (service-public.gouv.fr)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F15478" },
+      { label: "Rémunération du contrat pro 2026 (Legisocial)", url: "https://www.legisocial.fr/reperes-sociaux/remuneration-contrat-professionnalisation-2026.html" },
+    ],
+  },
+  {
+    slug: "rupture-contrat-apprentissage",
+    title: "Rupture du contrat d'apprentissage : comment arrêter ton alternance (et dans quels cas)",
+    metaDescription:
+      "Pendant les 45 premiers jours, après, par accord, par démission avec le médiateur ou par licenciement : toutes les façons de rompre un contrat d'apprentissage et les délais à respecter.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    intro: [
+      "Ton alternance ne se passe pas comme prévu ? Un contrat d'apprentissage peut être rompu, mais les règles changent complètement selon que tu es dans les 45 premiers jours ou après. Voici les cas possibles.",
+    ],
+    sections: [
+      {
+        heading: "Pendant les 45 premiers jours en entreprise : rupture libre",
+        paragraphs: [
+          "Pendant les 45 premiers jours, consécutifs ou non, de formation pratique en entreprise, toi comme l'employeur pouvez rompre le contrat sans justification et sans préavis. La rupture doit être faite par écrit et notifiée au CFA et à l'organisme qui a enregistré le contrat.",
+        ],
+      },
+      {
+        heading: "Après 45 jours : 3 façons de rompre",
+        list: [
+          "D'un commun accord : toi et l'employeur signez une rupture écrite, sans préavis. C'est la solution la plus simple si vous êtes d'accord.",
+          "Par ta démission : tu dois d'abord saisir le médiateur de l'apprentissage (chambre consulaire : CCI, chambre de métiers ou chambre d'agriculture), puis informer ton employeur au moins 5 jours calendaires après cette saisine ; la rupture intervient au plus tôt 7 jours calendaires après que l'employeur a été informé.",
+          "Par licenciement : seulement pour faute grave, force majeure, inaptitude constatée par la médecine du travail, ou exclusion définitive de ton CFA.",
+        ],
+      },
+      {
+        heading: "Le rôle du médiateur de l'apprentissage",
+        paragraphs: [
+          "Le médiateur est gratuit et neutre. En cas de démission, le passer est obligatoire ; en cas de conflit avec ton employeur, tu peux aussi le contacter avant d'en arriver là : il aide souvent à trouver une solution (changement de missions, de tuteur, d'horaires).",
+        ],
+      },
+      {
+        heading: "Et ta formation après la rupture ?",
+        paragraphs: [
+          "Ton CFA peut te garder en formation pendant quelques mois le temps de retrouver une entreprise : renseigne-toi auprès de lui dès que la rupture se profile. Et commence tout de suite à chercher un nouvel employeur, les pages Stageio par métier et par ville listent les entreprises qui recrutent en ce moment.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Peut-on démissionner d'un contrat d'apprentissage ?",
+        a: "Oui. Pendant les 45 premiers jours en entreprise, librement. Après, tu dois saisir le médiateur de l'apprentissage, informer ton employeur au moins 5 jours calendaires après, puis respecter un délai d'au moins 7 jours calendaires avant la rupture.",
+      },
+      {
+        q: "L'employeur peut-il me licencier comme un salarié classique ?",
+        a: "Non. Après les 45 premiers jours, il ne peut rompre le contrat que pour faute grave, force majeure, inaptitude ou exclusion définitive du CFA.",
+      },
+    ],
+    sources: [
+      { label: "Rompre un contrat d'apprentissage (Éditions Tissot)", url: "https://www.editions-tissot.fr/guide/rupture-contrat-apprentissage" },
+      { label: "Rupture d'un contrat d'apprentissage (CIDJ)", url: "https://www.cidj.com/etudes-formations-alternance/alternance/rupture-d-un-contrat-d-apprentissage" },
+      { label: "Contrat d'apprentissage (justice.fr)", url: "https://www.justice.fr/fiche/contrat-apprentissage" },
+    ],
+  },
+  {
+    slug: "aides-alternants",
+    title: "Aides pour les alternants en 2026 : ce qui existe encore (et ce qui a disparu)",
+    metaDescription:
+      "Mobili-Jeune, prime d'activité, APL, carte d'étudiant des métiers, aides régionales… Les aides auxquelles un alternant a droit en 2026, et la fin de l'aide de 500 € au permis.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    intro: [
+      "Être alternant, c'est être payé, mais pas toujours assez pour un loyer, des transports et parfois deux villes. Plusieurs aides existent encore en 2026, et une aide très connue a disparu. Le point complet.",
+    ],
+    sections: [
+      {
+        heading: "À savoir : l'aide de 500 € au permis a été supprimée",
+        paragraphs: [
+          "L'aide de 500 € pour financer le permis de conduire des apprentis a été supprimée par la loi de finances 2026 : plus aucune nouvelle demande n'est acceptée depuis le 21 février 2026. Beaucoup de sites la citent encore, ne compte pas dessus. Des aides locales au permis existent selon les régions, les départements ou ton OPCO : renseigne-toi auprès de ton CFA.",
+        ],
+      },
+      {
+        heading: "Mobili-Jeune : jusqu'à 100 € par mois pour ton loyer",
+        paragraphs: [
+          "Proposée par Action Logement aux alternants de moins de 30 ans, elle prend en charge une partie de ton loyer, jusqu'à 100 € par mois, en complément de l'APL. Condition principale : un salaire brut qui ne dépasse pas 120 % du SMIC. La demande se fait en ligne sur le site d'Action Logement.",
+        ],
+      },
+      {
+        heading: "La prime d'activité, dès 18 ans",
+        paragraphs: [
+          "Les alternants de 18 ans et plus y ont droit si leur salaire net dépasse 78 % du SMIC net pendant trois mois consécutifs (c'est souvent le cas à partir de la 2e ou 3e année, ou en contrat pro). La demande se fait sur le site de la CAF, avec une déclaration de ressources tous les trois mois.",
+        ],
+      },
+      {
+        heading: "Les APL",
+        paragraphs: [
+          "Comme tout locataire, tu peux toucher l'aide au logement de la CAF selon tes revenus et ton loyer. Fais une simulation sur caf.fr dès que tu as ton bail : la demande n'est pas rétroactive, chaque mois de retard est perdu.",
+        ],
+      },
+      {
+        heading: "Les autres coups de pouce",
+        list: [
+          "La carte d'étudiant des métiers, remise aux apprentis : elle donne accès aux mêmes réductions que la carte étudiante (restos U, cinéma, transports selon les villes).",
+          "Les aides de ta région : transport, hébergement, restauration ou premier équipement, très variables d'une région à l'autre.",
+          "Le fonds social de ton CFA ou de ton OPCO en cas de coup dur.",
+          "La prise en charge d'une partie de ton abonnement de transport par ton employeur, comme pour tout salarié.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "L'aide de 500 € au permis existe-t-elle encore pour les apprentis ?",
+        a: "Non, elle a été supprimée en 2026 : plus de nouvelles demandes depuis le 21 février 2026. Il reste des aides locales selon ta région, ton département ou ton OPCO.",
+      },
+      {
+        q: "Un alternant peut-il toucher la prime d'activité ?",
+        a: "Oui, à partir de 18 ans, si son salaire net dépasse 78 % du SMIC net pendant trois mois consécutifs.",
+      },
+      {
+        q: "Qui peut demander Mobili-Jeune ?",
+        a: "Les alternants de moins de 30 ans dont le salaire brut ne dépasse pas 120 % du SMIC, pour une aide au loyer allant jusqu'à 100 € par mois.",
+      },
+    ],
+    sources: [
+      { label: "Fin de l'aide au permis pour les apprentis (En Voiture Simone)", url: "https://www.envoituresimone.com/fin-de-laide-apprentis" },
+      { label: "Mobili-Jeune (aides-sociales.com)", url: "https://aides-sociales.com/aides/mobili-jeune" },
+      { label: "Prime d'activité des étudiants et alternants (L'Étudiant)", url: "https://www.letudiant.fr/lifestyle/aides-financieres/les-etudiants-sont-ils-eligibles-a-la-prime-dactivite.html" },
+    ],
+  },
+  {
+    slug: "conges-alternant",
+    title: "Congés d'un alternant : combien de jours et comment ça marche",
+    metaDescription:
+      "5 semaines de congés payés, 5 jours de révision avant les examens, les semaines d'école : combien de congés a un alternant et comment les poser.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    intro: [
+      "En alternance, tu es salarié : tu as donc droit aux congés payés comme tout le monde, plus un petit bonus pour réviser tes examens si tu es apprenti. Par contre, les semaines d'école ne sont pas des vacances.",
+    ],
+    sections: [
+      {
+        heading: "5 semaines de congés payés par an",
+        paragraphs: [
+          "Comme tout salarié, tu cumules 2,5 jours ouvrables de congés payés par mois de travail, soit 5 semaines sur une année complète. Les dates se posent avec ton employeur, en dehors de tes périodes de formation.",
+        ],
+      },
+      {
+        heading: "+ 5 jours pour réviser tes examens (apprentissage)",
+        paragraphs: [
+          "En apprentissage, tu as droit à 5 jours ouvrables de congé supplémentaire pour préparer tes examens, dans le mois qui les précède. Ils sont payés. Préviens ton employeur à l'avance et demande à ton CFA s'il organise des révisions sur ces jours-là.",
+        ],
+      },
+      {
+        heading: "Les semaines d'école ne sont pas des congés",
+        paragraphs: [
+          "Le temps passé en formation compte comme du temps de travail : il est payé, mais ce ne sont pas des vacances. Si ton école ferme pendant les vacances scolaires, tu es censé être en entreprise (sauf si tu poses des congés).",
+        ],
+      },
+      {
+        heading: "Bien poser tes congés",
+        list: [
+          "Récupère ton calendrier d'alternance dès la signature et repère les périodes en entreprise.",
+          "Pose tes congés tôt, surtout l'été et à Noël, et toujours par écrit (mail ou outil RH).",
+          "Garde tes 5 jours de révision pour le mois des examens finaux.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Combien de congés payés a un alternant ?",
+        a: "5 semaines par an, comme tout salarié : 2,5 jours ouvrables par mois de travail.",
+      },
+      {
+        q: "Les congés de révision sont-ils payés ?",
+        a: "Oui. En apprentissage, les 5 jours ouvrables pris dans le mois qui précède les examens sont rémunérés.",
+      },
+    ],
+    sources: [
+      { label: "Droits et devoirs de l'apprenti (ONISEP)", url: "https://www.onisep.fr/Cap-vers-l-emploi/Alternance/Le-contrat-d-apprentissage-le-contrat-de-professionnalisation/Les-droits-et-devoirs-de-l-apprenti" },
+      { label: "Alternance et congés (Digischool)", url: "https://www.digischool.fr/articles/orientation/alternance/alternance-et-conges/" },
+    ],
+  },
+  {
+    slug: "convention-de-stage",
+    title: "Convention de stage : à quoi elle sert et ce qu'elle doit contenir",
+    metaDescription:
+      "Qui la signe, quand, et les mentions obligatoires d'une convention de stage (missions, dates, gratification, tuteurs) : le guide pour ne rien rater avant ton premier jour.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    intro: [
+      "Pas de convention, pas de stage : c'est le document qui encadre ton stage entre toi, l'entreprise et ton école. Voici ce qu'elle doit contenir et les pièges à éviter.",
+    ],
+    sections: [
+      {
+        heading: "Qui signe la convention de stage ?",
+        paragraphs: [
+          "Trois parties : toi, l'entreprise (ou l'organisme d'accueil) et ton établissement d'enseignement. Elle est en général générée par ton école à partir des informations que tu remplis, puis signée par tout le monde.",
+        ],
+      },
+      {
+        heading: "Elle doit être signée avant le premier jour",
+        paragraphs: [
+          "Commencer un stage sans convention signée expose l'entreprise à une requalification en contrat de travail, et toi à ne pas être couvert. Lance les démarches dès que l'entreprise t'a dit oui : les signatures peuvent prendre plusieurs jours.",
+        ],
+      },
+      {
+        heading: "Ce que la convention doit contenir",
+        list: [
+          "L'identité des trois parties, de ton enseignant référent et de ton tuteur en entreprise.",
+          "L'intitulé exact de ta formation.",
+          "Les dates de début et de fin, la durée hebdomadaire et les horaires (dont le travail de nuit ou le week-end s'il y en a).",
+          "Les missions confiées et les compétences visées.",
+          "Le montant de la gratification et ses modalités de versement (minimum légal de 4,50 € par heure en 2026 si le stage dépasse 2 mois).",
+          "Les avantages éventuels (titres-restaurant, transport), les congés et autorisations d'absence.",
+          "Les conditions de suivi et d'évaluation du stage.",
+        ],
+      },
+      {
+        heading: "Les erreurs à éviter",
+        list: [
+          "Des missions trop vagues (« aide au service ») : demande qu'elles soient précises, elles protègent le contenu de ton stage.",
+          "Des dates qui ne collent pas à ton calendrier d'école.",
+          "Oublier la gratification alors que le stage dure plus de 2 mois.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Peut-on commencer un stage avant la signature de la convention ?",
+        a: "Non. La convention doit être signée par les trois parties avant le premier jour de stage.",
+      },
+      {
+        q: "Qui fournit la convention de stage ?",
+        a: "Ton établissement d'enseignement, le plus souvent via une plateforme en ligne où tu saisis les informations du stage.",
+      },
+    ],
+    sources: [
+      { label: "Gratification minimale de stage (service-public.gouv.fr)", url: "https://entreprendre.service-public.gouv.fr/vosdroits/F32131" },
+      { label: "La convention de stage de A à Z (Université Paris Cité)", url: "https://u-paris.fr/lcao/la-convention-de-stage-de-a-a-z" },
+      { label: "Convention de stage : informations obligatoires (Digischool)", url: "https://www.digischool.fr/articles/orientation/alternance/convention-de-stage-informations-obligatoires/" },
+    ],
+  },
+  {
+    slug: "alternance-age-limite",
+    title: "Alternance : jusqu'à quel âge ? Limites et exceptions en 2026",
+    metaDescription:
+      "Apprentissage jusqu'à 29 ans (et parfois 35 ans ou sans limite), contrat pro dès 16 ans et après 26 ans pour les demandeurs d'emploi : les âges pour faire une alternance.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    intro: [
+      "« Je suis trop vieux pour une alternance ? » Probablement pas. Les limites d'âge dépendent du type de contrat, et il existe pas mal d'exceptions.",
+    ],
+    sections: [
+      {
+        heading: "Contrat d'apprentissage : de 16 à 29 ans",
+        paragraphs: [
+          "Tu peux signer un contrat d'apprentissage de 16 ans (15 ans si tu as terminé la 3e) jusqu'à la veille de tes 30 ans.",
+        ],
+      },
+      {
+        heading: "Les exceptions en apprentissage",
+        list: [
+          "Pas de limite d'âge si tu es en situation de handicap, sportif de haut niveau, ou si tu as un projet de création ou de reprise d'entreprise qui nécessite le diplôme.",
+          "Jusqu'à 35 ans si tu enchaînes sur un diplôme supérieur à celui obtenu lors de ton précédent apprentissage.",
+          "Jusqu'à 35 ans si ton contrat précédent a été rompu pour une raison indépendante de ta volonté.",
+        ],
+      },
+      {
+        heading: "Contrat de professionnalisation : pas de limite pour les demandeurs d'emploi",
+        paragraphs: [
+          "Le contrat pro est ouvert aux 16-25 ans qui complètent leur formation initiale, mais aussi aux demandeurs d'emploi de 26 ans et plus et aux bénéficiaires du RSA, de l'ASS ou de l'AAH, sans limite d'âge. C'est la voie d'alternance classique pour une reconversion.",
+        ],
+      },
+      {
+        heading: "Le salaire change avec l'âge",
+        paragraphs: [
+          "En apprentissage comme en contrat pro, le salaire minimum augmente avec l'âge : un apprenti de 21 ans touche plus qu'un apprenti de 18 ans la même année de contrat, et à partir de 26 ans c'est au moins le SMIC. Fais le calcul avec le simulateur Stageio.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Peut-on faire une alternance à 30 ans ?",
+        a: "En apprentissage, seulement dans les cas d'exception (handicap, sportif de haut niveau, création d'entreprise, diplôme supérieur ou rupture involontaire jusqu'à 35 ans). En contrat de professionnalisation, oui si tu es demandeur d'emploi.",
+      },
+      {
+        q: "Quel est l'âge minimum pour une alternance ?",
+        a: "16 ans, ou 15 ans si tu as terminé la classe de 3e.",
+      },
+    ],
+    sources: [
+      { label: "Contrat d'apprentissage (justice.fr)", url: "https://www.justice.fr/fiche/contrat-apprentissage" },
+      { label: "Contrat de professionnalisation (service-public.gouv.fr)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F15478" },
+    ],
+  },
 ];
