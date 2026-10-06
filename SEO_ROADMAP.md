@@ -190,7 +190,59 @@ Ce qui fait passer du bas au haut de la fourchette : les backlinks (aucun code n
 - [x] Baromètre 2026 `/barometre-alternance-stage` (métiers, villes, salaires indiqués, entreprises ; recalculé chaque heure, reprise libre avec lien = aimant à backlinks)
 - [x] Bloc « Explorer les offres » sur l'accueil (métiers, villes, entreprises) : découverte rapide des nouvelles pages par Google
 - [x] IndexNow opérationnel (1 257 URLs acceptées par Bing le 06/10)
-- [ ] Phase 3 : 6 guides supplémentaires (objectif 10), puis plan de 40
+- [x] Phase 3 : 10 guides en ligne (6 ajoutés le 06/10), chacun relié aux autres guides, aux offres et au simulateur ; plan des 40 en section 10
 - [ ] Filtrer les annonces d'écoles du catalogue lui-même (décision produit)
 - [ ] Phase 3 — 40 guides (10 rédigés) + 4 outils
 - [ ] Phase 4 — hubs, baromètre, Search Console, suivi 100 mots-clés, dashboard
+
+---
+
+## 10. Plan des 40 guides
+
+✅ = en ligne. Les sujets avec des chiffres légaux (⚖️) doivent être revérifiés sur service-public.gouv.fr avant publication.
+
+**Alternance**
+1. ✅ Alternance ou stage : les différences ⚖️
+2. ✅ Trouver une alternance rapidement
+3. ✅ CV pour une alternance
+4. ✅ Lettre de motivation pour une alternance
+5. ✅ Entretien d'alternance : questions et réponses
+6. ✅ Candidature spontanée en alternance (modèle de mail)
+7. Contrat d'apprentissage ou contrat de professionnalisation ⚖️
+8. Rupture d'un contrat d'apprentissage ⚖️
+9. Aides financières pour les alternants (permis, logement, prime d'activité) ⚖️
+10. Congés et jours d'école d'un alternant ⚖️
+11. Période d'essai en alternance ⚖️
+12. Alternance jusqu'à quel âge ? ⚖️
+13. Trouver une école en alternance (et dans quel ordre chercher)
+14. BTS, bachelor, master en alternance : lequel choisir
+15. Alternance et chômage : tes droits à la fin du contrat ⚖️
+16. Trouver une alternance avec LinkedIn
+17. Calendrier : quand chercher son alternance mois par mois
+18. Alternance sans avoir trouvé d'entreprise à la rentrée : que faire
+
+**Stage**
+19. ✅ Trouver un stage rapidement ⚖️
+20. ✅ Lettre de motivation pour un stage
+21. ✅ Rapport de stage : plan type
+22. Convention de stage : ce qu'elle doit contenir ⚖️
+23. CV pour un stage
+24. Mail de candidature de stage (modèles)
+25. Stage de fin d'études : comment le choisir
+26. Stage à l'étranger : démarches
+27. Gratification de stage : calcul et droits ⚖️
+28. Année de césure : comment l'organiser
+29. Entretien de stage : questions et réponses
+30. Soutenance de stage : plan et conseils
+
+**Transversal**
+31. ✅ Relancer une candidature (modèles de mail)
+32. Se présenter en 1 minute (pitch)
+33. Questions à poser au recruteur
+34. Soft skills à mettre sur son CV
+35. Premier jour en entreprise : les bons réflexes
+36. Utiliser l'IA pour sa lettre de motivation sans se faire repérer
+37. Profil LinkedIn d'étudiant : la checklist
+38. Logement pendant l'alternance ou le stage ⚖️
+39. Gérer deux villes (école et entreprise)
+40. Refuser une offre poliment (modèle de mail)

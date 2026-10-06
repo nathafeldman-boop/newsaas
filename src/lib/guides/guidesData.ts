@@ -1,3 +1,5 @@
+import { MORE_GUIDES } from "@/lib/guides/moreGuides";
+
 export type GuideFaqItem = { q: string; a: string };
 export type GuideTable = { headers: string[]; rows: string[][] };
 export type GuideSection = {
@@ -286,6 +288,7 @@ export const GUIDES: Guide[] = [
       },
     ],
   },
+  ...MORE_GUIDES,
 ];
 
 export function getGuide(slug: string): Guide | undefined {

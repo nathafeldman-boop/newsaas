@@ -182,6 +182,37 @@ export default async function GuidePage({
         )}
       </article>
 
+      {/* Maillage : chaque guide renvoie vers d'autres guides, les offres et
+          l'outil -- sinon chaque guide est une impasse pour le visiteur
+          comme pour Google. */}
+      <nav aria-label="À lire aussi" className="mt-8">
+        <h2 style={{ fontSize: 18, margin: "0 0 10px" }}>À lire aussi</h2>
+        <div className="flex flex-col gap-2">
+          {[1, 2, 3, 4]
+            .map((offset) => GUIDES[(GUIDES.findIndex((g) => g.slug === guide.slug) + offset) % GUIDES.length])
+            .filter((g) => g.slug !== guide.slug)
+            .map((g) => (
+              <Link key={g.slug} href={`/guides/${g.slug}`} style={{ fontSize: 14 }}>
+                {g.title}
+              </Link>
+            ))}
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link href="/alternance" className="tag tag-neutral">
+            Offres d&apos;alternance par métier et ville
+          </Link>
+          <Link href="/stage" className="tag tag-neutral">
+            Offres de stage par métier et ville
+          </Link>
+          <Link href="/outils/simulateur-salaire-alternance" className="tag tag-neutral">
+            Simulateur de salaire
+          </Link>
+          <Link href="/barometre-alternance-stage" className="tag tag-neutral">
+            Baromètre 2026
+          </Link>
+        </div>
+      </nav>
+
       <div className="card elev-sm mt-6" style={{ padding: "var(--space-6)", textAlign: "center" }}>
         <p style={{ fontSize: 14, margin: "0 0 12px" }}>
           Crée ton compte pour matcher avec des offres qui correspondent à ton profil.
