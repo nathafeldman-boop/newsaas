@@ -15,6 +15,15 @@ const UTM_COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // même fenêtre d'attribution qu
 export async function proxy(request: NextRequest, event: NextFetchEvent) {
   const response = await updateSession(request);
 
+  // newsaas-seven.vercel.app (et les URLs de preview) servent exactement le
+  // même site que www.stageio.fr, en 200, sans redirection : sans ce header,
+  // Google peut indexer ces doublons. Limité à *.vercel.app volontairement --
+  // jamais de condition sur le domaine principal, qu'une variable d'env mal
+  // réglée ne doit pas pouvoir désindexer.
+  if ((request.headers.get("host") ?? "").endsWith(".vercel.app")) {
+    response.headers.set("X-Robots-Tag", "noindex, nofollow");
+  }
+
   // Id visiteur anonyme stable (cookie) : sert uniquement à compter des
   // visiteurs distincts pour le dashboard admin (voir logVisit) -- posé ici
   // même sur une réponse de redirection, sinon un visiteur jamais connecté

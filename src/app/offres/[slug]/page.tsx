@@ -1,28 +1,75 @@
-import { notFound } from "next/navigation";
+import { cache } from "react";
+import { notFound, permanentRedirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { createClient } from "@/lib/supabase/server";
-import { extractOfferId, offerPath } from "@/lib/offers/publicUrl";
+import { createPublicClient } from "@/lib/supabase/public";
+import { extractOfferId, offerPath, offerSlug } from "@/lib/offers/publicUrl";
+import { normalizeCityKey } from "@/lib/offers/segments";
 import { SITE_URL } from "@/lib/site";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import type { Offer } from "@/types/database";
 
+// ISR : chaque fiche est rendue à la 1re visite puis servie depuis le cache
+// Vercel pendant 1 h, au lieu d'un rendu + requête Supabase à chaque passage
+// de Googlebot (TTFB = signal Core Web Vitals). Une offre désactivée par le
+// cron disparaît donc au plus 1 h après -- largement suffisant.
+export const revalidate = 3600;
+
+export async function generateStaticParams() {
+  return [];
+}
+
 // Fiche publique, sans compte : c'est le seul contenu de l'app indexable par
 // Google (le reste est derrière l'inscription). L'ID fait foi, le slug
 // humain n'est que décoratif — voir src/lib/offers/publicUrl.ts.
-async function getOffer(slug: string): Promise<Offer | null> {
+// cache() : generateMetadata et la page partagent la même requête.
+const getOffer = cache(async (slug: string): Promise<Offer | null> => {
   const id = extractOfferId(slug);
   if (!id) return null;
 
-  const supabase = await createClient();
-  const { data } = await supabase
+  const { data, error } = await createPublicClient()
     .from("offers")
     .select("*")
     .eq("id", id)
     .eq("is_active", true)
     .maybeSingle();
+  // Une panne Supabase ne doit jamais se transformer en 404 (Google
+  // retirerait la page de l'index) : on laisse remonter en 500.
+  if (error) throw new Error(error.message);
 
   return data;
+});
+
+const CONTRACT_LABEL: Record<Offer["contract_type"], string> = {
+  alternance: "Alternance",
+  stage: "Stage",
+};
+
+function offerTitle(offer: Offer): string {
+  const mentionsContract =
+    offer.contract_type === "alternance" ? /altern|apprenti/i.test(offer.title) : /stag/i.test(offer.title);
+  // Le layout racine ajoute déjà " | Stageio" (title.template) : ne jamais
+  // le remettre ici, sinon "| Stageio | Stageio" dans Google.
+  return `${mentionsContract ? "" : `${CONTRACT_LABEL[offer.contract_type]} : `}${offer.title} – ${offer.company}`;
+}
+
+function truncateOnWord(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max - 1);
+  const lastSpace = cut.lastIndexOf(" ");
+  return `${(lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut).replace(/[\s,;:.\-–]+$/, "")}…`;
+}
+
+// Contexte unique (contrat, entreprise, ville, durée) AVANT l'extrait : les
+// 155 premiers caractères bruts de la description étaient souvent un texte
+// générique d'entreprise identique sur toutes ses offres.
+function offerMetaDescription(offer: Offer): string {
+  const city = normalizeCityKey(offer.location) || offer.location;
+  const context = `${CONTRACT_LABEL[offer.contract_type]} chez ${offer.company} à ${city}${
+    offer.duration ? ` (${offer.duration})` : ""
+  }.`;
+  const snippet = offer.description.replace(/\s+/g, " ").trim();
+  return truncateOnWord(snippet ? `${context} ${snippet}` : context, 155);
 }
 
 export async function generateMetadata({
@@ -34,8 +81,8 @@ export async function generateMetadata({
   const offer = await getOffer(slug);
   if (!offer) return { title: "Offre introuvable", robots: { index: false, follow: true } };
 
-  const title = `${offer.title} — ${offer.company} (${offer.contract_type}) | Stageio`;
-  const description = offer.description.slice(0, 155);
+  const title = offerTitle(offer);
+  const description = offerMetaDescription(offer);
   const url = `${SITE_URL}${offerPath(offer)}`;
   // Image par offre quand elle existe (Adzuna/France Travail/manuel) --
   // sinon on n'écrit pas la clé, les metadata héritent de l'og-image par
@@ -95,6 +142,19 @@ function parseBaseSalary(salary: string | null) {
   return { "@type": "MonetaryAmount", currency: "EUR", value };
 }
 
+// Google for Jobs exige la description COMPLÈTE du poste dans le JSON-LD et
+// sur la page. Adzuna ne fournit qu'un extrait (~500 caractères coupé par
+// "…") : un JobPosting tronqué enfreint les consignes (risque d'action
+// manuelle sur les données structurées de tout le site). On ne le publie
+// donc que pour les offres dont on a le texte intégral (France Travail,
+// saisie manuelle) -- voir l'audit SEO du 06/10.
+function isJobPostingEligible(offer: Offer): boolean {
+  if (offer.source === "adzuna") return false;
+  const description = offer.description.trim();
+  if (/(…|\.\.\.)$/.test(description)) return false;
+  return description.length >= 200;
+}
+
 function jobPostingJsonLd(offer: Offer) {
   const validThrough = new Date(offer.last_seen_at);
   validThrough.setDate(validThrough.getDate() + 30);
@@ -141,11 +201,6 @@ function breadcrumbJsonLd(offer: Offer) {
   };
 }
 
-const CONTRACT_LABEL: Record<Offer["contract_type"], string> = {
-  alternance: "Alternance",
-  stage: "Stage",
-};
-
 export default async function PublicOfferPage({
   params,
 }: {
@@ -154,13 +209,18 @@ export default async function PublicOfferPage({
   const { slug } = await params;
   const offer = await getOffer(slug);
   if (!offer) notFound();
+  // Une seule URL par offre : /offres/n-importe-quoi-<uuid> ou un ancien
+  // slug (titre modifié par la source) redirige en 308 vers l'URL canonique.
+  if (slug !== offerSlug(offer)) permanentRedirect(offerPath(offer));
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-10 sm:px-9">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: safeJsonLd(jobPostingJsonLd(offer)) }}
-      />
+      {isJobPostingEligible(offer) && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(jobPostingJsonLd(offer)) }}
+        />
+      )}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbJsonLd(offer)) }}

@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { fetchPublicOffers } from "@/lib/offers/fetchPublicOffers";
 import { getSectorSegments, getCitySegments } from "@/lib/offers/segments";
@@ -6,13 +6,20 @@ import { PublicOffersGrid } from "@/components/offers/PublicOffersGrid";
 import { OffersSegmentNav } from "@/components/offers/OffersSegmentNav";
 import { SegmentChips } from "@/components/offers/SegmentChips";
 import { SITE_URL } from "@/lib/site";
+import { pagedPath, pagedTitle, parsePageParam } from "@/lib/seo/pagination";
 
-export const metadata: Metadata = {
-  title: "Toutes les offres d'alternance et de stage",
-  description:
-    "Parcours les offres d'alternance et de stage disponibles sur Stageio, sans créer de compte.",
-  alternates: { canonical: `${SITE_URL}/offres` },
-};
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}): Promise<Metadata> {
+  const page = parsePageParam((await searchParams).page);
+  return {
+    title: pagedTitle("Toutes les offres d'alternance et de stage", page),
+    description: `Parcours les offres d'alternance et de stage disponibles sur Stageio, sans créer de compte.${page > 1 ? ` Page ${page}.` : ""}`,
+    alternates: { canonical: `${SITE_URL}${pagedPath("/offres", page)}` },
+  };
+}
 
 export default async function PublicOffersIndex({
   searchParams,
@@ -29,12 +36,13 @@ export default async function PublicOffersIndex({
     redirect(`/offres/${typeParam}${pageParam ? `?page=${pageParam}` : ""}`);
   }
 
-  const page = Math.max(1, Number(pageParam) || 1);
+  const page = parsePageParam(pageParam);
   const [{ offers, count, totalPages }, sectorSegments, citySegments] = await Promise.all([
     fetchPublicOffers(undefined, page),
     getSectorSegments(),
     getCitySegments(),
   ]);
+  if (page > totalPages) notFound();
 
   return (
     <div className="mx-auto max-w-4xl px-5 py-10 sm:px-9">

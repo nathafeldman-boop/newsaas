@@ -132,16 +132,15 @@ const organizationJsonLd = {
   sameAs: [],
 };
 
+// Sert au "nom du site" affiché par Google au-dessus du titre. Plus de
+// SearchAction : /offres n'a jamais géré ?q= (recherche morte) et Google a
+// de toute façon retiré la sitelinks search box en 2024.
 const websiteJsonLd = {
   "@context": "https://schema.org",
   "@type": "WebSite",
   name: "Stageio",
-  url: SITE_URL,
-  potentialAction: {
-    "@type": "SearchAction",
-    target: `${SITE_URL}/offres?q={search_term_string}`,
-    "query-input": "required name=search_term_string",
-  },
+  alternateName: "stageio.fr",
+  url: `${SITE_URL}/`,
 };
 
 // Google affiche des étoiles directement dans les résultats de recherche

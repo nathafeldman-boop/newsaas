@@ -1,7 +1,7 @@
 import { LegalShell, Section } from "@/components/legal/LegalShell";
 
 export const metadata = {
-  title: "CGU — Stageio",
+  title: "CGU",
 };
 
 export default function CGUPage() {

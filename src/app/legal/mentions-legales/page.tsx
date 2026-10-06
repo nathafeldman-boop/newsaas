@@ -1,7 +1,7 @@
 import { LegalShell, Section, ToComplete } from "@/components/legal/LegalShell";
 
 export const metadata = {
-  title: "Mentions légales — Stageio",
+  title: "Mentions légales",
 };
 
 export default function MentionsLegalesPage() {

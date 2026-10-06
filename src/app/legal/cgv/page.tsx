@@ -1,7 +1,7 @@
 import { LegalShell, Section, ToComplete } from "@/components/legal/LegalShell";
 
 export const metadata = {
-  title: "CGV — Stageio",
+  title: "CGV",
 };
 
 export default function CGVPage() {

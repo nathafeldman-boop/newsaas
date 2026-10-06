@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "Compte supprimé — Stageio",
+  title: "Compte supprimé",
   robots: { index: false, follow: false },
 };
 

@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "Informations légales — Stageio",
+  title: "Informations légales",
 };
 
 const PAGES = [

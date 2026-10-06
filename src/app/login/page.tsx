@@ -1,6 +1,15 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { LoginForm } from "@/components/auth/LoginForm";
+import type { Metadata } from "next";
+
+// noindex : une page de connexion n'apporte rien à un internaute qui
+// cherche une alternance (et n'a plus de titre par défaut dupliqué avec
+// l'accueil). follow conservé pour les liens vers l'accueil/inscription.
+export const metadata: Metadata = {
+  title: "Connexion",
+  robots: { index: false, follow: true },
+};
 
 export default function LoginPage() {
   return (

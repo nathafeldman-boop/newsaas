@@ -1,0 +1,176 @@
+# SEO Stageio — audit & roadmap
+
+_Dernière mise à jour : 06/10/2026 — Phase 1 terminée, Phase 2 en attente de décisions (section 4)._
+
+---
+
+## 1. État des lieux (exploration du repo)
+
+| Sujet | Constat |
+|---|---|
+| Stack | Next.js 16.3 App Router, React 19, Supabase (Postgres + RLS), Vercel Hobby. `src/proxy.ts` = middleware (runtime Node). |
+| Rendu | Tout le contenu public est **rendu côté serveur** (Server Components) : titres, offres, FAQ et JSON-LD sont dans le HTML initial — vérifié en prod. Accueil en ISR (1 h), guides en SSG, listes `/offres*` dynamiques (searchParams), fiches offres désormais en ISR (1 h). |
+| Source des offres | Crons quotidiens : **Adzuna** (4 330 actives) et **France Travail** (898 actives) ≈ **5 230 offres actives** (pas 7 000), réparties ~2 900 stages / ~2 350 alternances. Adzuna ne fournit qu'un **extrait de ~500 caractères** coupé par « … » ; France Travail fournit la description complète. |
+| Domaine | `stageio.fr` → 308 → `https://www.stageio.fr` (OK, HSTS actif). Toutes les URLs absolues (canonical, sitemap, OG, JSON-LD) pointent déjà sur `www`. |
+| Pages indexables | `/`, `/offres`, `/offres/alternance`, `/offres/stage`, `/offres/secteur/*`, `/offres/ville/*` (seuil 5 offres), `/offres/[slug]` (fiches), `/guides` + 4 guides, `/inscription`, `/legal/*`. |
+| Métadonnées | `metadata` / `generateMetadata` partout, template `%s \| Stageio` dans le layout racine, OG + Twitter card par défaut (`/og-image.jpg`), favicon + icon + apple-icon présents. |
+| Données structurées | Accueil : FAQPage, Organization, WebSite, SoftwareApplication (note seulement si vrais avis). Fiches : JobPosting + BreadcrumbList. Guides : Article + BreadcrumbList + FAQPage. |
+| robots / llms | `robots.ts` propre (privé bloqué, crawlers IA autorisés), `public/llms.txt` présent. |
+
+---
+
+## 2. Audit technique — priorisé impact / effort
+
+Légende statut : ✅ corrigé dans le commit Phase 1 · ❓ décision Nathan · 🔜 Phase 2+ · 🧑 action Nathan
+
+| # | Problème | Impact | Effort | Statut |
+|---|---|---|---|---|
+| 1 | **Sitemap tronqué à 1 000 offres sur ~5 230** : Supabase (PostgREST « Max Rows ») plafonne chaque réponse à 1 000 lignes, le `.limit(45000)` était ignoré en silence → ~80 % des offres invisibles pour Google via le sitemap. | Très fort | Faible | ✅ Pagination par tranches de 1 000 + sitemap index segmenté |
+| 2 | **Soft 404 massif** : toute URL inconnue/supprimée (`/nimporte-quoi`) faisait une redirection 307 vers `/login` (middleware en « liste blanche »). Google classe ça en soft 404 et `/login` absorbait des signaux. | Fort | Faible | ✅ Le middleware ne protège plus que les pages membres ; le reste reçoit un vrai 404 |
+| 3 | **Titres dupliqués « \| Stageio \| Stageio »** sur les ~5 230 fiches offres (+ pages légales « — Stageio \| Stageio »). | Fort | Faible | ✅ |
+| 4 | **Pagination** : `?page=N` avait un canonical vers la page 1 et un titre identique (120 pages « Offres de stage \| Stageio »), et chaque page affichait 120 liens de pagination. `?page=999` répondait 200 avec une liste vide (soft 404). | Fort | Faible | ✅ Canonical auto-référent, titre « – page N », pagination fenêtrée, 404 hors limites |
+| 5 | **JobPosting non éligible** sur les 4 330 offres Adzuna : Google for Jobs exige la description complète, or l'extrait Adzuna est tronqué. Risque d'action manuelle « données structurées » sur tout le site. | Fort (risque) | Faible | ✅ JobPosting conservé uniquement pour les offres à description complète (France Travail) |
+| 6 | **Pages villes fausses** : la normalisation concaténait « Annemasse, Saint-Julien-en-Genevois » en une ville inexistante, ignorait le format France Travail (« 75 - PARIS 08 »), et les comptages tournaient sur 1 000 lignes seulement. | Fort | Faible | ✅ Nouvelle normalisation (testée sur 16 formats réels) + comptage sur tout le catalogue + filtre SQL |
+| 7 | **Fiches Adzuna = contenu fin et dupliqué** : ~4 330 pages avec le même extrait de 500 caractères que sur Adzuna et des dizaines d'agrégateurs. Risque « scaled content » qui peut tirer tout le domaine vers le bas (signal site-wide). | Très fort (risque) | Faible à moyen | ❓ Voir décision A |
+| 8 | **Doublon `newsaas-seven.vercel.app`** : le site entier y répond en 200, indexable. | Moyen | Faible | ✅ `X-Robots-Tag: noindex` sur `*.vercel.app` (🧑 redirection Vercel en plus, optionnel) |
+| 9 | **Fiches offres non mises en cache** (`no-store`, 1 requête Supabase par passage de Googlebot) → TTFB. | Moyen (CWV + budget de crawl) | Faible | ✅ ISR 1 h + client Supabase sans cookies |
+| 10 | Meta description des fiches = 155 premiers caractères bruts (souvent le même texte d'entreprise, coupé en plein mot). | Moyen | Faible | ✅ « Stage chez X à Ville (durée). » + extrait coupé proprement |
+| 11 | URL de fiche non canonique servie en 200 (`/offres/autre-texte-<uuid>`). | Faible | Faible | ✅ 308 vers l'URL canonique |
+| 12 | `SearchAction` du JSON-LD WebSite vers `/offres?q=` qui n'existe pas (et Google a retiré la sitelinks search box). | Faible | Faible | ✅ Retiré (+ `alternateName` pour le nom du site) |
+| 13 | `/login` indexable, dans le sitemap, titre identique à l'accueil. `/inscription` et `/desabonnement` sans titre propre. | Faible | Faible | ✅ `/login` et `/desabonnement` en noindex, `/inscription` titrée + canonical |
+| 14 | Pas de 404 globale en français (page anglaise Next par défaut). | Faible | Faible | ✅ `src/app/not-found.tsx` avec liens vers offres et guides |
+| 15 | `llms.txt` pointait sur l'apex (redirection à chaque lien). | Faible | Faible | ✅ |
+| 16 | **Faux témoignages** : si moins de 3 vrais avis, l'accueil affiche 3 citations inventées (« Léa, alternante… ») présentées comme réelles. Pratique commerciale trompeuse (Code de la consommation) + signal de confiance négatif. | Fort (juridique) | Faible | ❓ Voir décision E |
+| 17 | Core Web Vitals : ~175 Ko JS gzip sur une page liste (socle Next/React), + framer-motion sur l'accueil (HTML 147 Ko). Pas de mesure terrain disponible ici. | Moyen | Moyen | 🔜 Charger `SwipeDemo` en différé ; 🧑 vérifier PageSpeed/CrUX |
+| 18 | Aucun maillage depuis une fiche offre vers sa ville / son métier / des offres proches. | Fort | Moyen | 🔜 Phase 2 |
+| 19 | Pages légales sans `<h1>` ni meta description. | Faible | Faible | 🔜 |
+| 20 | Offres hors cible (ex. « Stage découverte 3ème ») dans le catalogue public. | Faible | Faible | 🔜 Filtre à l'import |
+| 21 | `Organization.sameAs` vide. | Faible | Faible | 🧑 Donner les URLs TikTok / Instagram / LinkedIn |
+| 22 | FAQPage : Google n'affiche plus ce rich result que pour les sites gouvernementaux/santé. Le balisage reste utile aux moteurs IA, aucun gain SERP à en attendre. | — | — | Info |
+
+### Vérifications OK (rien à faire)
+- HTTPS + HSTS, apex → www en 308, `lang="fr"`, viewport, un seul `<h1>` sur les pages publiques principales.
+- Contenu présent dans le HTML initial (pas de rendu client pour le contenu indexable).
+- Polices via `next/font` (auto-hébergées, preload, `size-adjust` → pas de CLS de police).
+- Aucune `<img>` brute dans le code ; `team-photo.jpg` (154 Ko) n'est utilisée nulle part, `logo.png` (205 Ko) seulement dans le JSON-LD.
+- Offres expirées : vrai 404 (pas de soft 404), page « Cette offre n'est plus disponible » en noindex.
+
+---
+
+## 3. Ce qui a changé dans le commit Phase 1
+
+- `src/lib/supabase/public.ts` — client Supabase anonyme **sans cookies** (pages publiques cachables) + `fetchAllRows()` qui pagine au-delà du plafond de 1 000 lignes.
+- **Sitemaps** : `/sitemap.xml` devient un **index** → `/sitemap-pages.xml`, `/sitemap-offres-alternance.xml`, `/sitemap-offres-stage.xml` (cache CDN 1 h). L'URL déjà déclarée ne change pas.
+- `src/lib/supabase/middleware.ts` — liste des pages **protégées** au lieu d'une liste de pages publiques. ⚠️ Toute nouvelle page membre doit y être ajoutée.
+- `src/app/offres/[slug]/page.tsx` — titre sans doublon, meta description contextualisée, JobPosting conditionnel, ISR 1 h, 308 vers le slug canonique, une panne Supabase donne une 500 (et plus jamais un 404 qui ferait sortir la page de l'index).
+- Listes `/offres*`, secteur, ville — canonical et titre par page, 404 hors limites, pagination fenêtrée (`src/lib/seo/pagination.ts`).
+- `src/lib/offers/segments.ts` — comptages sur tout le catalogue (cache 1 h), nouvelle normalisation des villes. **Les slugs de certaines pages villes changent** (pages créées le 02/10, encore quasi pas indexées) : par exemple, l'ancienne « annemasse-saint-julien-en-genevois » devient « annemasse ».
+- `src/app/not-found.tsx`, metadata `/login`, `/inscription`, `/desabonnement`, titres légaux, JSON-LD WebSite, `robots.ts`, `llms.txt`, `X-Robots-Tag` sur `*.vercel.app`.
+
+---
+
+## 4. Décisions à prendre avant la Phase 2
+
+**A. Les ~4 330 fiches Adzuna (contenu tronqué et dupliqué).** Recommandation : les passer en `noindex, follow` et les sortir du sitemap. Elles restent visibles pour les utilisateurs et continuent d'alimenter les pages programmatiques (listes, compteurs, stats). Seules les fiches France Travail (texte complet) restent indexables. Sans ça, on publie 4 000+ pages quasi identiques à celles d'Adzuna : c'est exactement le profil visé par la politique anti-spam « scaled content abuse », et la sanction touche tout le domaine.
+
+**B. Architecture d'URL.** Proposition :
+- `/alternance/[metier]/[ville]`, `/stage/[metier]/[ville]` (le cœur du trafic longue traîne) ;
+- `/alternance/[metier]`, `/stage/[metier]`, `/alternance/[ville]`, `/stage/[ville]` ;
+- `/entreprises/[entreprise]`.
+
+Conflit : `/alternance/[x]` doit distinguer un métier d'une ville. On le résout avec une liste fermée de métiers (≈ 60) et de villes (≈ 150), sans collision possible. Les pages `/offres/secteur/*` et `/offres/ville/*` (4 jours d'existence) seraient redirigées en 308 vers leurs équivalents. **Redirection = ta validation.**
+
+**C. Migration base.** Les « secteurs » actuels (40 mots-clés) ne sont pas des métiers. Proposition :
+- ajouter à `offers` les colonnes `job_slug` (métier normalisé, déduit du titre), `city_slug`, `department` et `company_slug` ;
+- les remplir à l'import et faire un backfill ;
+- créer une vue agrégée (comptes, salaire médian, durée médiane, entreprises) par combinaison.
+
+Sans cette migration, chaque page recalcule tout en mémoire, ce qui ne tiendra pas sur Vercel Hobby. **Migration = ta validation.**
+
+**D. Seuil N.** Proposition :
+
+| Offres actives sur la page | Traitement |
+|---|---|
+| ≥ 10 | page indexable, dans le sitemap |
+| 3 à 9 | page accessible mais `noindex, follow`, hors sitemap |
+| < 3 | pas de page (404) |
+| tombée à 0 alors qu'elle était publiée | 410 |
+
+Pourquoi 10 : en dessous, salaire et durée « moyens » reposent sur 2–3 valeurs et ne veulent rien dire, et la page ressemble à une page vide aux yeux de Google.
+
+**E. Faux témoignages de l'accueil.** Recommandation : les retirer et afficher les vrais avis, ou rien.
+
+**F. Conditions d'utilisation Adzuna / France Travail.** À vérifier de ton côté :
+- l'attribution obligatoire (« Jobs by Adzuna ») ;
+- le droit d'afficher et d'indexer leurs offres sur nos propres pages ;
+- l'obligation de fraîcheur.
+
+**G. « Candidats par offre ».** On n'a que les likes et candidatures faits via Stageio, donc des chiffres petits, souvent 0. Recommandation : ne pas l'afficher tant que le volume n'est pas significatif.
+
+---
+
+## 5. Plan Phase 2 (après décisions)
+
+1. Migration + backfill (`job_slug`, `city_slug`, `department`, `company_slug`) et dictionnaire métiers/villes.
+2. Une page programmatique contient :
+   - les offres réelles, paginées proprement ;
+   - le nombre d'offres, le salaire observé (médiane, n = …) mis à côté de la grille légale de l'apprentissage, la durée médiane et le top des entreprises qui recrutent ;
+   - un bloc éditorial généré à partir des données de la page (jamais un texte à trous identique) ;
+   - une FAQ (JSON-LD), un fil d'Ariane (JSON-LD), des liens vers les villes proches et les métiers liés.
+3. Fiches offres : liens vers la page métier×ville, 4 offres similaires, statut clair si l'offre a expiré.
+4. Pages entreprise (≥ 3 offres).
+5. Seuils N, 410 sur les pages vidées, sitemaps par famille.
+6. JobPosting : uniquement les offres éligibles (déjà en place).
+
+## 6. Phases 3 et 4 (rappel)
+
+- **Phase 3** :
+  - plan de 40 guides, dont les 10 premiers rédigés au format « featured snippet » ;
+  - outils gratuits, chacun avec sa page SEO : audit de CV (aperçu du score, détail après inscription), générateur de lettre (1 essai), calculateur de salaire d'alternance, simulateur d'entretien.
+- **Phase 4** :
+  - hubs de maillage ;
+  - baromètre annuel « salaires et offres d'alternance » (aimant à backlinks) ;
+  - Search Console, suivi de 100 mots-clés cibles, dashboard.
+
+---
+
+## 7. Estimations de trafic organique (honnêtes)
+
+Hypothèses :
+- domaine créé en septembre 2026, quasi aucun backlink ;
+- concurrence très forte : Indeed, HelloWork, Welcome to the Jungle, L'Etudiant, La bonne alternance, 1jeune1solution… ;
+- Phase 2 livrée d'ici fin octobre, Phase 3 d'ici décembre ;
+- saisonnalité : la recherche de stage monte d'octobre à février, celle d'alternance de mars à septembre.
+
+| Horizon | Visites organiques / mois | D'où elles viennent |
+|---|---|---|
+| 3 mois (janv. 2027) | **500 – 2 000** | Marque, longue traîne métier×ville de villes moyennes, premiers guides |
+| 6 mois (avr. 2027) | **3 000 – 10 000** | Pages programmatiques indexées, calculateur de salaire, début de la saison alternance |
+| 12 mois (oct. 2027) | **10 000 – 35 000** | Si 30+ backlinks de qualité (écoles, CFA, BDE, presse étudiante) et baromètre publié ; sans backlinks, plutôt le bas de la fourchette |
+
+Ce qui fait passer du bas au haut de la fourchette : les backlinks (aucun code ne les remplace), la décision A (qualité perçue du domaine), et les outils gratuits, qui attirent des liens naturels.
+
+---
+
+## 8. Actions à faire par Nathan
+
+1. **Search Console** : créer une propriété **Domaine** `stageio.fr` (enregistrement DNS TXT) puis soumettre `https://www.stageio.fr/sitemap.xml`. Sous 48 h, vérifier que les 3 sous-sitemaps sont lus et regarder le rapport « Pages ».
+2. **Bing Webmaster Tools** : importer depuis Search Console (Bing alimente ChatGPT Search et Copilot).
+3. Vercel → Domains : rediriger `newsaas-seven.vercel.app` vers `www.stageio.fr` (optionnel, il est déjà en noindex).
+4. M'envoyer les URLs des comptes sociaux (TikTok, Instagram, LinkedIn) pour `Organization.sameAs`.
+5. Répondre aux décisions A à G (section 4).
+6. Relire les CGU API d'Adzuna et de France Travail (décision F).
+7. Après déploiement : PageSpeed Insights sur `/`, `/offres/stage` et une fiche offre, puis activer Vercel Speed Insights pour les Core Web Vitals terrain.
+8. Le connecteur Supabase de cette session ne voit que le projet « menopause-app ». Connecter le projet Stageio me permettrait de calibrer la Phase 2 sur les vraies données. Sinon, je te donnerai les requêtes SQL à lancer.
+9. Backlinks : lister 20 écoles, CFA et BDE à contacter (partenariat ou page « offres pour vos étudiants »). C'est le levier n° 1 à 12 mois.
+
+---
+
+## 9. Suivi d'avancement
+
+- [x] Phase 1 — audit technique
+- [x] Phase 1 — correctifs rapides (commit « SEO phase 1 »)
+- [ ] Décisions A–G
+- [ ] Phase 2 — migration + pages programmatiques
+- [ ] Phase 3 — 40 guides (10 rédigés) + 4 outils
+- [ ] Phase 4 — hubs, baromètre, Search Console, suivi 100 mots-clés, dashboard

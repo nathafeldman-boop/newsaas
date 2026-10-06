@@ -2,6 +2,15 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { RegisterForm } from "@/components/auth/RegisterForm";
+import type { Metadata } from "next";
+import { SITE_URL } from "@/lib/site";
+
+export const metadata: Metadata = {
+  title: "Inscription gratuite",
+  description:
+    "Crée ton compte Stageio gratuitement : renseigne ton profil et reçois des offres d'alternance et de stage triées selon ton secteur, ta ville et ton niveau d'études.",
+  alternates: { canonical: `${SITE_URL}/inscription` },
+};
 
 export default async function InscriptionPage({
   searchParams,

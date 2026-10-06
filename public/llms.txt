@@ -27,17 +27,17 @@
 
 ## Pages clés
 
-- [Accueil](https://stageio.fr/) — présentation du produit, démo interactive du swipe, avis d'utilisateurs.
-- [Offres d'alternance et de stage](https://stageio.fr/offres) — catalogue public des offres actives, consultable sans compte.
-- [Offres d'alternance](https://stageio.fr/offres/alternance)
-- [Offres de stage](https://stageio.fr/offres/stage)
-- [Guides](https://stageio.fr/guides) — alternance vs stage, trouver une alternance, CV, lettre de motivation.
+- [Accueil](https://www.stageio.fr/) — présentation du produit, démo interactive du swipe, avis d'utilisateurs.
+- [Offres d'alternance et de stage](https://www.stageio.fr/offres) — catalogue public des offres actives, consultable sans compte.
+- [Offres d'alternance](https://www.stageio.fr/offres/alternance)
+- [Offres de stage](https://www.stageio.fr/offres/stage)
+- [Guides](https://www.stageio.fr/guides) — alternance vs stage, trouver une alternance, CV, lettre de motivation.
 - Des pages existent aussi par secteur (`/offres/secteur/<secteur>`) et par ville (`/offres/ville/<ville>`) pour les secteurs/villes avec suffisamment d'offres actives.
-- [Créer un compte](https://stageio.fr/inscription)
-- [Mentions légales](https://stageio.fr/legal/mentions-legales)
-- [CGU](https://stageio.fr/legal/cgu)
-- [CGV](https://stageio.fr/legal/cgv)
-- [Politique de confidentialité](https://stageio.fr/legal/confidentialite)
+- [Créer un compte](https://www.stageio.fr/inscription)
+- [Mentions légales](https://www.stageio.fr/legal/mentions-legales)
+- [CGU](https://www.stageio.fr/legal/cgu)
+- [CGV](https://www.stageio.fr/legal/cgv)
+- [Politique de confidentialité](https://www.stageio.fr/legal/confidentialite)
 
 ## À propos
 

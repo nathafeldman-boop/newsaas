@@ -2,26 +2,27 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/types/database";
 
-// /offres (+ /offres/[slug]) est le seul contenu app censé être indexable
-// sans compte (voir robots.ts / sitemap.ts) ; robots.txt et sitemap.xml
-// doivent eux-mêmes rester atteignables par un crawler non connecté, sinon
-// Google ne peut même pas découvrir qu'ils existent. /admin gère son propre
-// accès par code (voir lib/admin/accessCode.ts) et ne doit jamais dépendre
-// d'une session Supabase.
-const PUBLIC_PATHS = [
-  "/",
-  "/login",
-  "/inscription",
-  "/auth",
-  "/legal",
-  "/offres",
-  "/guides",
-  "/robots.txt",
-  "/sitemap.xml",
-  "/llms.txt",
-  "/admin",
-  "/compte-supprime",
-  "/desabonnement",
+// Seules ces routes exigent un compte : un visiteur anonyme y est renvoyé
+// vers /login. Tout le reste passe (pages publiques, robots.txt, sitemaps,
+// /admin qui gère son propre accès par code -- voir lib/admin/accessCode.ts)
+// -- y compris les URLs qui n'existent pas, qui doivent recevoir un vrai 404
+// de Next. Avant le 06/10, la logique était inversée (liste blanche des
+// pages publiques) : toute URL inconnue ou supprimée répondait par une
+// redirection vers /login, que Google traite comme un "soft 404".
+// ⚠️ Toute nouvelle page réservée aux membres (dossier src/app/(app)/ ou
+// /onboarding) DOIT être ajoutée ici.
+const PROTECTED_PATHS = [
+  "/dashboard",
+  "/swipe",
+  "/favoris",
+  "/mes-candidatures",
+  "/candidature",
+  "/cv",
+  "/profil",
+  "/parrainage",
+  "/premium",
+  "/affilies",
+  "/onboarding",
 ];
 const ONBOARDING_EXEMPT_PATHS = ["/onboarding", "/auth", "/admin"];
 
@@ -69,7 +70,7 @@ export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (!user) {
-    if (matchesPath(pathname, PUBLIC_PATHS)) {
+    if (!matchesPath(pathname, PROTECTED_PATHS)) {
       return supabaseResponse;
     }
     const redirectUrl = request.nextUrl.clone();

@@ -1,4 +1,12 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+
+// Page de confirmation après un lien de désinscription email : aucun
+// intérêt dans Google.
+export const metadata: Metadata = {
+  title: "Désabonnement",
+  robots: { index: false, follow: false },
+};
 
 export default async function DesabonnementPage({
   searchParams,

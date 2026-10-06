@@ -4,20 +4,24 @@ import type { Metadata } from "next";
 import { getSectorSegment, fetchOffersForSector } from "@/lib/offers/segments";
 import { PublicOffersGrid } from "@/components/offers/PublicOffersGrid";
 import { SITE_URL } from "@/lib/site";
+import { pagedPath, pagedTitle, parsePageParam } from "@/lib/seo/pagination";
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: {
   params: Promise<{ secteur: string }>;
+  searchParams: Promise<{ page?: string }>;
 }): Promise<Metadata> {
   const { secteur } = await params;
+  const page = parsePageParam((await searchParams).page);
   const segment = await getSectorSegment(secteur);
   if (!segment) return { title: "Secteur introuvable", robots: { index: false, follow: true } };
 
-  const url = `${SITE_URL}/offres/secteur/${segment.slug}`;
+  const url = `${SITE_URL}${pagedPath(`/offres/secteur/${segment.slug}`, page)}`;
   return {
-    title: `Offres d'alternance et de stage en ${segment.label}`,
-    description: `${segment.count} offre(s) d'alternance et de stage en ${segment.label} actuellement sur Stageio. Parcours-les sans créer de compte.`,
+    title: pagedTitle(`Offres d'alternance et de stage en ${segment.label}`, page),
+    description: `${segment.count} offre(s) d'alternance et de stage en ${segment.label} actuellement sur Stageio. Parcours-les sans créer de compte.${page > 1 ? ` Page ${page}.` : ""}`,
     alternates: { canonical: url },
   };
 }
@@ -34,8 +38,9 @@ export default async function SectorOffersPage({
   if (!segment) notFound();
 
   const { page: pageParam } = await searchParams;
-  const page = Math.max(1, Number(pageParam) || 1);
+  const page = parsePageParam(pageParam);
   const { offers, count, totalPages } = await fetchOffersForSector(segment.label, page);
+  if (page > totalPages) notFound();
 
   return (
     <div className="mx-auto max-w-4xl px-5 py-10 sm:px-9">

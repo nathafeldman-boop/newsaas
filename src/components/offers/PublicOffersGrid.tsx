@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { offerPath } from "@/lib/offers/publicUrl";
+import { pagedPath, pageWindow } from "@/lib/seo/pagination";
 import type { PublicOfferRow } from "@/lib/offers/fetchPublicOffers";
 import type { ContractType } from "@/types/database";
 
@@ -38,17 +39,34 @@ export function PublicOffersGrid({
       )}
 
       {totalPages > 1 && (
-        <div className="mt-8 flex flex-wrap gap-2">
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-            <Link
-              key={p}
-              href={p === 1 ? basePath : `${basePath}?page=${p}`}
-              className={`btn btn-secondary btn-icon${p === page ? " is-active" : ""}`}
-            >
-              {p}
+        <nav aria-label="Pagination" className="mt-8 flex flex-wrap items-center gap-2">
+          {page > 1 && (
+            <Link href={pagedPath(basePath, page - 1)} className="btn btn-secondary" rel="prev">
+              ← Précédente
             </Link>
-          ))}
-        </div>
+          )}
+          {pageWindow(page, totalPages).map((p, i) =>
+            p === "…" ? (
+              <span key={`gap-${i}`} aria-hidden style={{ padding: "0 4px" }}>
+                …
+              </span>
+            ) : (
+              <Link
+                key={p}
+                href={pagedPath(basePath, p)}
+                className={`btn btn-secondary btn-icon${p === page ? " is-active" : ""}`}
+                aria-current={p === page ? "page" : undefined}
+              >
+                {p}
+              </Link>
+            ),
+          )}
+          {page < totalPages && (
+            <Link href={pagedPath(basePath, page + 1)} className="btn btn-secondary" rel="next">
+              Suivante →
+            </Link>
+          )}
+        </nav>
       )}
     </>
   );

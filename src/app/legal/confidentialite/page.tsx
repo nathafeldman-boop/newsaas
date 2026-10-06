@@ -1,7 +1,7 @@
 import { LegalShell, Section } from "@/components/legal/LegalShell";
 
 export const metadata = {
-  title: "Confidentialité — Stageio",
+  title: "Confidentialité",
 };
 
 export default function ConfidentialitePage() {
