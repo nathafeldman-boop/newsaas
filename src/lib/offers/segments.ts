@@ -106,9 +106,36 @@ export function normalizeCityKey(location: string): string {
     .replace(/\b\d{1,2}\s*(?:er|ème|eme|e)?\s*arrondissement\b/gi, " ")
     .replace(/\b\d{1,2}(?:er|ème|eme|e)\b/gi, " ")
     .replace(/\s+\d{1,2}$/, "")
+    // Découpage en cantons d'Adzuna : "Toulouse Canton", "Roubaix Ouest",
+    // "Aix-en-Provence Sud-Ouest" -> la ville elle-même.
+    .replace(/[\s-]+(canton|centre|(nord|sud)(-(est|ouest))?|est|ouest)$/i, "")
     .replace(/\s+/g, " ")
     .trim();
 }
+
+// Lieux qui ne sont pas des villes : Adzuna renvoie parfois seulement
+// "Département, Région" ("Haute-Loire, Auvergne-Rhône-Alpes"). Ces offres
+// n'ont pas de page "ville" ("Offres à Bas-Rhin" n'a pas de sens) mais
+// restent listées partout ailleurs (type, secteur, métier).
+export const NOT_A_CITY = new Set(
+  [
+    "ile-de-france", "auvergne-rhone-alpes", "nouvelle-aquitaine", "occitanie", "hauts-de-france", "grand-est",
+    "provence-alpes-cote-d-azur", "bretagne", "normandie", "pays-de-la-loire", "centre-val-de-loire",
+    "bourgogne-franche-comte", "corse", "ain", "aisne", "allier", "alpes-de-haute-provence", "hautes-alpes",
+    "alpes-maritimes", "ardeche", "ardennes", "ariege", "aube", "aude", "aveyron", "bouches-du-rhone", "calvados",
+    "cantal", "charente", "charente-maritime", "cher", "correze", "corse-du-sud", "haute-corse", "cote-d-or",
+    "cotes-d-armor", "creuse", "dordogne", "doubs", "drome", "eure", "eure-et-loir", "finistere", "gard",
+    "haute-garonne", "gers", "gironde", "herault", "ille-et-vilaine", "indre", "indre-et-loire", "isere", "jura",
+    "landes", "loir-et-cher", "loire", "haute-loire", "loire-atlantique", "loiret", "lot", "lot-et-garonne", "lozere",
+    "maine-et-loire", "manche", "marne", "haute-marne", "mayenne", "meurthe-et-moselle", "meuse", "morbihan",
+    "moselle", "nievre", "nord", "oise", "orne", "pas-de-calais", "puy-de-dome", "pyrenees-atlantiques",
+    "hautes-pyrenees", "pyrenees-orientales", "bas-rhin", "haut-rhin", "rhone", "haute-saone", "saone-et-loire",
+    "sarthe", "savoie", "haute-savoie", "seine-maritime", "seine-et-marne", "yvelines", "deux-sevres", "somme",
+    "tarn", "tarn-et-garonne", "var", "vaucluse", "vendee", "haute-vienne", "vosges", "yonne",
+    "territoire-de-belfort", "essonne", "hauts-de-seine", "seine-saint-denis", "val-de-marne", "val-d-oise",
+    "corse-du", "teletravail", "remote", "a-distance", "international", "etranger", "france-entiere", "toute-la-france",
+  ],
+);
 
 async function computeCitySegments(): Promise<CitySegment[]> {
   const supabase = createPublicClient();
@@ -122,7 +149,7 @@ async function computeCitySegments(): Promise<CitySegment[]> {
     const key = normalizeCityKey(row.location);
     if (!key) continue;
     const slug = slugify(key);
-    if (!slug) continue;
+    if (!slug || NOT_A_CITY.has(slug)) continue;
     const existing = bySlug.get(slug);
     if (existing) {
       existing.count += 1;
@@ -138,7 +165,7 @@ async function computeCitySegments(): Promise<CitySegment[]> {
     .sort((a, b) => b.count - a.count);
 }
 
-const cachedCitySegments = unstable_cache(computeCitySegments, ["offers-city-segments-v2"], {
+const cachedCitySegments = unstable_cache(computeCitySegments, ["offers-city-segments-v3"], {
   revalidate: SEGMENTS_REVALIDATE_SECONDS,
 });
 

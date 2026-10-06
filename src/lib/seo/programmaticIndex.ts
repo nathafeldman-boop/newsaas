@@ -1,6 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { createPublicClient, fetchAllRows } from "@/lib/supabase/public";
-import { normalizeCityKey, slugify, titleCase } from "@/lib/offers/segments";
+import { NOT_A_CITY, normalizeCityKey, slugify, titleCase } from "@/lib/offers/segments";
 import { PUBLIC_OFFERS_PAGE_SIZE } from "@/lib/offers/fetchPublicOffers";
 import { classifyMetier } from "@/lib/seo/metiers";
 import type { ContractType, OfferSource } from "@/types/database";
@@ -51,29 +51,6 @@ export type IndexRow = {
   source: OfferSource;
 };
 
-// Lieux qui ne sont pas des villes : Adzuna renvoie parfois seulement
-// "Département, Région" ("Haute-Loire, Auvergne-Rhône-Alpes"). Ces offres
-// restent sur les pages métier (France entière) mais n'ont pas de page
-// "ville" -- "Alternance à Haute-Loire" n'a pas de sens.
-const NOT_A_CITY = new Set(
-  [
-    "ile-de-france", "auvergne-rhone-alpes", "nouvelle-aquitaine", "occitanie", "hauts-de-france", "grand-est",
-    "provence-alpes-cote-d-azur", "bretagne", "normandie", "pays-de-la-loire", "centre-val-de-loire",
-    "bourgogne-franche-comte", "corse", "ain", "aisne", "allier", "alpes-de-haute-provence", "hautes-alpes",
-    "alpes-maritimes", "ardeche", "ardennes", "ariege", "aube", "aude", "aveyron", "bouches-du-rhone", "calvados",
-    "cantal", "charente", "charente-maritime", "cher", "correze", "corse-du-sud", "haute-corse", "cote-d-or",
-    "cotes-d-armor", "creuse", "dordogne", "doubs", "drome", "eure", "eure-et-loir", "finistere", "gard",
-    "haute-garonne", "gers", "gironde", "herault", "ille-et-vilaine", "indre", "indre-et-loire", "isere", "jura",
-    "landes", "loir-et-cher", "loire", "haute-loire", "loire-atlantique", "loiret", "lot", "lot-et-garonne", "lozere",
-    "maine-et-loire", "manche", "marne", "haute-marne", "mayenne", "meurthe-et-moselle", "meuse", "morbihan",
-    "moselle", "nievre", "nord", "oise", "orne", "pas-de-calais", "puy-de-dome", "pyrenees-atlantiques",
-    "hautes-pyrenees", "pyrenees-orientales", "bas-rhin", "haut-rhin", "rhone", "haute-saone", "saone-et-loire",
-    "sarthe", "savoie", "haute-savoie", "seine-maritime", "seine-et-marne", "yvelines", "deux-sevres", "somme",
-    "tarn", "tarn-et-garonne", "var", "vaucluse", "vendee", "haute-vienne", "vosges", "yonne",
-    "territoire-de-belfort", "essonne", "hauts-de-seine", "seine-saint-denis", "val-de-marne", "val-d-oise",
-    "teletravail", "remote", "a-distance", "international", "etranger", "france-entiere", "toute-la-france",
-  ],
-);
 
 // Salaire mensuel indiqué par l'employeur. Uniquement les offres France
 // Travail / manuelles : le salaire Adzuna est très souvent une ESTIMATION
@@ -218,7 +195,7 @@ export function buildIndex(type: ContractType, rows: IndexRow[], now = Date.now(
 // Un seul scan du catalogue par type et par heure, partagé par toutes les
 // pages /alternance/* et /stage/* (sinon chaque page vue relirait ~3 000
 // offres).
-const cachedIndex = unstable_cache(computeIndex, ["programmatic-index-v1"], { revalidate: 3600 });
+const cachedIndex = unstable_cache(computeIndex, ["programmatic-index-v2"], { revalidate: 3600 });
 
 export function getProgrammaticIndex(type: ContractType): Promise<ProgrammaticIndex> {
   return cachedIndex(type);
