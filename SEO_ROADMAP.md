@@ -1,6 +1,6 @@
 # SEO Stageio — audit & roadmap
 
-_Dernière mise à jour : 06/10/2026 — Phase 1 terminée, Phase 2 en attente de décisions (section 4)._
+_Dernière mise à jour : 06/10/2026 — Phase 1 terminée ; maillage des fiches + simulateur de salaire livrés ; Phase 2 (pages programmatiques) en attente des décisions A–C (section 4)._
 
 ---
 
@@ -42,7 +42,7 @@ Légende statut : ✅ corrigé dans le commit Phase 1 · ❓ décision Nathan ·
 | 15 | `llms.txt` pointait sur l'apex (redirection à chaque lien). | Faible | Faible | ✅ |
 | 16 | **Faux témoignages** : si moins de 3 vrais avis, l'accueil affiche 3 citations inventées (« Léa, alternante… ») présentées comme réelles. Pratique commerciale trompeuse (Code de la consommation) + signal de confiance négatif. | Fort (juridique) | Faible | ❓ Voir décision E |
 | 17 | Core Web Vitals : ~175 Ko JS gzip sur une page liste (socle Next/React), + framer-motion sur l'accueil (HTML 147 Ko). Pas de mesure terrain disponible ici. | Moyen | Moyen | 🔜 Charger `SwipeDemo` en différé ; 🧑 vérifier PageSpeed/CrUX |
-| 18 | Aucun maillage depuis une fiche offre vers sa ville / son métier / des offres proches. | Fort | Moyen | 🔜 Phase 2 |
+| 18 | Aucun maillage depuis une fiche offre vers sa ville / son métier / des offres proches. | Fort | Moyen | ✅ Fil d'Ariane visible + JSON-LD (type › ville), 6 offres similaires (même ville, sinon même secteur), liens ville/secteur/simulateur |
 | 19 | Pages légales sans `<h1>` ni meta description. | Faible | Faible | 🔜 |
 | 20 | Offres hors cible (ex. « Stage découverte 3ème ») dans le catalogue public. | Faible | Faible | 🔜 Filtre à l'import |
 | 21 | `Organization.sameAs` vide. | Faible | Faible | 🧑 Donner les URLs TikTok / Instagram / LinkedIn |
@@ -124,7 +124,7 @@ Pourquoi 10 : en dessous, salaire et durée « moyens » reposent sur 2–3 vale
 
 ## 6. Phases 3 et 4 (rappel)
 
-- **Phase 3** :
+- **Phase 3** (simulateur de salaire ✅ livré le 06/10 — barèmes dans `src/lib/salary/legalRates.ts`, à mettre à jour à chaque revalorisation du SMIC) :
   - plan de 40 guides, dont les 10 premiers rédigés au format « featured snippet » ;
   - outils gratuits, chacun avec sa page SEO : audit de CV (aperçu du score, détail après inscription), générateur de lettre (1 essai), calculateur de salaire d'alternance, simulateur d'entretien.
 - **Phase 4** :
@@ -170,6 +170,8 @@ Ce qui fait passer du bas au haut de la fourchette : les backlinks (aucun code n
 
 - [x] Phase 1 — audit technique
 - [x] Phase 1 — correctifs rapides (commit « SEO phase 1 »)
+- [x] Maillage interne des fiches offres (fil d'Ariane, offres similaires, liens ville/secteur)
+- [x] Outil n°1 : simulateur de salaire alternance/contrat pro/stage (`/outils/simulateur-salaire-alternance`), lié depuis l'accueil, les guides, `/offres/alternance` et chaque fiche
 - [ ] Décisions A–G
 - [ ] Phase 2 — migration + pages programmatiques
 - [ ] Phase 3 — 40 guides (10 rédigés) + 4 outils

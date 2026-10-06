@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { extractOfferId, offerPath, offerSlug } from "@/lib/offers/publicUrl";
 import { normalizeCityKey } from "@/lib/offers/segments";
+import { getOfferContextLinks, type OfferContextLinks } from "@/lib/offers/similarOffers";
 import { SITE_URL } from "@/lib/site";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import type { Offer } from "@/types/database";
@@ -189,15 +190,32 @@ function jobPostingJsonLd(offer: Offer) {
   };
 }
 
-function breadcrumbJsonLd(offer: Offer) {
+const LISTING_LABEL: Record<Offer["contract_type"], string> = {
+  alternance: "Offres d'alternance",
+  stage: "Offres de stage",
+};
+
+// Fil d'Ariane identique en JSON-LD et à l'écran : Accueil > Offres de
+// stage > Lyon > l'offre (la ville seulement si sa page existe).
+function breadcrumbItems(offer: Offer, links: OfferContextLinks): { name: string; path: string }[] {
+  return [
+    { name: "Accueil", path: "/" },
+    { name: LISTING_LABEL[offer.contract_type], path: `/offres/${offer.contract_type}` },
+    ...(links.city ? [{ name: links.city.label, path: `/offres/ville/${links.city.slug}` }] : []),
+    { name: offer.title, path: offerPath(offer) },
+  ];
+}
+
+function breadcrumbJsonLd(items: { name: string; path: string }[]) {
   return {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Accueil", item: SITE_URL },
-      { "@type": "ListItem", position: 2, name: "Offres", item: `${SITE_URL}/offres` },
-      { "@type": "ListItem", position: 3, name: offer.title, item: `${SITE_URL}${offerPath(offer)}` },
-    ],
+    itemListElement: items.map((item, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: item.name,
+      item: `${SITE_URL}${item.path === "/" ? "" : item.path}`,
+    })),
   };
 }
 
@@ -213,6 +231,9 @@ export default async function PublicOfferPage({
   // slug (titre modifié par la source) redirige en 308 vers l'URL canonique.
   if (slug !== offerSlug(offer)) permanentRedirect(offerPath(offer));
 
+  const links = await getOfferContextLinks(offer);
+  const crumbs = breadcrumbItems(offer, links);
+
   return (
     <div className="mx-auto max-w-2xl px-5 py-10 sm:px-9">
       {isJobPostingEligible(offer) && (
@@ -223,12 +244,17 @@ export default async function PublicOfferPage({
       )}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbJsonLd(offer)) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbJsonLd(crumbs)) }}
       />
 
-      <Link href="/offres" style={{ fontSize: 13 }}>
-        ← Toutes les offres
-      </Link>
+      <nav aria-label="Fil d'Ariane" style={{ fontSize: 13 }}>
+        {crumbs.slice(0, -1).map((crumb, index) => (
+          <span key={crumb.path}>
+            {index > 0 && " › "}
+            <Link href={crumb.path}>{crumb.name}</Link>
+          </span>
+        ))}
+      </nav>
 
       <div className="card elev-sm mt-4" style={{ padding: "var(--space-6)" }}>
         <span className="tag tag-accent">{CONTRACT_LABEL[offer.contract_type]}</span>
@@ -266,6 +292,45 @@ export default async function PublicOfferPage({
             Postuler à cette offre
           </a>
         )}
+      </div>
+
+      {links.similar.length > 0 && (
+        <section className="mt-8">
+          <h2 style={{ fontSize: 18, margin: "0 0 12px" }}>
+            {links.city && links.similar.every((similar) => links.city?.locations.includes(similar.location))
+              ? `D'autres offres ${offer.contract_type === "alternance" ? "d'alternance" : "de stage"} à ${links.city.label}`
+              : "Offres similaires"}
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {links.similar.map((similar) => (
+              <Link key={similar.id} href={offerPath(similar)} className="card elev-sm">
+                <h3 className="card-title">{similar.title}</h3>
+                <p className="card-body">
+                  {similar.company} — {similar.location}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <div className="mt-6 flex flex-wrap gap-2">
+        {links.city && (
+          <Link href={`/offres/ville/${links.city.slug}`} className="tag tag-neutral">
+            Toutes les offres à {links.city.label} ({links.city.count})
+          </Link>
+        )}
+        {links.sector && (
+          <Link href={`/offres/secteur/${links.sector.slug}`} className="tag tag-neutral">
+            Offres en {links.sector.label} ({links.sector.count})
+          </Link>
+        )}
+        <Link href={`/offres/${offer.contract_type}`} className="tag tag-neutral">
+          {LISTING_LABEL[offer.contract_type]}
+        </Link>
+        <Link href="/outils/simulateur-salaire-alternance" className="tag tag-neutral">
+          {offer.contract_type === "alternance" ? "Simuler mon salaire d'alternant" : "Calculer ma gratification de stage"}
+        </Link>
       </div>
 
       <div className="card elev-sm mt-6" style={{ padding: "var(--space-6)", textAlign: "center" }}>

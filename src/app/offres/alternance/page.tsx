@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { fetchPublicOffers } from "@/lib/offers/fetchPublicOffers";
@@ -35,6 +36,10 @@ export default async function AlternanceOffersPage({
       <p style={{ fontSize: 14, margin: "8px 0 0" }}>
         {count} offre(s) d&apos;alternance active(s). Crée un compte pour matcher automatiquement
         les tiennes.
+      </p>
+      <p style={{ fontSize: 14, margin: "4px 0 0" }}>
+        Combien tu seras payé ?{" "}
+        <Link href="/outils/simulateur-salaire-alternance">Simule ton salaire d&apos;alternant</Link>.
       </p>
 
       <OffersSegmentNav active="alternance" />

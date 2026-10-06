@@ -26,6 +26,15 @@ export default function GuidesIndexPage() {
           </Link>
         ))}
       </div>
+
+      <h2 style={{ fontSize: 18, margin: "32px 0 12px" }}>Outils gratuits</h2>
+      <Link href="/outils/simulateur-salaire-alternance" className="card elev-sm">
+        <h3 className="card-title">Simulateur de salaire en alternance 2026</h3>
+        <p className="card-body mt-1">
+          Apprentissage, contrat pro ou stage : ton salaire minimum brut et net en 10 secondes, selon ton âge et
+          ton année de contrat.
+        </p>
+      </Link>
     </div>
   );
 }

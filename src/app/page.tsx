@@ -1524,6 +1524,7 @@ export default async function LandingPage() {
           </span>
           {[
             { href: "/guides", label: "Guides" },
+            { href: "/outils/simulateur-salaire-alternance", label: "Simulateur de salaire" },
             { href: "/affilies", label: "Devenir affilié" },
             { href: "/legal/mentions-legales", label: "Mentions légales" },
             { href: "/legal/cgu", label: "CGU" },
