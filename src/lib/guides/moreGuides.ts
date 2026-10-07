@@ -3023,4 +3023,93 @@ export const MORE_GUIDES: Guide[] = [
       { label: "Attestation de stage : le modèle fixé par arrêté (Legisocial)", url: "https://www.legisocial.fr/actualites-sociales/1351-attestation-de-stage-le-modele-est-fixe-par-un-arrete.html" },
     ],
   },
+  {
+    slug: "stage-de-seconde",
+    title: "Stage de seconde : comment le trouver (et le réussir)",
+    metaDescription:
+      "Le stage de seconde est obligatoire : 2 semaines d'observation en juin pour tous les élèves de seconde générale et technologique. Où chercher, comment demander, quoi écrire, et les règles.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    related: ["candidature-spontanee-alternance", "mail-candidature-stage-alternance", "premier-jour-en-entreprise"],
+    intro: [
+      "Depuis 2024, tous les élèves de seconde générale et technologique font un stage d'observation de 2 semaines en juin (du 15 au 26 juin en 2026). Le plus dur, c'est de trouver la structure qui t'accueille : les places partent vite. Voici comment t'y prendre, dès maintenant.",
+    ],
+    sections: [
+      {
+        heading: "Les règles en bref",
+        list: [
+          "Obligatoire pour tous les élèves de seconde générale et technologique.",
+          "2 semaines d'observation, en juin, à la fin de l'année de seconde. Les dates exactes sont fixées chaque année par le ministère : ton lycée te les donne.",
+          "Dans une entreprise, une association, une administration, un établissement public ou une collectivité.",
+          "Une convention de stage est signée entre ton lycée, la structure d'accueil et tes parents.",
+          "C'est un stage d'observation : tu découvres un métier et un milieu professionnel, tu n'es pas payé.",
+          "Il peut aussi se faire à l'étranger : demande les conditions à ton lycée.",
+        ],
+      },
+      {
+        heading: "Où chercher",
+        list: [
+          "La plateforme officielle 1élève1stage : les entreprises, associations et administrations qui s'engagent à accueillir des élèves de seconde y publient leurs places.",
+          "Ton entourage : parents, oncles et tantes, parents d'amis, voisins. C'est souvent le plus rapide, n'aie pas honte de demander.",
+          "Les commerces, mairies, cabinets, garages et entreprises près de chez toi : une demande en personne, polie et préparée, marche très bien.",
+          "Les grandes entreprises (enseignes, banques, industrie) : certaines publient des offres « stage de seconde » sur leur site carrières. Elles partent tôt.",
+          "Ton lycée : les professeurs principaux et le CDI ont parfois des listes de structures qui ont déjà accueilli des élèves.",
+        ],
+      },
+      {
+        heading: "Quand chercher",
+        paragraphs: [
+          "Le plus tôt possible : dès l'automne pour les grandes entreprises, au plus tard en début d'année civile pour avoir le choix. En mars, beaucoup de places sont déjà prises.",
+        ],
+      },
+      {
+        heading: "Comment demander : un modèle de message",
+        paragraphs: [
+          "Objet : Demande de stage d'observation de seconde – du [date] au [date]",
+          "Bonjour Madame, Monsieur,",
+          "Je suis en seconde au lycée [nom] à [ville]. Dans le cadre du stage d'observation obligatoire de seconde, du [date] au [date], je souhaiterais découvrir le métier de [métier] au sein de [structure].",
+          "Je suis curieux(se), ponctuel(le) et motivé(e) [ajoute une phrase sur ce qui t'attire : un projet d'orientation, une passion]. Mon lycée fournit la convention de stage.",
+          "Je vous remercie de l'attention portée à ma demande et reste disponible pour en discuter.",
+          "[Prénom Nom] – [téléphone] – [mail]",
+        ],
+      },
+      {
+        heading: "Pendant le stage",
+        list: [
+          "Pose des questions : sur le métier, les études pour y arriver, ce qui plaît et ce qui est difficile. C'est le but du stage.",
+          "Prends des notes chaque jour : ton lycée te demandera souvent un compte rendu.",
+          "Profite-en pour demander un contact : la personne qui t'accueille pourra te reprendre plus tard pour un stage ou une alternance.",
+        ],
+      },
+      {
+        heading: "Et après le bac ?",
+        paragraphs: [
+          "Le stage de seconde est souvent la première expérience en entreprise. Plus tard, en BTS, BUT, licence ou école, tu feras des stages plus longs ou une alternance, payée cette fois. Les guides Stageio sont là pour ces étapes-là aussi.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Le stage de seconde est-il obligatoire ?",
+        a: "Oui : depuis 2024, tous les élèves de seconde générale et technologique doivent faire un stage d'observation de 2 semaines en juin.",
+      },
+      {
+        q: "Quand a lieu le stage de seconde ?",
+        a: "Pendant les deux dernières semaines de juin, aux dates fixées par le ministère (du 15 au 26 juin en 2026). Ton lycée te donne les dates de ton année.",
+      },
+      {
+        q: "Où trouver un stage de seconde ?",
+        a: "Sur la plateforme officielle 1élève1stage, par ton entourage, en démarchant les entreprises et commerces près de chez toi, et sur les sites carrières des grandes entreprises. Commence tôt, dès l'automne.",
+      },
+      {
+        q: "Le stage de seconde est-il payé ?",
+        a: "Non, c'est un stage d'observation : tu découvres un métier sans être rémunéré.",
+      },
+    ],
+    sources: [
+      { label: "Un stage en juin pour les élèves de seconde générale et technologique (education.gouv.fr)", url: "https://www.education.gouv.fr/reussir-au-lycee/un-stage-en-juin-pour-les-eleves-de-seconde-generale-et-technologique-461817" },
+      { label: "Stage des élèves de seconde générale et technologique (Bulletin officiel 2026)", url: "https://www.education.gouv.fr/bo/2026/Hebdo6/MENE2603164J" },
+      { label: "Accueillir un stagiaire de seconde avec la plateforme 1élève1stage (education.gouv.fr)", url: "https://www.education.gouv.fr/entreprise-association-service-public-accueillir-un-stagiaire-de-seconde-avec-la-plateforme-413793" },
+    ],
+  },
 ];

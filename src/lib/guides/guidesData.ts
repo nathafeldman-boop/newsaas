@@ -315,6 +315,7 @@ export const GUIDE_CATEGORIES: { title: string; slugs: string[] }[] = [
       "bts-bachelor-master-alternance",
       "stage-de-fin-d-etudes",
       "stage-a-l-etranger",
+      "stage-de-seconde",
       "annee-de-cesure",
       "alternance-fonction-publique",
     ],
