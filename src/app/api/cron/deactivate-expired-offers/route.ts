@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { dedupeActiveOffers } from "@/lib/offers/dedupe";
+import { OFFER_EXPIRY_DAYS } from "@/lib/offers/expiry";
 
 // Cron quotidien (voir vercel.json) : désactive les offres ingérées qui
 // traînent depuis trop longtemps sans avoir été retraitées (probablement
@@ -13,7 +14,6 @@ import { dedupeActiveOffers } from "@/lib/offers/dedupe";
 // même tâche d'hygiène du catalogue est le point naturel pour ça, plutôt que
 // d'ajouter un cron dédié.
 
-const EXPIRY_DAYS = 30;
 
 export async function GET(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
   }
 
   const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - EXPIRY_DAYS);
+  cutoff.setDate(cutoff.getDate() - OFFER_EXPIRY_DAYS);
 
   const admin = createAdminClient();
   const { data, error } = await admin

@@ -3,6 +3,9 @@ import { notFound, permanentRedirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { offerExpiresAt } from "@/lib/offers/expiry";
+import { departementFromLocation, getDepartement } from "@/lib/seo/departements";
 import { extractOfferId, offerPath, offerSlug } from "@/lib/offers/publicUrl";
 import { normalizeCityKey, titleCase } from "@/lib/offers/segments";
 import { getOfferContextLinks, type OfferContextLinks } from "@/lib/offers/similarOffers";
@@ -42,6 +45,24 @@ const getOffer = cache(async (slug: string): Promise<Offer | null> => {
   return data;
 });
 
+// Offre retirée par le cron (is_active = false) : la RLS la cache au client
+// public, d'où le client service role -- côté serveur uniquement, et la page
+// "offre expirée" n'affiche que des champs déjà publics (titre, entreprise,
+// lieu). Un ancien lien partagé ou indexé mène ainsi à des offres actives
+// similaires plutôt qu'à une 404 sèche.
+const getExpiredOffer = cache(async (slug: string): Promise<Offer | null> => {
+  const id = extractOfferId(slug);
+  if (!id) return null;
+  const { data, error } = await createAdminClient()
+    .from("offers")
+    .select("*")
+    .eq("id", id)
+    .eq("is_active", false)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data;
+});
+
 const CONTRACT_LABEL: Record<Offer["contract_type"], string> = {
   alternance: "Alternance",
   stage: "Stage",
@@ -52,7 +73,15 @@ function offerTitle(offer: Offer): string {
     offer.contract_type === "alternance" ? /altern|apprenti/i.test(offer.title) : /stag/i.test(offer.title);
   // Le layout racine ajoute déjà " | Stageio" (title.template) : ne jamais
   // le remettre ici, sinon "| Stageio | Stageio" dans Google.
-  return `${mentionsContract ? "" : `${CONTRACT_LABEL[offer.contract_type]} : `}${offer.title} – ${offer.company}`;
+  // La ville dans le titre : "intitulé + ville" est la requête la plus
+  // fréquente d'un candidat. Pas de doublon si l'intitulé la contient déjà.
+  const city = titleCase(normalizeCityKey(offer.location));
+  const withCity = city && !normalizeForMatch(offer.title).includes(normalizeForMatch(city)) ? ` à ${city}` : "";
+  return `${mentionsContract ? "" : `${CONTRACT_LABEL[offer.contract_type]} : `}${offer.title}${withCity} – ${offer.company}`;
+}
+
+function normalizeForMatch(text: string): string {
+  return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ");
 }
 
 function truncateOnWord(text: string, max: number): string {
@@ -81,7 +110,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const offer = await getOffer(slug);
-  if (!offer) return { title: "Offre introuvable", robots: { index: false, follow: true } };
+  if (!offer) {
+    const expired = await getExpiredOffer(slug);
+    return expired
+      ? { title: `Offre expirée : ${expired.title} – ${expired.company}`, robots: { index: false, follow: true } }
+      : { title: "Offre introuvable", robots: { index: false, follow: true } };
+  }
 
   const title = offerTitle(offer);
   const description = offerMetaDescription(offer);
@@ -155,16 +189,26 @@ function parseBaseSalary(salary: string | null) {
 // manuelle sur les données structurées de tout le site). On ne le publie
 // donc que pour les offres dont on a le texte intégral (France Travail,
 // saisie manuelle) -- voir l'audit SEO du 06/10.
+// Google exige le nom réel de l'employeur dans hiringOrganization :
+// "Entreprise non communiquée" (France Travail, employeur masqué) n'en est
+// pas un.
+const UNNAMED_EMPLOYER = /non communiqu|confidenti|^\s*$/i;
+
 function isJobPostingEligible(offer: Offer): boolean {
-  if (offer.source === "adzuna") return false;
+  if (offer.source === "adzuna" || offer.source === "demo") return false;
+  if (UNNAMED_EMPLOYER.test(offer.company)) return false;
   const description = offer.description.trim();
   if (/(…|\.\.\.)$/.test(description)) return false;
   return description.length >= 200;
 }
 
 function jobPostingJsonLd(offer: Offer) {
-  const validThrough = new Date(offer.last_seen_at);
-  validThrough.setDate(validThrough.getDate() + 30);
+  // Date à laquelle le cron retire réellement l'offre du site -- jamais dans
+  // le passé tant que la fiche est en ligne (cron en retard d'un jour).
+  const tomorrow = new Date(Date.now() + 24 * 3600 * 1000);
+  const expiresAt = offerExpiresAt(offer.published_at);
+  const validThrough = expiresAt > tomorrow ? expiresAt : tomorrow;
+  const departement = getDepartement(departementFromLocation(offer.location) ?? "");
   const baseSalary = parseBaseSalary(offer.salary);
 
   return {
@@ -192,10 +236,13 @@ function jobPostingJsonLd(offer: Offer) {
         // rapproche la ville de ses données géographiques, un code de
         // département collé au nom l'empêche de placer l'offre sur la carte.
         addressLocality: titleCase(normalizeCityKey(offer.location)) || offer.location,
+        ...(departement ? { addressRegion: departement.region } : {}),
         addressCountry: "FR",
       },
     },
     ...(baseSalary ? { baseSalary } : {}),
+    // La candidature se fait sur le site de l'employeur ou de la source.
+    directApply: false,
   };
 }
 
@@ -241,7 +288,12 @@ export default async function PublicOfferPage({
 }) {
   const { slug } = await params;
   const offer = await getOffer(slug);
-  if (!offer) notFound();
+  if (!offer) {
+    const expired = await getExpiredOffer(slug);
+    if (!expired) notFound();
+    if (slug !== offerSlug(expired)) permanentRedirect(offerPath(expired));
+    return <ExpiredOffer offer={expired} />;
+  }
   // Une seule URL par offre : /offres/n-importe-quoi-<uuid> ou un ancien
   // slug (titre modifié par la source) redirige en 308 vers l'URL canonique.
   if (slug !== offerSlug(offer)) permanentRedirect(offerPath(offer));
@@ -371,3 +423,56 @@ export default async function PublicOfferPage({
     </div>
   );
 }
+
+// Offre retirée : plus de JobPosting, page en noindex (voir generateMetadata),
+// et tout de suite des offres actives équivalentes -- l'étudiant arrivé par
+// un vieux lien ne repart pas les mains vides.
+async function ExpiredOffer({ offer }: { offer: Offer }) {
+  const links = await getOfferContextLinks(offer);
+  const city = titleCase(normalizeCityKey(offer.location)) || offer.location;
+  return (
+    <div className="mx-auto max-w-2xl px-5 py-10 sm:px-9">
+      <div className="card elev-sm" style={{ padding: "var(--space-6)" }}>
+        <span className="tag tag-neutral">Offre expirée</span>
+        <h1 style={{ fontSize: 24, margin: "12px 0 4px" }}>{offer.title}</h1>
+        <p style={{ fontSize: 15, margin: 0 }}>
+          {offer.company} — {city}
+        </p>
+        <p style={{ fontSize: 14, margin: "16px 0 0" }}>
+          Cette offre n&apos;est plus disponible : elle a probablement été pourvue. Voici des offres{" "}
+          {offer.contract_type === "alternance" ? "d'alternance" : "de stage"} encore ouvertes qui y ressemblent.
+        </p>
+      </div>
+
+      {links.similar.length > 0 && (
+        <section className="mt-8">
+          <h2 style={{ fontSize: 18, margin: "0 0 12px" }}>Offres similaires encore ouvertes</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {links.similar.map((similar) => (
+              <Link key={similar.id} href={offerPath(similar)} className="card elev-sm">
+                <h3 className="card-title">{similar.title}</h3>
+                <p className="card-body">
+                  {similar.company} — {similar.location}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <div className="mt-6 flex flex-wrap gap-2">
+        {[links.programmatic.metierCity, links.programmatic.metier, links.programmatic.city, links.company]
+          .filter((link): link is NonNullable<typeof link> => link !== null)
+          .map((link) => (
+            <Link key={link.href} href={link.href} className="tag tag-neutral">
+              {link.label} ({link.count})
+            </Link>
+          ))}
+        <Link href={`/offres/${offer.contract_type}`} className="tag tag-neutral">
+          {LISTING_LABEL[offer.contract_type]}
+        </Link>
+      </div>
+    </div>
+  );
+}
+
