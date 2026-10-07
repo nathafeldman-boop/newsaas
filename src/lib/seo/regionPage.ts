@@ -110,7 +110,7 @@ export function buildRegionModel(
   );
   if (stats.topCompanies.length > 0) paragraphs.push(`Les entreprises qui recrutent le plus : ${listCompanies(stats, 4)}.`);
   if (departements.length > 0) {
-    paragraphs.push(`Les départements où il y a le plus d'offres : ${departements.slice(0, 5).map((d) => `${d.label} : ${d.count}`).join(", ")}.`);
+    paragraphs.push(`Les départements où il y a le plus d'offres : ${departements.slice(0, 5).map((d) => `${d.label} : ${plural(d.count, "offre")}`).join(", ")}.`);
   }
   if (cities.length > 0) {
     paragraphs.push(`Les villes qui recrutent le plus : ${cities.slice(0, 5).map((c) => `${c.label} (${c.count})`).join(", ")}.`);

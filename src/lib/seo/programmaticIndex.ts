@@ -98,7 +98,9 @@ export function parseMonthlySalary(salary: string | null): number | null {
 type Accumulator = {
   count: number;
   ids: string[];
-  companies: Map<string, number>;
+  // Clé normalisée ("alticome") -> libellés vus et nombre d'offres : "Alticome"
+  // et "ALTICOME" sont la même entreprise.
+  companies: Map<string, { labels: Map<string, number>; count: number }>;
   recent7d: number;
   salaries: number[];
   // Villes (pages département) ou départements (pages ville) rencontrés.
@@ -125,7 +127,13 @@ function add(acc: Accumulator, row: IndexRow, isRecent: boolean, salary: number 
   const company = row.company.trim();
   // Les écoles qui publient des annonces pour remplir leurs cursus comptent
   // dans le nombre d'offres, jamais dans les "entreprises qui recrutent".
-  if (company && !isSchool(company)) acc.companies.set(company, (acc.companies.get(company) ?? 0) + 1);
+  if (company && !isSchool(company)) {
+    const key = company.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ");
+    const entry = acc.companies.get(key) ?? { labels: new Map<string, number>(), count: 0 };
+    entry.count += 1;
+    entry.labels.set(company, (entry.labels.get(company) ?? 0) + 1);
+    acc.companies.set(key, entry);
+  }
   if (isRecent) acc.recent7d += 1;
   if (salary !== null) acc.salaries.push(salary);
 }
@@ -142,10 +150,10 @@ function finalize(acc: Accumulator): SegmentStats {
     count: acc.count,
     ids: acc.ids,
     companyCount: acc.companies.size,
-    topCompanies: [...acc.companies.entries()]
-      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-      .slice(0, 6)
-      .map(([name, count]) => ({ name, count })),
+    topCompanies: [...acc.companies.values()]
+      .map(({ labels, count }) => ({ name: [...labels.entries()].sort((a, b) => b[1] - a[1])[0][0], count }))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+      .slice(0, 6),
     recent7d: acc.recent7d,
     salaryMedian: median,
     salaryN: sorted.length,
@@ -294,7 +302,7 @@ export function buildIndex(type: ContractType, rows: IndexRow[], now = Date.now(
 // Un seul scan du catalogue par type et par heure, partagé par toutes les
 // pages /alternance/* et /stage/* (sinon chaque page vue relirait ~3 000
 // offres).
-const cachedIndex = unstable_cache(computeIndex, ["programmatic-index-v7"], { revalidate: 3600 });
+const cachedIndex = unstable_cache(computeIndex, ["programmatic-index-v8"], { revalidate: 3600 });
 
 export function getProgrammaticIndex(type: ContractType): Promise<ProgrammaticIndex> {
   return cachedIndex(type);
