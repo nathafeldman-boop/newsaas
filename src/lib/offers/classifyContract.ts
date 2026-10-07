@@ -118,9 +118,34 @@ export function classifyContractType(text: string): ContractType | null {
 // stage », « stage de 6 mois »...).
 const TITLE_ALTERNANCE = /\b(alternance|alternant|alternante|alternants|apprentissage|apprenti|apprentie|apprentis|contrat pro|contrat de professionnalisation)\b/;
 const TITLE_STAGE = /\b(stage|stages|stagiaire|stagiaires|internship|intern)\b/;
-// Postes qui parlent de stages ou d'alternance sans en être.
-const NOT_A_PLACEMENT =
-  /\b(hors|sauf|pas de) (stages?|alternances?)\b|\b(gestionnaire|coordinat\w+|responsable|charge|chargee|referent\w*)( [\w'-]+){0,3} (des|du service des) (stages|alternances|apprentis)\b|\bdeveloppeu\w+ (de l.)?apprentissage\b/;
+// Postes qui parlent de stages ou d'alternance sans en être : personnel
+// des écoles et CFA (« Gestionnaire de contrats d'apprentissage »,
+// « Chargé d'apprentissage », « Coordinatrice de stages de formation »,
+// « Enseignant responsable de la filière par apprentissage »), centres de
+// langues, apprentissage automatique (machine learning).
+const NOT_A_PLACEMENT = new RegExp(
+  [
+    /\b(hors|sauf|pas de) (stages?|alternances?)\b/,
+    /\b(gestionnaire|coordinat\w+|responsable|charge|chargee|referent\w*)( [\w'-]+){0,3} (des|de|du service des) (stages|alternances|apprentis)\b/,
+    /\bdeveloppeu\w+ (de l.)?apprentissage\b/,
+    /\bgestionnaire (de |des )?contrats? d.apprentissage\b/,
+    /\bcharge(e|\(e\))? d.apprentissage\b/,
+    /\bcentre d.apprentissage\b/,
+    /\bapprentissage (automatique|de l.anglais|des langues)\b/,
+    /\bfiliere (par |en )?(l.)?apprentissage\b/,
+    /\bateliers? stages?\b/,
+    /\bstages de formation\b/,
+  ]
+    .map((pattern) => pattern.source)
+    .join("|"),
+);
+
+// Intitulé d'un poste qui n'est ni une alternance ni un stage (voir
+// NOT_A_PLACEMENT) : sert aussi à retirer du catalogue les offres importées
+// avant que la règle n'existe.
+export function isNotAPlacementTitle(title: string): boolean {
+  return NOT_A_PLACEMENT.test(normalizeForContract(title));
+}
 const DESCRIPTION_ALTERNANCE = /contrat d.apprentissage|contrat de professionnalisation|contrat d.alternance|poste (a pourvoir )?en alternance/;
 const DESCRIPTION_STAGE =
   /convention de stage|stage conventionne|\bstage (de |d.)?(fin d.etudes|pre.?embauche|obligatoire|\d+ ?(a \d+ )?(mois|semaines))|\bstage de \d/;

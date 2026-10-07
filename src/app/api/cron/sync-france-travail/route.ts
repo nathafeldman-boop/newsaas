@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runFranceTravailStream } from "@/lib/franceTravail/sync";
+import { deactivateNonPlacementOffers } from "@/lib/offers/deactivateNonPlacements";
 
 // Sync périodique (voir vercel.json) : ramène des offres alternance/stage
 // depuis l'API officielle France Travail (gratuite, volume très supérieur à
@@ -66,11 +67,19 @@ export async function GET(request: NextRequest) {
 
   if (deactivateError) errors.push(`deactivate: ${deactivateError.message}`);
 
-  return NextResponse.json({
+  // Postes qui ne sont ni des alternances ni des stages, importés avant une
+  // règle de classifyContract.ts (France Travail et Adzuna).
+  const nonPlacements = await deactivateNonPlacementOffers(admin);
+  if (nonPlacements.error) errors.push(`non-placements: ${nonPlacements.error}`);
+
+  const summary = {
     fetched,
     mapped,
     upserted,
     deactivated: deactivated?.length ?? 0,
-    errors,
-  });
+    nonPlacementsDeactivated: nonPlacements.deactivated,
+  };
+  console.log(`sync-france-travail: ${JSON.stringify(summary)}`);
+  if (errors.length > 0) console.error(`sync-france-travail errors: ${errors.slice(0, 10).join(" | ")}`);
+  return NextResponse.json({ ...summary, errors });
 }
