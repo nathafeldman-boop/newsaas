@@ -52,7 +52,7 @@ async function programmaticPaths(type: ContractType, isNew: IsNew): Promise<stri
 // Toutes les URLs indexables du site, ou seulement ce qui a changé depuis
 // `since` : les hubs sont toujours renvoyés ; les pages métier / ville /
 // territoire / entreprise seulement si une offre y a été publiée depuis
-// `since` ; les offres et les guides s'ils sont nouveaux ou mis à jour.
+// `since` ; les offres arrivées depuis `since`, les guides nouveaux ou mis à jour.
 export async function collectIndexNowPaths(since?: Date): Promise<string[]> {
   const isNew: IsNew = (date) => !since || (Boolean(date) && new Date(date!).getTime() >= since.getTime());
   const [alternance, stage, companies, offersAlternance, offersStage] = await Promise.all([
@@ -68,6 +68,8 @@ export async function collectIndexNowPaths(since?: Date): Promise<string[]> {
     ...alternance,
     ...stage,
     ...companies,
-    ...[...offersAlternance, ...offersStage].filter((entry) => isNew(entry.lastModified)).map((entry) => entry.path),
+    // Arrivée sur Stageio, pas date de publication : une offre publiée il y
+    // a une semaine mais importée cette nuit est une URL nouvelle.
+    ...[...offersAlternance, ...offersStage].filter((entry) => isNew(entry.createdAt)).map((entry) => entry.path),
   ];
 }
