@@ -79,7 +79,8 @@ const breadcrumbJsonLd = {
   "@type": "BreadcrumbList",
   itemListElement: [
     { "@type": "ListItem", position: 1, name: "Accueil", item: SITE_URL },
-    { "@type": "ListItem", position: 2, name: "Simulateur de salaire alternance", item: `${SITE_URL}${PATH}` },
+    { "@type": "ListItem", position: 2, name: "Outils", item: `${SITE_URL}/outils` },
+    { "@type": "ListItem", position: 3, name: "Simulateur de salaire alternance", item: `${SITE_URL}${PATH}` },
   ],
 };
 
@@ -104,9 +105,9 @@ export default function SalarySimulatorPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(appJsonLd) }} />
 
-      <Link href="/" style={{ fontSize: 13 }}>
-        ← Accueil
-      </Link>
+      <nav aria-label="Fil d'Ariane" style={{ fontSize: 13 }}>
+        <Link href="/">Accueil</Link> › <Link href="/outils">Outils</Link> › Simulateur de salaire
+      </nav>
       <h1 style={{ fontSize: 30, margin: "12px 0 0" }}>Simulateur de salaire en alternance 2026</h1>
       <p style={{ fontSize: 15, margin: "12px 0 0" }}>
         <strong>

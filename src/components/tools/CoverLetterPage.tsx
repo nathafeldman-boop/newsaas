@@ -255,7 +255,8 @@ export function CoverLetterPage({ contract }: { contract: LetterContract }) {
       "@type": "BreadcrumbList",
       itemListElement: [
         { "@type": "ListItem", position: 1, name: "Accueil", item: SITE_URL },
-        { "@type": "ListItem", position: 2, name: page.h1, item: `${SITE_URL}${page.path}` },
+        { "@type": "ListItem", position: 2, name: "Outils", item: `${SITE_URL}/outils` },
+        { "@type": "ListItem", position: 3, name: page.h1, item: `${SITE_URL}${page.path}` },
       ],
     },
   ];
@@ -266,7 +267,7 @@ export function CoverLetterPage({ contract }: { contract: LetterContract }) {
         <script key={data["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(data) }} />
       ))}
       <nav aria-label="Fil d'Ariane" style={{ fontSize: 13 }}>
-        <Link href="/">Accueil</Link> › {page.h1}
+        <Link href="/">Accueil</Link> › <Link href="/outils">Outils</Link> › {page.h1}
       </nav>
       <h1 style={{ fontSize: 30, margin: "12px 0 0" }}>{page.h1}</h1>
       <p style={{ fontSize: 15, margin: "12px 0 24px", maxWidth: "70ch" }}>{page.intro}</p>
