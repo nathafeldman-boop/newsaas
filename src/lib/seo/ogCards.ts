@@ -149,6 +149,20 @@ export const SIMULATEUR_OG_CARD: OgCard = {
   footer: "Ton salaire minimum brut et net en 10 secondes",
 };
 
+export const LETTRE_ALTERNANCE_OG_CARD: OgCard = {
+  kicker: "Outil gratuit",
+  title: "Lettre de motivation pour une alternance",
+  stats: ["Lettre", "Mail d'envoi", "Exemples"],
+  footer: "Ta lettre en 2 minutes, gratuite et sans compte",
+};
+
+export const LETTRE_STAGE_OG_CARD: OgCard = {
+  kicker: "Outil gratuit",
+  title: "Lettre de motivation pour un stage",
+  stats: ["Lettre", "Mail d'envoi", "Exemples"],
+  footer: "Ta lettre en 2 minutes, gratuite et sans compte",
+};
+
 export async function barometreOgCard(): Promise<OgCard> {
   try {
     const [alternance, stage] = await Promise.all([getProgrammaticIndex("alternance"), getProgrammaticIndex("stage")]);

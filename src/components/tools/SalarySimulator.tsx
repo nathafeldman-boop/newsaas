@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ShareButtons } from "@/components/share/ShareButtons";
+import { Seg } from "@/components/tools/Seg";
 import { SITE_URL } from "@/lib/site";
 import {
   AGE_LABEL,
@@ -25,36 +26,6 @@ const CONTRACT_OPTIONS: { value: Contract; label: string }[] = [
 ];
 
 const AGES = Object.keys(AGE_LABEL) as AgeBracket[];
-
-function Seg<T extends string | number>({
-  options,
-  value,
-  onChange,
-  name,
-}: {
-  options: { value: T; label: string }[];
-  value: T;
-  onChange: (value: T) => void;
-  name: string;
-}) {
-  return (
-    <div className="seg" role="radiogroup" aria-label={name} style={{ width: "100%" }}>
-      {options.map((option) => (
-        <button
-          key={String(option.value)}
-          type="button"
-          role="radio"
-          aria-checked={option.value === value}
-          className={`seg-opt${option.value === value ? " is-active" : ""}`}
-          style={{ flex: 1, justifyContent: "center" }}
-          onClick={() => onChange(option.value)}
-        >
-          {option.label}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 // Valeurs par défaut = le cas le plus recherché (apprenti 18-20 ans, 1re
 // année, contrat récent) : le résultat est donc déjà présent dans le HTML

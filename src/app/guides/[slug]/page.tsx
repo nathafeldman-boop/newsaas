@@ -218,6 +218,9 @@ export default async function GuidePage({
           <Link href="/outils/simulateur-salaire-alternance" className="tag tag-neutral">
             Simulateur de salaire
           </Link>
+          <Link href={`/outils/lettre-de-motivation-${/stage/.test(guide.slug) ? "stage" : "alternance"}`} className="tag tag-neutral">
+            Générateur de lettre de motivation
+          </Link>
           <Link href="/barometre-alternance-stage" className="tag tag-neutral">
             Baromètre 2026
           </Link>

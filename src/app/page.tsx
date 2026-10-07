@@ -1667,6 +1667,8 @@ export default async function LandingPage() {
             { href: "/barometre-alternance-stage", label: "Baromètre 2026" },
             { href: "/guides", label: "Guides" },
             { href: "/outils/simulateur-salaire-alternance", label: "Simulateur de salaire" },
+            { href: "/outils/lettre-de-motivation-alternance", label: "Lettre de motivation alternance" },
+            { href: "/outils/lettre-de-motivation-stage", label: "Lettre de motivation stage" },
             { href: "/affilies", label: "Devenir affilié" },
             { href: "/legal/mentions-legales", label: "Mentions légales" },
             { href: "/legal/cgu", label: "CGU" },

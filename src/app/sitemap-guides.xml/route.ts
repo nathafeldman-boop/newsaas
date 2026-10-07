@@ -10,6 +10,8 @@ export async function GET() {
     { path: "/guides" },
     ...GUIDES.map((guide) => ({ path: `/guides/${guide.slug}`, lastModified: guide.updatedAt })),
     { path: "/outils/simulateur-salaire-alternance" },
+    { path: "/outils/lettre-de-motivation-alternance" },
+    { path: "/outils/lettre-de-motivation-stage" },
     { path: "/barometre-alternance-stage" },
   ];
   return xmlResponse(urlsetXml(entries));
