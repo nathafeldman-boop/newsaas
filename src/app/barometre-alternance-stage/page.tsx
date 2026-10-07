@@ -145,6 +145,23 @@ export default async function BarometrePage() {
       publisher: { "@type": "Organization", name: "Stageio", logo: { "@type": "ImageObject", url: `${SITE_URL}/logo.png` } },
       mainEntityOfPage: `${SITE_URL}${PATH}`,
     },
+    // Pour Google Dataset Search et les assistants IA : les chiffres de la
+    // page sont aussi téléchargeables en CSV.
+    {
+      "@context": "https://schema.org",
+      "@type": "Dataset",
+      name: `Baromètre ${YEAR} de l'alternance et des stages (Stageio)`,
+      description: `Nombre d'offres d'alternance et de stage actives en France par métier, diplôme, région et ville, part du total, offres publiées sur 7 jours et salaire médian indiqué. Données recalculées chaque heure à partir des offres en ligne sur Stageio (France Travail, Adzuna, sites carrières).`,
+      url: `${SITE_URL}${PATH}`,
+      creator: { "@type": "Organization", name: "Stageio", url: SITE_URL },
+      isAccessibleForFree: true,
+      dateModified: alternance.generatedAt,
+      temporalCoverage: String(YEAR),
+      spatialCoverage: { "@type": "Place", name: "France" },
+      keywords: ["alternance", "apprentissage", "stage", "offres d'emploi", "salaire apprenti", "France"],
+      variableMeasured: ["Offres d'alternance actives", "Offres de stage actives", "Offres publiées sur 7 jours", "Salaire médian brut mensuel indiqué"],
+      distribution: [{ "@type": "DataDownload", encodingFormat: "text/csv", contentUrl: `${SITE_URL}${PATH}/donnees.csv` }],
+    },
     {
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
@@ -287,7 +304,11 @@ export default async function BarometrePage() {
             {leadCity ? <>, et {leadCity.label} est la ville qui en propose le plus</> : null}. » (source : stageio.fr/barometre-alternance-stage)
           </blockquote>
           <p style={{ fontSize: 13, margin: "10px 0 0" }}>
-            Besoin de chiffres pour ta ville ou ta filière ? Écris à <a href="mailto:contact@stageio.fr">contact@stageio.fr</a>.
+            Toutes les données (métiers, diplômes, régions, 200 premières villes) :{" "}
+            <a href={`${PATH}/donnees.csv`} download>
+              télécharger le CSV
+            </a>
+            . Besoin de chiffres pour ta ville ou ta filière ? Écris à <a href="mailto:contact@stageio.fr">contact@stageio.fr</a>.
           </p>
         </div>
       )}
