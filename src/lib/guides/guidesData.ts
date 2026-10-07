@@ -310,6 +310,7 @@ export const GUIDE_CATEGORIES: { title: string; slugs: string[] }[] = [
       "sites-pour-trouver-une-alternance",
       "trouver-un-stage",
       "quand-chercher-son-alternance",
+      "rentree-decalee-alternance",
       "alternance-sans-entreprise",
       "trouver-alternance-linkedin",
       "candidature-spontanee-alternance",

@@ -213,7 +213,7 @@ Ce qui fait passer du bas au haut de la fourchette : les backlinks (aucun code n
 - [x] 07/10 (nuit) : fiches offres avec un bloc « les chiffres » propre à Stageio (offres du segment, salaire médian, entreprises qui recrutent, minimum légal). Outils gratuits sans compte : générateur de lettre de motivation (alternance, stage), générateur de CV en PDF (alternance, stage), page /outils ; liés depuis les fiches offres, les pages métier/ville, les guides et l'accueil. Pages « Je ne trouve pas d'alternance » et « Quel site pour trouver une alternance », FAQ marque sur /a-propos, /llms-full.txt, robots IA (Meta, Mistral, Apple…).
 - [x] 07/10 (nuit) : synchro par département vérifiée en production (tranche 6 : 4 947 offres importées en 27 s, 0 erreur) ; 5 716 offres d'alternance indexées le soir même (4 163 le matin). ~17 % des nouvelles offres viennent d'écoles qui recrutent pour leurs formations (ISCOD, 3AS…) : voir ligne suivante.
 - [ ] Filtrer les annonces d'écoles du catalogue lui-même (décision produit)
-- [x] Phase 3 — 59 guides rédigés (faits juridiques vérifiés sur sources officielles) + 4 outils (1 en ligne : le simulateur)
+- [x] Phase 3 — 60 guides rédigés (faits juridiques vérifiés sur sources officielles) + 4 outils (1 en ligne : le simulateur)
 - [ ] Phase 4 — hubs, baromètre, Search Console, suivi 100 mots-clés, dashboard
 
 ---

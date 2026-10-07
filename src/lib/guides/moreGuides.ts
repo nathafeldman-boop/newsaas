@@ -3947,4 +3947,74 @@ export const MORE_GUIDES: Guide[] = [
       { label: "La carte étudiant des métiers (La bonne alternance)", url: "https://labonnealternance.apprentissage.beta.gouv.fr/guide-cfa/la-carte-etudiant-des-metiers" },
     ],
   },
+  {
+    slug: "rentree-decalee-alternance",
+    title: "Alternance en rentrée décalée (janvier à mars) : comment faire",
+    metaDescription:
+      "Pas d'alternance en septembre ? Certaines formations démarrent en janvier, février ou mars. Quelles formations, comment s'inscrire, comment trouver l'entreprise à temps : le guide.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    related: ["je-ne-trouve-pas-d-alternance", "alternance-sans-entreprise", "quand-chercher-son-alternance", "choisir-son-ecole-en-alternance"],
+    intro: [
+      "Tu n'as pas trouvé d'entreprise pour septembre, ou tu veux te réorienter ? La rentrée décalée te permet de commencer une formation en alternance en janvier, février ou mars. Il y a moins de places qu'en septembre et tout va plus vite : voici comment t'y prendre dès maintenant.",
+    ],
+    sections: [
+      {
+        heading: "Quelles formations proposent une rentrée décalée",
+        list: [
+          "Surtout des écoles privées : beaucoup d'écoles de commerce ouvrent une rentrée en janvier, en bachelor comme en master.",
+          "Quelques BTS, surtout en commerce (MCO, NDRC) et en gestion (GPME), le plus souvent dans des établissements privés.",
+          "Les places sont nettement moins nombreuses qu'en septembre, et chaque école a son propre calendrier.",
+          "Les candidatures se font souvent directement auprès de l'école, hors Parcoursup.",
+        ],
+      },
+      {
+        heading: "Comment s'inscrire",
+        list: [
+          "Liste les écoles proches de chez toi qui proposent ta formation en rentrée décalée et en alternance, puis contacte leur service des admissions dès octobre.",
+          "Demande les dates exactes de rentrée et la date limite pour signer ton contrat.",
+          "L'admission se fait en général sur dossier et entretien de motivation.",
+          "Choisis une école qui t'aide vraiment à trouver ton entreprise : demande combien de ses étudiants ont signé un contrat l'an dernier, et quelles entreprises sont partenaires.",
+        ],
+      },
+      {
+        heading: "Trouver l'entreprise à temps",
+        list: [
+          "Commence ta recherche en même temps que ton inscription, sans attendre ton admission définitive.",
+          "Le contrat d'apprentissage peut démarrer jusqu'à 3 mois après le début de ta formation : tu gardes un peu de marge après la rentrée.",
+          "Cible les PME, commerces et associations, qui recrutent toute l'année, et envoie des candidatures spontanées.",
+          "Mentionne clairement ta date de rentrée et ton rythme dans ton CV et ta lettre : c'est la première question du recruteur.",
+        ],
+      },
+      {
+        heading: "Ce qui change par rapport à septembre",
+        paragraphs: [
+          "Le rythme est plus soutenu : tu rattrapes souvent une partie du premier semestre, et certaines écoles ajoutent des journées de cours. Pour un BTS, certaines écoles raccourcissent aussi la formation, par exemple sur 18 mois au lieu de 24. Renseigne-toi précisément avant de signer.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Peut-on commencer une alternance en janvier ?",
+        a: "Oui, certaines formations ont une rentrée décalée en janvier, février ou mars, surtout en école privée (écoles de commerce, quelques BTS). Il y a moins de places qu'en septembre.",
+      },
+      {
+        q: "Quels BTS proposent une rentrée décalée en alternance ?",
+        a: "Surtout des BTS du commerce (MCO, NDRC) et de la gestion (GPME), le plus souvent dans des établissements privés. Vérifie auprès de chaque école.",
+      },
+      {
+        q: "La rentrée décalée passe-t-elle par Parcoursup ?",
+        a: "Souvent non : beaucoup d'écoles recrutent directement pour leur rentrée décalée, sur dossier et entretien. Contacte leur service des admissions.",
+      },
+      {
+        q: "Jusqu'à quand peut-on signer son contrat en rentrée décalée ?",
+        a: "Le contrat d'apprentissage peut démarrer jusqu'à 3 mois après le début de la formation. Demande aussi à ton école sa propre date limite.",
+      },
+    ],
+    sources: [
+      { label: "La deuxième rentrée de l'alternance (L'Étudiant)", url: "https://www.letudiant.fr/alternance/alternance-et-apprentissage/la-deuxieme-rentree-de-l-alternance-12026.html" },
+      { label: "Rentrée décalée : tout savoir (Diplomeo)", url: "https://diplomeo.com/actualite-rentree_decalee_tout_savoir" },
+      { label: "Durée et dates du contrat d'apprentissage (Code du travail, L6222-7 à L6222-14, Légifrance)", url: "https://www.legifrance.gouv.fr/codes/id/LEGISCTA000006195910" },
+    ],
+  },
 ];
