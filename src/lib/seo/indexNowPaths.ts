@@ -21,43 +21,46 @@ const STATIC_PATHS = [
   "/inscription",
 ];
 
-async function companyPaths(): Promise<string[]> {
+type IsNew = (date?: string | null) => boolean;
+
+async function companyPaths(isNew: IsNew): Promise<string[]> {
   const index = await getCompanyIndex();
   return Object.values(index.companies)
-    .filter((c) => c.count >= INDEXABLE_MIN_OFFERS)
+    .filter((c) => c.count >= INDEXABLE_MIN_OFFERS && isNew(c.latest))
     .map((c) => `/entreprises/${c.slug}`);
 }
 
-async function programmaticPaths(type: ContractType): Promise<string[]> {
+async function programmaticPaths(type: ContractType, isNew: IsNew): Promise<string[]> {
   const index = await getProgrammaticIndex(type);
-  const keep = (count: number) => count >= INDEXABLE_MIN_OFFERS;
+  // Indexable ET une offre publiée depuis le dernier envoi : IndexNow ne doit
+  // recevoir que des pages qui ont réellement changé.
+  const keep = (stats: { count: number; latest: string | null }) => stats.count >= INDEXABLE_MIN_OFFERS && isNew(stats.latest);
   return [
-    ...Object.values(index.metiers).filter((m) => keep(m.count)).map((m) => `/${type}/${m.slug}`),
-    ...Object.values(index.cities).filter((c) => keep(c.count)).map((c) => `/${type}/${c.slug}`),
-    ...Object.values(index.combos).filter((c) => keep(c.count)).map((c) => `/${type}/${c.metier}/${c.city}`),
-    ...Object.values(index.departements).filter((d) => keep(d.count)).map((d) => departementPath(type, d.slug, null)),
+    ...Object.values(index.metiers).filter(keep).map((m) => `/${type}/${m.slug}`),
+    ...Object.values(index.cities).filter(keep).map((c) => `/${type}/${c.slug}`),
+    ...Object.values(index.combos).filter(keep).map((c) => `/${type}/${c.metier}/${c.city}`),
+    ...Object.values(index.departements).filter(keep).map((d) => departementPath(type, d.slug, null)),
     ...Object.values(index.depCombos)
-      .filter((c) => keep(c.count) && index.departements[c.dep])
+      .filter((c) => keep(c) && index.departements[c.dep])
       .map((c) => departementPath(type, index.departements[c.dep].slug, c.metier)),
-    ...Object.values(index.regions).filter((r) => keep(r.count)).map((r) => regionPath(type, r.slug, null)),
-    ...Object.values(index.regionCombos).filter((c) => keep(c.count)).map((c) => regionPath(type, c.region, c.metier)),
+    ...Object.values(index.regions).filter(keep).map((r) => regionPath(type, r.slug, null)),
+    ...Object.values(index.regionCombos).filter(keep).map((c) => regionPath(type, c.region, c.metier)),
   ];
 }
 
 // Toutes les URLs indexables du site, ou seulement ce qui a changé depuis
-// `since` : les hubs, pages métier/ville et pages entreprise changent chaque
-// jour (nouvelles offres, compteurs) et sont toujours renvoyées ; les offres
-// et les guides seulement s'ils sont nouveaux ou mis à jour depuis `since`.
+// `since` : les hubs sont toujours renvoyés ; les pages métier / ville /
+// territoire / entreprise seulement si une offre y a été publiée depuis
+// `since` ; les offres et les guides s'ils sont nouveaux ou mis à jour.
 export async function collectIndexNowPaths(since?: Date): Promise<string[]> {
+  const isNew: IsNew = (date) => !since || (Boolean(date) && new Date(date!).getTime() >= since.getTime());
   const [alternance, stage, companies, offersAlternance, offersStage] = await Promise.all([
-    programmaticPaths("alternance"),
-    programmaticPaths("stage"),
-    companyPaths(),
+    programmaticPaths("alternance", isNew),
+    programmaticPaths("stage", isNew),
+    companyPaths(isNew),
     fetchOfferSitemapEntries("alternance"),
     fetchOfferSitemapEntries("stage"),
   ]);
-  const isNew = (date?: string | null) =>
-    !since || (Boolean(date) && new Date(date!).getTime() >= since.getTime());
   return [
     ...STATIC_PATHS,
     ...GUIDES.filter((guide) => isNew(guide.updatedAt)).map((guide) => `/guides/${guide.slug}`),

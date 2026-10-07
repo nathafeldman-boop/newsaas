@@ -38,6 +38,8 @@ export type CompanyEntry = {
   metiers: Count[];
   salaryMedian: number | null;
   salaryN: number;
+  // Offre la plus récente : "lastmod" du sitemap entreprises.
+  latest: string | null;
 };
 
 export type CompanyIndex = { generatedAt: string; companies: Record<string, CompanyEntry> };
@@ -51,6 +53,7 @@ type Acc = {
   cities: Map<string, { label: string; count: number }>;
   metiers: Map<string, { label: string; count: number }>;
   salaries: number[];
+  latest: string | null;
 };
 
 function top(map: Map<string, { label: string; count: number }>, n: number): Count[] {
@@ -71,7 +74,7 @@ export function buildCompanyIndex(rows: Row[], now = Date.now()): CompanyIndex {
     if (!slug) continue;
     let acc = accs.get(slug);
     if (!acc) {
-      acc = { labels: new Map(), count: 0, byType: { alternance: 0, stage: 0 }, ids: [], recent7d: 0, cities: new Map(), metiers: new Map(), salaries: [] };
+      acc = { labels: new Map(), count: 0, byType: { alternance: 0, stage: 0 }, ids: [], recent7d: 0, cities: new Map(), metiers: new Map(), salaries: [], latest: null };
       accs.set(slug, acc);
     }
     acc.labels.set(name, (acc.labels.get(name) ?? 0) + 1);
@@ -79,6 +82,7 @@ export function buildCompanyIndex(rows: Row[], now = Date.now()): CompanyIndex {
     acc.byType[row.contract_type] += 1;
     if (acc.ids.length < MAX_IDS) acc.ids.push(row.id);
     if (new Date(row.published_at).getTime() >= weekAgo) acc.recent7d += 1;
+    if (!acc.latest || row.published_at > acc.latest) acc.latest = row.published_at;
 
     const cityKey = row.location ? normalizeCityKey(row.location) : "";
     const citySlug = cityKey ? slugify(cityKey) : "";
@@ -111,6 +115,7 @@ export function buildCompanyIndex(rows: Row[], now = Date.now()): CompanyIndex {
       byType: acc.byType,
       ids: acc.ids,
       recent7d: acc.recent7d,
+      latest: acc.latest,
       cities: top(acc.cities, 8),
       metiers: top(acc.metiers, 8),
       salaryMedian: sorted.length >= SALARY_MIN_SAMPLE ? sorted[Math.floor(sorted.length / 2)] : null,
@@ -134,7 +139,7 @@ async function computeCompanyIndex(): Promise<CompanyIndex> {
   return buildCompanyIndex(rows);
 }
 
-const cachedCompanyIndex = unstable_cache(computeCompanyIndex, ["company-index-v3"], { revalidate: 3600 });
+const cachedCompanyIndex = unstable_cache(computeCompanyIndex, ["company-index-v4"], { revalidate: 3600 });
 
 export function getCompanyIndex(): Promise<CompanyIndex> {
   return cachedCompanyIndex();

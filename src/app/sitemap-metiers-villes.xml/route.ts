@@ -12,16 +12,16 @@ async function entriesFor(type: ContractType): Promise<SitemapEntry[]> {
   const lastModified = index.generatedAt;
   const keep = (count: number) => count >= INDEXABLE_MIN_OFFERS;
   return [
-    { path: `/${type}`, lastModified },
+    { path: `/${type}`, lastModified: index.latest ?? lastModified },
     ...Object.values(index.metiers)
       .filter((m) => keep(m.count))
-      .map((m) => ({ path: `/${type}/${m.slug}`, lastModified })),
+      .map((m) => ({ path: `/${type}/${m.slug}`, lastModified: m.latest ?? lastModified })),
     ...Object.values(index.cities)
       .filter((c) => keep(c.count))
-      .map((c) => ({ path: `/${type}/${c.slug}`, lastModified })),
+      .map((c) => ({ path: `/${type}/${c.slug}`, lastModified: c.latest ?? lastModified })),
     ...Object.values(index.combos)
       .filter((c) => keep(c.count))
-      .map((c) => ({ path: `/${type}/${c.metier}/${c.city}`, lastModified })),
+      .map((c) => ({ path: `/${type}/${c.metier}/${c.city}`, lastModified: c.latest ?? lastModified })),
   ];
 }
 

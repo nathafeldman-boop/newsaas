@@ -32,6 +32,9 @@ export type SegmentStats = {
   recent7d: number;
   salaryMedian: number | null;
   salaryN: number;
+  // Date de publication de l'offre la plus récente du segment : "lastmod"
+  // des sitemaps et filtre de l'envoi IndexNow quotidien.
+  latest: string | null;
 };
 export type CityEntry = SegmentStats & { slug: string; label: string; dep: string | null };
 export type DepartementEntry = SegmentStats & { code: string; slug: string; label: string };
@@ -48,6 +51,7 @@ export type ProgrammaticIndex = {
   generatedAt: string;
   total: number;
   recent7d: number;
+  latest: string | null;
   cities: Record<string, CityEntry>;
   metiers: Record<string, MetierEntry>;
   combos: Record<string, ComboEntry>;
@@ -105,10 +109,11 @@ type Accumulator = {
   salaries: number[];
   // Villes (pages département) ou départements (pages ville) rencontrés.
   places: Map<string, number>;
+  latest: string | null;
 };
 
 function newAccumulator(): Accumulator {
-  return { count: 0, ids: [], companies: new Map(), recent7d: 0, salaries: [], places: new Map() };
+  return { count: 0, ids: [], companies: new Map(), recent7d: 0, salaries: [], places: new Map(), latest: null };
 }
 
 function countPlace(acc: Accumulator, place: string | null) {
@@ -124,6 +129,7 @@ function topPlace(acc: Accumulator): { place: string; share: number } | null {
 function add(acc: Accumulator, row: IndexRow, isRecent: boolean, salary: number | null) {
   acc.count += 1;
   if (acc.ids.length < MAX_IDS_PER_SEGMENT) acc.ids.push(row.id);
+  if (!acc.latest || row.published_at > acc.latest) acc.latest = row.published_at;
   const company = row.company.trim();
   // Les écoles qui publient des annonces pour remplir leurs cursus comptent
   // dans le nombre d'offres, jamais dans les "entreprises qui recrutent".
@@ -157,6 +163,7 @@ function finalize(acc: Accumulator): SegmentStats {
     recent7d: acc.recent7d,
     salaryMedian: median,
     salaryN: sorted.length,
+    latest: acc.latest,
   };
 }
 
@@ -256,6 +263,7 @@ export function buildIndex(type: ContractType, rows: IndexRow[], now = Date.now(
     generatedAt: new Date(now).toISOString(),
     total: rows.length,
     recent7d: recentTotal,
+    latest: rows.reduce<string | null>((max, row) => (!max || row.published_at > max ? row.published_at : max), null),
     cities: {},
     metiers: {},
     combos: {},
@@ -306,7 +314,7 @@ export function buildIndex(type: ContractType, rows: IndexRow[], now = Date.now(
 // Un seul scan du catalogue par type et par heure, partagé par toutes les
 // pages /alternance/* et /stage/* (sinon chaque page vue relirait ~3 000
 // offres).
-const cachedIndex = unstable_cache(computeIndex, ["programmatic-index-v9"], { revalidate: 3600 });
+const cachedIndex = unstable_cache(computeIndex, ["programmatic-index-v10"], { revalidate: 3600 });
 
 export function getProgrammaticIndex(type: ContractType): Promise<ProgrammaticIndex> {
   return cachedIndex(type);

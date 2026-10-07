@@ -13,7 +13,7 @@ export async function GET() {
       { path: "/entreprises", lastModified },
       ...Object.values(index.companies)
         .filter((c) => c.count >= INDEXABLE_MIN_OFFERS)
-        .map((c) => ({ path: `/entreprises/${c.slug}`, lastModified })),
+        .map((c) => ({ path: `/entreprises/${c.slug}`, lastModified: c.latest ?? lastModified })),
     ]),
   );
 }

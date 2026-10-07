@@ -16,16 +16,16 @@ async function entriesFor(type: ContractType): Promise<SitemapEntry[]> {
   return [
     ...Object.values(index.regions)
       .filter((r) => keep(r.count))
-      .map((r) => ({ path: regionPath(type, r.slug, null), lastModified })),
+      .map((r) => ({ path: regionPath(type, r.slug, null), lastModified: r.latest ?? lastModified })),
     ...Object.values(index.regionCombos)
       .filter((c) => keep(c.count))
-      .map((c) => ({ path: regionPath(type, c.region, c.metier), lastModified })),
+      .map((c) => ({ path: regionPath(type, c.region, c.metier), lastModified: c.latest ?? lastModified })),
     ...Object.values(index.departements)
       .filter((d) => keep(d.count))
-      .map((d) => ({ path: departementPath(type, d.slug, null), lastModified })),
+      .map((d) => ({ path: departementPath(type, d.slug, null), lastModified: d.latest ?? lastModified })),
     ...Object.values(index.depCombos)
       .filter((c) => keep(c.count) && index.departements[c.dep])
-      .map((c) => ({ path: departementPath(type, index.departements[c.dep].slug, c.metier), lastModified })),
+      .map((c) => ({ path: departementPath(type, index.departements[c.dep].slug, c.metier), lastModified: c.latest ?? lastModified })),
   ];
 }
 
