@@ -277,7 +277,7 @@ Ce qui fait passer du bas au haut de la fourchette : les backlinks (aucun code n
 | P2 formation × ville | ✅ 14 diplômes détectés dans l'intitulé (BTS MCO, NDRC, BUT, bachelor, master, CAP...) |
 | Titles / H1 | ✅ titres naturels avec le nombre d'offres ; fiches offre « intitulé à Ville – Entreprise » |
 | Sitemaps par type | ✅ pages, guides, métiers-villes, territoires, entreprises, offres alternance, offres stage |
-| Performance (LCP, INP, CLS) | ⏳ Nathan : PageSpeed Insights + Vercel Speed Insights |
+| Performance (LCP, INP, CLS) | ✅ Lighthouse mobile (build de production local, 07/10) : accueil 65 → 97 (LCP 3,8 s → 2,6 s, titre plus masqué par l'animation), autres types de pages 98-100, SEO 100 partout, CLS 0. ⏳ Nathan : Vercel Speed Insights pour les données réelles. Accessibilité 94-95 : contraste du vert #0f9c56 sur fond clair (3,2 au lieu de 4,5), décision de design |
 | KPI revenu par source | ✅ tableau admin « Revenu par source » (inscrits 30 j, payants, revenu, revenu / inscrit) |
 | Autorité / backlinks | ⏳ envoyer le baromètre aux médias étudiants et aux CFA |
 
