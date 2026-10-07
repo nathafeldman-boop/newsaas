@@ -1,14 +1,26 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { GUIDES } from "@/lib/guides/guidesData";
+import { GUIDE_CATEGORIES, GUIDES, getGuide } from "@/lib/guides/guidesData";
 import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Guides alternance et stage",
   description:
-    "Nos guides pour trouver une alternance ou un stage : différences alternance/stage, CV, lettre de motivation, méthode de recherche.",
+    "Tous nos guides pour trouver une alternance ou un stage : calendrier, CV, lettre de motivation, entretien, contrat, salaire, gratification et aides 2026.",
   alternates: { canonical: `${SITE_URL}/guides` },
 };
+
+function sections() {
+  const listed = new Set(GUIDE_CATEGORIES.flatMap((category) => category.slugs));
+  const others = GUIDES.filter((guide) => !listed.has(guide.slug));
+  return [
+    ...GUIDE_CATEGORIES.map((category) => ({
+      title: category.title,
+      guides: category.slugs.map(getGuide).filter((guide) => guide !== undefined),
+    })),
+    ...(others.length > 0 ? [{ title: "Autres guides", guides: others }] : []),
+  ].filter((section) => section.guides.length > 0);
+}
 
 export default function GuidesIndexPage() {
   return (
@@ -18,14 +30,19 @@ export default function GuidesIndexPage() {
         Tout ce qu&apos;il faut savoir pour trouver et réussir une alternance ou un stage.
       </p>
 
-      <div className="mt-6 flex flex-col gap-3">
-        {GUIDES.map((guide) => (
-          <Link key={guide.slug} href={`/guides/${guide.slug}`} className="card elev-sm">
-            <h2 className="card-title">{guide.title}</h2>
-            <p className="card-body mt-1">{guide.metaDescription}</p>
-          </Link>
-        ))}
-      </div>
+      {sections().map((section) => (
+        <section key={section.title} className="mt-8">
+          <h2 style={{ fontSize: 18, margin: "0 0 12px" }}>{section.title}</h2>
+          <div className="flex flex-col gap-3">
+            {section.guides.map((guide) => (
+              <Link key={guide.slug} href={`/guides/${guide.slug}`} className="card elev-sm">
+                <h3 className="card-title">{guide.title}</h3>
+                <p className="card-body mt-1">{guide.metaDescription}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ))}
 
       <h2 style={{ fontSize: 18, margin: "32px 0 12px" }}>Outils gratuits</h2>
       <Link href="/outils/simulateur-salaire-alternance" className="card elev-sm">

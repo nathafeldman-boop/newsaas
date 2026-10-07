@@ -297,3 +297,63 @@ export const GUIDES: Guide[] = [
 export function getGuide(slug: string): Guide | undefined {
   return GUIDES.find((g) => g.slug === slug);
 }
+
+// Rubriques de la page /guides. Un guide absent de ces listes s'affiche quand
+// même, dans « Autres guides » : en ajouter un ne peut pas le faire disparaître.
+export const GUIDE_CATEGORIES: { title: string; slugs: string[] }[] = [
+  {
+    title: "Trouver une alternance ou un stage",
+    slugs: [
+      "alternance-vs-stage",
+      "trouver-une-alternance",
+      "trouver-un-stage",
+      "quand-chercher-son-alternance",
+      "alternance-sans-entreprise",
+      "trouver-alternance-linkedin",
+      "candidature-spontanee-alternance",
+      "choisir-son-ecole-en-alternance",
+      "bts-bachelor-master-alternance",
+      "stage-de-fin-d-etudes",
+    ],
+  },
+  {
+    title: "CV, lettre et candidature",
+    slugs: [
+      "cv-alternance",
+      "cv-stage",
+      "soft-skills-cv",
+      "profil-linkedin-etudiant",
+      "lettre-de-motivation-alternance",
+      "lettre-de-motivation-stage",
+      "lettre-de-motivation-chatgpt",
+      "mail-candidature-stage-alternance",
+      "relancer-candidature",
+    ],
+  },
+  {
+    title: "Entretien",
+    slugs: [
+      "entretien-alternance",
+      "entretien-de-stage",
+      "se-presenter-en-entretien",
+      "questions-a-poser-en-entretien",
+      "refuser-une-offre",
+    ],
+  },
+  {
+    title: "Tes droits : contrat, salaire, aides",
+    slugs: [
+      "contrat-apprentissage-ou-contrat-pro",
+      "alternance-age-limite",
+      "rupture-contrat-apprentissage",
+      "aides-alternants",
+      "conges-alternant",
+      "gratification-de-stage",
+      "convention-de-stage",
+    ],
+  },
+  {
+    title: "Pendant et après",
+    slugs: ["premier-jour-en-entreprise", "rapport-de-stage", "soutenance-de-stage"],
+  },
+];
