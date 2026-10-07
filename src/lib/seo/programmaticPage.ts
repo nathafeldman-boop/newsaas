@@ -18,6 +18,7 @@ import {
   round2,
 } from "@/lib/salary/legalRates";
 import { companySlug, getCompanyIndex } from "@/lib/seo/companyIndex";
+import { getDepartement } from "@/lib/seo/departements";
 import type { ContractType } from "@/types/database";
 
 export type SegmentLink = { href: string; label: string; count: number };
@@ -36,35 +37,37 @@ export type ProgrammaticModel = {
   nearby: { title: string; links: SegmentLink[] } | null;
   related: { title: string; links: SegmentLink[] } | null;
   crossType: SegmentLink | null;
+  // Page département qui contient la ville (pages ville et métier × ville).
+  parentArea: SegmentLink | null;
   companies: SegmentLink[];
   metier: Metier | null;
   city: CityEntry | null;
 };
 
-const TYPE_LABEL: Record<ContractType, string> = { alternance: "Alternance", stage: "Stage" };
-const OFFERS_OF: Record<ContractType, string> = { alternance: "offres d'alternance", stage: "offres de stage" };
-const OTHER_TYPE: Record<ContractType, ContractType> = { alternance: "stage", stage: "alternance" };
+export const TYPE_LABEL: Record<ContractType, string> = { alternance: "Alternance", stage: "Stage" };
+export const OFFERS_OF: Record<ContractType, string> = { alternance: "offres d'alternance", stage: "offres de stage" };
+export const OTHER_TYPE: Record<ContractType, ContractType> = { alternance: "stage", stage: "alternance" };
 
-function capitalize(text: string): string {
+export function capitalize(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-function plural(n: number, singular: string, pluralForm = `${singular}s`) {
+export function plural(n: number, singular: string, pluralForm = `${singular}s`) {
   return `${n.toLocaleString("fr-FR")} ${n > 1 ? pluralForm : singular}`;
 }
 
-function listCompanies(stats: SegmentStats, max = 3): string {
+export function listCompanies(stats: SegmentStats, max = 3): string {
   return stats.topCompanies
     .slice(0, max)
     .map((c) => (c.count > 1 ? `${c.name} (${c.count} offres)` : c.name))
     .join(", ");
 }
 
-function segmentPath(type: ContractType, metier: string | null, city: string | null): string {
+export function segmentPath(type: ContractType, metier: string | null, city: string | null): string {
   return `/${type}/${[metier, city].filter(Boolean).join("/")}`;
 }
 
-function salaryAnswer(type: ContractType, stats: SegmentStats): string {
+export function salaryAnswer(type: ContractType, stats: SegmentStats): string {
   const observed =
     stats.salaryMedian !== null
       ? `Dans les offres qui l'indiquent (${stats.salaryN} offres France Travail), le salaire médian est de ${formatEuros(stats.salaryMedian, 0)} brut par mois. `
@@ -287,10 +290,27 @@ export function buildProgrammaticModel(
     nearby,
     related: related && related.links.length > 0 ? related : null,
     crossType,
+    parentArea: parentArea(index, metier, city),
     companies: [],
     metier,
     city,
   };
+}
+
+function parentArea(index: ProgrammaticIndex, metier: Metier | null, city: CityEntry | null): SegmentLink | null {
+  if (!city?.dep) return null;
+  const departement = getDepartement(city.dep);
+  const stats = metier ? index.depCombos[`${metier.slug}/${city.dep}`] : index.departements[city.dep];
+  if (!departement || !stats) return null;
+  return {
+    href: departementPath(index.type, departement.slug, metier?.slug ?? null),
+    label: `${TYPE_LABEL[index.type]}${metier ? ` ${metier.label}` : ""} ${departement.phrase} (${departement.code})`,
+    count: stats.count,
+  };
+}
+
+export function departementPath(type: ContractType, departementSlug: string, metier: string | null): string {
+  return `/${type}/departement/${departementSlug}${metier ? `/${metier}` : ""}`;
 }
 
 export async function fetchOffersByIds(ids: string[]): Promise<PublicOfferRow[]> {

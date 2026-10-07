@@ -4,6 +4,7 @@ import { NOT_A_CITY, normalizeCityKey, slugify, titleCase } from "@/lib/offers/s
 import { PUBLIC_OFFERS_PAGE_SIZE } from "@/lib/offers/fetchPublicOffers";
 import { classifyMetier } from "@/lib/seo/metiers";
 import { isSchool } from "@/lib/seo/schools";
+import { departementFromLocation, getDepartement, learnCityDepartements } from "@/lib/seo/departements";
 import type { ContractType, OfferSource } from "@/types/database";
 
 // Seuils des pages programmatiques (décision D de SEO_ROADMAP.md) :
@@ -19,6 +20,9 @@ export const PAGE_MIN_OFFERS = 3;
 export const MAX_LISTED_PAGES = 10;
 const MAX_IDS_PER_SEGMENT = MAX_LISTED_PAGES * PUBLIC_OFFERS_PAGE_SIZE;
 const SALARY_MIN_SAMPLE = 5;
+// Une page département n'existe pas si une seule ville y concentre au moins
+// 90 % des offres : elle dupliquerait la page de cette ville (Paris, 75).
+const DEPARTEMENT_MAX_CITY_SHARE = 0.9;
 
 export type SegmentStats = {
   count: number;
@@ -29,7 +33,9 @@ export type SegmentStats = {
   salaryMedian: number | null;
   salaryN: number;
 };
-export type CityEntry = SegmentStats & { slug: string; label: string };
+export type CityEntry = SegmentStats & { slug: string; label: string; dep: string | null };
+export type DepartementEntry = SegmentStats & { code: string; slug: string; label: string };
+export type DepartementComboEntry = SegmentStats & { metier: string; dep: string };
 export type MetierEntry = SegmentStats & { slug: string };
 export type ComboEntry = SegmentStats & { metier: string; city: string };
 
@@ -41,6 +47,9 @@ export type ProgrammaticIndex = {
   cities: Record<string, CityEntry>;
   metiers: Record<string, MetierEntry>;
   combos: Record<string, ComboEntry>;
+  // Clés : code département ("92") et "metier/code".
+  departements: Record<string, DepartementEntry>;
+  depCombos: Record<string, DepartementComboEntry>;
 };
 
 export type IndexRow = {
@@ -85,10 +94,22 @@ type Accumulator = {
   companies: Map<string, number>;
   recent7d: number;
   salaries: number[];
+  // Villes (pages département) ou départements (pages ville) rencontrés.
+  places: Map<string, number>;
 };
 
 function newAccumulator(): Accumulator {
-  return { count: 0, ids: [], companies: new Map(), recent7d: 0, salaries: [] };
+  return { count: 0, ids: [], companies: new Map(), recent7d: 0, salaries: [], places: new Map() };
+}
+
+function countPlace(acc: Accumulator, place: string | null) {
+  if (place) acc.places.set(place, (acc.places.get(place) ?? 0) + 1);
+}
+
+function topPlace(acc: Accumulator): { place: string; share: number } | null {
+  let best: [string, number] | null = null;
+  for (const entry of acc.places) if (!best || entry[1] > best[1]) best = entry;
+  return best ? { place: best[0], share: best[1] / acc.count } : null;
 }
 
 function add(acc: Accumulator, row: IndexRow, isRecent: boolean, salary: number | null) {
@@ -146,6 +167,9 @@ export function buildIndex(type: ContractType, rows: IndexRow[], now = Date.now(
   const cities = new Map<string, { label: string; acc: Accumulator }>();
   const metiers = new Map<string, Accumulator>();
   const combos = new Map<string, Accumulator>();
+  const departements = new Map<string, Accumulator>();
+  const depCombos = new Map<string, Accumulator>();
+  const learned = learnCityDepartements(rows.map((row) => row.location ?? ""));
 
   let recentTotal = 0;
   for (const row of rows) {
@@ -156,6 +180,20 @@ export function buildIndex(type: ContractType, rows: IndexRow[], now = Date.now(
     const cityKey = row.location ? normalizeCityKey(row.location) : "";
     const citySlug = cityKey ? slugify(cityKey) : "";
     const isCity = Boolean(citySlug) && !NOT_A_CITY.has(citySlug);
+    const dep = row.location ? departementFromLocation(row.location, learned) : null;
+
+    if (dep) {
+      if (!departements.has(dep)) departements.set(dep, newAccumulator());
+      const depAcc = departements.get(dep)!;
+      add(depAcc, row, isRecent, salary);
+      countPlace(depAcc, isCity ? citySlug : null);
+      if (metier) {
+        const key = `${metier.slug}/${dep}`;
+        if (!depCombos.has(key)) depCombos.set(key, newAccumulator());
+        add(depCombos.get(key)!, row, isRecent, salary);
+        countPlace(depCombos.get(key)!, isCity ? citySlug : null);
+      }
+    }
 
     if (isCity) {
       const label = titleCase(cityKey);
@@ -165,6 +203,7 @@ export function buildIndex(type: ContractType, rows: IndexRow[], now = Date.now(
       // même slug, on garde l'orthographe avec tirets.
       else if (label.includes("-") && !entry.label.includes("-")) entry.label = label;
       add(cities.get(citySlug)!.acc, row, isRecent, salary);
+      countPlace(cities.get(citySlug)!.acc, dep);
     }
     if (metier) {
       if (!metiers.has(metier.slug)) metiers.set(metier.slug, newAccumulator());
@@ -185,9 +224,11 @@ export function buildIndex(type: ContractType, rows: IndexRow[], now = Date.now(
     cities: {},
     metiers: {},
     combos: {},
+    departements: {},
+    depCombos: {},
   };
   for (const [slug, { label, acc }] of cities) {
-    if (acc.count >= PAGE_MIN_OFFERS) index.cities[slug] = { slug, label, ...finalize(acc) };
+    if (acc.count >= PAGE_MIN_OFFERS) index.cities[slug] = { slug, label, dep: topPlace(acc)?.place ?? null, ...finalize(acc) };
   }
   for (const [slug, acc] of metiers) {
     if (acc.count >= PAGE_MIN_OFFERS) index.metiers[slug] = { slug, ...finalize(acc) };
@@ -196,13 +237,26 @@ export function buildIndex(type: ContractType, rows: IndexRow[], now = Date.now(
     const [metier, city] = key.split("/");
     if (acc.count >= PAGE_MIN_OFFERS && index.cities[city]) index.combos[key] = { metier, city, ...finalize(acc) };
   }
+  const spread = (acc: Accumulator) => (topPlace(acc)?.share ?? 0) < DEPARTEMENT_MAX_CITY_SHARE;
+  for (const [code, acc] of departements) {
+    const departement = getDepartement(code);
+    if (departement && acc.count >= PAGE_MIN_OFFERS && spread(acc)) {
+      index.departements[code] = { code, slug: departement.slug, label: departement.name, ...finalize(acc) };
+    }
+  }
+  for (const [key, acc] of depCombos) {
+    const [metier, dep] = key.split("/");
+    if (acc.count >= PAGE_MIN_OFFERS && index.departements[dep] && spread(acc)) {
+      index.depCombos[key] = { metier, dep, ...finalize(acc) };
+    }
+  }
   return index;
 }
 
 // Un seul scan du catalogue par type et par heure, partagé par toutes les
 // pages /alternance/* et /stage/* (sinon chaque page vue relirait ~3 000
 // offres).
-const cachedIndex = unstable_cache(computeIndex, ["programmatic-index-v5"], { revalidate: 3600 });
+const cachedIndex = unstable_cache(computeIndex, ["programmatic-index-v6"], { revalidate: 3600 });
 
 export function getProgrammaticIndex(type: ContractType): Promise<ProgrammaticIndex> {
   return cachedIndex(type);

@@ -2,6 +2,7 @@ import { fetchOfferSitemapEntries } from "@/lib/offers/sitemapOffers";
 import { getProgrammaticIndex, INDEXABLE_MIN_OFFERS } from "@/lib/seo/programmaticIndex";
 import { getCompanyIndex } from "@/lib/seo/companyIndex";
 import { GUIDES } from "@/lib/guides/guidesData";
+import { departementPath } from "@/lib/seo/programmaticPage";
 import type { ContractType } from "@/types/database";
 
 // Pages dont le contenu bouge chaque jour (compteurs, dernières offres).
@@ -33,6 +34,10 @@ async function programmaticPaths(type: ContractType): Promise<string[]> {
     ...Object.values(index.metiers).filter((m) => keep(m.count)).map((m) => `/${type}/${m.slug}`),
     ...Object.values(index.cities).filter((c) => keep(c.count)).map((c) => `/${type}/${c.slug}`),
     ...Object.values(index.combos).filter((c) => keep(c.count)).map((c) => `/${type}/${c.metier}/${c.city}`),
+    ...Object.values(index.departements).filter((d) => keep(d.count)).map((d) => departementPath(type, d.slug, null)),
+    ...Object.values(index.depCombos)
+      .filter((c) => keep(c.count) && index.departements[c.dep])
+      .map((c) => departementPath(type, index.departements[c.dep].slug, c.metier)),
   ];
 }
 

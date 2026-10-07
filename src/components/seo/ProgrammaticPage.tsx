@@ -9,9 +9,11 @@ import {
   listedPages,
   pageIds,
   resolveProgrammaticPage,
+  type ProgrammaticModel,
   type SegmentLink,
 } from "@/lib/seo/programmaticPage";
 import { pagedPath, pagedTitle, parsePageParam } from "@/lib/seo/pagination";
+import { departementLinks } from "@/lib/seo/departementPage";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { SITE_URL } from "@/lib/site";
 import { SMIC_MONTHLY_GROSS, formatEuros, internshipGratification, round2 } from "@/lib/salary/legalRates";
@@ -25,7 +27,11 @@ type RouteProps = {
 };
 
 export async function programmaticMetadata({ type, slug, ville, pageParam }: RouteProps): Promise<Metadata> {
-  const model = await resolveProgrammaticPage(type, slug, ville);
+  return modelMetadata(await resolveProgrammaticPage(type, slug, ville), pageParam);
+}
+
+// Métadonnées communes aux pages métier / ville / département.
+export function modelMetadata(model: ProgrammaticModel | null, pageParam?: string): Metadata {
   if (!model) return { title: "Page introuvable", robots: { index: false, follow: true } };
   const page = parsePageParam(pageParam);
   const url = `${SITE_URL}${pagedPath(model.path, page)}`;
@@ -80,6 +86,12 @@ const statLabel: React.CSSProperties = { fontSize: 12.5, margin: "2px 0 0" };
 export async function ProgrammaticPage({ type, slug, ville, pageParam }: RouteProps) {
   const model = await resolveProgrammaticPage(type, slug, ville);
   if (!model) notFound();
+  return <ProgrammaticPageView model={model} pageParam={pageParam} />;
+}
+
+// Rendu commun aux pages métier / ville / département.
+export async function ProgrammaticPageView({ model, pageParam }: { model: ProgrammaticModel; pageParam?: string }) {
+  const type = model.type;
 
   const page = parsePageParam(pageParam);
   const totalPages = listedPages(model.stats);
@@ -191,8 +203,13 @@ export async function ProgrammaticPage({ type, slug, ville, pageParam }: RoutePr
       {model.nearby && <LinkChips title={model.nearby.title} links={model.nearby.links} />}
       {model.related && <LinkChips title={model.related.title} links={model.related.links} />}
       <LinkChips title="Les entreprises qui recrutent" links={model.companies} />
-      {model.crossType && (
+      {model.parentArea && (
         <p style={{ fontSize: 14, marginTop: 16 }}>
+          Plus large : <Link href={model.parentArea.href}>{model.parentArea.label}</Link> ({model.parentArea.count} offres)
+        </p>
+      )}
+      {model.crossType && (
+        <p style={{ fontSize: 14, marginTop: model.parentArea ? 4 : 16 }}>
           Voir aussi : <Link href={model.crossType.href}>{model.crossType.label}</Link> ({model.crossType.count} offres)
         </p>
       )}
@@ -258,6 +275,7 @@ export async function ProgrammaticHub({ type }: { type: ContractType }) {
       </p>
       <LinkChips title="Par métier" links={metiers} />
       <LinkChips title="Par ville" links={cities} />
+      <LinkChips title="Par département" links={departementLinks(index)} />
       <p style={{ fontSize: 14, marginTop: 24 }}>
         <Link href="/outils/simulateur-salaire-alternance">Simulateur de salaire</Link>
         {" · "}
