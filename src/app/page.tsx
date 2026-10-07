@@ -12,6 +12,8 @@ import { regionLinks } from "@/lib/seo/regionPage";
 import { getRegionBySlug } from "@/lib/seo/departements";
 import { getCompanyIndex } from "@/lib/seo/companyIndex";
 import { getMetier, isFormation } from "@/lib/seo/metiers";
+import { offerPath } from "@/lib/offers/publicUrl";
+import { isJobPostingEligible } from "@/lib/seo/jobPosting";
 
 export const metadata: Metadata = {
   title: "Stageio — trouve ton alternance ou ton stage en swipant",
@@ -225,6 +227,36 @@ async function getDiscoveryLinks(): Promise<{ metiers: DiscoveryLink[]; cities: 
   }
 }
 
+// Dernières offres publiées : sans Indexing API, c'est par l'accueil (la page
+// que Google explore le plus souvent) qu'il découvre le plus vite les
+// nouvelles fiches. Seulement les offres éligibles à Google Jobs (pas Adzuna,
+// en noindex). Best-effort comme les liens de découverte.
+const LATEST_OFFERS = 12;
+
+async function getLatestOfferLinks(): Promise<DiscoveryLink[]> {
+  try {
+    const { data, error } = await createAdminClient()
+      .from("offers")
+      .select("id, title, company, location, description, source, contract_type")
+      .eq("is_active", true)
+      .not("source", "in", "(adzuna,demo)")
+      .order("published_at", { ascending: false })
+      .order("id")
+      .limit(LATEST_OFFERS * 3);
+    if (error) throw error;
+    return (data ?? [])
+      .filter(isJobPostingEligible)
+      .slice(0, LATEST_OFFERS)
+      .map((offer) => {
+        const title = offer.title.length > 60 ? `${offer.title.slice(0, 57).trimEnd()}…` : offer.title;
+        return { href: offerPath(offer), label: `${title} · ${offer.company}` };
+      });
+  } catch (err) {
+    console.error("getLatestOfferLinks failed", err);
+    return [];
+  }
+}
+
 // Guides mis en avant sur l'accueil : la page la plus forte du site leur
 // transmet du poids, et ce sont les questions que les étudiants tapent le plus.
 const POPULAR_GUIDES = [
@@ -244,7 +276,7 @@ export default async function LandingPage() {
   // un rendu dynamique par requête, rendant `revalidate` ci-dessus inopérant --
   // exactement le genre de lenteur que ce passage SEO cherche à éviter.
   const admin = createAdminClient();
-  const [{ count: activeOffersCount }, { count: alternanceCount }, reviewStats, realTestimonials, discovery] =
+  const [{ count: activeOffersCount }, { count: alternanceCount }, reviewStats, realTestimonials, discovery, latestOffers] =
     await Promise.all([
       admin.from("offers").select("id", { count: "exact", head: true }).eq("is_active", true),
       admin
@@ -255,6 +287,7 @@ export default async function LandingPage() {
       getPublicReviewStats(),
       getPublicTestimonials(3),
       getDiscoveryLinks(),
+      getLatestOfferLinks(),
     ]);
 
   const alternanceShare =
@@ -1492,6 +1525,7 @@ export default async function LandingPage() {
               { title: "Les villes", links: discovery.cities },
               { title: "Les régions", links: discovery.regions },
               { title: "Les entreprises qui publient le plus", links: discovery.companies },
+              { title: "Les dernières offres publiées", links: latestOffers },
               { title: "Les guides les plus lus", links: POPULAR_GUIDES },
             ]
               .filter((group) => group.links.length > 0)

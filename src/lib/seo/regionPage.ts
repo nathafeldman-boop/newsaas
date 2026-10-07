@@ -1,7 +1,7 @@
 import { getMetier, METIERS, type Metier } from "@/lib/seo/metiers";
 import { INDEXABLE_MIN_OFFERS, getProgrammaticIndex, type ProgrammaticIndex, type SegmentStats } from "@/lib/seo/programmaticIndex";
 import { REGIONS, getDepartement, getRegionBySlug, regionOfDepartement, type Region } from "@/lib/seo/departements";
-import { companySlug, getCompanyIndex } from "@/lib/seo/companyIndex";
+import { findCompanies, getCompanyIndex } from "@/lib/seo/companyIndex";
 import {
   OFFERS_OF,
   OTHER_TYPE,
@@ -198,9 +198,7 @@ export async function resolveRegionPage(type: ContractType, regionSlug: string, 
   ]);
   const model = buildRegionModel(index, otherIndex, regionSlug, metierSlug);
   if (!model) return null;
-  model.companies = model.stats.topCompanies
-    .map((c) => companyIndex.companies[companySlug(c.name)])
-    .filter((c): c is NonNullable<typeof c> => Boolean(c))
+  model.companies = findCompanies(companyIndex, model.stats.topCompanies.map((c) => c.name))
     .map((c) => ({ href: `/entreprises/${c.slug}`, label: c.label, count: c.count }));
   return model;
 }

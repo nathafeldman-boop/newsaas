@@ -43,7 +43,8 @@ export type CompanyEntry = {
   latest: string | null;
 };
 
-export type CompanyIndex = { generatedAt: string; companies: Record<string, CompanyEntry> };
+// aliases : slug d'une variante fusionnée -> slug de la page (voir canonicalCompanySlugs).
+export type CompanyIndex = { generatedAt: string; companies: Record<string, CompanyEntry>; aliases: Record<string, string> };
 
 type Acc = {
   labels: Map<string, number>;
@@ -64,14 +65,56 @@ function top(map: Map<string, { label: string; count: number }>, n: number): Cou
     .slice(0, n);
 }
 
+// Un même employeur publie sous plusieurs noms : "Adecco", "Adecco France",
+// "ADECCO FR", "Orange SA", "Groupe Lactalis". Sans fusion, autant de pages
+// presque identiques qui se concurrencent sur "alternance adecco". Formes
+// juridiques, "France", "Group(e)" retirés en fin (ou "Groupe" en début) de
+// nom, mais seulement quand le nom raccourci existe déjà dans les offres :
+// "Air France" ne devient jamais "Air".
+const COMPANY_SUFFIX = /-(en-france|france|fr|sa|sas|sasu|sarl|eurl|se|snc|group|groupe|retail)$/;
+const COMPANY_PREFIX = /^groupe?-/;
+
+export function companySlugVariants(slug: string): string[] {
+  const out: string[] = [];
+  const unprefixed = slug.replace(COMPANY_PREFIX, "");
+  for (let base of unprefixed && unprefixed !== slug ? [slug, unprefixed] : [slug]) {
+    out.push(base);
+    while (COMPANY_SUFFIX.test(base)) {
+      base = base.replace(COMPANY_SUFFIX, "");
+      if (base) out.push(base);
+    }
+  }
+  return out;
+}
+
+// Slug de page pour chaque slug brut : la variante connue la plus courte.
+export function canonicalCompanySlugs(known: Set<string>): Map<string, string> {
+  const canonical = new Map<string, string>();
+  for (const slug of known) {
+    const target = companySlugVariants(slug)
+      .filter((v) => known.has(v))
+      .sort((a, b) => a.length - b.length || a.localeCompare(b))[0];
+    canonical.set(slug, target ?? slug);
+  }
+  return canonical;
+}
+
 export function buildCompanyIndex(rows: Row[], now = Date.now()): CompanyIndex {
   const weekAgo = now - 7 * 24 * 3600 * 1000;
   const accs = new Map<string, Acc>();
 
+  const known = new Set<string>();
+  for (const row of rows) {
+    const name = row.company?.trim();
+    if (name && !isSchool(name)) known.add(slugify(name));
+  }
+  known.delete("");
+  const canonical = canonicalCompanySlugs(known);
+
   for (const row of rows) {
     const name = row.company?.trim();
     if (!name || isSchool(name)) continue;
-    const slug = slugify(name);
+    const slug = canonical.get(slugify(name));
     if (!slug) continue;
     let acc = accs.get(slug);
     if (!acc) {
@@ -107,7 +150,11 @@ export function buildCompanyIndex(rows: Row[], now = Date.now()): CompanyIndex {
   const companies: Record<string, CompanyEntry> = {};
   for (const [slug, acc] of accs) {
     if (acc.count < PAGE_MIN_OFFERS) continue;
-    const label = [...acc.labels.entries()].sort((a, b) => b[1] - a[1])[0][0];
+    // Nom affiché : le plus fréquent parmi ceux qui donnent exactement le
+    // slug de la page ("Adecco" plutôt que "Adecco France"), sinon le plus
+    // fréquent tout court.
+    const labels = [...acc.labels.entries()].sort((a, b) => b[1] - a[1]);
+    const label = (labels.find(([l]) => slugify(l) === slug) ?? labels[0])[0];
     const sorted = [...acc.salaries].sort((a, b) => a - b);
     companies[slug] = {
       slug,
@@ -123,7 +170,11 @@ export function buildCompanyIndex(rows: Row[], now = Date.now()): CompanyIndex {
       salaryN: sorted.length,
     };
   }
-  return { generatedAt: new Date(now).toISOString(), companies };
+  const aliases: Record<string, string> = {};
+  for (const [slug, target] of canonical) {
+    if (slug !== target && companies[target]) aliases[slug] = target;
+  }
+  return { generatedAt: new Date(now).toISOString(), companies, aliases };
 }
 
 async function computeCompanyIndex(): Promise<CompanyIndex> {
@@ -151,17 +202,39 @@ async function computeCompactCompanyIndex(): Promise<CompactCompanyIndex> {
   return compact;
 }
 
-const cachedCompanyIndex = unstable_cache(computeCompactCompanyIndex, ["company-index-v7"], { revalidate: 3600 });
+const cachedCompanyIndex = unstable_cache(computeCompactCompanyIndex, ["company-index-v8"], { revalidate: 3600 });
 
 let expanded: CompanyIndex | null = null;
 
 export async function getCompanyIndex(): Promise<CompanyIndex> {
   const compact = await cachedCompanyIndex();
   if (expanded && expanded.generatedAt === compact.generatedAt) return expanded;
-  expanded = { generatedAt: compact.generatedAt, companies: expandGroup(compact.companies, compact.idTable) };
+  expanded = { generatedAt: compact.generatedAt, companies: expandGroup(compact.companies, compact.idTable), aliases: compact.aliases ?? {} };
   return expanded;
 }
 
 export function companySlug(company: string): string {
   return slugify(company.trim());
+}
+
+// Page entreprise d'un nom tel qu'il apparaît dans une offre ("Adecco
+// France" -> page /entreprises/adecco).
+export function findCompany(index: CompanyIndex, company: string): CompanyEntry | undefined {
+  const slug = companySlug(company);
+  return index.companies[index.aliases[slug] ?? slug];
+}
+
+// Idem pour une liste de noms, sans doublon ("Adecco" et "Adecco France"
+// donnent une seule page).
+export function findCompanies(index: CompanyIndex, companies: string[]): CompanyEntry[] {
+  const seen = new Set<string>();
+  const out: CompanyEntry[] = [];
+  for (const name of companies) {
+    const entry = findCompany(index, name);
+    if (entry && !seen.has(entry.slug)) {
+      seen.add(entry.slug);
+      out.push(entry);
+    }
+  }
+  return out;
 }

@@ -7,7 +7,7 @@ import {
   type SegmentStats,
 } from "@/lib/seo/programmaticIndex";
 import { DEPARTEMENTS, getDepartementBySlug, regionOfDepartement, type Departement } from "@/lib/seo/departements";
-import { companySlug, getCompanyIndex } from "@/lib/seo/companyIndex";
+import { findCompanies, getCompanyIndex } from "@/lib/seo/companyIndex";
 import {
   OFFERS_OF,
   OTHER_TYPE,
@@ -195,9 +195,7 @@ export async function resolveDepartementPage(
   ]);
   const model = buildDepartementModel(index, otherIndex, depSlug, metierSlug);
   if (!model) return null;
-  model.companies = model.stats.topCompanies
-    .map((c) => companyIndex.companies[companySlug(c.name)])
-    .filter((c): c is NonNullable<typeof c> => Boolean(c))
+  model.companies = findCompanies(companyIndex, model.stats.topCompanies.map((c) => c.name))
     .map((c) => ({ href: `/entreprises/${c.slug}`, label: c.label, count: c.count }));
   return model;
 }

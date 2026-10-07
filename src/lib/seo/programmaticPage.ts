@@ -17,7 +17,7 @@ import {
   internshipGratification,
   round2,
 } from "@/lib/salary/legalRates";
-import { companySlug, getCompanyIndex } from "@/lib/seo/companyIndex";
+import { findCompanies, getCompanyIndex } from "@/lib/seo/companyIndex";
 import { getDepartement } from "@/lib/seo/departements";
 import type { ContractType } from "@/types/database";
 
@@ -169,9 +169,7 @@ export async function resolveProgrammaticPage(
   const model = buildProgrammaticModel(index, otherIndex, slug, ville);
   if (!model) return null;
   // Entreprises du segment qui ont leur propre page /entreprises/[slug].
-  model.companies = model.stats.topCompanies
-    .map((c) => companyIndex.companies[companySlug(c.name)])
-    .filter((c): c is NonNullable<typeof c> => Boolean(c))
+  model.companies = findCompanies(companyIndex, model.stats.topCompanies.map((c) => c.name))
     .map((c) => ({ href: `/entreprises/${c.slug}`, label: c.label, count: c.count }));
   return model;
 }

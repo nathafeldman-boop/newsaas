@@ -5,7 +5,7 @@ import { classifyFormations, classifyMetier } from "@/lib/seo/metiers";
 import { cityPhrase, getProgrammaticIndex } from "@/lib/seo/programmaticIndex";
 import { departementFromLocation, getDepartement, regionOfDepartement } from "@/lib/seo/departements";
 import { departementPath, fetchOffersByIds } from "@/lib/seo/programmaticPage";
-import { companySlug, getCompanyIndex } from "@/lib/seo/companyIndex";
+import { findCompany, getCompanyIndex } from "@/lib/seo/companyIndex";
 import type { Offer } from "@/types/database";
 
 const SIMILAR_OFFERS_LIMIT = 6;
@@ -32,7 +32,7 @@ export type OfferContextLinks = {
 
 async function getCompanyLink(offer: Offer): Promise<ProgrammaticLink | null> {
   const index = await getCompanyIndex();
-  const entry = index.companies[companySlug(offer.company)];
+  const entry = findCompany(index, offer.company);
   return entry ? { href: `/entreprises/${entry.slug}`, label: `Toutes les offres chez ${entry.label}`, count: entry.count } : null;
 }
 
