@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { dedupeActiveOffers } from "@/lib/offers/dedupe";
-import { OFFER_EXPIRY_DAYS } from "@/lib/offers/expiry";
+import { OFFER_EXPIRY_DAYS, OFFER_UNSEEN_GRACE_DAYS } from "@/lib/offers/expiry";
 
 // Cron quotidien (voir vercel.json) : désactive les offres ingérées qui
 // traînent depuis trop longtemps sans avoir été retraitées (probablement
@@ -26,6 +26,10 @@ export async function GET(request: NextRequest) {
 
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - OFFER_EXPIRY_DAYS);
+  // Encore montrée par sa source ces derniers jours = encore ouverte : on la
+  // garde (voir OFFER_UNSEEN_GRACE_DAYS).
+  const unseenCutoff = new Date();
+  unseenCutoff.setDate(unseenCutoff.getDate() - OFFER_UNSEEN_GRACE_DAYS);
 
   const admin = createAdminClient();
   const { data, error } = await admin
@@ -34,6 +38,7 @@ export async function GET(request: NextRequest) {
     .neq("source", "demo")
     .eq("is_active", true)
     .lt("published_at", cutoff.toISOString())
+    .lt("last_seen_at", unseenCutoff.toISOString())
     .select("id");
 
   if (error) {

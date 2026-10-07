@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { offerExpiresAt } from "@/lib/offers/expiry";
+import { offerRemovalDate } from "@/lib/offers/expiry";
 import { departementFromLocation, getDepartement, getDepartementBySlug, getRegionBySlug } from "@/lib/seo/departements";
 import { cityPhrase } from "@/lib/seo/programmaticIndex";
 import { extractOfferId, offerPath, offerSlug } from "@/lib/offers/publicUrl";
@@ -224,9 +224,7 @@ function isJobPostingEligible(offer: Offer): boolean {
 function jobPostingJsonLd(offer: Offer) {
   // Date à laquelle le cron retire réellement l'offre du site -- jamais dans
   // le passé tant que la fiche est en ligne (cron en retard d'un jour).
-  const tomorrow = new Date(Date.now() + 24 * 3600 * 1000);
-  const expiresAt = offerExpiresAt(offer.published_at);
-  const validThrough = expiresAt > tomorrow ? expiresAt : tomorrow;
+  const validThrough = offerRemovalDate(offer.published_at, offer.last_seen_at);
   const departement = getDepartement(departementFromLocation(offer.location) ?? "");
   const baseSalary = parseBaseSalary(offer.salary);
 
