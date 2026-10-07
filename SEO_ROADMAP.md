@@ -163,7 +163,7 @@ Ce qui fait passer du bas au haut de la fourchette : les backlinks (aucun code n
 
 ## 8. Actions à faire par Nathan
 
-1. **Search Console** : créer une propriété **Domaine** `stageio.fr` (enregistrement DNS TXT) puis soumettre `https://www.stageio.fr/sitemap.xml`. Sous 48 h, vérifier que les 3 sous-sitemaps sont lus et regarder le rapport « Pages ».
+1. ✅ **Search Console** : en place depuis le lancement (site validé, sitemap envoyé, plus de 2 000 clics au 07/10). À faire : vérifier dans « Sitemaps » que les 7 sous-sitemaps sont lus, et suivre Requêtes / Pages (positions 5 à 20).
 2. **Bing Webmaster Tools** : importer depuis Search Console (Bing alimente ChatGPT Search et Copilot).
 3. Vercel → Domains : rediriger `newsaas-seven.vercel.app` vers `www.stageio.fr` (optionnel, il est déjà en noindex).
 4. M'envoyer les URLs des comptes sociaux (TikTok, Instagram, LinkedIn) pour `Organization.sameAs`.
@@ -280,7 +280,7 @@ Ce qui fait passer du bas au haut de la fourchette : les backlinks (aucun code n
 | P0 JobPosting | ✅ uniquement descriptions complètes, employeur nommé, `validThrough` = date de retrait réelle, `addressRegion`, `directApply` |
 | P0 Offres expirées | ✅ page « Offre expirée » en noindex, sans JobPosting, avec offres similaires ; retirée du sitemap. Google Indexing API : à faire par Nathan (compte de service Google) |
 | P0 URL indexables | ✅ canonical sans paramètres, pages < 10 offres en noindex, fiches Adzuna en noindex, pages hors limites en 404, *.vercel.app en noindex, pas de filtres ni de recherche interne indexables |
-| P0 Search Console | ⏳ Nathan : propriété Domaine + suivi Requêtes / Pages (positions 5–20) |
+| P0 Search Console | ✅ en place depuis le lancement (plus de 2 000 clics au 07/10). Reste : exploiter Requêtes / Pages (positions 5–20) pour choisir les pages à renforcer |
 | P1 métier × ville | ✅ créées automatiquement dès 3 offres, indexées à partir de 10 (pas de liste figée de 50 pages : une page n'existe que si les offres existent) |
 | P1 pages entreprise | ✅ villes, métiers, entreprises similaires, salaires ; pas de présentation inventée (aucune donnée fiable) |
 | P1 maillage | ✅ hubs, ville ↔ métier ↔ département ↔ région, offres → métier × ville, guides par type, accueil |
