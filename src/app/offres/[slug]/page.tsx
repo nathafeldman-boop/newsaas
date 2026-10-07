@@ -7,7 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { offerRemovalDate } from "@/lib/offers/expiry";
 import { isJobPostingEligible } from "@/lib/seo/jobPosting";
 import { departementFromLocation, getDepartement, getDepartementBySlug, getRegionBySlug } from "@/lib/seo/departements";
-import { cityPhrase } from "@/lib/seo/programmaticIndex";
+import { cityPhrase, parseMonthlySalary } from "@/lib/seo/programmaticIndex";
 import { extractOfferId, offerPath, offerSlug } from "@/lib/offers/publicUrl";
 import { normalizeCityKey, slugify, titleCase } from "@/lib/offers/segments";
 import { getOfferContextLinks, type OfferContextLinks, type OfferMarket } from "@/lib/offers/similarOffers";
@@ -112,14 +112,36 @@ function truncateOnWord(text: string, max: number): string {
   return `${(lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut).replace(/[\s,;:.\-–]+$/, "")}…`;
 }
 
+// « Mensuel de 1100.00 Euros à 1300.00 Euros sur 12 mois » (France Travail)
+// -> « 1 100 à 1 300 € brut par mois ». Jamais pour Adzuna (souvent une
+// estimation annuelle d'Adzuna, pas le salaire de l'annonce), ni quand le
+// montant n'est pas plausible.
+function salaryText(offer: Offer): string | null {
+  if (offer.source === "adzuna" || !offer.salary || parseMonthlySalary(offer.salary) === null) return null;
+  const text = offer.salary.toLowerCase().replace(/sur \d+(?:[.,]\d+)? mois/g, " ");
+  const unit = /horaire/.test(text) ? "de l'heure" : /annuel/.test(text) ? "par an" : /mensuel/.test(text) ? "par mois" : null;
+  if (!unit) return null;
+  const amounts = [...text.matchAll(/\d[\d ]*(?:[.,]\d+)?/g)]
+    .map((match) => Number(match[0].replace(/\s/g, "").replace(",", ".")))
+    .filter((n) => Number.isFinite(n) && n > 0)
+    .slice(0, 2);
+  if (amounts.length === 0) return null;
+  const format = (n: number) => n.toLocaleString("fr-FR", { maximumFractionDigits: unit === "de l'heure" ? 2 : 0 });
+  const amount = amounts.length === 2 && amounts[1] !== amounts[0] ? `${format(amounts[0])} à ${format(amounts[1])} €` : `${format(amounts[0])} €`;
+  return `${amount} brut ${unit}`;
+}
+
 // Contexte unique (contrat, entreprise, ville, durée) AVANT l'extrait : les
 // 155 premiers caractères bruts de la description étaient souvent un texte
 // générique d'entreprise identique sur toutes ses offres.
 function offerMetaDescription(offer: Offer): string {
   const place = placePhrase(offer.location);
+  // Le salaire, quand l'annonce le donne, juste après : c'est ce que le
+  // candidat cherche en premier dans les résultats.
+  const salary = salaryText(offer);
   const context = `${CONTRACT_LABEL[offer.contract_type]} chez ${offer.company}${place ? ` ${place}` : ""}${
     offer.duration ? ` (${offer.duration})` : ""
-  }.`;
+  }${salary ? `, ${salary}` : ""}.`;
   const snippet = offer.description.replace(/\s+/g, " ").trim();
   return truncateOnWord(snippet ? `${context} ${snippet}` : context, 155);
 }
@@ -400,7 +422,7 @@ export default async function PublicOfferPage({
           <span className="tag tag-neutral">📍 {offer.location}</span>
           {offer.sector && <span className="tag tag-neutral">{offer.sector}</span>}
           {offer.duration && <span className="tag tag-neutral">⏱ {offer.duration}</span>}
-          {offer.salary && <span className="tag tag-neutral">💶 {offer.salary}</span>}
+          {offer.salary && <span className="tag tag-neutral">💶 {salaryText(offer) ?? offer.salary}</span>}
           {offer.remote_policy && <span className="tag tag-neutral">🏠 {offer.remote_policy}</span>}
         </div>
 
