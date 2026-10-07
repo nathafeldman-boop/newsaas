@@ -200,6 +200,9 @@ Ce qui fait passer du bas au haut de la fourchette : les backlinks (aucun code n
 - [x] Partage : boutons WhatsApp / « Envoyer à un pote » / copier le lien sur les offres, pages métier × ville, entreprises, guides, baromètre et simulateur (`utm_source=partage`). Aperçus dynamiques (image avec titre et vrais chiffres) pour WhatsApp, LinkedIn et iMessage (`src/lib/seo/ogImage.tsx`).
 - [x] IndexNow automatique : cron quotidien `/api/cron/indexnow` (5 h 30 UTC). Il envoie les hubs, les pages métier / ville / entreprise et les offres et guides nouveaux. Le bouton admin ne sert plus qu'à forcer un envoi complet.
 - [x] JobPosting (Google for Jobs) réservé aux offres avec description complète (≥ 200 caractères, non tronquée) ; `addressLocality` = vraie ville.
+- [x] 07/10 : 20 métiers de plus (plombier, artisan du bâtiment, paysagiste, boucher, sécurité, relation client, transport, environnement, laboratoire...). Avant, 36 % des offres d'alternance et 29 % des offres de stage n'avaient aucune page métier.
+- [x] 07/10 : pages département (`/alternance/departement/[dep]`, `/[dep]/[metier]`) et région (`/alternance/region/[region]`, `/[region]/[metier]`), idem pour `/stage`. Pas de page quand une seule ville ou un seul département concentre au moins 90 % des offres (anti-doublon). Environ 150 pages indexables de plus en production rien qu'avec les métiers et les départements (sitemap métiers-villes : ~340 URLs), avant les régions.
+- [x] 07/10 : une entreprise n'est plus comptée deux fois quand la casse diffère (« Alticome » / « ALTICOME »).
 - [ ] Filtrer les annonces d'écoles du catalogue lui-même (décision produit)
 - [ ] Phase 3 — 40 guides (38 rédigés ; restent chômage en fin de contrat et logement, qui demandent une vérification juridique plus lourde) + 4 outils (1 en ligne : le simulateur)
 - [ ] Phase 4 — hubs, baromètre, Search Console, suivi 100 mots-clés, dashboard
