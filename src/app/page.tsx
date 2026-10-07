@@ -16,9 +16,12 @@ import { offerPath } from "@/lib/offers/publicUrl";
 import { isJobPostingEligible } from "@/lib/seo/jobPosting";
 
 export const metadata: Metadata = {
-  title: "Stageio — trouve ton alternance ou ton stage en swipant",
+  // Marque en tête (la plupart des clics Google sont sur « stageio ») puis
+  // les mots des recherches non-marque : « appli », « trouver une
+  // alternance / un stage ».
+  title: "Stageio : l'appli pour trouver ton alternance ou ton stage en swipant",
   description:
-    "Swipe les offres d'alternance et de stage qui matchent ton profil, candidate en un geste et génère ta lettre de motivation par IA. Inscription gratuite.",
+    "Les offres d'alternance et de stage de toute la France au même endroit, mises à jour chaque jour : swipe celles qui matchent ton profil, candidate en un geste, lettre de motivation par IA. Inscription gratuite.",
   alternates: { canonical: "/" },
 };
 
