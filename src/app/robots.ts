@@ -3,6 +3,9 @@ import { SITE_URL } from "@/lib/site";
 
 const PUBLIC_ALLOW = [
   "/",
+  "/llms.txt",
+  "/llms-full.txt",
+  "/a-propos",
   "/offres",
   "/alternance",
   "/stage",
@@ -38,11 +41,22 @@ const AI_CRAWLERS = [
   "ChatGPT-User",
   "OAI-SearchBot",
   "ClaudeBot",
+  "Claude-User",
+  "Claude-SearchBot",
   "Claude-Web",
   "anthropic-ai",
   "PerplexityBot",
+  "Perplexity-User",
   "Google-Extended",
+  "Applebot",
   "Applebot-Extended",
+  // Meta AI (WhatsApp, Instagram, Messenger)
+  "Meta-ExternalAgent",
+  "Meta-ExternalFetcher",
+  "MistralAI-User",
+  "DuckAssistBot",
+  "Amazonbot",
+  "cohere-ai",
   "CCBot",
 ];
 

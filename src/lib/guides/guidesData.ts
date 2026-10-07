@@ -306,6 +306,8 @@ export const GUIDE_CATEGORIES: { title: string; slugs: string[] }[] = [
     slugs: [
       "alternance-vs-stage",
       "trouver-une-alternance",
+      "je-ne-trouve-pas-d-alternance",
+      "sites-pour-trouver-une-alternance",
       "trouver-un-stage",
       "quand-chercher-son-alternance",
       "alternance-sans-entreprise",

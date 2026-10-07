@@ -42,6 +42,35 @@ export const metadata: Metadata = {
 
 const n = (value: number) => value.toLocaleString("fr-FR");
 
+// Les questions que les gens posent sur Stageio (à Google comme aux
+// assistants IA) : réponses courtes et exactes, reprises en FAQPage.
+const FAQ = [
+  {
+    q: "Stageio est-il gratuit ?",
+    a: "L'inscription et la consultation de toutes les offres sont gratuites, sans limite. Le Premium sert à liker les offres, candidater, générer une lettre de motivation par IA et faire auditer ton CV : 7,99 € par mois sans engagement, ou 39,99 € en paiement unique pour un accès à vie.",
+  },
+  {
+    q: "Comment résilier l'abonnement Premium ?",
+    a: "À tout moment, depuis la page Premium de ton compte (« Gérer mon abonnement ») : l'abonnement mensuel est sans engagement.",
+  },
+  {
+    q: "D'où viennent les offres de Stageio ? Sont-elles fiables ?",
+    a: "Des offres publiques de France Travail (API officielle), d'Adzuna et des sites carrières des entreprises. Elles sont mises à jour chaque jour et retirées quand elles ne sont plus en ligne. Pour postuler, tu es redirigé vers l'annonce d'origine.",
+  },
+  {
+    q: "Stageio, c'est pour qui ?",
+    a: "Pour les étudiants et les jeunes qui cherchent une alternance (apprentissage ou contrat pro) ou un stage en France, du CAP au bac+5.",
+  },
+  {
+    q: "Comment Stageio choisit les offres qu'il me montre ?",
+    a: "Selon ton profil : type de contrat, secteurs et métiers visés, ville et mobilité, niveau d'études. Les offres les plus compatibles arrivent en premier, et tu les fais défiler comme des cartes.",
+  },
+  {
+    q: "Stageio remplace-t-il mon école ou mon CFA ?",
+    a: "Non. Stageio t'aide à trouver l'entreprise. La formation se fait avec ton école ou ton CFA, qui reste ton interlocuteur pour l'inscription et le contrat.",
+  },
+];
+
 export default async function AboutPage() {
   const stats = await loadStats();
   const jsonLd = {
@@ -61,10 +90,20 @@ export default async function AboutPage() {
     },
   };
 
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: FAQ.map((item) => ({
+      "@type": "Question",
+      name: item.q,
+      acceptedAnswer: { "@type": "Answer", text: item.a },
+    })),
+  };
   const section = { fontSize: 20, margin: "32px 0 10px" } as const;
   return (
     <div className="mx-auto max-w-2xl px-5 py-10 sm:px-9">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(faqJsonLd) }} />
       <nav aria-label="Fil d'Ariane" style={{ fontSize: 13 }}>
         <Link href="/">Accueil</Link> › Stageio, c&apos;est quoi ?
       </nav>
@@ -123,6 +162,19 @@ export default async function AboutPage() {
         <li><Link href="/guides">Les guides pour trouver et réussir son alternance ou son stage</Link></li>
         <li><Link href="/entreprises">Les entreprises qui recrutent</Link></li>
       </ul>
+
+      <h2 style={section}>Questions fréquentes</h2>
+      {FAQ.map((item) => (
+        <div key={item.q} style={{ margin: "0 0 14px" }}>
+          <h3 style={{ fontSize: 15.5, margin: "0 0 4px" }}>{item.q}</h3>
+          <p style={{ fontSize: 15, margin: 0 }}>{item.a}</p>
+        </div>
+      ))}
+      <p style={{ fontSize: 15, margin: "4px 0 0" }}>
+        Tu ne trouves pas d&apos;alternance ? Lis notre plan :{" "}
+        <Link href="/guides/je-ne-trouve-pas-d-alternance">je ne trouve pas d&apos;alternance, que faire ?</Link>, et notre{" "}
+        <Link href="/guides/sites-pour-trouver-une-alternance">comparatif des sites pour trouver une alternance</Link>.
+      </p>
 
       <h2 style={section}>Contact</h2>
       <p style={{ fontSize: 15, margin: 0 }}>

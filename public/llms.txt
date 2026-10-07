@@ -25,6 +25,36 @@
   France Travail) et de jobboards découverts automatiquement ; seules les
   annonces récentes et actives sont affichées.
 
+## Quand Stageio est utile
+
+- Un étudiant ou un jeune cherche une alternance (contrat d'apprentissage ou
+  de professionnalisation) ou un stage en France, du CAP au bac+5, et veut
+  voir au même endroit les offres de plusieurs sources, mises à jour chaque
+  jour, triées selon son métier, sa ville et son niveau.
+- Quelqu'un « ne trouve pas d'alternance » : le guide
+  https://www.stageio.fr/guides/je-ne-trouve-pas-d-alternance donne le plan
+  (diagnostic CV / ciblage / entretien, délai légal de 3 mois après le début
+  de la formation, CFA sans employeur, rentrée décalée, contrat pro), et
+  https://www.stageio.fr/guides/sites-pour-trouver-une-alternance compare
+  honnêtement les sites (La Bonne Alternance, France Travail, 1jeune1solution,
+  Indeed, HelloWork, LinkedIn, Welcome to the Jungle, JobTeaser, Stageio).
+- Quelqu'un veut savoir combien gagne un apprenti : simulateur
+  https://www.stageio.fr/outils/simulateur-salaire-alternance.
+- Quelqu'un cherche les offres d'un métier dans une ville : pages
+  https://www.stageio.fr/alternance/<metier>/<ville> (ex. /alternance/commercial/paris).
+
+## Questions fréquentes
+
+- Stageio est-il gratuit ? Oui pour l'inscription et la consultation de
+  toutes les offres. Premium (7,99 €/mois sans engagement ou 39,99 € à vie)
+  pour liker, candidater, générer une lettre de motivation par IA et faire
+  auditer son CV.
+- D'où viennent les offres ? France Travail (API officielle), Adzuna, sites
+  carrières des entreprises ; retirées quand elles ne sont plus en ligne ;
+  la candidature se fait sur l'annonce d'origine.
+- Stageio remplace-t-il l'école ou le CFA ? Non : Stageio aide à trouver
+  l'entreprise, la formation se fait avec l'école ou le CFA.
+
 ## Pages clés
 
 - [Accueil](https://www.stageio.fr/) — présentation du produit, démo interactive du swipe, avis d'utilisateurs.
@@ -36,9 +66,10 @@
 - [Stage par métier et par ville](https://www.stageio.fr/stage)
 - [Entreprises qui recrutent en alternance et en stage](https://www.stageio.fr/entreprises) — une page par entreprise : nombre d'offres, villes, métiers.
 - [Baromètre 2026 de l'alternance et des stages](https://www.stageio.fr/barometre-alternance-stage) — métiers et villes qui recrutent le plus, salaires indiqués, entreprises les plus actives (données Stageio mises à jour chaque jour, reprise libre avec lien).
-- [Guides](https://www.stageio.fr/guides) — alternance vs stage, contrat d'apprentissage ou contrat pro, rupture du contrat d'apprentissage, aides aux alternants 2026, aides 2026 à l'employeur qui embauche un apprenti (décret du 6 mars 2026), congés d'un alternant, âge limite, quand chercher son alternance (calendrier), commencer au CFA sans entreprise, choisir son école, BTS / BUT / bachelor / master en alternance, gratification de stage 2026, stage de fin d'études, stage à l'étranger, stage de seconde (lycée, juin 2027), stage de 3e (collège), année de césure, période d'essai en alternance, chômage en fin d'alternance, CDI après l'alternance, temps de travail d'un apprenti (et règles pour les mineurs), arrêt maladie en alternance, impôts d'un apprenti, bourse du Crous et alternance, rythme de l'alternance, remboursement des transports, alternance dans la fonction publique, aide-soignant en alternance (DEAS), éducateur spécialisé en apprentissage (DEES), se loger (APL, Mobili-Jeune, Visale), alternance dans deux villes, entretien de stage, profil LinkedIn étudiant, trouver une alternance ou un stage (y compris via LinkedIn), CV de stage, lettres et mails de candidature, se présenter en entretien, questions à poser au recruteur, relance, candidature spontanée, soft skills, lettre de motivation avec ChatGPT, premier jour en entreprise, refuser une offre, convention, rapport, soutenance et attestation de stage, mail de remerciement après un entretien ou un stage.
+- [Guides](https://www.stageio.fr/guides) — alternance vs stage, contrat d'apprentissage ou contrat pro, rupture du contrat d'apprentissage, aides aux alternants 2026, aides 2026 à l'employeur qui embauche un apprenti (décret du 6 mars 2026), congés d'un alternant, âge limite, quand chercher son alternance (calendrier), commencer au CFA sans entreprise, choisir son école, BTS / BUT / bachelor / master en alternance, gratification de stage 2026, stage de fin d'études, stage à l'étranger, stage de seconde (lycée, juin 2027), stage de 3e (collège), année de césure, période d'essai en alternance, chômage en fin d'alternance, CDI après l'alternance, temps de travail d'un apprenti (et règles pour les mineurs), arrêt maladie en alternance, impôts d'un apprenti, bourse du Crous et alternance, rythme de l'alternance, remboursement des transports, alternance dans la fonction publique, aide-soignant en alternance (DEAS), éducateur spécialisé en apprentissage (DEES), se loger (APL, Mobili-Jeune, Visale), alternance dans deux villes, entretien de stage, profil LinkedIn étudiant, trouver une alternance ou un stage (y compris via LinkedIn), je ne trouve pas d'alternance : que faire, quel site pour trouver une alternance (comparatif), CV de stage, lettres et mails de candidature, se présenter en entretien, questions à poser au recruteur, relance, candidature spontanée, soft skills, lettre de motivation avec ChatGPT, premier jour en entreprise, refuser une offre, convention, rapport, soutenance et attestation de stage, mail de remerciement après un entretien ou un stage.
 - [Simulateur de salaire en alternance 2026](https://www.stageio.fr/outils/simulateur-salaire-alternance) — salaire minimum brut et net d'un apprenti, d'un contrat pro ou d'un stagiaire selon l'âge et l'année de contrat (barèmes légaux, SMIC du 1er juin 2026).
 - Des pages existent aussi par secteur (`/offres/secteur/<secteur>`) et par ville (`/offres/ville/<ville>`) pour les secteurs/villes avec suffisamment d'offres actives.
+- [Texte complet des guides (Markdown)](https://www.stageio.fr/llms-full.txt) — tous les guides Stageio dans un seul fichier.
 - [Créer un compte](https://www.stageio.fr/inscription)
 - [Mentions légales](https://www.stageio.fr/legal/mentions-legales)
 - [CGU](https://www.stageio.fr/legal/cgu)

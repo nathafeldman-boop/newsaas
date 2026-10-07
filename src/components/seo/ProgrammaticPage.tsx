@@ -64,6 +64,7 @@ export function LinkChips({ title, links }: { title: string; links: SegmentLink[
 
 const TYPE_GUIDES: Record<ContractType, { slug: string; label: string }[]> = {
   alternance: [
+    { slug: "je-ne-trouve-pas-d-alternance", label: "Je ne trouve pas d'alternance" },
     { slug: "trouver-une-alternance", label: "Trouver une alternance" },
     { slug: "quand-chercher-son-alternance", label: "Quand chercher (calendrier)" },
     { slug: "cv-alternance", label: "CV d'alternance" },

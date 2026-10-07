@@ -211,7 +211,7 @@ Ce qui fait passer du bas au haut de la fourchette : les backlinks (aucun code n
 - [x] 07/10 (soir) : pages entreprises fusionnées quand un employeur publie sous plusieurs noms (« Adecco France », « Orange SA », « Groupe Lactalis ») ; anciens slugs en 308. Titres « Intermarché : recrutement en alternance et stage (N offres) », comme les requêtes réelles. Guide « Stage de 3e » ; stage de seconde aux dates 2027 (14 au 25 juin).
 - [x] 07/10 (soir) : index des pages mis en cache en 8 morceaux (ids en base64url) : une simulation montrait le dépassement des 2 Mo vers 15 000 offres ; chaque morceau reste sous 1,3 Mo à 40 000 offres. Garde-fou : moins d'offres listées par page plutôt que de perdre le cache. Lecture du catalogue 4 pages Supabase à la fois.
 - [ ] Filtrer les annonces d'écoles du catalogue lui-même (décision produit)
-- [x] Phase 3 — 55 guides rédigés (faits juridiques vérifiés sur sources officielles) + 4 outils (1 en ligne : le simulateur)
+- [x] Phase 3 — 57 guides rédigés (faits juridiques vérifiés sur sources officielles) + 4 outils (1 en ligne : le simulateur)
 - [ ] Phase 4 — hubs, baromètre, Search Console, suivi 100 mots-clés, dashboard
 
 ---

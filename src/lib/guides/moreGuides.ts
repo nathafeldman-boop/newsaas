@@ -3642,4 +3642,170 @@ export const MORE_GUIDES: Guide[] = [
       { label: "Éducateur spécialisé, formation en apprentissage (IRTS Hauts-de-France)", url: "https://irtshdf.fr/formations/formation-metier/educateur-specialise-2/" },
     ],
   },
+  {
+    slug: "je-ne-trouve-pas-d-alternance",
+    title: "Je ne trouve pas d'alternance : que faire ? Le plan pour débloquer ta recherche",
+    metaDescription:
+      "Tu ne trouves pas d'alternance ? Ce qui bloque (CV, ciblage, zone), les 3 mois au CFA sans entreprise, la rentrée décalée, le contrat pro : le plan concret pour signer ton contrat.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    related: ["alternance-sans-entreprise", "candidature-spontanee-alternance", "sites-pour-trouver-une-alternance", "relancer-candidature"],
+    intro: [
+      "Des dizaines de candidatures, peu de réponses, et la rentrée est passée ? Tu es loin d'être le seul. La bonne nouvelle : il reste du temps, et la plupart des blocages se corrigent. Voici comment trouver ce qui coince, puis le plan pour signer ton contrat.",
+    ],
+    sections: [
+      {
+        heading: "D'abord, trouve ce qui bloque",
+        table: {
+          headers: ["Ce qui t'arrive", "Ce qui coince sûrement", "Quoi faire"],
+          rows: [
+            ["Presque aucune réponse", "Ton CV ou le volume de candidatures", "Refais ton CV pour le poste visé, et augmente le nombre de candidatures par semaine."],
+            ["Des réponses, mais pas d'entretien", "Le CV ne montre pas assez ton intérêt pour le poste", "Adapte le titre du CV et 2 ou 3 lignes à chaque offre, et ajoute un message court et personnalisé."],
+            ["Des entretiens, mais pas d'offre", "La préparation de l'entretien", "Prépare ta présentation, tes exemples concrets et tes questions au recruteur."],
+            ["Peu d'offres dans ton métier", "Une cible trop étroite", "Élargis la zone, la taille d'entreprise ou les métiers proches, et passe aux candidatures spontanées."],
+          ],
+        },
+      },
+      {
+        heading: "Les délais : il te reste du temps",
+        list: [
+          "Le contrat d'apprentissage peut démarrer jusqu'à 3 mois après le début de ta formation.",
+          "Sans entreprise, tu peux commencer ta formation au CFA pendant 3 mois maximum, avec le statut de stagiaire de la formation professionnelle, si ton CFA l'accepte. Le CFA doit alors t'aider à trouver un employeur.",
+          "Demande à ton école ou ton CFA leur date limite exacte : certains accordent un délai supplémentaire, d'autres proposent de décaler ta rentrée.",
+        ],
+      },
+      {
+        heading: "Le plan pour les 4 prochaines semaines",
+        list: [
+          "Semaine 1 : refais ton CV pour un poste précis, puis demande à ton CFA ou ton école la liste des entreprises partenaires et les offres qu'ils reçoivent.",
+          "Chaque jour : regarde les nouvelles offres de ton métier et de ta ville, et postule dans les 48 heures. Les premiers candidats sont lus en premier.",
+          "Chaque semaine : envoie des candidatures spontanées aux PME et commerces proches de chez toi. Beaucoup recrutent un alternant sans publier d'offre.",
+          "Relance par mail ou par téléphone 7 à 10 jours après chaque candidature restée sans réponse.",
+          "Va aux job datings et forums alternance organisés par les CFA, les CCI et France Travail : tu rencontres directement les recruteurs.",
+        ],
+      },
+      {
+        heading: "Élargis ta recherche",
+        list: [
+          "La zone : ton entreprise et ton école peuvent être dans deux villes différentes, à condition que le rythme soit tenable.",
+          "La taille d'entreprise : les PME et les associations reçoivent moins de candidatures que les grands groupes.",
+          "Les métiers proches : en commerce, vise aussi la relation client ou l'assistanat commercial ; en communication, le marketing digital ou l'événementiel.",
+          "L'argument à l'employeur : pour un contrat d'apprentissage conclu entre le 8 mars et le 31 décembre 2026, l'État lui verse une aide pour la première année (voir notre guide sur les aides à l'embauche d'un apprenti). Beaucoup de petits patrons ne le savent pas, dis-le-leur.",
+        ],
+      },
+      {
+        heading: "Si ça ne marche toujours pas",
+        list: [
+          "Le contrat de professionnalisation : une autre forme d'alternance, souvent utilisée par les entreprises qui recrutent tout au long de l'année.",
+          "La rentrée décalée : certaines formations en alternance démarrent en janvier, février ou mars, surtout en école privée (BTS commerce et gestion, bachelors, écoles de commerce). Il y a moins de places qu'en septembre : renseigne-toi dès maintenant.",
+          "Changer d'école : si ton école ne t'aide pas à trouver une entreprise, cherche-en une qui a un vrai réseau d'entreprises partenaires (les écoles des CCI sont souvent bien placées).",
+        ],
+      },
+      {
+        heading: "Où chercher les offres",
+        paragraphs: [
+          "Combine plusieurs sources : La Bonne Alternance (le service public, qui liste aussi les entreprises susceptibles de recruter), France Travail, les grands sites d'emploi, LinkedIn, le réseau de ton école. Sur Stageio, les offres d'alternance de plusieurs sources sont réunies et mises à jour chaque jour, par métier et par ville, et tu les consultes gratuitement. Notre comparatif des sites détaille ce que chacun fait de mieux.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Je ne trouve pas d'alternance, est-ce trop tard ?",
+        a: "Pas forcément. Le contrat d'apprentissage peut démarrer jusqu'à 3 mois après le début de la formation, et tu peux commencer au CFA sans entreprise pendant 3 mois maximum, si ton CFA l'accepte. Certaines formations ont aussi une rentrée décalée en janvier, février ou mars.",
+      },
+      {
+        q: "Combien de candidatures envoyer pour trouver une alternance ?",
+        a: "Il n'y a pas de chiffre magique : ce qui compte, c'est la régularité et la qualité. Postule chaque semaine, vite après la publication des offres, avec un CV adapté au poste, et relance au bout de 7 à 10 jours.",
+      },
+      {
+        q: "Que faire si mon école ne m'aide pas à trouver une entreprise ?",
+        a: "Demande-lui la liste de ses entreprises partenaires et les offres qu'elle reçoit. Si elle n'en a pas, multiplie les candidatures spontanées et les job datings, et envisage une école avec un vrai réseau d'entreprises.",
+      },
+      {
+        q: "Quel site utiliser pour trouver une alternance ?",
+        a: "Plusieurs à la fois : La Bonne Alternance, France Travail, les grands sites d'emploi, LinkedIn, le réseau de ton école, et Stageio, qui réunit des offres de plusieurs sources par métier et par ville.",
+      },
+    ],
+    sources: [
+      { label: "Durée et dates du contrat d'apprentissage (Code du travail, L6222-7 à L6222-14, Légifrance)", url: "https://www.legifrance.gouv.fr/codes/id/LEGISCTA000006195910" },
+      { label: "Contrat d'apprentissage (service-public.gouv.fr)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F2918" },
+      { label: "La deuxième rentrée de l'alternance (L'Étudiant)", url: "https://www.letudiant.fr/alternance/alternance-et-apprentissage/la-deuxieme-rentree-de-l-alternance-12026.html" },
+    ],
+  },
+  {
+    slug: "sites-pour-trouver-une-alternance",
+    title: "Quel site pour trouver une alternance ? Le comparatif honnête (2026)",
+    metaDescription:
+      "La Bonne Alternance, France Travail, Indeed, HelloWork, LinkedIn, Welcome to the Jungle, JobTeaser, Stageio : ce que chaque site fait de mieux pour trouver ton alternance.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    related: ["je-ne-trouve-pas-d-alternance", "trouver-une-alternance", "trouver-alternance-linkedin", "candidature-spontanee-alternance"],
+    intro: [
+      "Il n'existe pas un seul bon site pour trouver une alternance : les offres sont éparpillées, et les meilleures opportunités ne sont pas toujours publiées. On est Stageio, donc on a un avis intéressé sur la question. Voici quand même, honnêtement, à quoi sert chaque site, et comment les combiner.",
+    ],
+    sections: [
+      {
+        heading: "Le comparatif",
+        table: {
+          headers: ["Site", "Ce qu'il fait de mieux", "Gratuit ?"],
+          rows: [
+            ["La Bonne Alternance", "Service public du ministère du Travail : offres d'alternance, formations en apprentissage, et entreprises susceptibles de recruter même sans offre publiée (idéal pour les candidatures spontanées).", "Oui"],
+            ["France Travail", "Beaucoup d'offres de contrats d'apprentissage et de professionnalisation, partout en France, y compris dans les PME.", "Oui"],
+            ["1jeune1solution", "Le portail de l'État pour les jeunes : offres d'alternance et de stage, aides financières, accompagnement.", "Oui"],
+            ["Indeed, HelloWork", "Très grands volumes d'offres de toutes sources, avec des alertes par mail.", "Oui"],
+            ["LinkedIn", "Les offres, mais surtout le réseau : contacter directement les recruteurs et les anciens de ton école.", "Oui (options payantes)"],
+            ["Welcome to the Jungle", "Des pages entreprises très détaillées, surtout pour les startups et les entreprises du digital.", "Oui"],
+            ["JobTeaser", "Les offres ciblées sur ton école, si elle y est abonnée.", "Oui, via ton école"],
+            ["Stageio", "Des offres de plusieurs sources (France Travail, Adzuna, sites carrières) réunies et mises à jour chaque jour, à swiper et triées selon ton profil, avec des pages par métier, ville et entreprise.", "Consultation gratuite ; Premium 7,99 €/mois ou 39,99 € à vie pour candidater"],
+          ],
+        },
+      },
+      {
+        heading: "Comment les combiner",
+        list: [
+          "Une source large pour ne rater aucune offre : France Travail, Indeed ou Stageio, avec une alerte ou une visite chaque jour.",
+          "La Bonne Alternance pour les candidatures spontanées : elle te donne les entreprises qui recrutent des alternants sans publier d'offre.",
+          "LinkedIn pour le réseau : un message court à un recruteur ou à un ancien de ton école vaut souvent plus qu'une candidature de plus.",
+          "Ton école ou ton CFA : demande leurs entreprises partenaires, c'est leur mission de t'aider.",
+          "Les sites carrières des entreprises que tu vises : certaines publient leurs offres d'alternance d'abord chez elles.",
+        ],
+      },
+      {
+        heading: "Les pièges à éviter",
+        list: [
+          "Les offres expirées : vérifie la date de publication, et postule vite aux offres récentes.",
+          "Les fausses offres d'écoles : certaines annonces « alternance » servent surtout à recruter des étudiants pour une formation payante. Si on te parle surtout de l'inscription à l'école, méfie-toi.",
+          "Payer pour candidater à une offre précise : une entreprise ne te demande jamais de payer pour être recruté.",
+        ],
+      },
+      {
+        heading: "Pourquoi on a créé Stageio",
+        paragraphs: [
+          "Parce que chercher une alternance, c'est souvent passer des heures sur dix sites différents. Sur Stageio, les offres de plusieurs sources arrivent au même endroit, chaque jour, et tu les fais défiler comme des cartes : à droite pour garder, à gauche pour passer. La consultation est gratuite, sans limite. Le Premium sert à candidater, à générer une lettre de motivation et à faire auditer ton CV.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Quel est le meilleur site pour trouver une alternance ?",
+        a: "Aucun ne suffit seul. Combine une source large d'offres (France Travail, Indeed ou Stageio), La Bonne Alternance pour les candidatures spontanées, LinkedIn pour le réseau, et les entreprises partenaires de ton école.",
+      },
+      {
+        q: "Existe-t-il un site officiel pour trouver une alternance ?",
+        a: "Oui : La Bonne Alternance, le service public du ministère du Travail. Il réunit des offres, des formations en apprentissage et des entreprises susceptibles de recruter des alternants. Le portail 1jeune1solution de l'État propose aussi des offres.",
+      },
+      {
+        q: "Stageio est-il gratuit ?",
+        a: "La consultation de toutes les offres est gratuite. Le Premium (7,99 € par mois sans engagement, ou 39,99 € une fois pour un accès à vie) sert à liker les offres, candidater, générer une lettre de motivation par IA et faire auditer son CV.",
+      },
+      {
+        q: "Faut-il payer pour trouver une alternance ?",
+        a: "Non, aucun site n'est obligatoire et une entreprise ne te demande jamais de payer pour être recrutée. Les services payants te font gagner du temps, ils ne remplacent pas une bonne candidature.",
+      },
+    ],
+    sources: [
+      { label: "La bonne alternance : à propos (service public)", url: "https://labonnealternance.apprentissage.beta.gouv.fr/a-propos" },
+      { label: "La bonne alternance avec France Travail", url: "https://www.francetravail.fr/candidat/vos-services-en-ligne/la-bonne-alternance.html" },
+    ],
+  },
 ];

@@ -260,6 +260,8 @@ async function getLatestOfferLinks(): Promise<DiscoveryLink[]> {
 // Guides mis en avant sur l'accueil : la page la plus forte du site leur
 // transmet du poids, et ce sont les questions que les étudiants tapent le plus.
 const POPULAR_GUIDES = [
+  { href: "/guides/je-ne-trouve-pas-d-alternance", label: "Je ne trouve pas d'alternance" },
+  { href: "/guides/sites-pour-trouver-une-alternance", label: "Quel site pour trouver une alternance" },
   { href: "/guides/quand-chercher-son-alternance", label: "Quand chercher son alternance" },
   { href: "/guides/gratification-de-stage", label: "Gratification de stage 2026" },
   { href: "/guides/cv-alternance", label: "CV d'alternance" },
