@@ -202,7 +202,7 @@ export function buildIndex(type: ContractType, rows: IndexRow[], now = Date.now(
 // Un seul scan du catalogue par type et par heure, partagé par toutes les
 // pages /alternance/* et /stage/* (sinon chaque page vue relirait ~3 000
 // offres).
-const cachedIndex = unstable_cache(computeIndex, ["programmatic-index-v4"], { revalidate: 3600 });
+const cachedIndex = unstable_cache(computeIndex, ["programmatic-index-v5"], { revalidate: 3600 });
 
 export function getProgrammaticIndex(type: ContractType): Promise<ProgrammaticIndex> {
   return cachedIndex(type);

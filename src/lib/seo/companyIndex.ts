@@ -134,7 +134,7 @@ async function computeCompanyIndex(): Promise<CompanyIndex> {
   return buildCompanyIndex(rows);
 }
 
-const cachedCompanyIndex = unstable_cache(computeCompanyIndex, ["company-index-v2"], { revalidate: 3600 });
+const cachedCompanyIndex = unstable_cache(computeCompanyIndex, ["company-index-v3"], { revalidate: 3600 });
 
 export function getCompanyIndex(): Promise<CompanyIndex> {
   return cachedCompanyIndex();
