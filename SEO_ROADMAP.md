@@ -195,13 +195,13 @@ Ce qui fait passer du bas au haut de la fourchette : les backlinks (aucun code n
 - [x] Bloc « Explorer les offres » sur l'accueil (métiers, villes, entreprises) : découverte rapide des nouvelles pages par Google
 - [x] IndexNow opérationnel (1 257 puis 1 334 URLs acceptées par Bing le 06/10)
 - [x] Phase 3 : 10 guides en ligne (6 ajoutés le 06/10), chacun relié aux autres guides, aux offres et au simulateur ; plan des 40 en section 10
-- [x] Nuit du 06 au 07/10 : 12 guides de plus (22 au total). Les 6 guides juridiques ont été revérifiés sur service-public.gouv.fr / code du travail : rupture, aides 2026, congés, âge limite, convention de stage, apprentissage ou contrat pro.
+- [x] Nuit du 06 au 07/10 : 18 guides de plus (28 au total). Les 6 guides juridiques ont été revérifiés sur service-public.gouv.fr / code du travail : rupture, aides 2026, congés, âge limite, convention de stage, apprentissage ou contrat pro.
 - [x] Mesure : la source des visites est déduite du site d'origine (Google, Bing, ChatGPT, Perplexity, TikTok, Instagram, WhatsApp...) quand il n'y a pas d'utm. Le tableau « par source » de l'admin montre enfin le trafic SEO (`src/lib/analytics/referrerSource.ts`).
 - [x] Partage : boutons WhatsApp / « Envoyer à un pote » / copier le lien sur les offres, pages métier × ville, entreprises, guides, baromètre et simulateur (`utm_source=partage`). Aperçus dynamiques (image avec titre et vrais chiffres) pour WhatsApp, LinkedIn et iMessage (`src/lib/seo/ogImage.tsx`).
 - [x] IndexNow automatique : cron quotidien `/api/cron/indexnow` (5 h 30 UTC). Il envoie les hubs, les pages métier / ville / entreprise et les offres et guides nouveaux. Le bouton admin ne sert plus qu'à forcer un envoi complet.
 - [x] JobPosting (Google for Jobs) réservé aux offres avec description complète (≥ 200 caractères, non tronquée) ; `addressLocality` = vraie ville.
 - [ ] Filtrer les annonces d'écoles du catalogue lui-même (décision produit)
-- [ ] Phase 3 — 40 guides (22 rédigés) + 4 outils (1 en ligne : le simulateur)
+- [ ] Phase 3 — 40 guides (28 rédigés) + 4 outils (1 en ligne : le simulateur)
 - [ ] Phase 4 — hubs, baromètre, Search Console, suivi 100 mots-clés, dashboard
 
 ---
@@ -227,8 +227,8 @@ Ce qui fait passer du bas au haut de la fourchette : les backlinks (aucun code n
 14. BTS, bachelor, master en alternance : lequel choisir
 15. Alternance et chômage : tes droits à la fin du contrat ⚖️
 16. ✅ Trouver une alternance avec LinkedIn
-17. Calendrier : quand chercher son alternance mois par mois
-18. Alternance sans avoir trouvé d'entreprise à la rentrée : que faire
+17. ✅ Calendrier : quand chercher son alternance mois par mois
+18. ✅ Alternance sans avoir trouvé d'entreprise à la rentrée : que faire
 
 **Stage**
 19. ✅ Trouver un stage rapidement ⚖️
@@ -242,15 +242,15 @@ Ce qui fait passer du bas au haut de la fourchette : les backlinks (aucun code n
 27. Gratification de stage : calcul et droits ⚖️
 28. Année de césure : comment l'organiser
 29. Entretien de stage : questions et réponses
-30. Soutenance de stage : plan et conseils
+30. ✅ Soutenance de stage : plan et conseils
 
 **Transversal**
 31. ✅ Relancer une candidature (modèles de mail)
 32. ✅ Se présenter en 1 minute (pitch)
 33. ✅ Questions à poser au recruteur
-34. Soft skills à mettre sur son CV
-35. Premier jour en entreprise : les bons réflexes
-36. Utiliser l'IA pour sa lettre de motivation sans se faire repérer
+34. ✅ Soft skills à mettre sur son CV
+35. ✅ Premier jour en entreprise : les bons réflexes
+36. ✅ Utiliser l'IA (ChatGPT) pour sa lettre de motivation, sans texte générique
 37. Profil LinkedIn d'étudiant : la checklist
 38. Logement pendant l'alternance ou le stage ⚖️
 39. Gérer deux villes (école et entreprise)

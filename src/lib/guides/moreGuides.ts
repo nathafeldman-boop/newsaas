@@ -1168,4 +1168,442 @@ export const MORE_GUIDES: Guide[] = [
       },
     ],
   },
+  {
+    slug: "quand-chercher-son-alternance",
+    title: "Quand chercher son alternance ? Le calendrier mois par mois",
+    metaDescription:
+      "À quel moment chercher ton alternance pour la rentrée de septembre : le calendrier mois par mois, la règle légale des 3 mois et que faire si tu t'y prends tard.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    intro: [
+      "La question revient chaque année : trop tôt, les offres ne sont pas encore là ; trop tard, les meilleures sont parties. La bonne réponse : commence à préparer ton dossier 6 à 8 mois avant la rentrée et à candidater 4 à 6 mois avant. Voici le calendrier détaillé pour une rentrée en septembre, et ce que dit la loi si tu signes après la rentrée.",
+    ],
+    sections: [
+      {
+        heading: "Le calendrier pour une rentrée en septembre",
+        table: {
+          headers: ["Période", "Ce que tu fais"],
+          rows: [
+            ["Novembre – décembre", "Tu choisis ton diplôme et ton métier cible, tu listes les écoles ou CFA qui le proposent en alternance."],
+            ["Janvier – mars", "Candidatures aux formations (via Parcoursup après le bac, sur les sites des écoles sinon). Tu prépares ton CV et ton profil LinkedIn. Premières candidatures aux grandes entreprises, qui recrutent tôt."],
+            ["Avril – juin", "Période la plus chargée : beaucoup d'offres publiées, entretiens, relances. Vise plusieurs candidatures par semaine."],
+            ["Juillet – août", "Ne t'arrête pas : les PME et les petites structures recrutent souvent tard, et la concurrence baisse pendant l'été."],
+            ["Septembre – novembre", "Encore possible : la loi laisse jusqu'à 3 mois après le début de la formation pour démarrer le contrat (voir plus bas)."],
+          ],
+        },
+      },
+      {
+        heading: "Pourquoi les grandes entreprises recrutent tôt",
+        paragraphs: [
+          "Les grands groupes (banques, distribution, industrie, cabinets de conseil) organisent leurs campagnes d'alternance comme des campagnes de recrutement classiques : publication groupée des offres en début d'année, tests en ligne, entretiens au printemps. Si tu vises ces entreprises, candidate dès janvier-février.",
+          "Les PME, les commerces et les associations recrutent plutôt quand le besoin apparaît, souvent entre mai et septembre. Ce sont aussi celles qui répondent le mieux aux candidatures spontanées.",
+        ],
+      },
+      {
+        heading: "La règle des 3 mois : jusqu'à quand peut-on signer ?",
+        paragraphs: [
+          "Pour le contrat d'apprentissage, le Code du travail (article L6222-12) fixe une fenêtre : le contrat ne peut pas commencer plus de 3 mois avant le début du cycle de formation au CFA, ni plus de 3 mois après. Pour une formation qui démarre début septembre, tu peux donc signer un contrat qui commence jusqu'à début décembre environ.",
+          "Bonus : si tu n'as pas encore d'entreprise à la rentrée, tu peux dans certains cas commencer la formation au CFA sans employeur pendant 3 mois maximum, le temps de trouver. On t'explique tout dans notre guide dédié à l'alternance sans entreprise.",
+          "Le contrat de professionnalisation, lui, n'est pas calé sur une rentrée unique : beaucoup d'organismes de formation ont plusieurs entrées dans l'année. Si tu rates septembre, renseigne-toi.",
+        ],
+      },
+      {
+        heading: "Ton rythme de candidatures",
+        list: [
+          "De janvier à mars : 3 à 5 candidatures soignées par semaine, ciblées sur les entreprises qui recrutent tôt.",
+          "D'avril à août : 5 à 10 candidatures par semaine, en mélangeant offres publiées et candidatures spontanées.",
+          "Relance chaque candidature sans réponse au bout de 7 à 10 jours ouvrés.",
+          "Les offres de moins de 3 jours sont celles où tu as le plus de chances : regarde les nouvelles offres tous les jours plutôt qu'une fois par semaine.",
+        ],
+      },
+      {
+        heading: "Les erreurs de calendrier les plus fréquentes",
+        list: [
+          "Attendre d'être admis à l'école pour chercher l'entreprise : fais les deux en parallèle.",
+          "Tout miser sur 3 ou 4 grandes entreprises : leurs processus sont longs et très demandés.",
+          "Arrêter en juillet en pensant que « c'est fini » : beaucoup de contrats se signent en août et septembre.",
+          "Oublier de vérifier que l'école accepte encore des alternants : certaines formations ferment leurs inscriptions quand elles sont pleines.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Est-il trop tard pour chercher une alternance en septembre ?",
+        a: "Non. Pour un contrat d'apprentissage, le contrat peut démarrer jusqu'à 3 mois après le début de la formation, et certains CFA te laissent commencer la formation sans entreprise pendant ce délai. Mais ne traîne pas : chaque semaine compte.",
+      },
+      {
+        q: "Combien de temps faut-il pour trouver une alternance ?",
+        a: "C'est très variable selon le métier et la ville. Compte plusieurs semaines à plusieurs mois : c'est pour ça qu'il vaut mieux commencer 4 à 6 mois avant la rentrée.",
+      },
+      {
+        q: "Peut-on commencer une alternance en janvier ?",
+        a: "Oui, si ta formation propose une rentrée décalée ou si tu signes dans les 3 mois qui suivent le début du cycle. Le contrat de professionnalisation est souvent plus souple sur les dates d'entrée.",
+      },
+    ],
+    sources: [
+      { label: "Durée et dates du contrat d'apprentissage (Code du travail, L6222-7 à L6222-14, Légifrance)", url: "https://www.legifrance.gouv.fr/codes/id/LEGISCTA000006195910" },
+      { label: "Contrat d'apprentissage (service-public.gouv.fr)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F2918" },
+    ],
+  },
+  {
+    slug: "alternance-sans-entreprise",
+    title: "Pas d'entreprise à la rentrée : commencer ton alternance sans employeur",
+    metaDescription:
+      "Tu n'as pas trouvé d'entreprise pour ton alternance ? La loi te permet de commencer la formation au CFA pendant 3 mois sans employeur. Conditions, statut et plan d'action.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    intro: [
+      "La rentrée arrive et tu n'as toujours pas signé de contrat ? Pas de panique : tu n'es pas obligé de renoncer à ta formation. Le Code du travail prévoit un dispositif pour commencer ton année au CFA pendant que tu continues à chercher ton entreprise. Voici comment ça marche et comment utiliser ces 3 mois au maximum.",
+    ],
+    sections: [
+      {
+        heading: "Ce que dit la loi",
+        paragraphs: [
+          "D'après l'article L6222-12-1 du Code du travail, si tu as entre 16 et 29 ans révolus (ou au moins 15 ans si tu as terminé le collège) et que tu n'as pas encore été embauché par un employeur, tu peux, à ta demande, commencer un cycle de formation en apprentissage dans la limite de 3 mois.",
+          "Pendant cette période, tu as le statut de stagiaire de la formation professionnelle, et le CFA doit t'accompagner dans ta recherche d'employeur.",
+        ],
+      },
+      {
+        heading: "Ce que ça change concrètement",
+        list: [
+          "Tu suis les cours avec ta promo dès la rentrée : tu ne prends pas de retard.",
+          "Tu ne touches pas de salaire tant que tu n'as pas signé de contrat : prévois ton budget en conséquence.",
+          "Tu restes couvert pour ta protection sociale grâce au statut de stagiaire de la formation professionnelle.",
+          "Dès que tu signes un contrat d'apprentissage, il prend le relais. Sa durée est réduite du nombre de mois déjà passés en formation.",
+        ],
+      },
+      {
+        heading: "Comment en profiter",
+        paragraphs: [
+          "Tous les CFA ne le proposent pas pour toutes leurs formations, et certaines formations sont déjà pleines. Contacte directement le CFA ou l'école qui t'a admis, explique ta situation et demande s'ils t'acceptent sans contrat pour démarrer l'année. Fais-le avant la rentrée si possible.",
+        ],
+      },
+      {
+        heading: "Ton plan d'action pour les 3 mois",
+        list: [
+          "Semaine 1 : demande au CFA la liste des entreprises partenaires et des offres qu'il reçoit. C'est sa mission de t'aider.",
+          "Chaque jour : regarde les nouvelles offres de ta ville et de ton métier, et postule dans les 48 heures.",
+          "Chaque semaine : envoie des candidatures spontanées aux entreprises proches de chez toi et de ton école, avec ton rythme école/entreprise précis.",
+          "Mets en avant le fait que tu as déjà commencé la formation : c'est rassurant pour l'employeur, qui sait que tu es motivé et déjà inscrit.",
+          "Relance tout ce qui reste sans réponse au bout de 7 à 10 jours ouvrés.",
+        ],
+      },
+      {
+        heading: "Et si tu n'as rien trouvé au bout de 3 mois ?",
+        paragraphs: [
+          "Le dispositif s'arrête : tu ne peux pas rester en apprentissage sans contrat. Parle avec ton école des solutions possibles : continuer la formation sous un autre statut quand elle le permet, viser une entrée en contrat de professionnalisation (souvent possible à d'autres moments de l'année), ou préparer la rentrée suivante en commençant ta recherche beaucoup plus tôt.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Est-ce que je suis payé pendant les 3 mois sans entreprise ?",
+        a: "Non, pas de salaire tant qu'aucun contrat n'est signé. Tu as en revanche le statut de stagiaire de la formation professionnelle, qui te couvre pour ta protection sociale.",
+      },
+      {
+        q: "Le CFA peut-il refuser de me prendre sans contrat ?",
+        a: "Tous les CFA ne proposent pas ce démarrage sans employeur, ou pas pour toutes les formations. Demande directement à ton école, le plus tôt possible.",
+      },
+      {
+        q: "Que se passe-t-il pour la durée de mon contrat si je signe en novembre ?",
+        a: "Ton contrat d'apprentissage est raccourci du nombre de mois déjà passés en formation : tu termines en même temps que ta promo.",
+      },
+    ],
+    sources: [
+      { label: "Durée du contrat et démarrage sans employeur (Code du travail, L6222-7 à L6222-14, Légifrance)", url: "https://www.legifrance.gouv.fr/codes/id/LEGISCTA000006195910" },
+      { label: "Contrat d'apprentissage (service-public.gouv.fr)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F2918" },
+    ],
+  },
+  {
+    slug: "soutenance-de-stage",
+    title: "Soutenance de stage : le plan, les slides et les questions du jury",
+    metaDescription:
+      "Réussir ta soutenance de stage ou d'alternance : plan type, nombre de slides, comment répéter et les questions que le jury pose presque toujours.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    intro: [
+      "La soutenance, c'est l'oral qui conclut ton stage ou ton année d'alternance : tu présentes ce que tu as fait et ce que tu en retires devant un jury (un prof, parfois ton tuteur). Ce n'est pas un résumé de ton rapport : c'est une démonstration que tu as compris ton travail et ce que tu as appris.",
+      "Le format exact (durée, notation, jury) dépend de ton école : lis bien les consignes officielles avant de commencer, et respecte-les à la minute près.",
+    ],
+    sections: [
+      {
+        heading: "Le plan type",
+        list: [
+          "Introduction (1 min) : qui tu es, ta formation, l'entreprise et ton poste en une phrase, puis l'annonce du plan.",
+          "L'entreprise (2 min max) : son activité, sa taille, ton service. Pas de copier-coller du site web : seulement ce qui aide à comprendre tes missions.",
+          "Tes missions (le cœur, environ la moitié du temps) : 2 ou 3 missions principales, pour chacune le contexte, ce que tu as fait concrètement et le résultat, avec un chiffre si possible.",
+          "Ce que tu as appris (2-3 min) : compétences acquises, difficultés rencontrées et comment tu les as gérées.",
+          "Conclusion (1 min) : bilan et lien avec ton projet professionnel (la suite de tes études, le métier que tu vises).",
+        ],
+      },
+      {
+        heading: "Les slides : moins, c'est mieux",
+        list: [
+          "Une idée par slide, un titre qui dit l'idée (« J'ai réduit le délai de traitement des commandes de 20 % ») plutôt qu'un titre vague (« Mission 2 »).",
+          "Compte environ une slide par minute de présentation.",
+          "Peu de texte : des mots-clés, un schéma, une capture de ton travail. Le jury doit t'écouter, pas te lire.",
+          "Numérote les slides : le jury s'en sert pour ses questions.",
+          "Vérifie la confidentialité : certaines données de l'entreprise ne doivent pas apparaître. Demande à ton tuteur ce que tu peux montrer.",
+        ],
+      },
+      {
+        heading: "Répéter sans réciter",
+        paragraphs: [
+          "Répète au moins 3 fois à voix haute, chronomètre en main, idéalement devant quelqu'un. Tu dois connaître parfaitement ta première et ta dernière phrase, et le fil de ta présentation : le reste, tu le dis avec tes mots. Un texte appris par cœur se voit tout de suite et te déstabilise à la première question.",
+        ],
+      },
+      {
+        heading: "Les questions que le jury pose presque toujours",
+        list: [
+          "« Quelle a été ta plus grande difficulté, et comment l'as-tu surmontée ? »",
+          "« Si tu devais refaire ce stage, que changerais-tu ? »",
+          "« En quoi ce stage a-t-il confirmé (ou changé) ton projet professionnel ? »",
+          "« Quel lien fais-tu entre tes cours et tes missions ? »",
+          "« Pourquoi avoir fait ce choix plutôt qu'un autre ? » sur une décision que tu as présentée.",
+        ],
+      },
+      {
+        heading: "Le jour J",
+        list: [
+          "Arrive en avance, teste le matériel (adaptateur, clé USB et version PDF de secours).",
+          "Une tenue proche de celle de ton entreprise, un cran au-dessus.",
+          "Regarde le jury, pas l'écran. Parle un peu plus lentement que d'habitude.",
+          "Face à une question difficile : prends 2 secondes pour réfléchir. « Je ne sais pas, mais voici comment je chercherais » vaut mieux qu'une réponse inventée.",
+          "Remercie le jury et ton tuteur à la fin.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Combien de temps dure une soutenance de stage ?",
+        a: "Ça dépend de l'école et du niveau : souvent entre 10 et 20 minutes de présentation, suivies de questions. Suis la durée indiquée par ton école à la minute près.",
+      },
+      {
+        q: "Combien de slides pour une soutenance de stage ?",
+        a: "Environ une slide par minute de présentation, titre et conclusion compris. Une soutenance de 15 minutes tient en 12 à 15 slides.",
+      },
+      {
+        q: "Peut-on lire ses notes pendant la soutenance ?",
+        a: "Tu peux garder quelques mots-clés sous les yeux, mais évite de lire : le jury évalue aussi ta capacité à présenter ton travail.",
+      },
+    ],
+  },
+  {
+    slug: "soft-skills-cv",
+    title: "Soft skills : lesquelles mettre sur ton CV (et comment les prouver)",
+    metaDescription:
+      "Les soft skills qui comptent pour un stage ou une alternance, celles à éviter, et la méthode pour les prouver avec un exemple concret plutôt qu'avec des adjectifs.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    intro: [
+      "Quand tu as peu d'expérience, les recruteurs regardent surtout ton potentiel : ta façon de travailler, d'apprendre, de communiquer. C'est ça, les soft skills (ou savoir-être). Le problème : tout le monde écrit « dynamique, motivé, rigoureux ». Pour te démarquer, choisis-en peu et prouve-les.",
+    ],
+    sections: [
+      {
+        heading: "Les soft skills les plus recherchées chez les étudiants",
+        list: [
+          "Capacité d'apprentissage : tu comprends vite et tu progresses seul.",
+          "Autonomie : tu avances sans qu'on vérifie chaque étape, et tu sais quand demander de l'aide.",
+          "Communication : tu expliques clairement, à l'écrit comme à l'oral.",
+          "Organisation : tu tiens des délais en jonglant entre cours et travail.",
+          "Esprit d'équipe : tu travailles bien avec des profils différents.",
+          "Adaptabilité : tu gères les imprévus et les changements de priorité.",
+          "Sens du client ou du service : utile dans le commerce, la vente, la relation client et l'hôtellerie.",
+        ],
+      },
+      {
+        heading: "Choisis selon le métier",
+        table: {
+          headers: ["Métier", "Soft skills à mettre en avant"],
+          rows: [
+            ["Commercial, vente", "Aisance relationnelle, persévérance, sens de l'écoute"],
+            ["Ressources humaines", "Écoute, discrétion, organisation"],
+            ["Marketing, communication", "Créativité, curiosité, esprit d'analyse"],
+            ["Développeur, data", "Autonomie, logique, capacité d'apprentissage"],
+            ["Comptabilité, gestion", "Rigueur, fiabilité, organisation"],
+            ["Assistant(e), administratif", "Organisation, polyvalence, discrétion"],
+          ],
+        },
+      },
+      {
+        heading: "La méthode pour les prouver",
+        paragraphs: [
+          "Une soft skill sans preuve ne vaut rien. Pour chacune, trouve une situation réelle : un job étudiant, un projet d'école, une asso, un sport. Puis écris une ligne avec ce que tu as fait et le résultat.",
+          "Exemple : au lieu de « organisé », écris « Job étudiant 15 h/semaine en parallèle de ma licence, moyenne maintenue à 13/20 ». Au lieu de « esprit d'équipe », écris « Projet de groupe de 5 personnes : coordination du planning et des rendus, livré dans les délais ».",
+        ],
+      },
+      {
+        heading: "Où les mettre sur ton CV",
+        list: [
+          "Dans tes expériences, sous forme de résultats : c'est l'endroit le plus convaincant.",
+          "Dans une courte rubrique « Atouts » : 3 ou 4 qualités maximum, celles de l'offre.",
+          "Dans ton accroche en haut du CV : une seule, celle qui colle le mieux au poste.",
+          "Dans ta lettre ou ton mail de candidature : reprends-en une avec un exemple développé.",
+        ],
+      },
+      {
+        heading: "Les erreurs à éviter",
+        list: [
+          "La liste de 10 adjectifs : le recruteur n'en retient aucun.",
+          "Les qualités que tout le monde met sans preuve : « dynamique », « motivé », « passionné ».",
+          "Les soft skills sans rapport avec l'offre : relis l'annonce et reprends ses mots.",
+          "Les auto-évaluations en barres ou en étoiles (« communication : 4/5 ») : ça ne veut rien dire pour un recruteur.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Combien de soft skills mettre sur un CV ?",
+        a: "3 ou 4, choisies selon l'offre et chacune appuyée par un exemple dans tes expériences.",
+      },
+      {
+        q: "Quelle est la différence entre hard skills et soft skills ?",
+        a: "Les hard skills sont des compétences techniques qui s'apprennent et se vérifient (Excel, une langue, un logiciel). Les soft skills concernent ta façon de travailler (autonomie, communication, organisation).",
+      },
+      {
+        q: "Comment parler de ses soft skills en entretien ?",
+        a: "Avec une histoire courte : la situation, ce que tu as fait, le résultat. Prépare un exemple pour chacune des qualités que tu as mises sur ton CV.",
+      },
+    ],
+  },
+  {
+    slug: "premier-jour-en-entreprise",
+    title: "Premier jour de stage ou d'alternance : les bons réflexes",
+    metaDescription:
+      "Ce qu'il faut préparer avant ton premier jour en stage ou en alternance, comment te comporter la première semaine et les erreurs qui laissent une mauvaise impression.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    intro: [
+      "Tu as décroché ton stage ou ton alternance, bravo. Le premier jour, personne n'attend que tu saches tout faire : on regarde surtout si tu es fiable, curieux et facile à intégrer. Voici comment bien démarrer.",
+    ],
+    sections: [
+      {
+        heading: "La veille : ce que tu prépares",
+        list: [
+          "Confirme l'heure d'arrivée, l'adresse exacte et le nom de la personne à demander à l'accueil.",
+          "Teste ton trajet à l'avance ou prévois une marge de 20 minutes.",
+          "Demande le code vestimentaire si tu as un doute. Sinon, vise un cran au-dessus de ce que tu as vu en entretien.",
+          "Prépare tes papiers : pièce d'identité, numéro de sécurité sociale, RIB (pour ton salaire si tu es alternant ou pour ta gratification de stage).",
+          "Stage : vérifie que ta convention est signée par toutes les parties (toi, l'école, l'entreprise) avant le premier jour.",
+        ],
+      },
+      {
+        heading: "Le premier jour",
+        list: [
+          "Arrive 5 à 10 minutes en avance, pas plus.",
+          "Prends un carnet : note les prénoms, les outils, les process. Tu poseras moins deux fois la même question.",
+          "Présente-toi simplement : ton prénom, ta formation, ton rythme (pour une alternance), ce sur quoi tu vas travailler.",
+          "Demande à ton tuteur un point en fin de journée pour savoir ce qu'il attend de toi la première semaine.",
+          "Téléphone en poche : regarde ce que font les autres avant de le sortir en réunion.",
+        ],
+      },
+      {
+        heading: "La première semaine",
+        paragraphs: [
+          "Ton objectif : comprendre comment l'équipe fonctionne et livrer une première petite tâche bien faite. Pose des questions, mais regroupe-les : un point de 10 minutes avec ton tuteur vaut mieux que 15 interruptions.",
+          "En fin de semaine, propose un point : ce que tu as fait, ce que tu as compris, ce qui reste flou. Fixe avec ton tuteur 2 ou 3 objectifs pour le mois : c'est la base de ton rapport ou de ta soutenance plus tard.",
+        ],
+      },
+      {
+        heading: "Spécial alternance : gérer le rythme",
+        list: [
+          "Partage ton calendrier école/entreprise avec ton équipe dès le premier jour, pour qu'on ne te confie pas une tâche urgente juste avant une semaine de cours.",
+          "Avant de partir à l'école, fais un point écrit de ce que tu laisses en cours.",
+          "En rentrant, demande ce qui a changé en ton absence.",
+        ],
+      },
+      {
+        heading: "Les erreurs qui laissent une mauvaise impression",
+        list: [
+          "Arriver en retard sans prévenir, même de 5 minutes.",
+          "Ne rien noter et redemander les mêmes informations.",
+          "Rester bloqué une journée entière sans demander d'aide.",
+          "Critiquer l'organisation dès la première semaine. Observe d'abord, propose ensuite.",
+          "Refuser les tâches simples : tout le monde commence par là.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Comment s'habiller pour son premier jour de stage ?",
+        a: "Comme l'équipe, un cran au-dessus. Si tu ne sais pas, demande à ton tuteur ou à la personne qui t'a recruté : c'est une question normale.",
+      },
+      {
+        q: "Que dire pour se présenter le premier jour ?",
+        a: "Ton prénom, ta formation, la durée ou le rythme de ton contrat et ce sur quoi tu vas travailler. Dix secondes suffisent, puis intéresse-toi aux autres.",
+      },
+      {
+        q: "Faut-il apporter quelque chose le premier jour ?",
+        a: "Tes papiers (pièce d'identité, numéro de sécurité sociale, RIB), un carnet et un stylo. Pour un stage, vérifie aussi que ta convention est signée.",
+      },
+    ],
+  },
+  {
+    slug: "lettre-de-motivation-chatgpt",
+    title: "Lettre de motivation avec ChatGPT : la méthode pour qu'elle te ressemble",
+    metaDescription:
+      "Utiliser ChatGPT ou une autre IA pour ta lettre de motivation de stage ou d'alternance sans envoyer un texte générique : la méthode, un prompt à copier et les pièges à éviter.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    intro: [
+      "Utiliser une IA pour écrire ta lettre de motivation n'a rien d'interdit, et ça peut te faire gagner beaucoup de temps. Le vrai risque, ce n'est pas de « se faire repérer » : c'est d'envoyer la même lettre lisse et vague que des dizaines d'autres candidats. Un recruteur la jette en dix secondes, IA ou pas.",
+      "La règle : l'IA t'aide à structurer et à reformuler, mais le contenu (tes expériences, tes raisons, l'entreprise) vient de toi.",
+    ],
+    sections: [
+      {
+        heading: "Étape 1 : rassemble la matière avant d'ouvrir l'IA",
+        list: [
+          "L'offre complète, copiée en entier.",
+          "2 ou 3 choses précises sur l'entreprise : un produit, un projet récent, une valeur que tu as vraiment remarquée.",
+          "2 expériences à toi qui collent à l'offre (job, projet, asso), avec ce que tu as fait et le résultat.",
+          "La vraie raison pour laquelle tu postules, même simple : le métier, le secteur, la ville, le rythme.",
+        ],
+      },
+      {
+        heading: "Étape 2 : un prompt qui donne un vrai résultat",
+        paragraphs: [
+          "Exemple à adapter : « Je postule à cette offre d'alternance [colle l'offre]. Voici mes expériences : [tes 2 expériences avec résultats]. Voici pourquoi cette entreprise m'intéresse : [tes 2-3 éléments]. Écris une lettre de motivation de 200 à 250 mots, ton direct et professionnel, en 3 paragraphes : pourquoi eux, ce que j'apporte avec mes exemples, la conclusion avec mon rythme d'alternance. N'invente aucune information. Évite les formules toutes faites comme « dynamique et motivé » ou « je me permets de vous adresser ». »",
+        ],
+      },
+      {
+        heading: "Étape 3 : réécris avec ta voix",
+        list: [
+          "Lis le texte à voix haute : chaque phrase que tu ne dirais jamais en entretien, tu la reformules.",
+          "Vérifie chaque fait : l'IA invente parfois des détails sur l'entreprise ou sur toi. Une erreur factuelle, c'est rédhibitoire.",
+          "Ajoute un détail que seul toi peux écrire : une anecdote, un chiffre, une observation sur l'entreprise.",
+          "Coupe : une bonne lettre d'étudiant tient en 15 lignes. L'IA a tendance à rallonger.",
+        ],
+      },
+      {
+        heading: "Les signes d'une lettre « générée » à corriger",
+        list: [
+          "Des phrases qui pourraient s'appliquer à n'importe quelle entreprise.",
+          "Des superlatifs en série : « passionné », « véritable », « au cœur de », « incroyable opportunité ».",
+          "Trois adjectifs à la suite pour te décrire, sans exemple.",
+          "Une structure trop parfaite, sans aucune information concrète.",
+          "Le nom d'une autre entreprise oublié d'une lettre précédente (ça arrive plus souvent qu'on ne croit).",
+        ],
+      },
+      {
+        heading: "Ce que l'IA ne doit jamais faire à ta place",
+        paragraphs: [
+          "Inventer une expérience, un diplôme ou une compétence que tu n'as pas. Ça se voit en entretien, et c'est de toute façon malhonnête. Et pour les candidatures spontanées ou les relances, un mail court écrit par toi marche souvent mieux qu'une longue lettre.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Les recruteurs voient-ils qu'une lettre a été écrite avec ChatGPT ?",
+        a: "Les détecteurs automatiques ne sont pas fiables, mais un recruteur repère très vite une lettre générique, sans exemple ni détail sur l'entreprise. Si ta lettre contient tes vraies expériences et des éléments précis sur l'entreprise, la question ne se pose plus.",
+      },
+      {
+        q: "Est-ce que c'est interdit d'utiliser l'IA pour sa candidature ?",
+        a: "Non. C'est un outil comme un correcteur d'orthographe, à condition que tout ce qui est écrit soit vrai et que tu sois capable d'en parler en entretien.",
+      },
+      {
+        q: "Quelle longueur pour une lettre de motivation de stage ou d'alternance ?",
+        a: "200 à 300 mots, soit une quinzaine de lignes. Pour une candidature par mail, le message lui-même peut faire 5 à 8 lignes, avec la lettre en pièce jointe si l'offre la demande.",
+      },
+    ],
+  },
 ];
