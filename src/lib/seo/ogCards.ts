@@ -163,6 +163,20 @@ export const LETTRE_STAGE_OG_CARD: OgCard = {
   footer: "Ta lettre en 2 minutes, gratuite et sans compte",
 };
 
+export const CV_ALTERNANCE_OG_CARD: OgCard = {
+  kicker: "Outil gratuit",
+  title: "CV d'alternance : le générateur gratuit",
+  stats: ["1 page A4", "PDF", "Exemple"],
+  footer: "Ton CV en PDF, gratuit et sans compte",
+};
+
+export const CV_STAGE_OG_CARD: OgCard = {
+  kicker: "Outil gratuit",
+  title: "CV de stage : le générateur gratuit",
+  stats: ["1 page A4", "PDF", "Exemple"],
+  footer: "Ton CV en PDF, gratuit et sans compte",
+};
+
 export async function barometreOgCard(): Promise<OgCard> {
   try {
     const [alternance, stage] = await Promise.all([getProgrammaticIndex("alternance"), getProgrammaticIndex("stage")]);

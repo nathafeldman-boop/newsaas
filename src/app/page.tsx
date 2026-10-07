@@ -1561,6 +1561,8 @@ export default async function LandingPage() {
               <Link href="/outils/simulateur-salaire-alternance">Simulateur de salaire</Link>
               {" · "}
               <Link href="/outils/lettre-de-motivation-alternance">Lettre de motivation (générateur)</Link>
+              {" · "}
+              <Link href="/outils/cv-alternance">CV (générateur)</Link>
             </p>
           </section>
         )}
@@ -1671,6 +1673,8 @@ export default async function LandingPage() {
             { href: "/outils/simulateur-salaire-alternance", label: "Simulateur de salaire" },
             { href: "/outils/lettre-de-motivation-alternance", label: "Lettre de motivation alternance" },
             { href: "/outils/lettre-de-motivation-stage", label: "Lettre de motivation stage" },
+            { href: "/outils/cv-alternance", label: "CV alternance" },
+            { href: "/outils/cv-stage", label: "CV de stage" },
             { href: "/affilies", label: "Devenir affilié" },
             { href: "/legal/mentions-legales", label: "Mentions légales" },
             { href: "/legal/cgu", label: "CGU" },

@@ -12,6 +12,8 @@ export async function GET() {
     { path: "/outils/simulateur-salaire-alternance" },
     { path: "/outils/lettre-de-motivation-alternance" },
     { path: "/outils/lettre-de-motivation-stage" },
+    { path: "/outils/cv-alternance" },
+    { path: "/outils/cv-stage" },
     { path: "/barometre-alternance-stage" },
   ];
   return xmlResponse(urlsetXml(entries));

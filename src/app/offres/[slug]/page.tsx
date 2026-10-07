@@ -426,8 +426,9 @@ export default async function PublicOfferPage({
           </a>
         )}
         <p style={{ fontSize: 13, margin: "10px 0 0", textAlign: "center" }}>
-          Besoin d&apos;une lettre de motivation ?{" "}
-          <Link href={`/outils/lettre-de-motivation-${offer.contract_type}`}>Écris-la en 2 minutes avec notre générateur gratuit</Link>
+          Besoin d&apos;une lettre de motivation ou d&apos;un CV ? Nos générateurs gratuits :{" "}
+          <Link href={`/outils/lettre-de-motivation-${offer.contract_type}`}>lettre</Link> ·{" "}
+          <Link href={`/outils/cv-${offer.contract_type}`}>CV en PDF</Link>
         </p>
         <ShareButtons
           title="Cette offre peut intéresser un pote ?"
