@@ -28,6 +28,17 @@ export async function generateMetadata({
   };
 }
 
+// Guides liés choisis à la main (guide.related) d'abord, puis les suivants
+// de la liste pour toujours en afficher 4.
+function relatedGuides(guide: NonNullable<ReturnType<typeof getGuide>>) {
+  const start = GUIDES.findIndex((g) => g.slug === guide.slug);
+  const rotation = [1, 2, 3, 4, 5, 6, 7, 8].map((offset) => GUIDES[(start + offset) % GUIDES.length]);
+  const picked = [...(guide.related ?? []).map(getGuide), ...rotation].filter(
+    (g): g is NonNullable<typeof g> => Boolean(g) && g!.slug !== guide.slug,
+  );
+  return picked.filter((g, i) => picked.findIndex((other) => other.slug === g.slug) === i).slice(0, 4);
+}
+
 function articleJsonLd(guide: NonNullable<ReturnType<typeof getGuide>>) {
   return {
     "@context": "https://schema.org",
@@ -191,10 +202,7 @@ export default async function GuidePage({
       <nav aria-label="À lire aussi" className="mt-8">
         <h2 style={{ fontSize: 18, margin: "0 0 10px" }}>À lire aussi</h2>
         <div className="flex flex-col gap-2">
-          {[1, 2, 3, 4]
-            .map((offset) => GUIDES[(GUIDES.findIndex((g) => g.slug === guide.slug) + offset) % GUIDES.length])
-            .filter((g) => g.slug !== guide.slug)
-            .map((g) => (
+          {relatedGuides(guide).map((g) => (
               <Link key={g.slug} href={`/guides/${g.slug}`} style={{ fontSize: 14 }}>
                 {g.title}
               </Link>

@@ -20,6 +20,8 @@ export type Guide = {
   sections: GuideSection[];
   faq?: GuideFaqItem[];
   sources?: GuideSource[];
+  // Guides liés en priorité dans « À lire aussi » (complétés automatiquement).
+  related?: string[];
 };
 
 // Contenu factuel (rémunérations, durées légales) vérifié le 02/10/2026 --
@@ -120,6 +122,7 @@ export const GUIDES: Guide[] = [
       "Quand commencer, où chercher, comment relancer : la méthode concrète pour trouver une alternance plus vite, étape par étape.",
     publishedAt: "2026-10-02",
     updatedAt: "2026-10-02",
+    related: ["quand-chercher-son-alternance", "alternance-sans-entreprise", "trouver-alternance-linkedin", "candidature-spontanee-alternance"],
     intro: [
       "Trouver une entreprise pour une alternance prend en moyenne plusieurs semaines, parfois plusieurs mois -- mais la méthode compte autant que le nombre de candidatures envoyées. Voici comment t'organiser.",
     ],

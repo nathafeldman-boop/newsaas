@@ -322,6 +322,7 @@ export const MORE_GUIDES: Guide[] = [
       "Le plan d'un rapport de stage partie par partie (introduction, entreprise, missions, bilan), la longueur habituelle et les erreurs qui coûtent des points.",
     publishedAt: "2026-10-06",
     updatedAt: "2026-10-06",
+    related: ["soutenance-de-stage", "convention-de-stage"],
     intro: [
       "Le rapport de stage sert à montrer ce que tu as fait, mais surtout ce que tu as compris et appris. Voici le plan qu'attendent la plupart des écoles et ce qu'il faut mettre dans chaque partie.",
     ],
@@ -822,6 +823,7 @@ export const MORE_GUIDES: Guide[] = [
       "Quoi mettre sur un CV de stage quand on débute : rubriques, ordre, projets, jobs étudiants, compétences. La structure d'un CV d'une page qui donne envie de te rencontrer.",
     publishedAt: "2026-10-07",
     updatedAt: "2026-10-07",
+    related: ["soft-skills-cv", "lettre-de-motivation-stage", "mail-candidature-stage-alternance"],
     intro: [
       "Personne n'attend d'un étudiant une carrière de 10 ans. Ce que le recruteur cherche sur un CV de stage : ce que tu sais faire, ce que tu as déjà prouvé (même hors entreprise) et pourquoi ce stage. Voici comment le montrer sur une seule page.",
     ],
@@ -1175,6 +1177,7 @@ export const MORE_GUIDES: Guide[] = [
       "À quel moment chercher ton alternance pour la rentrée de septembre : le calendrier mois par mois, la règle légale des 3 mois et que faire si tu t'y prends tard.",
     publishedAt: "2026-10-07",
     updatedAt: "2026-10-07",
+    related: ["alternance-sans-entreprise", "trouver-une-alternance", "candidature-spontanee-alternance", "relancer-candidature"],
     intro: [
       "La question revient chaque année : trop tôt, les offres ne sont pas encore là ; trop tard, les meilleures sont parties. La bonne réponse : commence à préparer ton dossier 6 à 8 mois avant la rentrée et à candidater 4 à 6 mois avant. Voici le calendrier détaillé pour une rentrée en septembre, et ce que dit la loi si tu signes après la rentrée.",
     ],
@@ -1252,6 +1255,7 @@ export const MORE_GUIDES: Guide[] = [
       "Tu n'as pas trouvé d'entreprise pour ton alternance ? La loi te permet de commencer la formation au CFA pendant 3 mois sans employeur. Conditions, statut et plan d'action.",
     publishedAt: "2026-10-07",
     updatedAt: "2026-10-07",
+    related: ["quand-chercher-son-alternance", "candidature-spontanee-alternance", "contrat-apprentissage-ou-contrat-pro", "trouver-une-alternance"],
     intro: [
       "La rentrée arrive et tu n'as toujours pas signé de contrat ? Pas de panique : tu n'es pas obligé de renoncer à ta formation. Le Code du travail prévoit un dispositif pour commencer ton année au CFA pendant que tu continues à chercher ton entreprise. Voici comment ça marche et comment utiliser ces 3 mois au maximum.",
     ],
@@ -1321,6 +1325,7 @@ export const MORE_GUIDES: Guide[] = [
       "Réussir ta soutenance de stage ou d'alternance : plan type, nombre de slides, comment répéter et les questions que le jury pose presque toujours.",
     publishedAt: "2026-10-07",
     updatedAt: "2026-10-07",
+    related: ["rapport-de-stage", "premier-jour-en-entreprise", "se-presenter-en-entretien"],
     intro: [
       "La soutenance, c'est l'oral qui conclut ton stage ou ton année d'alternance : tu présentes ce que tu as fait et ce que tu en retires devant un jury (un prof, parfois ton tuteur). Ce n'est pas un résumé de ton rapport : c'est une démonstration que tu as compris ton travail et ce que tu as appris.",
       "Le format exact (durée, notation, jury) dépend de ton école : lis bien les consignes officielles avant de commencer, et respecte-les à la minute près.",
@@ -1395,6 +1400,7 @@ export const MORE_GUIDES: Guide[] = [
       "Les soft skills qui comptent pour un stage ou une alternance, celles à éviter, et la méthode pour les prouver avec un exemple concret plutôt qu'avec des adjectifs.",
     publishedAt: "2026-10-07",
     updatedAt: "2026-10-07",
+    related: ["cv-stage", "cv-alternance", "entretien-alternance"],
     intro: [
       "Quand tu as peu d'expérience, les recruteurs regardent surtout ton potentiel : ta façon de travailler, d'apprendre, de communiquer. C'est ça, les soft skills (ou savoir-être). Le problème : tout le monde écrit « dynamique, motivé, rigoureux ». Pour te démarquer, choisis-en peu et prouve-les.",
     ],
@@ -1473,6 +1479,7 @@ export const MORE_GUIDES: Guide[] = [
       "Ce qu'il faut préparer avant ton premier jour en stage ou en alternance, comment te comporter la première semaine et les erreurs qui laissent une mauvaise impression.",
     publishedAt: "2026-10-07",
     updatedAt: "2026-10-07",
+    related: ["convention-de-stage", "conges-alternant", "soutenance-de-stage"],
     intro: [
       "Tu as décroché ton stage ou ton alternance, bravo. Le premier jour, personne n'attend que tu saches tout faire : on regarde surtout si tu es fiable, curieux et facile à intégrer. Voici comment bien démarrer.",
     ],
@@ -1545,6 +1552,7 @@ export const MORE_GUIDES: Guide[] = [
       "Utiliser ChatGPT ou une autre IA pour ta lettre de motivation de stage ou d'alternance sans envoyer un texte générique : la méthode, un prompt à copier et les pièges à éviter.",
     publishedAt: "2026-10-07",
     updatedAt: "2026-10-07",
+    related: ["lettre-de-motivation-alternance", "lettre-de-motivation-stage", "mail-candidature-stage-alternance"],
     intro: [
       "Utiliser une IA pour écrire ta lettre de motivation n'a rien d'interdit, et ça peut te faire gagner beaucoup de temps. Le vrai risque, ce n'est pas de « se faire repérer » : c'est d'envoyer la même lettre lisse et vague que des dizaines d'autres candidats. Un recruteur la jette en dix secondes, IA ou pas.",
       "La règle : l'IA t'aide à structurer et à reformuler, mais le contenu (tes expériences, tes raisons, l'entreprise) vient de toi.",

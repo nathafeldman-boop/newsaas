@@ -55,6 +55,25 @@ export function LinkChips({ title, links }: { title: string; links: SegmentLink[
   );
 }
 
+const TYPE_GUIDES: Record<ContractType, { slug: string; label: string }[]> = {
+  alternance: [
+    { slug: "trouver-une-alternance", label: "Trouver une alternance" },
+    { slug: "quand-chercher-son-alternance", label: "Quand chercher (calendrier)" },
+    { slug: "cv-alternance", label: "CV d'alternance" },
+    { slug: "lettre-de-motivation-alternance", label: "Lettre de motivation" },
+    { slug: "contrat-apprentissage-ou-contrat-pro", label: "Apprentissage ou contrat pro" },
+    { slug: "aides-alternants", label: "Aides aux alternants" },
+  ],
+  stage: [
+    { slug: "trouver-un-stage", label: "Trouver un stage" },
+    { slug: "cv-stage", label: "CV de stage" },
+    { slug: "lettre-de-motivation-stage", label: "Lettre de motivation" },
+    { slug: "convention-de-stage", label: "Convention de stage" },
+    { slug: "rapport-de-stage", label: "Rapport de stage" },
+    { slug: "soutenance-de-stage", label: "Soutenance de stage" },
+  ],
+};
+
 const statValue: React.CSSProperties = { fontSize: 24, fontWeight: 700, fontFamily: "var(--font-heading)", margin: 0 };
 const statLabel: React.CSSProperties = { fontSize: 12.5, margin: "2px 0 0" };
 
@@ -149,9 +168,18 @@ export async function ProgrammaticPage({ type, slug, ville, pageParam }: RoutePr
           <Link href="/outils/simulateur-salaire-alternance">
             {type === "alternance" ? "Calculer mon salaire d'alternant" : "Calculer ma gratification de stage"}
           </Link>
-          {" · "}
-          <Link href="/guides/trouver-une-alternance">Guide : trouver une alternance</Link>
         </p>
+      </section>
+
+      <section className="mt-8">
+        <h2 style={{ fontSize: 18, margin: "0 0 10px" }}>Nos guides pour {type === "alternance" ? "ton alternance" : "ton stage"}</h2>
+        <div className="flex flex-wrap gap-2">
+          {TYPE_GUIDES[type].map((guide) => (
+            <Link key={guide.slug} href={`/guides/${guide.slug}`} className="tag tag-neutral">
+              {guide.label}
+            </Link>
+          ))}
+        </div>
       </section>
 
       <ShareButtons
