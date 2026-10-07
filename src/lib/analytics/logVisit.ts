@@ -5,8 +5,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
 // pas de bloquer quoi que ce soit (ce fichier n'écrit jamais rien qui
 // affecte la réponse HTTP réelle -- voir l'appel via event.waitUntil dans
 // proxy.ts).
+// Les aperçus de lien WhatsApp ("WhatsApp/2.x ...") et Snapchat ne
+// contiennent pas "bot" : sans eux, chaque lien partagé compterait comme une
+// visite. "^whatsapp/" et pas "whatsapp" : un vrai navigateur commence par
+// "Mozilla/", même ouvert depuis WhatsApp.
 export const BOT_UA_PATTERN =
-  /bot|crawl|spider|slurp|facebookexternalhit|pingdom|uptimerobot|monitor|headlesschrome/i;
+  /bot|crawl|spider|slurp|facebookexternalhit|pingdom|uptimerobot|monitor|headlesschrome|^whatsapp\/|snap url preview/i;
 
 export async function logVisit(
   visitorId: string,

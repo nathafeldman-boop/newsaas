@@ -107,6 +107,8 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
 
 export const config = {
   matcher: [
-    "/((?!api/|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // opengraph-image : images d'aperçu générées (voir src/lib/seo/ogImage.tsx),
+    // demandées par les robots de WhatsApp / LinkedIn, jamais des visites.
+    "/((?!api/|_next/static|_next/image|favicon.ico|.*opengraph-image|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
