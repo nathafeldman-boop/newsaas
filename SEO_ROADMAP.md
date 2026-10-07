@@ -203,6 +203,7 @@ Ce qui fait passer du bas au haut de la fourchette : les backlinks (aucun code n
 - [x] 07/10 : 20 métiers de plus (plombier, artisan du bâtiment, paysagiste, boucher, sécurité, relation client, transport, environnement, laboratoire...). Avant, 36 % des offres d'alternance et 29 % des offres de stage n'avaient aucune page métier.
 - [x] 07/10 : pages département (`/alternance/departement/[dep]`, `/[dep]/[metier]`) et région (`/alternance/region/[region]`, `/[region]/[metier]`), idem pour `/stage`. Pas de page quand une seule ville ou un seul département concentre au moins 90 % des offres (anti-doublon). Environ 150 pages indexables de plus en production rien qu'avec les métiers et les départements (sitemap métiers-villes : ~340 URLs), avant les régions.
 - [x] 07/10 : une entreprise n'est plus comptée deux fois quand la casse diffère (« Alticome » / « ALTICOME »).
+- [x] 07/10 : `lastmod` réel dans les sitemaps (date de la dernière offre publiée sur la page, plus l'heure de génération pour toutes). Le cron IndexNow n'envoie plus que les pages qui ont reçu une offre depuis la veille. Les pages métier France entière renvoient vers leurs pages région × métier, et chaque fiche offre vers sa page département (métier × département quand elle existe).
 - [ ] Filtrer les annonces d'écoles du catalogue lui-même (décision produit)
 - [x] Phase 3 — 40 guides rédigés (faits juridiques vérifiés sur sources officielles) + 4 outils (1 en ligne : le simulateur)
 - [ ] Phase 4 — hubs, baromètre, Search Console, suivi 100 mots-clés, dashboard

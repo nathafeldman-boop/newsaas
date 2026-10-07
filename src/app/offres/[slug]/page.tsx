@@ -387,7 +387,7 @@ export default async function PublicOfferPage({
       )}
 
       <div className="mt-6 flex flex-wrap gap-2">
-        {[links.programmatic.metierCity, links.programmatic.metier, links.programmatic.city, links.company]
+        {[links.programmatic.metierCity, links.programmatic.departement, links.programmatic.metier, links.programmatic.city, links.company]
           .filter((link): link is NonNullable<typeof link> => link !== null)
           .map((link) => (
             <Link key={link.href} href={link.href} className="tag tag-neutral">
@@ -461,7 +461,7 @@ async function ExpiredOffer({ offer }: { offer: Offer }) {
       )}
 
       <div className="mt-6 flex flex-wrap gap-2">
-        {[links.programmatic.metierCity, links.programmatic.metier, links.programmatic.city, links.company]
+        {[links.programmatic.metierCity, links.programmatic.departement, links.programmatic.metier, links.programmatic.city, links.company]
           .filter((link): link is NonNullable<typeof link> => link !== null)
           .map((link) => (
             <Link key={link.href} href={link.href} className="tag tag-neutral">
