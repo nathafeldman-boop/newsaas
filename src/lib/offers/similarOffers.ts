@@ -4,7 +4,7 @@ import { getCitySegments, getSectorSegments, normalizeCityKey, slugify, type Cit
 import { classifyMetier } from "@/lib/seo/metiers";
 import { cityPhrase, getProgrammaticIndex } from "@/lib/seo/programmaticIndex";
 import { departementFromLocation, getDepartement } from "@/lib/seo/departements";
-import { departementPath } from "@/lib/seo/programmaticPage";
+import { departementPath, fetchOffersByIds } from "@/lib/seo/programmaticPage";
 import { companySlug, getCompanyIndex } from "@/lib/seo/companyIndex";
 import type { Offer } from "@/types/database";
 
@@ -36,7 +36,10 @@ async function getCompanyLink(offer: Offer): Promise<ProgrammaticLink | null> {
 
 const TYPE_LABEL = { alternance: "Alternance", stage: "Stage" } as const;
 
-async function getProgrammaticLinks(offer: Offer): Promise<OfferContextLinks["programmatic"]> {
+// Liens programmatiques + offres candidates pour "Offres similaires", de la
+// plus proche à la plus large : même métier dans la ville, même métier dans
+// le département, même ville, même département (ids triés du plus récent).
+async function getProgrammaticLinks(offer: Offer): Promise<{ links: OfferContextLinks["programmatic"]; similarIds: string[] }> {
   const index = await getProgrammaticIndex(offer.contract_type);
   const metier = classifyMetier(offer.title);
   const citySlug = slugify(normalizeCityKey(offer.location));
@@ -48,7 +51,10 @@ async function getProgrammaticLinks(offer: Offer): Promise<OfferContextLinks["pr
   const depMetierStats = departement && metier ? index.depCombos[`${metier.slug}/${departement.code}`] : undefined;
   const depStats = departement ? index.departements[departement.code] : undefined;
   const where = departement ? ` ${departement.phrase}` : "";
-  return {
+  const similarIds = [
+    ...new Set([comboStats, depMetierStats, city, depStats].flatMap((stats) => stats?.ids ?? [])),
+  ].filter((id) => id !== offer.id);
+  const links: OfferContextLinks["programmatic"] = {
     metier: metier && metierStats
       ? { href: `/${offer.contract_type}/${metier.slug}`, label: `${typeLabel} ${metier.label}`, count: metierStats.count }
       : null,
@@ -64,6 +70,7 @@ async function getProgrammaticLinks(offer: Offer): Promise<OfferContextLinks["pr
           ? { href: departementPath(offer.contract_type, departement.slug, null), label: `${typeLabel}${where}`, count: depStats.count }
           : null,
   };
+  return { links, similarIds };
 }
 
 // Maillage interne d'une fiche offre : sans ça, chaque fiche est une
@@ -73,7 +80,7 @@ async function getProgrammaticLinks(offer: Offer): Promise<OfferContextLinks["pr
 // jamais empêcher l'affichage de la fiche elle-même.
 export async function getOfferContextLinks(offer: Offer): Promise<OfferContextLinks> {
   try {
-    const [citySegments, sectorSegments, programmatic, company] = await Promise.all([
+    const [citySegments, sectorSegments, { links: programmatic, similarIds }, company] = await Promise.all([
       getCitySegments(),
       getSectorSegments(),
       getProgrammaticLinks(offer),
@@ -93,19 +100,21 @@ export async function getOfferContextLinks(offer: Offer): Promise<OfferContextLi
         .order("published_at", { ascending: false })
         .limit(SIMILAR_OFFERS_LIMIT);
 
-    // Même ville d'abord (le critère n°1 d'un étudiant), sinon même secteur.
-    let similar: PublicOfferRow[] = [];
-    if (city) {
+    // Même métier près de chez toi d'abord (voir getProgrammaticLinks), puis
+    // même ville, puis même secteur. Marge sur le nombre d'ids : certaines
+    // offres de l'index (recalculé toutes les heures) ont pu être retirées.
+    let similar = (await fetchOffersByIds(similarIds.slice(0, SIMILAR_OFFERS_LIMIT * 2))).slice(0, SIMILAR_OFFERS_LIMIT);
+    const fill = (rows: PublicOfferRow[]) => {
+      const seen = new Set([offer.id, ...similar.map((o) => o.id)]);
+      similar = [...similar, ...rows.filter((o) => !seen.has(o.id))].slice(0, SIMILAR_OFFERS_LIMIT);
+    };
+    if (similar.length < 3 && city) {
       const { data } = await baseQuery().in("location", city.locations);
-      similar = (data ?? []) as PublicOfferRow[];
+      fill((data ?? []) as PublicOfferRow[]);
     }
     if (similar.length < 3 && offer.sector) {
       const { data } = await baseQuery().eq("sector", offer.sector);
-      const seen = new Set(similar.map((o) => o.id));
-      similar = [...similar, ...((data ?? []) as PublicOfferRow[]).filter((o) => !seen.has(o.id))].slice(
-        0,
-        SIMILAR_OFFERS_LIMIT,
-      );
+      fill((data ?? []) as PublicOfferRow[]);
     }
 
     return { city, sector, similar, programmatic, company };

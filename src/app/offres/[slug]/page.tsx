@@ -413,7 +413,8 @@ export default async function PublicOfferPage({
               {link.label} ({link.count})
             </Link>
           ))}
-        {links.city && (
+        {/* Liste sans contenu (noindex) : seulement si la ville n'a pas de page /alternance/[ville]. */}
+        {links.city && !links.programmatic.city && (
           <Link href={`/offres/ville/${links.city.slug}`} className="tag tag-neutral">
             Toutes les offres à {links.city.label} ({links.city.count})
           </Link>

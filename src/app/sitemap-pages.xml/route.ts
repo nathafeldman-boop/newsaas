@@ -1,10 +1,11 @@
-import { getSectorSegments, getCitySegments } from "@/lib/offers/segments";
+import { getSectorSegments } from "@/lib/offers/segments";
 import { urlsetXml, xmlResponse, type SitemapEntry } from "@/lib/seo/sitemapXml";
 
 export const dynamic = "force-dynamic";
 
 // Guides, outils et baromètre : sitemap-guides.xml. /login volontairement absent (noindex) : une page de connexion n'a
-// aucune raison d'apparaître dans Google.
+// aucune raison d'apparaître dans Google. /offres/ville/* non plus (noindex,
+// doublons de /alternance/[ville] et /stage/[ville]).
 const STATIC_PATHS = [
   "/",
   "/offres",
@@ -19,12 +20,11 @@ const STATIC_PATHS = [
 ];
 
 export async function GET() {
-  const [sectorSegments, citySegments] = await Promise.all([getSectorSegments(), getCitySegments()]);
+  const sectorSegments = await getSectorSegments();
 
   const entries: SitemapEntry[] = [
     ...STATIC_PATHS.map((path) => ({ path })),
     ...sectorSegments.map((segment) => ({ path: `/offres/secteur/${segment.slug}` })),
-    ...citySegments.map((segment) => ({ path: `/offres/ville/${segment.slug}` })),
   ];
 
   return xmlResponse(urlsetXml(entries));
