@@ -17,6 +17,11 @@ export type Metier = {
   // "de développeur", "dans la banque", "en marketing".
   domain: string;
   pattern: RegExp;
+  // Paragraphe propre au diplôme (pages formation), faits stables uniquement.
+  about?: string;
+  // Règle testée sur l'intitulé sans accents mais avec ses majuscules :
+  // "CAP" (le diplôme) et pas "Cap sur l'avenir".
+  caseSensitive?: boolean;
 };
 
 export const METIERS: Metier[] = [
@@ -78,7 +83,124 @@ export const METIERS: Metier[] = [
   { slug: "assistant-administratif", label: "assistant administratif", domain: "d'assistant administratif", pattern: /assistant(e)? (de direction|administrati|de gestion|polyvalent|office)|office manager|secretai|administrati|standardiste|hote(sse)? d.accueil|assistanat|agent d.accueil|charge(e)? d.accueil/ },
 ];
 
-const METIER_BY_SLUG = new Map(METIERS.map((metier) => [metier.slug, metier]));
+// Diplômes cités dans l'intitulé des offres ("Apprenti vendeur - BTS MCO") :
+// pages /alternance/bts-mco, /alternance/bts-mco/paris... Contrairement aux
+// métiers, une offre peut en avoir plusieurs ("BTS" + "BTS MCO"). Classement
+// sur le seul intitulé : la description complète coûterait trop cher à
+// relire à chaque calcul de l'index.
+export const FORMATIONS: Metier[] = [
+  {
+    slug: "bts",
+    label: "BTS",
+    domain: "en BTS",
+    pattern: /\bbts\b/,
+    about: "Le BTS (brevet de technicien supérieur) se prépare en 2 ans après le bac et donne un diplôme de niveau bac+2. C'est l'un des diplômes les plus préparés en alternance, dans presque tous les secteurs.",
+  },
+  {
+    slug: "bts-mco",
+    label: "BTS MCO",
+    domain: "en BTS MCO",
+    pattern: /\bmco\b|management commercial operationnel/,
+    about: "Le BTS MCO (Management Commercial Opérationnel) forme en 2 ans à la gestion d'un point de vente : vente, relation client, animation commerciale et management d'équipe. Diplôme de niveau bac+2.",
+  },
+  {
+    slug: "bts-ndrc",
+    label: "BTS NDRC",
+    domain: "en BTS NDRC",
+    pattern: /\bndrc\b|negociation (et )?digitalisation/,
+    about: "Le BTS NDRC (Négociation et Digitalisation de la Relation Client) forme en 2 ans à la prospection, à la négociation et à la vente, en face à face comme à distance. Diplôme de niveau bac+2.",
+  },
+  {
+    slug: "bts-gpme",
+    label: "BTS GPME",
+    domain: "en BTS GPME",
+    pattern: /\bgpme\b|gestion de la pme/,
+    about: "Le BTS GPME (Gestion de la PME) forme en 2 ans à la gestion administrative d'une petite entreprise : relations clients et fournisseurs, organisation, suivi des ressources humaines. Diplôme de niveau bac+2.",
+  },
+  {
+    slug: "bts-sam",
+    label: "BTS SAM",
+    domain: "en BTS SAM",
+    pattern: /\bbts sam\b|support a l.action manageriale/,
+    about: "Le BTS SAM (Support à l'Action Managériale) forme en 2 ans à l'assistanat de managers : organisation, gestion de projets, communication. Diplôme de niveau bac+2.",
+  },
+  {
+    slug: "bts-cg",
+    label: "BTS CG",
+    domain: "en BTS CG",
+    pattern: /\bbts cg\b|bts compta|comptabilite et gestion/,
+    about: "Le BTS CG (Comptabilité et Gestion) forme en 2 ans à la comptabilité, la fiscalité, la paie et l'analyse de gestion. Diplôme de niveau bac+2.",
+  },
+  {
+    slug: "bts-sio",
+    label: "BTS SIO",
+    domain: "en BTS SIO",
+    pattern: /\bsio\b|services informatiques aux organisations|\bsisr\b|\bslam\b/,
+    about: "Le BTS SIO (Services Informatiques aux Organisations) se prépare en 2 ans, avec l'option SISR (systèmes et réseaux) ou SLAM (développement). Diplôme de niveau bac+2.",
+  },
+  {
+    slug: "but",
+    label: "BUT",
+    domain: "en BUT",
+    pattern: /\bbut (tc|gea|info|informatique|mmi|gmp|qlio|geii|rt|gaco|cj|techniques|carrieres)|bachelor universitaire de technologie/,
+    about: "Le BUT (bachelor universitaire de technologie) se prépare en 3 ans en IUT et donne un diplôme national de niveau bac+3. Beaucoup d'IUT proposent les 2e et 3e années en alternance.",
+  },
+  {
+    slug: "licence-pro",
+    label: "licence pro",
+    domain: "en licence pro",
+    pattern: /licence pro/,
+    about: "La licence professionnelle se prépare en 1 an après un bac+2 et donne un diplôme national de niveau bac+3, très souvent en alternance.",
+  },
+  {
+    slug: "bachelor",
+    label: "bachelor",
+    domain: "en bachelor",
+    pattern: /\bbachelor\b(?! universitaire)/,
+    about: "Le bachelor est un diplôme d'école de niveau bac+3, souvent préparé en alternance en 1 an après un bac+2. Avant de t'inscrire, vérifie que le titre est enregistré au RNCP.",
+  },
+  {
+    slug: "master",
+    label: "master",
+    domain: "en master",
+    pattern: /\bmaster\b|mastere|\bmsc\b|\bmba\b/,
+    about: "Master, mastère ou MSc : formations de niveau bac+5, souvent en alternance sur les 2 dernières années. Le master est un diplôme national ; mastère et MSc sont des diplômes d'école, à vérifier au RNCP.",
+  },
+  {
+    slug: "cap",
+    label: "CAP",
+    domain: "en CAP",
+    pattern: /\bCAP\b/,
+    caseSensitive: true,
+    about: "Le CAP (certificat d'aptitude professionnelle) est un diplôme de niveau 3, souvent préparé en apprentissage, pour apprendre un métier manuel ou de service : cuisine, coiffure, boulangerie, bâtiment, vente...",
+  },
+  {
+    slug: "bac-pro",
+    label: "bac pro",
+    domain: "en bac pro",
+    pattern: /bac pro/,
+    about: "Le bac professionnel (niveau 4) se prépare en apprentissage dans de nombreux métiers techniques, commerciaux et de service.",
+  },
+  {
+    slug: "titre-pro",
+    label: "titre pro",
+    domain: "en titre pro",
+    pattern: /titre pro/,
+    about: "Le titre professionnel est une certification du ministère du Travail, enregistrée au RNCP, souvent préparée en contrat de professionnalisation.",
+  },
+];
+
+export function classifyFormations(title: string): Metier[] {
+  const normalized = normalizeTitle(title);
+  const withCase = title.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  return FORMATIONS.filter((formation) => formation.pattern.test(formation.caseSensitive ? withCase : normalized));
+}
+
+const METIER_BY_SLUG = new Map([...METIERS, ...FORMATIONS].map((metier) => [metier.slug, metier]));
+
+export function isFormation(slug: string): boolean {
+  return FORMATIONS.some((formation) => formation.slug === slug);
+}
 
 export function getMetier(slug: string): Metier | undefined {
   return METIER_BY_SLUG.get(slug);

@@ -203,6 +203,9 @@ export async function ProgrammaticPageView({ model, pageParam }: { model: Progra
 
       {model.nearby && <LinkChips title={model.nearby.title} links={model.nearby.links} />}
       {model.related && <LinkChips title={model.related.title} links={model.related.links} />}
+      {model.formations && model.formations.length > 0 && (
+        <LinkChips title={`${model.h1} : par diplôme`} links={model.formations} />
+      )}
       <LinkChips title="Les entreprises qui recrutent" links={model.companies} />
       {model.parentArea && (
         <p style={{ fontSize: 14, marginTop: 16 }}>
@@ -262,7 +265,7 @@ export async function hubMetadata(type: ContractType): Promise<Metadata> {
 }
 
 export async function ProgrammaticHub({ type }: { type: ContractType }) {
-  const { index, metiers, cities } = await getHubModel(type);
+  const { index, metiers, cities, formations } = await getHubModel(type);
   const text = HUB_TEXT[type];
   return (
     <div className="mx-auto max-w-4xl px-5 py-10 sm:px-9">
@@ -276,6 +279,7 @@ export async function ProgrammaticHub({ type }: { type: ContractType }) {
       </p>
       <LinkChips title="Par métier" links={metiers} />
       <LinkChips title="Par ville" links={cities} />
+      <LinkChips title="Par diplôme" links={formations} />
       <LinkChips title="Par région" links={regionLinks(index)} />
       <LinkChips title="Par département" links={departementLinks(index)} />
       <p style={{ fontSize: 14, marginTop: 24 }}>

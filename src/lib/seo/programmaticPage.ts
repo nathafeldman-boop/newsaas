@@ -1,6 +1,6 @@
 import { createPublicClient } from "@/lib/supabase/public";
 import { PUBLIC_OFFER_COLUMNS, PUBLIC_OFFERS_PAGE_SIZE, type PublicOfferRow } from "@/lib/offers/fetchPublicOffers";
-import { getMetier, METIERS, type Metier } from "@/lib/seo/metiers";
+import { FORMATIONS, getMetier, METIERS, type Metier } from "@/lib/seo/metiers";
 import { CITY_COORDINATES, distanceKm } from "@/lib/seo/cityCoordinates";
 import {
   INDEXABLE_MIN_OFFERS,
@@ -39,6 +39,8 @@ export type ProgrammaticModel = {
   crossType: SegmentLink | null;
   // Page département qui contient la ville (pages ville et métier × ville).
   parentArea: SegmentLink | null;
+  // Diplômes avec une page dans la ville (pages ville seulement).
+  formations?: SegmentLink[];
   companies: SegmentLink[];
   metier: Metier | null;
   city: CityEntry | null;
@@ -203,6 +205,7 @@ export function buildProgrammaticModel(
         ? `${plural(stats.recent7d, "offre")} ${stats.recent7d > 1 ? "ont" : "a"} été publiée${stats.recent7d > 1 ? "s" : ""} ces 7 derniers jours : le marché bouge, les premiers à postuler sont les plus lus.`
         : "Aucune nouvelle offre cette semaine : postule sans attendre à celles qui sont en ligne."),
   );
+  if (metier?.about) paragraphs.push(metier.about);
   if (stats.topCompanies.length > 0) {
     paragraphs.push(`Les entreprises qui recrutent le plus : ${listCompanies(stats, 4)}.`);
   }
@@ -297,6 +300,7 @@ export function buildProgrammaticModel(
     related: related && related.links.length > 0 ? related : null,
     crossType,
     parentArea: parentArea(index, metier, city),
+    formations: city && !metier ? formationsInCity(index, city.slug) : undefined,
     companies: [],
     metier,
     city,
@@ -345,5 +349,17 @@ export async function getHubModel(type: ContractType) {
     .sort((a, b) => b.count - a.count)
     .slice(0, 48)
     .map((c) => ({ href: segmentPath(type, null, c.slug), label: c.label, count: c.count }));
-  return { index, metiers: topMetiers(index), cities };
+  const formations = FORMATIONS.map((f) => ({ f, stats: index.metiers[f.slug] }))
+    .filter((x) => x.stats)
+    .sort((a, b) => b.stats!.count - a.stats!.count)
+    .map((x) => ({ href: segmentPath(type, x.f.slug, null), label: x.f.label.charAt(0).toUpperCase() + x.f.label.slice(1), count: x.stats!.count }));
+  return { index, metiers: topMetiers(index), cities, formations };
+}
+
+// Diplômes présents dans une ville (pages ville : "par diplôme").
+export function formationsInCity(index: ProgrammaticIndex, citySlug: string): SegmentLink[] {
+  return FORMATIONS.map((f) => ({ f, stats: index.combos[`${f.slug}/${citySlug}`] }))
+    .filter((x) => x.stats)
+    .sort((a, b) => b.stats!.count - a.stats!.count)
+    .map((x) => ({ href: segmentPath(index.type, x.f.slug, citySlug), label: x.f.label.charAt(0).toUpperCase() + x.f.label.slice(1), count: x.stats!.count }));
 }

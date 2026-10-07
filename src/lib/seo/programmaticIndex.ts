@@ -2,7 +2,7 @@ import { unstable_cache } from "next/cache";
 import { createPublicClient, fetchAllRows } from "@/lib/supabase/public";
 import { NOT_A_CITY, normalizeCityKey, slugify, titleCase } from "@/lib/offers/segments";
 import { PUBLIC_OFFERS_PAGE_SIZE } from "@/lib/offers/fetchPublicOffers";
-import { classifyMetier } from "@/lib/seo/metiers";
+import { classifyFormations, classifyMetier } from "@/lib/seo/metiers";
 import { isSchool } from "@/lib/seo/schools";
 import { departementFromLocation, getDepartement, getRegionBySlug, learnCityDepartements, regionOfDepartement } from "@/lib/seo/departements";
 import type { ContractType, OfferSource } from "@/types/database";
@@ -236,11 +236,15 @@ export function buildIndex(type: ContractType, rows: IndexRow[], now = Date.now(
       add(cities.get(citySlug)!.acc, row, isRecent, salary);
       countPlace(cities.get(citySlug)!.acc, dep);
     }
-    if (metier) {
-      if (!metiers.has(metier.slug)) metiers.set(metier.slug, newAccumulator());
-      add(metiers.get(metier.slug)!, row, isRecent, salary);
+    // Métier + diplômes cités dans l'intitulé (BTS MCO...) : mêmes pages
+    // France entière et × ville, mais pas d'échelle département / région
+    // pour les diplômes (trop peu d'offres, pages quasi identiques).
+    for (const tag of [metier, ...classifyFormations(row.title)]) {
+      if (!tag) continue;
+      if (!metiers.has(tag.slug)) metiers.set(tag.slug, newAccumulator());
+      add(metiers.get(tag.slug)!, row, isRecent, salary);
       if (isCity) {
-        const key = `${metier.slug}/${citySlug}`;
+        const key = `${tag.slug}/${citySlug}`;
         if (!combos.has(key)) combos.set(key, newAccumulator());
         add(combos.get(key)!, row, isRecent, salary);
       }
@@ -302,7 +306,7 @@ export function buildIndex(type: ContractType, rows: IndexRow[], now = Date.now(
 // Un seul scan du catalogue par type et par heure, partagé par toutes les
 // pages /alternance/* et /stage/* (sinon chaque page vue relirait ~3 000
 // offres).
-const cachedIndex = unstable_cache(computeIndex, ["programmatic-index-v8"], { revalidate: 3600 });
+const cachedIndex = unstable_cache(computeIndex, ["programmatic-index-v9"], { revalidate: 3600 });
 
 export function getProgrammaticIndex(type: ContractType): Promise<ProgrammaticIndex> {
   return cachedIndex(type);
