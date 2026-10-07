@@ -52,6 +52,15 @@ export const TYPE_LABEL: Record<ContractType, string> = { alternance: "Alternanc
 export const OFFERS_OF: Record<ContractType, string> = { alternance: "offres d'alternance", stage: "offres de stage" };
 export const OTHER_TYPE: Record<ContractType, ContractType> = { alternance: "stage", stage: "alternance" };
 
+// Fin de meta description avec les chiffres propres à la page (offres de la
+// semaine, salaire médian indiqué) plutôt qu'une liste générique : c'est
+// ce qui donne envie de cliquer dans les résultats.
+export function freshAndSalary(stats: SegmentStats): string {
+  const fresh = stats.recent7d > 0 ? `, dont ${stats.recent7d.toLocaleString("fr-FR")} cette semaine` : "";
+  const salary = stats.salaryMedian !== null ? ` Salaire médian indiqué : ${formatEuros(stats.salaryMedian, 0)} brut par mois.` : "";
+  return `${fresh}.${salary}`;
+}
+
 export function capitalize(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
@@ -290,7 +299,7 @@ export function buildProgrammaticModel(
     path: segmentPath(type, metier?.slug ?? null, city?.slug ?? null),
     h1,
     title: `${h1} : ${plural(stats.count, "offre")}`,
-    description: `${plural(stats.count, OFFERS_OF[type].replace("offres", "offre"), OFFERS_OF[type])}${domain}${where} chez ${plural(stats.companyCount, "entreprise")}${companiesHint ? ` (${companiesHint}…)` : ""}. Salaires, entreprises qui recrutent, villes proches. Mis à jour chaque jour.`,
+    description: `${plural(stats.count, OFFERS_OF[type].replace("offres", "offre"), OFFERS_OF[type])}${domain}${where} chez ${plural(stats.companyCount, "entreprise")}${companiesHint ? ` (${companiesHint}…)` : ""}${freshAndSalary(stats)} Mis à jour chaque jour.`,
     indexable: stats.count >= INDEXABLE_MIN_OFFERS,
     stats,
     breadcrumb,
