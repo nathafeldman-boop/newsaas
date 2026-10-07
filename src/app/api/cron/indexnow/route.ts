@@ -30,7 +30,10 @@ export async function GET(request: NextRequest) {
   const paths = await collectIndexNowPaths(since);
   const result = await submitToIndexNow(paths.map((path) => `${SITE_URL}${path}`));
   if (result.error) {
+    console.error("indexnow cron failed", { urls: paths.length, ...result });
     return NextResponse.json({ urls: paths.length, ...result }, { status: 502 });
   }
+  // Trace visible dans les logs Vercel : seule preuve que l'envoi du jour a eu lieu.
+  console.log(`indexnow cron: ${result.submitted} URLs envoyées à Bing`);
   return NextResponse.json({ urls: paths.length, submitted: result.submitted });
 }
