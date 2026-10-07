@@ -21,17 +21,29 @@ export function createPublicClient() {
 // entier (sitemap, comptages par ville/secteur) doit donc paginer.
 export const POSTGREST_MAX_ROWS = 1000;
 
+// Pages lues par lots de `concurrency` en parallèle : à plusieurs dizaines
+// de milliers d'offres (synchro France Travail par département), une lecture
+// page par page prendrait plusieurs secondes à chaque recalcul d'index.
+// Résultat identique à une lecture séquentielle (même ordre, arrêt à la
+// première page incomplète).
 export async function fetchAllRows<T>(
   fetchPage: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>,
   maxRows = 100_000,
+  concurrency = 4,
 ): Promise<T[]> {
   const rows: T[] = [];
-  for (let from = 0; from < maxRows; from += POSTGREST_MAX_ROWS) {
-    const { data, error } = await fetchPage(from, from + POSTGREST_MAX_ROWS - 1);
-    if (error) throw new Error(error.message);
-    if (!data || data.length === 0) break;
-    rows.push(...data);
-    if (data.length < POSTGREST_MAX_ROWS) break;
+  for (let batchStart = 0; batchStart < maxRows; batchStart += POSTGREST_MAX_ROWS * concurrency) {
+    const starts: number[] = [];
+    for (let from = batchStart; from < Math.min(maxRows, batchStart + POSTGREST_MAX_ROWS * concurrency); from += POSTGREST_MAX_ROWS) {
+      starts.push(from);
+    }
+    const pages = await Promise.all(starts.map((from) => fetchPage(from, from + POSTGREST_MAX_ROWS - 1)));
+    for (const { data, error } of pages) {
+      if (error) throw new Error(error.message);
+      if (!data || data.length === 0) return rows;
+      rows.push(...data);
+      if (data.length < POSTGREST_MAX_ROWS) return rows;
+    }
   }
   return rows;
 }
