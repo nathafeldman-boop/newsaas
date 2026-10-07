@@ -87,15 +87,20 @@ interface SearchResult {
 // appelant). 200 = page complète, 206 = page partielle (fin de résultats
 // atteinte) -- les deux sont un succès, 204 = aucun résultat pour cette
 // requête.
+// `departement` (code "75", "2A", "971") : contourne le plafond de ~1 150
+// résultats par recherche en découpant par département (voir
+// sync-france-travail-departements).
 export async function searchFranceTravailPage(
   what: string,
   rangeStart: number,
   rangeEnd: number,
+  departement?: string,
 ): Promise<SearchResult> {
   const token = await getAccessToken();
 
   const url = new URL(SEARCH_URL);
   url.searchParams.set("motsCles", what);
+  if (departement) url.searchParams.set("departement", departement);
 
   const res = await fetch(url.toString(), {
     headers: {
@@ -110,7 +115,7 @@ export async function searchFranceTravailPage(
   if (!res.ok && res.status !== 206) {
     const text = await res.text().catch(() => "");
     throw new Error(
-      `France Travail HTTP ${res.status} (what="${what}", range ${rangeStart}-${rangeEnd}) : ${text.slice(0, 300)}`,
+      `France Travail HTTP ${res.status} (what="${what}"${departement ? `, departement=${departement}` : ""}, range ${rangeStart}-${rangeEnd}) : ${text.slice(0, 300)}`,
     );
   }
 

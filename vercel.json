@@ -29,6 +29,14 @@
       "schedule": "0 10 * * *"
     },
     {
+      "path": "/api/cron/sync-france-travail-departements",
+      "schedule": "10 2 * * *"
+    },
+    {
+      "path": "/api/cron/sync-france-travail-departements",
+      "schedule": "10 3 * * *"
+    },
+    {
       "path": "/api/cron/sync-france-travail",
       "schedule": "30 4 * * *"
     },
