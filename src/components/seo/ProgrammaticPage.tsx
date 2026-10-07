@@ -68,9 +68,9 @@ const TYPE_GUIDES: Record<ContractType, { slug: string; label: string }[]> = {
     { slug: "trouver-un-stage", label: "Trouver un stage" },
     { slug: "cv-stage", label: "CV de stage" },
     { slug: "lettre-de-motivation-stage", label: "Lettre de motivation" },
+    { slug: "gratification-de-stage", label: "Gratification 2026" },
     { slug: "convention-de-stage", label: "Convention de stage" },
     { slug: "rapport-de-stage", label: "Rapport de stage" },
-    { slug: "soutenance-de-stage", label: "Soutenance de stage" },
   ],
 };
 

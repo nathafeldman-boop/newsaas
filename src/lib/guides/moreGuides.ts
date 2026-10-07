@@ -1614,4 +1614,450 @@ export const MORE_GUIDES: Guide[] = [
       },
     ],
   },
+  {
+    slug: "gratification-de-stage",
+    title: "Gratification de stage 2026 : montant, calcul et droits du stagiaire",
+    metaDescription:
+      "Gratification minimale de stage en 2026 : 4,50 € de l'heure, obligatoire au-delà de 2 mois. Calcul, exemple à temps plein, impôts, tickets resto et transport.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    related: ["convention-de-stage", "trouver-un-stage", "stage-de-fin-d-etudes"],
+    intro: [
+      "Un stagiaire n'a pas de salaire : il reçoit une gratification. Elle est obligatoire dès que ton stage dépasse 2 mois dans la même entreprise, et la loi fixe un minimum. Voici combien tu dois toucher en 2026, comment c'est calculé et les autres droits que beaucoup de stagiaires oublient de demander.",
+    ],
+    sections: [
+      {
+        heading: "Quand la gratification est-elle obligatoire ?",
+        paragraphs: [
+          "Dès que ton stage dure plus de 2 mois de présence, consécutifs ou non, dans le même organisme d'accueil et sur la même année scolaire ou universitaire. Concrètement : plus de 44 jours de présence à 7 heures par jour, soit plus de 308 heures.",
+          "Dans ce cas, elle est due dès le premier jour du stage, pas seulement à partir du troisième mois, et elle est versée chaque mois. En dessous de ce seuil, l'entreprise peut te gratifier mais n'y est pas obligée.",
+        ],
+      },
+      {
+        heading: "Le montant minimum en 2026",
+        paragraphs: [
+          "Le minimum légal est de 4,50 € par heure de stage effectuée. Ce n'est qu'un plancher : l'entreprise peut verser plus, ce qui est fréquent dans certains secteurs (tech, finance, conseil), et ta convention de stage indique le montant exact.",
+        ],
+        table: {
+          headers: ["Temps de présence", "Heures par mois (moyenne)", "Gratification minimale par mois"],
+          rows: [
+            ["35 h par semaine", "151,67 h", "environ 682 €"],
+            ["28 h par semaine", "121,33 h", "environ 546 €"],
+            ["20 h par semaine", "86,67 h", "environ 390 €"],
+          ],
+        },
+      },
+      {
+        heading: "Comment c'est calculé",
+        paragraphs: [
+          "La gratification se calcule sur les heures réellement effectuées : 4,50 € × le nombre d'heures du mois. Comme le nombre de jours travaillés varie d'un mois à l'autre, le montant peut changer légèrement chaque mois, sauf si l'entreprise lisse les versements sur la durée du stage.",
+          "Brut ou net ? Jusqu'au minimum légal, la gratification n'est soumise à aucune cotisation sociale : tu touches la même somme en net. Au-dessus, seule la partie qui dépasse le minimum est soumise à cotisations.",
+          "Pour un calcul sur ta situation, utilise notre simulateur : il donne la gratification minimale selon tes heures par semaine.",
+        ],
+      },
+      {
+        heading: "Impôts : faut-il déclarer sa gratification ?",
+        paragraphs: [
+          "Les gratifications de stage sont exonérées d'impôt sur le revenu dans la limite du montant annuel du SMIC (article 81 bis du Code général des impôts). Pour la quasi-totalité des stagiaires, il n'y a donc rien à payer. La limite s'applique sur l'année, quelle que soit la durée du stage.",
+        ],
+      },
+      {
+        heading: "Les autres droits du stagiaire",
+        list: [
+          "Tickets restaurant ou accès au restaurant d'entreprise, dans les mêmes conditions que les salariés.",
+          "Prise en charge d'une partie de tes frais de transport en commun, comme les salariés.",
+          "Congés et absences : prévus dans ta convention. Pour un stage de plus de 2 mois, la convention doit prévoir des congés et autorisations d'absence.",
+          "Durée maximale : 6 mois par année d'enseignement dans le même organisme d'accueil (924 heures de présence).",
+        ],
+      },
+      {
+        heading: "Si ta gratification n'est pas versée",
+        paragraphs: [
+          "Commence par en parler à ton tuteur ou aux RH : c'est souvent un oubli administratif. Si rien ne bouge, préviens ton école, qui a signé la convention : elle peut intervenir. Garde une trace écrite de tes échanges et de tes heures de présence.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Quel est le montant de la gratification de stage en 2026 ?",
+        a: "Au minimum 4,50 € par heure de stage, soit environ 682 € par mois pour un stage à temps plein de 35 heures par semaine. L'entreprise peut verser plus.",
+      },
+      {
+        q: "Un stage de 2 mois est-il payé ?",
+        a: "La gratification n'est obligatoire qu'au-delà de 2 mois de présence (plus de 308 heures). Pour un stage de 2 mois pile ou moins, l'entreprise n'est pas obligée de te gratifier, mais elle peut le faire.",
+      },
+      {
+        q: "La gratification de stage est-elle imposable ?",
+        a: "Non, dans la limite du montant annuel du SMIC, ce qui couvre la quasi-totalité des stages.",
+      },
+      {
+        q: "La gratification est-elle versée pendant les congés ?",
+        a: "Ça dépend de ta convention : la gratification est calculée sur les heures de présence, mais la convention peut prévoir le maintien de la gratification pendant les congés. Vérifie-la avant de signer.",
+      },
+    ],
+    sources: [
+      { label: "Gratification minimale de stage (service-public.gouv.fr)", url: "https://entreprendre.service-public.gouv.fr/vosdroits/F32131" },
+      { label: "Exonération d'impôt des gratifications de stage (Code général des impôts, art. 81 bis, Légifrance)", url: "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000029236245" },
+    ],
+  },
+  {
+    slug: "choisir-son-ecole-en-alternance",
+    title: "Choisir son école ou son CFA en alternance : les 7 points à vérifier",
+    metaDescription:
+      "Diplôme reconnu (RNCP), taux de réussite et d'insertion, rythme, aide à trouver une entreprise, frais : comment choisir une école ou un CFA en alternance sans te faire avoir.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    related: ["bts-bachelor-master-alternance", "quand-chercher-son-alternance", "contrat-apprentissage-ou-contrat-pro"],
+    intro: [
+      "En alternance, ton école compte autant que ton entreprise : c'est elle qui délivre ton diplôme, qui t'aide (ou pas) à trouver un contrat et qui fixe ton rythme. Les écoles d'alternance se sont multipliées, et toutes ne se valent pas. Voici ce qu'il faut vérifier avant de t'inscrire.",
+    ],
+    sections: [
+      {
+        heading: "1. Le diplôme est-il reconnu ?",
+        paragraphs: [
+          "Un contrat d'apprentissage doit préparer un diplôme ou un titre à finalité professionnelle enregistré au Répertoire national des certifications professionnelles (RNCP). Vérifie le numéro RNCP de la formation sur le site de France Compétences, et le niveau indiqué (niveau 5 = bac+2, niveau 6 = bac+3, niveau 7 = bac+5).",
+          "Attention au mot « bachelor » ou « MBA » : ce sont des appellations commerciales. Ce qui compte, c'est le titre RNCP ou le diplôme national (BTS, BUT, licence, master) qu'il y a derrière.",
+        ],
+      },
+      {
+        heading: "2. Les résultats de l'école",
+        paragraphs: [
+          "Chaque année, les CFA doivent rendre publics plusieurs indicateurs (article L6111-8 du Code du travail) : taux d'obtention du diplôme, taux de poursuite d'études, taux d'interruption en cours de formation, taux d'insertion professionnelle et taux de rupture des contrats d'apprentissage. Ils sont consultables sur la plateforme InserJeunes. Un taux de rupture ou d'abandon élevé doit te poser question.",
+        ],
+      },
+      {
+        heading: "3. L'aide pour trouver une entreprise",
+        list: [
+          "L'école a-t-elle un service relations entreprises, avec des offres réservées à ses étudiants ?",
+          "Combien d'étudiants de l'an dernier ont trouvé un contrat avant la rentrée ?",
+          "Que se passe-t-il si tu n'as pas d'entreprise à la rentrée : peux-tu commencer quand même ?",
+        ],
+      },
+      {
+        heading: "4. Le rythme",
+        paragraphs: [
+          "1 semaine école / 3 semaines entreprise, 2 jours / 3 jours, un mois sur deux... Le rythme change beaucoup ton quotidien et ce que les entreprises acceptent. Certains métiers préfèrent des périodes longues en entreprise (commerce, chantier), d'autres s'adaptent à tout. Vérifie aussi la distance entre l'école et les entreprises que tu vises.",
+        ],
+      },
+      {
+        heading: "5. Les frais",
+        paragraphs: [
+          "En contrat d'apprentissage, la formation est gratuite pour toi et pour tes parents : c'est garanti par la loi (article L6211-1 du Code du travail). Elle est financée par l'opérateur de compétences (OPCO) de ton entreprise. Méfie-toi d'une école qui te demande des frais de scolarité pour une formation en apprentissage, ou qui te fait payer si tu ne trouves pas d'entreprise sans te l'avoir dit clairement avant l'inscription.",
+        ],
+      },
+      {
+        heading: "6. Les avis d'anciens",
+        paragraphs: [
+          "Cherche des anciens étudiants sur LinkedIn (recherche par nom de l'école et formation) et envoie un message court : la plupart répondent volontiers. Demande-leur comment s'est passée la recherche d'entreprise, la qualité des cours et ce qu'ils font aujourd'hui.",
+        ],
+      },
+      {
+        heading: "7. Le lieu",
+        paragraphs: [
+          "Pendant l'alternance, tu feras des allers-retours entre ton école et ton entreprise. Choisir une école dans la ville où il y a le plus d'offres dans ton métier augmente beaucoup tes chances. Regarde le nombre d'offres par ville avant de choisir.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Une école d'alternance peut-elle être payante ?",
+        a: "Pas en contrat d'apprentissage : la formation est gratuite pour l'apprenti et sa famille. En contrat de professionnalisation, les frais sont normalement pris en charge par l'entreprise et son OPCO. Lis bien les conditions si tu ne trouves pas d'entreprise.",
+      },
+      {
+        q: "Comment savoir si un diplôme est reconnu par l'État ?",
+        a: "Vérifie qu'il s'agit d'un diplôme national (BTS, BUT, licence, master) ou d'un titre enregistré au RNCP, avec son numéro et son niveau, sur le site de France Compétences.",
+      },
+      {
+        q: "Faut-il trouver l'école ou l'entreprise en premier ?",
+        a: "Les deux en parallèle : l'école te donne une date de rentrée et un rythme à proposer aux entreprises, et l'entreprise valide ton inscription définitive.",
+      },
+    ],
+    sources: [
+      { label: "Formation gratuite pour l'apprenti (Code du travail, L6211-1)", url: "https://code.travail.gouv.fr/code-du-travail/l6211-1" },
+      { label: "Indicateurs publiés par les CFA (Code du travail, L6111-8)", url: "https://code.travail.gouv.fr/code-du-travail/l6111-8" },
+    ],
+  },
+  {
+    slug: "bts-bachelor-master-alternance",
+    title: "BTS, BUT, bachelor ou master en alternance : lequel choisir ?",
+    metaDescription:
+      "Les diplômes qu'on peut préparer en alternance, du CAP au master : durée, niveau, débouchés et comment choisir selon ton profil et le métier que tu vises.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    related: ["choisir-son-ecole-en-alternance", "alternance-age-limite", "trouver-une-alternance"],
+    intro: [
+      "Presque tous les diplômes peuvent se préparer en alternance, du CAP au diplôme d'ingénieur. Le bon choix dépend de ton niveau actuel, du métier visé et du temps que tu veux passer en études. Voici les principaux, avec leur niveau officiel.",
+    ],
+    sections: [
+      {
+        heading: "Les diplômes possibles en alternance",
+        table: {
+          headers: ["Diplôme", "Niveau", "Durée habituelle", "Pour qui"],
+          rows: [
+            ["CAP", "Niveau 3", "1 à 2 ans", "Apprendre un métier manuel ou de service, dès la fin du collège"],
+            ["Bac pro", "Niveau 4 (bac)", "2 à 3 ans", "Métier technique ou commercial avec un bac en poche"],
+            ["BTS", "Niveau 5 (bac+2)", "2 ans", "Après le bac, pour être vite opérationnel"],
+            ["BUT", "Niveau 6 (bac+3)", "3 ans", "Après le bac, formation universitaire technologique"],
+            ["Licence professionnelle", "Niveau 6 (bac+3)", "1 an", "Après un bac+2, pour se spécialiser"],
+            ["Bachelor (titre RNCP)", "Niveau 6 (bac+3)", "1 à 3 ans", "Écoles privées ou consulaires, vérifier le titre RNCP"],
+            ["Master, diplôme d'ingénieur ou d'école de commerce", "Niveau 7 (bac+5)", "2 ans (ou 3 pour l'ingénieur)", "Après un bac+3, postes de cadre"],
+          ],
+        },
+      },
+      {
+        heading: "Comment choisir",
+        list: [
+          "Pars du métier : regarde les offres d'alternance de ce métier et le niveau qu'elles demandent.",
+          "Tu veux travailler vite : BTS ou BUT, très appréciés des entreprises pour leur côté opérationnel.",
+          "Tu as déjà un bac+2 : licence pro ou bachelor pour te spécialiser en 1 an, ou une 3e année de BUT.",
+          "Tu vises un poste de cadre : master ou école en alternance, souvent après un bac+3.",
+          "Regarde ton âge : le contrat d'apprentissage est en principe ouvert jusqu'à 29 ans révolus (avec des exceptions).",
+        ],
+      },
+      {
+        heading: "Ce qui change selon le niveau",
+        paragraphs: [
+          "Ton salaire minimum d'apprenti dépend de ton âge et de ton année de contrat, pas du diplôme : comme on prépare souvent un master plus âgé qu'un BTS, il est en général plus élevé, et certaines entreprises proposent plus que le minimum aux bac+5. En revanche, les places en master en alternance sont plus disputées : commence ta recherche d'entreprise tôt.",
+          "Bon à savoir : enchaîner plusieurs diplômes en alternance est possible. Beaucoup d'étudiants font un BTS puis une licence pro ou un bachelor, toujours en alternance.",
+        ],
+      },
+      {
+        heading: "Attention aux appellations",
+        paragraphs: [
+          "« Bachelor », « MBA », « Mastère » (avec un e) ne sont pas des diplômes nationaux. Ils peuvent être d'excellentes formations, à condition d'être enregistrés au RNCP à un niveau précis. Demande toujours le numéro RNCP et vérifie-le sur le site de France Compétences.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Peut-on faire un BTS en alternance ?",
+        a: "Oui, c'est même l'un des diplômes les plus préparés en alternance, en 2 ans, dans presque tous les secteurs (commerce, gestion, informatique, industrie).",
+      },
+      {
+        q: "Quelle est la différence entre un bachelor et une licence ?",
+        a: "La licence et le BUT sont des diplômes nationaux. Le bachelor est une appellation utilisée par des écoles : il peut correspondre à un titre RNCP de niveau 6 (bac+3), voire à un diplôme visé par l'État. Vérifie son numéro RNCP.",
+      },
+      {
+        q: "Peut-on faire un master en alternance ?",
+        a: "Oui, beaucoup de masters et d'écoles de commerce ou d'ingénieurs proposent l'alternance, souvent sur les 2 dernières années.",
+      },
+    ],
+  },
+  {
+    slug: "entretien-de-stage",
+    title: "Entretien de stage : les questions spécifiques au stage et quoi répondre",
+    metaDescription:
+      "Dates, durée, convention, missions, gratification : les questions propres à un entretien de stage, avec des exemples de réponses et ce que tu dois vérifier de ton côté.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    related: ["se-presenter-en-entretien", "questions-a-poser-en-entretien", "convention-de-stage"],
+    intro: [
+      "Un entretien de stage ressemble à un entretien classique, avec des questions en plus : tes dates, la durée, ta convention, ce que ton école attend. Si tu les prépares, tu passes pour quelqu'un d'organisé. Sinon, tu laisses un flou qui peut coûter la place.",
+    ],
+    sections: [
+      {
+        heading: "Les questions logistiques (à connaître par cœur)",
+        list: [
+          "« Quelles sont vos dates de stage ? » : donne les dates exactes de début et de fin possibles, et ta marge de souplesse.",
+          "« Le stage est-il obligatoire dans votre cursus ? » : oui ou non, et quel est l'objectif fixé par l'école (stage de découverte, de fin d'études, mission précise).",
+          "« Pouvez-vous avoir une convention ? » : oui, explique comment ton école la gère et en combien de temps elle est signée.",
+          "« Êtes-vous disponible à temps plein ? » : précise si tu as des cours ou des examens pendant la période.",
+        ],
+      },
+      {
+        heading: "Les questions sur ta motivation",
+        list: [
+          "« Pourquoi ce stage chez nous ? » : 2 raisons précises sur l'entreprise, puis le lien avec ton projet.",
+          "« Qu'attendez-vous de ce stage ? » : ce que tu veux apprendre et ce que tu veux apporter. Pas « découvrir le monde de l'entreprise », trop vague.",
+          "« Qu'avez-vous retenu de vos stages précédents ? » : une compétence apprise et une chose que tu ferais différemment.",
+          "« Où vous voyez-vous après vos études ? » : une direction cohérente avec le stage, sans forcément de poste précis.",
+        ],
+      },
+      {
+        heading: "Les questions sur les missions",
+        paragraphs: [
+          "On peut te demander comment tu t'y prendrais pour une tâche du stage (« Comment organiseriez-vous un événement pour 50 clients ? », « Comment analyseriez-vous ces chiffres ? »). Personne n'attend une réponse parfaite : montre ta méthode. Les étapes, les questions que tu poserais, comment tu vérifierais le résultat.",
+        ],
+      },
+      {
+        heading: "Ce que tu dois vérifier de ton côté",
+        list: [
+          "Les missions concrètes et qui sera ton tuteur.",
+          "Les horaires, le télétravail possible, le lieu.",
+          "La gratification si le stage dépasse 2 mois : elle est obligatoire, au minimum 4,50 € par heure en 2026.",
+          "Les tickets restaurant et le remboursement du transport, auxquels tu as droit comme les salariés.",
+          "Les possibilités d'embauche ou d'alternance après le stage, si c'est ton objectif.",
+        ],
+      },
+      {
+        heading: "Parler de la gratification sans gêne",
+        paragraphs: [
+          "Si on ne t'en parle pas, pose la question à la fin, simplement : « Pouvez-vous me préciser la gratification prévue et les avantages (tickets restaurant, transport) ? » C'est une question normale, que les recruteurs attendent.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Combien de temps dure un entretien de stage ?",
+        a: "Souvent entre 20 et 45 minutes, parfois en deux étapes (RH puis tuteur). Prévois de pouvoir rester un peu plus longtemps.",
+      },
+      {
+        q: "Faut-il parler de la gratification en entretien de stage ?",
+        a: "Oui, à la fin, si le recruteur ne l'a pas fait. Pour un stage de plus de 2 mois, elle est obligatoire : demander le montant prévu est normal.",
+      },
+      {
+        q: "Que répondre à « avez-vous d'autres pistes de stage ? »",
+        a: "La vérité, simplement : « J'ai d'autres candidatures en cours, mais votre stage est mon premier choix parce que… ». Ça montre que tu es demandé sans fermer la porte.",
+      },
+    ],
+  },
+  {
+    slug: "profil-linkedin-etudiant",
+    title: "Profil LinkedIn étudiant : la checklist pour être contacté par les recruteurs",
+    metaDescription:
+      "Photo, titre, résumé, expériences, compétences, mode « Open to work » : la checklist complète pour un profil LinkedIn d'étudiant qui attire les offres de stage et d'alternance.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    related: ["trouver-alternance-linkedin", "cv-alternance", "soft-skills-cv"],
+    intro: [
+      "Quand tu postules, le recruteur tape souvent ton nom sur LinkedIn. Et certains recruteurs cherchent directement des étudiants pour leurs stages et alternances. Un profil complet, c'est 1 heure de travail une fois pour toutes. Voici la checklist, dans l'ordre de ce que le recruteur voit.",
+    ],
+    sections: [
+      {
+        heading: "Le haut du profil (ce qu'on voit en 3 secondes)",
+        list: [
+          "Photo : ton visage, de face, fond neutre, lumière du jour. Pas besoin de costume, mais pas de photo de soirée.",
+          "Bannière : une image simple liée à ton domaine, ou une couleur unie.",
+          "Titre : pas seulement « Étudiant », mais ce que tu cherches. Exemple : « Étudiant BTS NDRC | Recherche alternance commerciale à Lyon dès septembre ».",
+          "Ville : celle où tu cherches, pour apparaître dans les recherches des recruteurs locaux.",
+          "« Open to work » : active-le en précisant le type de poste (stage, alternance), la ville et la date de début.",
+        ],
+      },
+      {
+        heading: "La section « Infos » (ton résumé)",
+        paragraphs: [
+          "4 à 6 lignes à la première personne : ta formation, ce qui t'intéresse, une ou deux réalisations, et ce que tu cherches avec les dates et ton rythme. Termine par une phrase d'invitation : « Ouvert aux échanges, n'hésitez pas à me contacter ».",
+        ],
+      },
+      {
+        heading: "Expériences et formation",
+        list: [
+          "Mets tes jobs étudiants, stages, missions associatives et projets marquants, avec 2 lignes de résultats chacun.",
+          "Pour ta formation : le nom exact du diplôme, l'école, les années, et 2 ou 3 matières ou projets en lien avec ce que tu cherches.",
+          "Ajoute tes certifications (langues, outils, MOOC) si elles sont utiles pour le poste.",
+        ],
+      },
+      {
+        heading: "Compétences",
+        paragraphs: [
+          "Ajoute les compétences qui reviennent dans les offres que tu vises (outils, langues, techniques) : ce sont des mots-clés que les recruteurs utilisent dans leurs recherches. Épingle les 3 plus importantes en haut de la liste.",
+        ],
+      },
+      {
+        heading: "Les erreurs qui font fuir",
+        list: [
+          "Un profil vide avec juste ton école.",
+          "Une URL de profil avec des chiffres : personnalise-la (prénom-nom) dans les paramètres.",
+          "Des fautes d'orthographe dans le titre ou le résumé.",
+          "Un titre et un CV qui ne disent pas la même chose (dates, diplôme, recherche).",
+        ],
+      },
+      {
+        heading: "Faire vivre ton profil (10 minutes par semaine)",
+        list: [
+          "Ajoute des personnes de ton secteur et de ta ville, avec un court message personnalisé.",
+          "Commente intelligemment 1 ou 2 posts par semaine de professionnels de ton domaine.",
+          "Publie de temps en temps : un projet d'école terminé, une certification, ce que tu as appris en stage.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Faut-il activer « Open to work » quand on est étudiant ?",
+        a: "Oui, en choisissant les bons types de postes (stage, alternance), la ville et la date de début. Les recruteurs filtrent souvent sur ce critère.",
+      },
+      {
+        q: "Que mettre dans son titre LinkedIn quand on est étudiant ?",
+        a: "Ta formation et ce que tu cherches, avec la ville et la date. Exemple : « Étudiante en master RH | Recherche alternance à Paris dès septembre ».",
+      },
+      {
+        q: "Faut-il une photo professionnelle sur LinkedIn ?",
+        a: "Pas forcément faite par un photographe : une photo nette, de face, avec un fond neutre, suffit largement.",
+      },
+    ],
+  },
+  {
+    slug: "stage-de-fin-d-etudes",
+    title: "Stage de fin d'études : comment le choisir pour décrocher un CDI",
+    metaDescription:
+      "Le stage de fin d'études est souvent ton premier pas vers un CDI. Comment choisir l'entreprise et les missions, quand chercher, et ce que dit la loi si tu es embauché après.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    related: ["gratification-de-stage", "trouver-un-stage", "convention-de-stage"],
+    intro: [
+      "Le stage de fin d'études n'est pas un stage comme les autres : c'est souvent le dernier avant ton premier emploi, et beaucoup d'entreprises s'en servent comme période de recrutement. Bien le choisir peut te faire gagner des mois de recherche d'emploi.",
+    ],
+    sections: [
+      {
+        heading: "Les bons critères de choix",
+        list: [
+          "Les missions : de vraies responsabilités, que tu pourras raconter en entretien d'embauche. Méfie-toi des offres vagues.",
+          "La possibilité d'embauche : demande franchement en entretien si le stage peut déboucher sur un CDI ou un CDD.",
+          "Le tuteur : quelqu'un de disponible, qui a déjà encadré des stagiaires.",
+          "Le secteur et la ville où tu veux travailler ensuite : ton premier réseau se construit là.",
+          "La gratification : obligatoire au-delà de 2 mois, au minimum 4,50 € par heure en 2026.",
+        ],
+      },
+      {
+        heading: "Quand chercher",
+        paragraphs: [
+          "Commence 4 à 6 mois avant la date de début. Pour un stage de fin d'études qui commence en février ou mars, les offres sortent souvent dès l'automne précédent, en particulier dans les grandes entreprises. Les PME publient plus tard, au fil de leurs besoins.",
+        ],
+      },
+      {
+        heading: "La durée",
+        paragraphs: [
+          "Un stage dure au maximum 6 mois par année d'enseignement dans le même organisme d'accueil (924 heures de présence). Si tu vises une embauche, un stage long est un avantage : tu as le temps de faire tes preuves et l'entreprise d'anticiper ton recrutement.",
+        ],
+      },
+      {
+        heading: "Si l'entreprise t'embauche après ton stage",
+        paragraphs: [
+          "Le Code du travail (article L1221-24) prévoit deux avantages si tu es embauché dans les 3 mois qui suivent ton stage de dernière année :",
+        ],
+        list: [
+          "La durée de ton stage est déduite de ta période d'essai, dans la limite de la moitié de celle-ci (sauf accord collectif plus favorable).",
+          "Si le poste correspond aux missions de ton stage, la durée du stage est déduite entièrement de la période d'essai.",
+          "Si ton stage a duré plus de 2 mois, il compte aussi dans ton ancienneté.",
+        ],
+      },
+      {
+        heading: "Transformer le stage en CDI",
+        list: [
+          "Dès le premier mois, dis à ton tuteur que tu aimerais rester si l'occasion se présente.",
+          "Fixe des objectifs clairs et fais un point régulier sur tes résultats.",
+          "Intéresse-toi aux autres équipes : une ouverture de poste peut venir d'ailleurs.",
+          "Deux mois avant la fin, pose la question directement : « Est-ce qu'un poste pourrait s'ouvrir à la fin de mon stage ? »",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Quelle est la durée maximale d'un stage de fin d'études ?",
+        a: "6 mois par année d'enseignement dans le même organisme d'accueil, soit 924 heures de présence.",
+      },
+      {
+        q: "Le stage compte-t-il dans la période d'essai si je suis embauché ?",
+        a: "Oui, si tu es embauché dans les 3 mois après un stage de dernière année : la durée du stage est déduite de la période d'essai (dans la limite de la moitié, ou entièrement si le poste correspond à tes missions de stage).",
+      },
+      {
+        q: "Vaut-il mieux un stage dans une grande entreprise ou une PME ?",
+        a: "Les deux ont des avantages : une grande entreprise apporte un nom sur ton CV et des process structurés, une PME donne souvent plus de responsabilités et un accès direct aux décideurs. Choisis selon les missions proposées.",
+      },
+    ],
+    sources: [
+      { label: "Stage et période d'essai en cas d'embauche (Code du travail, L1221-24)", url: "https://code.travail.gouv.fr/code-du-travail/l1221-24" },
+      { label: "Gratification minimale de stage (service-public.gouv.fr)", url: "https://entreprendre.service-public.gouv.fr/vosdroits/F32131" },
+    ],
+  },
 ];
