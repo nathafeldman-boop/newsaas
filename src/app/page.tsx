@@ -218,6 +218,19 @@ async function getDiscoveryLinks(): Promise<{ metiers: DiscoveryLink[]; cities: 
   }
 }
 
+// Guides mis en avant sur l'accueil : la page la plus forte du site leur
+// transmet du poids, et ce sont les questions que les étudiants tapent le plus.
+const POPULAR_GUIDES = [
+  { href: "/guides/quand-chercher-son-alternance", label: "Quand chercher son alternance" },
+  { href: "/guides/gratification-de-stage", label: "Gratification de stage 2026" },
+  { href: "/guides/cv-alternance", label: "CV d'alternance" },
+  { href: "/guides/lettre-de-motivation-alternance", label: "Lettre de motivation" },
+  { href: "/guides/contrat-apprentissage-ou-contrat-pro", label: "Apprentissage ou contrat pro" },
+  { href: "/guides/aides-alternants", label: "Aides aux alternants" },
+  { href: "/guides/entretien-alternance", label: "Entretien d'alternance" },
+  { href: "/guides/trouver-un-stage", label: "Trouver un stage" },
+];
+
 export default async function LandingPage() {
   // Client admin plutôt que le client lié aux cookies (@/lib/supabase/server) :
   // cette page n'affiche rien de spécifique au visiteur, et cookies() forcerait
@@ -1467,6 +1480,7 @@ export default async function LandingPage() {
               { title: "Les métiers qui recrutent", links: discovery.metiers },
               { title: "Les villes", links: discovery.cities },
               { title: "Les entreprises qui publient le plus", links: discovery.companies },
+              { title: "Les guides les plus lus", links: POPULAR_GUIDES },
             ]
               .filter((group) => group.links.length > 0)
               .map((group) => (
