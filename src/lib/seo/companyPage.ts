@@ -106,8 +106,11 @@ export async function resolveCompanyPage(slug: string): Promise<CompanyModel | n
     company,
     path: `/entreprises/${company.slug}`,
     h1,
-    title: `${h1} : ${n(company.count, "offre")}`,
-    description: `${n(company.count, "offre")} chez ${company.label} (${split})${topCities.length ? ` à ${topCities.join(", ")}` : ""}. Métiers, villes, salaires : tout pour postuler. Mis à jour chaque jour.`,
+    // Nom en tête et "recrutement" : les requêtes réelles sont "intermarché
+    // recrutement alternance", "airbus stage", "safran stages" (Search
+    // Console, 07/10).
+    title: `${company.label} : recrutement en ${kind.toLowerCase()} (${n(company.count, "offre")})`,
+    description: `${company.label} recrute : ${n(company.count, "offre")} (${split})${topCities.length ? ` à ${topCities.join(", ")}` : ""}. Métiers, villes, salaires : tout pour postuler. Mis à jour chaque jour.`,
     indexable: company.count >= INDEXABLE_MIN_OFFERS,
     paragraphs,
     faq,

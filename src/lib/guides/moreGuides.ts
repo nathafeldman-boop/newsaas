@@ -3025,14 +3025,14 @@ export const MORE_GUIDES: Guide[] = [
   },
   {
     slug: "stage-de-seconde",
-    title: "Stage de seconde : comment le trouver (et le réussir)",
+    title: "Stage de seconde 2027 : comment le trouver (et le réussir)",
     metaDescription:
-      "Le stage de seconde est obligatoire : 2 semaines d'observation en juin pour tous les élèves de seconde générale et technologique. Où chercher, comment demander, quoi écrire, et les règles.",
+      "Le stage de seconde est obligatoire : 2 semaines d'observation du 14 au 25 juin 2027 pour tous les élèves de seconde générale et technologique. Où chercher, comment demander, quoi écrire, et les règles.",
     publishedAt: "2026-10-07",
     updatedAt: "2026-10-07",
-    related: ["candidature-spontanee-alternance", "mail-candidature-stage-alternance", "premier-jour-en-entreprise"],
+    related: ["stage-de-3e", "candidature-spontanee-alternance", "mail-candidature-stage-alternance", "premier-jour-en-entreprise"],
     intro: [
-      "Depuis 2024, tous les élèves de seconde générale et technologique font un stage d'observation de 2 semaines en juin (du 15 au 26 juin en 2026). Le plus dur, c'est de trouver la structure qui t'accueille : les places partent vite. Voici comment t'y prendre, dès maintenant.",
+      "Depuis 2024, tous les élèves de seconde générale et technologique font un stage d'observation de 2 semaines en juin : du 14 au 25 juin 2027 pour les élèves de seconde de cette année. Le plus dur, c'est de trouver la structure qui t'accueille : les places partent vite. Voici comment t'y prendre, dès maintenant.",
     ],
     sections: [
       {
@@ -3043,6 +3043,7 @@ export const MORE_GUIDES: Guide[] = [
           "Dans une entreprise, une association, une administration, un établissement public ou une collectivité.",
           "Une convention de stage est signée entre ton lycée, la structure d'accueil et tes parents.",
           "C'est un stage d'observation : tu découvres un métier et un milieu professionnel, tu n'es pas payé.",
+          "Tu peux le couper en deux : une semaine dans une structure, une semaine dans une autre.",
           "Il peut aussi se faire à l'étranger : demande les conditions à ton lycée.",
         ],
       },
@@ -3095,7 +3096,7 @@ export const MORE_GUIDES: Guide[] = [
       },
       {
         q: "Quand a lieu le stage de seconde ?",
-        a: "Pendant les deux dernières semaines de juin, aux dates fixées par le ministère (du 15 au 26 juin en 2026). Ton lycée te donne les dates de ton année.",
+        a: "Pendant les deux dernières semaines de juin, aux dates fixées par le ministère : du 14 au 25 juin 2027 (du 15 au 26 juin en 2026). Ton lycée te confirme les dates.",
       },
       {
         q: "Où trouver un stage de seconde ?",
@@ -3110,6 +3111,7 @@ export const MORE_GUIDES: Guide[] = [
       { label: "Un stage en juin pour les élèves de seconde générale et technologique (education.gouv.fr)", url: "https://www.education.gouv.fr/reussir-au-lycee/un-stage-en-juin-pour-les-eleves-de-seconde-generale-et-technologique-461817" },
       { label: "Stage des élèves de seconde générale et technologique (Bulletin officiel 2026)", url: "https://www.education.gouv.fr/bo/2026/Hebdo6/MENE2603164J" },
       { label: "Accueillir un stagiaire de seconde avec la plateforme 1élève1stage (education.gouv.fr)", url: "https://www.education.gouv.fr/entreprise-association-service-public-accueillir-un-stagiaire-de-seconde-avec-la-plateforme-413793" },
+      { label: "Stages de 3e et de 2nde : dates 2027 (Sorbonne Université)", url: "https://www.sorbonne-universite.fr/la-culture/universite-des-enfants-et-des-adolescents/stages-de-3e-et-de-2nde" },
     ],
   },
   {
@@ -3366,6 +3368,127 @@ export const MORE_GUIDES: Guide[] = [
     sources: [
       { label: "Décret n° 2026-168 du 6 mars 2026 relatif à l'aide exceptionnelle aux employeurs d'apprentis (Légifrance)", url: "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000053634597" },
       { label: "Aide exceptionnelle à l'embauche d'apprentis : publication du décret (Centre Inffo)", url: "https://www.centre-inffo.fr/site-droit-formation/actualites-droit/aide-exceptionnelle-a-lembauche-dapprentis-publication-du-decret" },
+    ],
+  },
+  {
+    slug: "stage-de-3e",
+    title: "Stage de 3e : trouver son stage d'observation (et le réussir)",
+    metaDescription:
+      "Le stage de 3e dure 5 jours et il est obligatoire. Où le trouver, comment demander (modèle de message), horaires autorisés, convention, rapport de stage : tout ce qu'il faut savoir.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    related: ["stage-de-seconde", "mail-candidature-stage-alternance", "premier-jour-en-entreprise"],
+    intro: [
+      "En 3e, tout le monde fait une séquence d'observation en milieu professionnel : 5 jours pour découvrir un métier de l'intérieur. Les dates sont fixées par ton collège, et le plus dur est de trouver qui t'accueille. Les places dans les entreprises connues partent vite : commence à chercher dès que tu connais tes dates.",
+    ],
+    sections: [
+      {
+        heading: "Les règles en bref",
+        list: [
+          "Obligatoire pour tous les élèves de 3e. En 4e, certains collèges en proposent aussi une, facultative.",
+          "5 jours, pendant le temps scolaire, aux dates choisies par ton collège.",
+          "Dans une entreprise, un commerce, une association, une administration, un hôpital, une mairie…",
+          "Une convention est signée par ton collège, la structure qui t'accueille et tes parents. Sans convention signée, pas de stage.",
+          "C'est de l'observation : tu n'es pas payé, et tu ne fais pas le travail d'un salarié.",
+          "Moins de 14 ans ? Depuis 2019, tu peux faire ton stage dans une entreprise privée, comme tes camarades plus âgés.",
+        ],
+      },
+      {
+        heading: "Horaires : ce qui est autorisé",
+        table: {
+          headers: ["Ton âge", "Par jour", "Par semaine", "La nuit"],
+          rows: [
+            ["Moins de 15 ans", "7 h maximum", "30 h maximum", "Interdit entre 20 h et 6 h"],
+            ["15 ans et plus", "Voir ta convention", "35 h maximum", "Interdit entre 20 h et 6 h avant 16 ans"],
+          ],
+        },
+        paragraphs: [
+          "Tu n'as pas le droit d'utiliser des machines ou des produits dangereux, ni de faire des travaux réservés aux adultes. Tu peux en revanche aider à de petites tâches simples, si ton tuteur est d'accord.",
+        ],
+      },
+      {
+        heading: "Où chercher",
+        list: [
+          "La plateforme officielle 1élève1stage : les entreprises, associations et administrations qui veulent accueillir des élèves de 4e, 3e et seconde y publient leurs places. Tu peux y postuler et signer ta convention en ligne.",
+          "Ton entourage : parents, oncles et tantes, parents d'amis, voisins. C'est souvent le plus simple, n'aie pas honte de demander.",
+          "Les commerces et entreprises près de chez toi : boulangerie, pharmacie, garage, agence, cabinet vétérinaire… Une demande en personne, polie et préparée, marche très bien.",
+          "Les services publics : mairie, caserne de pompiers, hôpital, bibliothèque, école maternelle. Renseigne-toi tôt, certains limitent le nombre d'élèves.",
+          "Les grandes enseignes (magasins, banques, industrie) : certaines ont des places réservées aux 3e. Regarde leur site carrières, elles partent en premier.",
+          "Ton collège : le professeur principal et le CDI ont souvent une liste de structures qui ont déjà accueilli des élèves.",
+        ],
+      },
+      {
+        heading: "Choisir ton stage",
+        paragraphs: [
+          "Pas besoin d'avoir déjà un projet : le stage sert justement à découvrir. Choisis un métier qui te rend curieux, ou un lieu où tu verras plusieurs métiers à la fois (un hôpital, une mairie, une grande entreprise). Évite si possible le bureau de tes parents si tu n'y vois rien de nouveau : ce sera moins intéressant pour ton rapport.",
+        ],
+      },
+      {
+        heading: "Comment demander : un modèle de message",
+        paragraphs: [
+          "Objet : Demande de stage d'observation de 3e – du [date] au [date]",
+          "Bonjour Madame, Monsieur,",
+          "Je suis élève de 3e au collège [nom] à [ville]. Je dois faire un stage d'observation de 5 jours du [date] au [date], et j'aimerais beaucoup découvrir le métier de [métier] dans votre [entreprise, magasin, service].",
+          "Je suis curieux(se), ponctuel(le) et sérieux(se) [ajoute une phrase sur ce qui t'attire : une passion, une matière que tu aimes]. Mon collège fournit la convention de stage.",
+          "Je vous remercie de l'attention portée à ma demande et je reste disponible pour passer vous voir.",
+          "[Prénom Nom] – [téléphone d'un parent] – [mail]",
+        ],
+      },
+      {
+        heading: "Pendant le stage",
+        list: [
+          "Arrive à l'heure, habillé simplement et proprement : demande avant le premier jour s'il y a une tenue à respecter.",
+          "Pose des questions : comment on devient [métier], ce qui plaît, ce qui est difficile, les études à faire. C'est le but du stage.",
+          "Prends des notes chaque soir : tâches observées, personnes rencontrées, ce qui t'a surpris. Ton rapport sera beaucoup plus facile à écrire.",
+          "Demande si tu peux prendre quelques photos pour ton rapport (jamais de personnes ou de documents sans accord).",
+          "Le dernier jour, remercie ton tuteur. Un petit mail de remerciement après le stage fait toujours plaisir.",
+        ],
+      },
+      {
+        heading: "Le rapport de stage et l'oral du brevet",
+        paragraphs: [
+          "La plupart des collèges demandent un rapport ou une présentation après le stage. Il n'y a pas de modèle national : suis les consignes de ton collège. En général, on y trouve la présentation de la structure, les métiers observés, ce que tu as fait jour par jour, et ce que tu en retires pour ton orientation.",
+          "Ton stage peut aussi être le sujet de ton oral du brevet, dans le cadre du parcours Avenir. Si tu as aimé ton stage, c'est un bon choix : tu as du concret à raconter.",
+        ],
+      },
+      {
+        heading: "Et après ?",
+        paragraphs: [
+          "En seconde générale et technologique, tu feras un autre stage d'observation, de 2 semaines en juin. Plus tard, en BTS, BUT, licence ou école, viendront les vrais stages et l'alternance, payés cette fois. Les guides Stageio sont là pour ces étapes-là aussi.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Combien de temps dure le stage de 3e ?",
+        a: "5 jours, en général une semaine du lundi au vendredi, aux dates fixées par ton collège.",
+      },
+      {
+        q: "Le stage de 3e est-il obligatoire ?",
+        a: "Oui, la séquence d'observation en milieu professionnel est obligatoire pour tous les élèves de 3e.",
+      },
+      {
+        q: "Où trouver un stage de 3e ?",
+        a: "Sur la plateforme officielle 1élève1stage, grâce à ton entourage, en démarchant les commerces, entreprises et services publics près de chez toi, et auprès de ton collège. Commence dès que tu connais tes dates.",
+      },
+      {
+        q: "Peut-on faire son stage de 3e avant 14 ans ?",
+        a: "Oui. Depuis 2019, les élèves de moins de 14 ans peuvent faire leur stage d'observation dans une entreprise privée, comme les autres.",
+      },
+      {
+        q: "Combien d'heures par jour pendant le stage de 3e ?",
+        a: "Avant 15 ans : 7 heures par jour et 30 heures par semaine au maximum, jamais entre 20 h et 6 h. À partir de 15 ans : 35 heures par semaine au maximum.",
+      },
+      {
+        q: "Le stage de 3e est-il payé ?",
+        a: "Non, c'est un stage d'observation : tu découvres un métier sans être rémunéré.",
+      },
+    ],
+    sources: [
+      { label: "Séquence d'observation en milieu professionnel pour les élèves de 3e (Éduscol)", url: "https://eduscol.education.fr/623/sequence-d-observation-en-milieu-professionnel-pour-les-eleves-de-3e" },
+      { label: "Article D332-14 du Code de l'éducation (Légifrance)", url: "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006527073" },
+      { label: "Stages d'observation des élèves de moins de 14 ans (question écrite, Sénat, 2019)", url: "https://www.senat.fr/questions/base/2019/qSEQ19040732S.html" },
+      { label: "Offre de stage aux collégiens et lycéens : la plateforme 1élève1stage (education.gouv.fr)", url: "https://www.education.gouv.fr/offre-de-stage-aux-collegiens-et-lyceens-ouverture-de-la-nouvelle-plateforme-1eleve1stage-462528" },
     ],
   },
 ];
