@@ -353,7 +353,7 @@ function expandIndex(compact: CompactIndex): ProgrammaticIndex {
 // Un seul scan du catalogue par type et par heure, partagé par toutes les
 // pages /alternance/* et /stage/* (sinon chaque page vue relirait tout le
 // catalogue).
-const cachedIndex = unstable_cache(computeCompactIndex, ["programmatic-index-v11"], { revalidate: 3600 });
+const cachedIndex = unstable_cache(computeCompactIndex, ["programmatic-index-v12"], { revalidate: 3600 });
 
 // Décompacté une fois par version du cache (generatedAt), pas à chaque appel.
 const expanded = new Map<ContractType, ProgrammaticIndex>();

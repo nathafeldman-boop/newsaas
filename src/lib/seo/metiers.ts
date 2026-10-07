@@ -76,6 +76,12 @@ export const METIERS: Metier[] = [
   { slug: "fleuriste", label: "fleuriste", domain: "de fleuriste", pattern: /fleurist|art floral/ },
   { slug: "animalier", label: "métiers animaliers", domain: "auprès des animaux", pattern: /veterinai|toilett|animal|animaux|soigneu|\basv\b|canin|felin/ },
   { slug: "proprete", label: "propreté", domain: "dans la propreté", pattern: /proprete|nettoyage|agent d.entretien|agent de service|\bmenage|laveu|hygiene des locaux/ },
+  // Avant "santé" et "social" (le premier qui correspond gagne) : métiers
+  // recherchés en tant que tels ("alternance aide soignante", "cap aepe
+  // alternance", "éducateur spécialisé apprentissage" dans Search Console).
+  { slug: "aide-soignant", label: "aide-soignant", domain: "d'aide-soignant", pattern: /aide.?soignant/ },
+  { slug: "petite-enfance", label: "petite enfance", domain: "dans la petite enfance", pattern: /petite enfance|puericult|\baepe\b|\bcreche|micro.?creche|educat(eur|rice)s? de jeunes enfants|\beje\b/ },
+  { slug: "educateur-specialise", label: "éducateur spécialisé", domain: "d'éducateur spécialisé", pattern: /educat(eur|rice)s? specialise|moniteur.?educat/ },
   { slug: "sante", label: "santé", domain: "dans la santé", pattern: /pharmac|dentaire|medical|infirmi|aide.?soignant|opticien|laborantin|\bsante\b|ambulanci|kine|dieteti|psychomot|orthophon|ergotherap|psycholog|orthopt|radiolog|manipulat(eur|rice) (en )?(electro|radio)|osteo|podolog|audioprothes|preparat(eur|rice) en pharmacie/ },
   { slug: "social", label: "social et éducation", domain: "dans le social et l'éducation", pattern: /educat|animat|petite enfance|puericult|\baesh\b|travail social|accompagnant|auxiliaire de vie|aide a domicile|services? a la personne|insertion|professeu|enseignan|formateu|surveillant|\batsem\b|assistant(e)? maternel|moniteu/ },
   { slug: "vente", label: "vente", domain: "dans la vente", pattern: /vendeu|conseill(er|ere) de vente|conseill(er|ere) vente|magasin|boutique|retail|caissi|employe(e)? (de commerce|polyvalent)|equipier|(hote|hotesse|employe|employee|agent)s? de caisse|libre.?service|rayon|\bdrive\b|employe(e)? commercia|grande distribution|hypermarche|supermarche|merchandis/ },
@@ -165,6 +171,20 @@ export const FORMATIONS: Metier[] = [
     domain: "en master",
     pattern: /\bmaster\b|mastere|\bmsc\b|\bmba\b/,
     about: "Master, mastère ou MSc : formations de niveau bac+5, souvent en alternance sur les 2 dernières années. Le master est un diplôme national ; mastère et MSc sont des diplômes d'école, à vérifier au RNCP.",
+  },
+  {
+    slug: "bts-electrotechnique",
+    label: "BTS Électrotechnique",
+    domain: "en BTS Électrotechnique",
+    pattern: /\bbts\b.{0,20}electrotech/,
+    about: "Le BTS Électrotechnique forme en 2 ans aux installations électriques du bâtiment, de l'industrie et de l'énergie : étude, installation, mise en service et maintenance. Diplôme de niveau bac+2, très demandé en alternance.",
+  },
+  {
+    slug: "bac-pro-mspc",
+    label: "bac pro MSPC",
+    domain: "en bac pro MSPC",
+    pattern: /\bmspc\b|maintenance des systemes de production connectes/,
+    about: "Le bac pro MSPC (Maintenance des Systèmes de Production Connectés) forme à la maintenance des équipements industriels : diagnostic des pannes, réparation, amélioration des machines. Diplôme de niveau 4, souvent préparé en apprentissage.",
   },
   {
     slug: "cap",

@@ -3,7 +3,7 @@ import { PUBLIC_OFFER_COLUMNS, type PublicOfferRow } from "@/lib/offers/fetchPub
 import { getCitySegments, getSectorSegments, normalizeCityKey, slugify, type CitySegment, type Segment } from "@/lib/offers/segments";
 import { classifyMetier } from "@/lib/seo/metiers";
 import { cityPhrase, getProgrammaticIndex } from "@/lib/seo/programmaticIndex";
-import { departementFromLocation, getDepartement } from "@/lib/seo/departements";
+import { departementFromLocation, getDepartement, regionOfDepartement } from "@/lib/seo/departements";
 import { departementPath, fetchOffersByIds } from "@/lib/seo/programmaticPage";
 import { companySlug, getCompanyIndex } from "@/lib/seo/companyIndex";
 import type { Offer } from "@/types/database";
@@ -37,8 +37,9 @@ async function getCompanyLink(offer: Offer): Promise<ProgrammaticLink | null> {
 const TYPE_LABEL = { alternance: "Alternance", stage: "Stage" } as const;
 
 // Liens programmatiques + offres candidates pour "Offres similaires", de la
-// plus proche à la plus large : même métier dans la ville, même métier dans
-// le département, même ville, même département (ids triés du plus récent).
+// plus proche à la plus large : même métier dans la ville, dans le
+// département, même ville, même métier dans la région, même département,
+// puis même métier en France (ids triés du plus récent).
 async function getProgrammaticLinks(offer: Offer): Promise<{ links: OfferContextLinks["programmatic"]; similarIds: string[] }> {
   const index = await getProgrammaticIndex(offer.contract_type);
   const metier = classifyMetier(offer.title);
@@ -51,8 +52,12 @@ async function getProgrammaticLinks(offer: Offer): Promise<{ links: OfferContext
   const depMetierStats = departement && metier ? index.depCombos[`${metier.slug}/${departement.code}`] : undefined;
   const depStats = departement ? index.departements[departement.code] : undefined;
   const where = departement ? ` ${departement.phrase}` : "";
+  const region = departement ? regionOfDepartement(departement.code) : undefined;
+  const regionMetierStats = region && metier ? index.regionCombos[`${metier.slug}/${region.slug}`] : undefined;
   const similarIds = [
-    ...new Set([comboStats, depMetierStats, city, depStats].flatMap((stats) => stats?.ids ?? [])),
+    ...new Set(
+      [comboStats, depMetierStats, city, regionMetierStats, depStats, metierStats].flatMap((stats) => stats?.ids ?? []),
+    ),
   ].filter((id) => id !== offer.id);
   const links: OfferContextLinks["programmatic"] = {
     metier: metier && metierStats
