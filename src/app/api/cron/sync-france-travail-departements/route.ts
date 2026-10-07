@@ -7,16 +7,15 @@ import { DEPARTEMENTS } from "@/lib/seo/departements";
 // ~1 150 résultats, donc la recherche nationale "alternance" ne ramenait
 // qu'environ 1 000 offres d'alternance sur toutes celles publiées (07/10).
 // Ici, même recherche découpée par département. 101 départements x 3 mots-
-// clés ne tiennent pas dans une exécution : chaque exécution traite une
-// tranche (SLICES tranches, RUNS_PER_DAY exécutions par jour), donc chaque département est revu tous les
-// SLICES / RUNS_PER_DAY jours, bien avant la désactivation des offres pas
-// revues depuis 10 jours (faite par sync-france-travail).
+// clés ne tiennent pas dans une exécution : six exécutions par nuit (voir
+// vercel.json), chacune sur un sixième des départements, donc tout le pays
+// est revu chaque jour, bien avant la désactivation des offres pas revues
+// depuis 10 jours (faite par sync-france-travail).
 
 export const maxDuration = 60;
 
 const QUERIES = ["alternance", "apprentissage", "stage"];
 const SLICES = 6;
-const RUNS_PER_DAY = 2;
 const CONCURRENCY = 4;
 // Marge avant le maxDuration de 60 s : les streams en cours s'arrêtent
 // proprement à la page suivante.
@@ -49,11 +48,10 @@ export async function GET(request: NextRequest) {
   }
 
   const startedAt = Date.now();
-  // Deux exécutions par jour (2 h et 3 h UTC, voir vercel.json ; sur le plan
-  // Hobby, un cron part dans l'heure prévue) : l'heure dit laquelle.
-  const run = new Date(startedAt).getUTCHours() % RUNS_PER_DAY;
-  const day = Math.floor(startedAt / 86_400_000);
-  const slice = (day * RUNS_PER_DAY + run) % SLICES;
+  // Exécutions de 22 h à 3 h UTC (sur le plan Hobby, un cron part dans
+  // l'heure prévue) : l'heure dit quelle tranche (22 % 6 = 4, 23 % 6 = 5,
+  // puis 0 à 3).
+  const slice = new Date(startedAt).getUTCHours() % SLICES;
   const departements = DEPARTEMENTS.filter((_, i) => i % SLICES === slice).map((d) => d.code);
   const tasks = departements.flatMap((departement) => QUERIES.map((what) => ({ what, departement })));
 
