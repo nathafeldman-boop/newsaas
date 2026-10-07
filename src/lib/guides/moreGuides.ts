@@ -2349,4 +2349,159 @@ export const MORE_GUIDES: Guide[] = [
       },
     ],
   },
+  {
+    slug: "chomage-fin-alternance",
+    title: "Chômage après une alternance : tes droits à la fin du contrat",
+    metaDescription:
+      "Fin de contrat d'apprentissage ou de professionnalisation : as-tu droit au chômage (ARE) ? Conditions, démarches, montant et ce qui change si le contrat est rompu avant la fin.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    related: ["rupture-contrat-apprentissage", "aides-alternants", "contrat-apprentissage-ou-contrat-pro"],
+    intro: [
+      "Bonne nouvelle : en alternance, tu es salarié. À la fin de ton contrat d'apprentissage ou de professionnalisation, tu peux donc toucher l'allocation chômage (l'ARE, allocation d'aide au retour à l'emploi), à condition de remplir les mêmes conditions que les autres salariés. Voici lesquelles et comment t'y prendre.",
+    ],
+    sections: [
+      {
+        heading: "Les conditions pour toucher le chômage",
+        list: [
+          "Avoir travaillé au moins 6 mois (130 jours ou 910 heures) au cours des 24 derniers mois. Tes périodes d'alternance comptent, y compris les jours de cours : tu es sous contrat de travail.",
+          "Avoir perdu ton emploi de façon involontaire : la fin normale d'un contrat à durée déterminée (c'est le cas de la plupart des contrats d'alternance) en fait partie.",
+          "T'inscrire comme demandeur d'emploi à France Travail dans les 12 mois qui suivent la fin du contrat.",
+          "Être à la recherche active d'un emploi.",
+        ],
+      },
+      {
+        heading: "Et si le contrat a été rompu avant la fin ?",
+        paragraphs: [
+          "Tout dépend de qui est à l'origine de la rupture. Un licenciement ouvre en principe des droits ; une démission non, sauf cas de démission considérée comme légitime par l'assurance chômage. Pour une rupture d'un commun accord, renseigne-toi directement auprès de France Travail avant de signer : c'est le seul à pouvoir te dire si tu seras indemnisé.",
+          "Rappel : pendant les 45 premiers jours de formation en entreprise, le contrat d'apprentissage peut être rompu librement par toi ou par l'employeur. Après, les règles de rupture sont encadrées (voir notre guide sur la rupture du contrat d'apprentissage).",
+        ],
+      },
+      {
+        heading: "Combien vas-tu toucher ?",
+        paragraphs: [
+          "L'allocation est calculée à partir de tes salaires bruts des derniers mois. Comme un salaire d'alternant est souvent inférieur au SMIC, l'allocation est en général modeste. La durée d'indemnisation dépend du temps pendant lequel tu as travaillé : plus ton contrat a été long, plus tu peux être indemnisé longtemps.",
+          "Pour connaître ton montant exact, fais la simulation sur le site de France Travail avec tes fiches de paie, ou demande à ton conseiller lors de ton inscription.",
+        ],
+      },
+      {
+        heading: "Les démarches, dans l'ordre",
+        list: [
+          "Avant la fin du contrat : récupère tes fiches de paie et vérifie que ton employeur te remettra bien ton attestation employeur (il la transmet à France Travail), ton certificat de travail et ton solde de tout compte.",
+          "Le lendemain de la fin du contrat : inscris-toi sur francetravail.fr. Plus tu attends, plus tu retardes le début de l'indemnisation.",
+          "L'indemnisation ne démarre pas le jour même : il y a un délai d'attente, et parfois un différé si tu as touché des indemnités de congés payés à la fin du contrat.",
+          "Ensuite, actualise ta situation chaque mois sur ton espace France Travail, même si tu as retrouvé du travail entre-temps.",
+        ],
+      },
+      {
+        heading: "Les autres options si tu n'as pas de droits",
+        list: [
+          "Enchaîner une nouvelle alternance pour continuer tes études (un nouveau diplôme, un niveau au-dessus) : c'est souvent la meilleure suite.",
+          "Le contrat d'engagement jeune (CEJ) : un accompagnement intensif avec une allocation, pour les jeunes de moins de 26 ans sans emploi ni formation. Renseigne-toi auprès de France Travail ou de la mission locale.",
+          "La prime d'activité, dès que tu retravailles, même à temps partiel.",
+        ],
+      },
+      {
+        heading: "Et après un stage ?",
+        paragraphs: [
+          "Un stage ne donne pas droit au chômage : le stagiaire n'est pas salarié et la gratification n'est pas un salaire. Seuls tes emplois salariés (jobs étudiants, CDD, alternance) comptent pour ouvrir des droits.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Un apprenti a-t-il droit au chômage à la fin de son contrat ?",
+        a: "Oui. L'apprenti est un salarié : s'il a travaillé au moins 6 mois au cours des 24 derniers mois et que son contrat est arrivé à son terme, il peut toucher l'allocation chômage après s'être inscrit à France Travail.",
+      },
+      {
+        q: "Les jours de cours au CFA comptent-ils pour le chômage ?",
+        a: "Oui : pendant l'alternance, tu es sous contrat de travail en permanence, y compris pendant les périodes de formation.",
+      },
+      {
+        q: "Peut-on toucher le chômage après un stage ?",
+        a: "Non, un stage ne compte pas comme un emploi salarié et n'ouvre pas de droits à l'allocation chômage.",
+      },
+    ],
+    sources: [
+      { label: "Conditions pour avoir droit aux allocations chômage (Unédic)", url: "https://www.unedic.org/l-assurance-chomage-et-vous/demandeur-d-emploi-ou-salarie/mon-indemnisation/quelles-sont-les-conditions-pour-avoir-droit-aux-allocations-chomage" },
+      { label: "Ai-je droit à l'allocation chômage (ARE) ? (France Travail)", url: "https://www.francetravail.fr/candidat/mes-droits-aux-aides-et-allocati/lessentiel-a-savoir-sur-lallocat/ai-je-droit-a-lallocation-chomag.html" },
+    ],
+  },
+  {
+    slug: "logement-alternance-stage",
+    title: "Se loger pendant une alternance ou un stage : aides et solutions",
+    metaDescription:
+      "APL, aide Mobili-Jeune, garantie Visale, avance Loca-Pass, logements pour jeunes : toutes les solutions pour te loger pendant ton alternance ou ton stage, et les aides que tu peux cumuler.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    related: ["aides-alternants", "alternance-deux-villes", "gratification-de-stage"],
+    intro: [
+      "Trouver un logement près de ton entreprise est souvent le casse-tête n°1 d'une alternance ou d'un stage, surtout dans les grandes villes. Bonne nouvelle : plusieurs aides existent et la plupart se cumulent. Voici lesquelles demander, et dans quel ordre.",
+    ],
+    sections: [
+      {
+        heading: "Les aides qui baissent ton loyer",
+        list: [
+          "Les aides au logement de la CAF (APL ou ALS selon le logement) : calculées selon tes ressources, ton loyer et ta ville. Fais la simulation sur caf.fr dès que tu as une adresse.",
+          "L'aide Mobili-Jeune d'Action Logement (alternants) : de 10 € à 100 € par mois sur ton loyer, si tu as moins de 30 ans, que tu es en contrat d'apprentissage ou de professionnalisation dans une entreprise du secteur privé non agricole et que ton salaire brut ne dépasse pas 120 % du SMIC.",
+        ],
+      },
+      {
+        heading: "Mobili-Jeune : les conditions à ne pas rater",
+        list: [
+          "La demande se fait au plus tôt 3 mois avant et au plus tard 5 mois après le début de ton contrat d'alternance.",
+          "Le logement doit être à plus de 70 km de ton ancienne adresse, ou à plus de 40 minutes de trajet.",
+          "L'aide peut être demandée pour 2 années de formation au maximum.",
+        ],
+      },
+      {
+        heading: "Les aides pour décrocher le logement",
+        list: [
+          "La garantie Visale d'Action Logement : une caution gratuite qui rassure le propriétaire (elle couvre les loyers impayés). Si tu as 30 ans ou moins, tu peux y avoir droit quel que soit ton statut : étudiant, alternant, stagiaire. Fais ta demande sur visale.fr avant de visiter.",
+          "L'avance Loca-Pass d'Action Logement : un prêt à 0 % jusqu'à 1 200 € pour payer ton dépôt de garantie, remboursable par petites mensualités.",
+        ],
+      },
+      {
+        heading: "Les solutions de logement adaptées aux alternants et stagiaires",
+        table: {
+          headers: ["Solution", "Pour qui", "À savoir"],
+          rows: [
+            ["Résidence Crous", "Étudiants (certaines résidences acceptent aussi les alternants)", "Loyers bas, places limitées : fais ta demande tôt."],
+            ["Foyer de jeunes travailleurs (FJT)", "Jeunes actifs, alternants, stagiaires", "Durées souples (quelques semaines à quelques mois), loyers adaptés."],
+            ["Résidence pour alternants ou étudiants", "Alternants, étudiants", "Souvent meublées, parfois à la semaine pour suivre ton rythme école/entreprise."],
+            ["Colocation", "Tout le monde", "Le moins cher dans les grandes villes ; vérifie qui signe le bail et comment se répartit le dépôt de garantie."],
+            ["Location meublée en bail mobilité", "Stagiaires, alternants, en formation", "Bail de 1 à 10 mois, sans dépôt de garantie : pratique pour un stage."],
+          ],
+        },
+      },
+      {
+        heading: "Ton plan d'action",
+        list: [
+          "Dès que ton contrat ou ta convention est signé : demande la garantie Visale, puis cherche ton logement.",
+          "Dès que tu as une adresse : fais ta demande d'aide au logement à la CAF, puis Mobili-Jeune si tu es alternant.",
+          "Demande à ton CFA ou à ton école s'ils ont des partenariats avec des résidences ou des foyers.",
+          "Demande à ton entreprise : certaines aident au logement ou connaissent des solutions près du site.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Un alternant peut-il toucher les APL ?",
+        a: "Oui, les aides au logement de la CAF sont ouvertes aux alternants comme aux étudiants, selon leurs ressources et leur loyer. Elles se cumulent avec l'aide Mobili-Jeune.",
+      },
+      {
+        q: "Quel est le montant de l'aide Mobili-Jeune ?",
+        a: "De 10 € à 100 € par mois, selon ton loyer et les autres aides que tu touches, pour les alternants de moins de 30 ans gagnant au maximum 120 % du SMIC.",
+      },
+      {
+        q: "La garantie Visale est-elle gratuite ?",
+        a: "Oui, elle est gratuite pour toi comme pour le propriétaire, qui doit accepter ce type de caution.",
+      },
+    ],
+    sources: [
+      { label: "Aides au logement pour les alternants (Action Logement)", url: "https://www.actionlogement.fr/guides/trouver-un-logement/quelles-aides-au-logement-pour-les-alternants-en-contrat-pro-ou-apprentissage" },
+      { label: "L'aide Mobili-Jeune (Action Logement)", url: "https://www.actionlogement.fr/l-aide-mobili-jeune" },
+      { label: "Aides au logement d'un étudiant (service-public.gouv.fr)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F1563" },
+    ],
+  },
 ];

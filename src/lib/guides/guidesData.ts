@@ -353,6 +353,8 @@ export const GUIDE_CATEGORIES: { title: string; slugs: string[] }[] = [
       "conges-alternant",
       "gratification-de-stage",
       "convention-de-stage",
+      "chomage-fin-alternance",
+      "logement-alternance-stage",
     ],
   },
   {

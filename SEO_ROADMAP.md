@@ -204,7 +204,7 @@ Ce qui fait passer du bas au haut de la fourchette : les backlinks (aucun code n
 - [x] 07/10 : pages département (`/alternance/departement/[dep]`, `/[dep]/[metier]`) et région (`/alternance/region/[region]`, `/[region]/[metier]`), idem pour `/stage`. Pas de page quand une seule ville ou un seul département concentre au moins 90 % des offres (anti-doublon). Environ 150 pages indexables de plus en production rien qu'avec les métiers et les départements (sitemap métiers-villes : ~340 URLs), avant les régions.
 - [x] 07/10 : une entreprise n'est plus comptée deux fois quand la casse diffère (« Alticome » / « ALTICOME »).
 - [ ] Filtrer les annonces d'écoles du catalogue lui-même (décision produit)
-- [ ] Phase 3 — 40 guides (38 rédigés ; restent chômage en fin de contrat et logement, qui demandent une vérification juridique plus lourde) + 4 outils (1 en ligne : le simulateur)
+- [x] Phase 3 — 40 guides rédigés (faits juridiques vérifiés sur sources officielles) + 4 outils (1 en ligne : le simulateur)
 - [ ] Phase 4 — hubs, baromètre, Search Console, suivi 100 mots-clés, dashboard
 
 ---
@@ -228,7 +228,7 @@ Ce qui fait passer du bas au haut de la fourchette : les backlinks (aucun code n
 12. ✅ Alternance jusqu'à quel âge ? ⚖️
 13. ✅ Trouver une école en alternance (et dans quel ordre chercher)
 14. ✅ BTS, bachelor, master en alternance : lequel choisir
-15. Alternance et chômage : tes droits à la fin du contrat ⚖️
+15. ✅ Alternance et chômage : tes droits à la fin du contrat ⚖️
 16. ✅ Trouver une alternance avec LinkedIn
 17. ✅ Calendrier : quand chercher son alternance mois par mois
 18. ✅ Alternance sans avoir trouvé d'entreprise à la rentrée : que faire
@@ -255,7 +255,7 @@ Ce qui fait passer du bas au haut de la fourchette : les backlinks (aucun code n
 35. ✅ Premier jour en entreprise : les bons réflexes
 36. ✅ Utiliser l'IA (ChatGPT) pour sa lettre de motivation, sans texte générique
 37. ✅ Profil LinkedIn d'étudiant : la checklist
-38. Logement pendant l'alternance ou le stage ⚖️
+38. ✅ Logement pendant l'alternance ou le stage ⚖️
 39. ✅ Gérer deux villes (école et entreprise)
 40. ✅ Refuser une offre poliment (modèle de mail)
 
