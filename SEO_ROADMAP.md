@@ -258,3 +258,26 @@ Ce qui fait passer du bas au haut de la fourchette : les backlinks (aucun code n
 38. Logement pendant l'alternance ou le stage ⚖️
 39. ✅ Gérer deux villes (école et entreprise)
 40. ✅ Refuser une offre poliment (modèle de mail)
+
+---
+
+## 11. Audit SEO du 07/10 (document de Nathan) : où on en est
+
+| Point de l'audit | Statut |
+|---|---|
+| Architecture hub / métier / ville / métier × ville / entreprise / offre / guides | ✅ déjà en place, plus départements, régions et diplômes |
+| P0 JobPosting | ✅ uniquement descriptions complètes, employeur nommé, `validThrough` = date de retrait réelle, `addressRegion`, `directApply` |
+| P0 Offres expirées | ✅ page « Offre expirée » en noindex, sans JobPosting, avec offres similaires ; retirée du sitemap ; Bing prévenu chaque jour. Google Indexing API : à faire par Nathan (compte de service Google) |
+| P0 URL indexables | ✅ canonical sans paramètres, pages < 10 offres en noindex, fiches Adzuna en noindex, pages hors limites en 404, *.vercel.app en noindex, pas de filtres ni de recherche interne indexables |
+| P0 Search Console | ⏳ Nathan : propriété Domaine + suivi Requêtes / Pages (positions 5–20) |
+| P1 métier × ville | ✅ créées automatiquement dès 3 offres, indexées à partir de 10 (pas de liste figée de 50 pages : une page n'existe que si les offres existent) |
+| P1 pages entreprise | ✅ villes, métiers, entreprises similaires, salaires ; pas de présentation inventée (aucune donnée fiable) |
+| P1 maillage | ✅ hubs, ville ↔ métier ↔ département ↔ région, offres → métier × ville, guides par type, accueil |
+| P1 baromètre | ✅ `/barometre-alternance-stage` |
+| P2 formation × ville | ✅ 14 diplômes détectés dans l'intitulé (BTS MCO, NDRC, BUT, bachelor, master, CAP...) |
+| Titles / H1 | ✅ titres naturels avec le nombre d'offres ; fiches offre « intitulé à Ville – Entreprise » |
+| Sitemaps par type | ✅ pages, guides, métiers-villes, territoires, entreprises, offres alternance, offres stage |
+| Performance (LCP, INP, CLS) | ⏳ Nathan : PageSpeed Insights + Vercel Speed Insights |
+| KPI revenu par source | ✅ tableau admin « Revenu par source » (inscrits 30 j, payants, revenu, revenu / inscrit) |
+| Autorité / backlinks | ⏳ envoyer le baromètre aux médias étudiants et aux CFA |
+
