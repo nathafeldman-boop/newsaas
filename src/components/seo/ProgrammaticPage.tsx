@@ -14,6 +14,7 @@ import {
 } from "@/lib/seo/programmaticPage";
 import { pagedPath, pagedTitle, parsePageParam } from "@/lib/seo/pagination";
 import { departementLinks } from "@/lib/seo/departementPage";
+import { regionLinks } from "@/lib/seo/regionPage";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { SITE_URL } from "@/lib/site";
 import { SMIC_MONTHLY_GROSS, formatEuros, internshipGratification, round2 } from "@/lib/salary/legalRates";
@@ -275,6 +276,7 @@ export async function ProgrammaticHub({ type }: { type: ContractType }) {
       </p>
       <LinkChips title="Par métier" links={metiers} />
       <LinkChips title="Par ville" links={cities} />
+      <LinkChips title="Par région" links={regionLinks(index)} />
       <LinkChips title="Par département" links={departementLinks(index)} />
       <p style={{ fontSize: 14, marginTop: 24 }}>
         <Link href="/outils/simulateur-salaire-alternance">Simulateur de salaire</Link>

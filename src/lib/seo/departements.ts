@@ -231,3 +231,38 @@ export function learnCityDepartements(locations: Iterable<string>): Map<string, 
   }
   return learned;
 }
+
+// Régions (métropole). Les régions d'outre-mer n'ont qu'un département :
+// leur page dupliquerait celle du département, on ne les crée pas.
+export type Region = { name: string; slug: string; phrase: string };
+
+const REGION_PHRASES: Record<string, string> = {
+  [IDF]: "en Île-de-France",
+  [ARA]: "en Auvergne-Rhône-Alpes",
+  [HDF]: "dans les Hauts-de-France",
+  [PACA]: "en Provence-Alpes-Côte d'Azur",
+  [OCC]: "en Occitanie",
+  [NAQ]: "en Nouvelle-Aquitaine",
+  [GE]: "dans le Grand Est",
+  [BFC]: "en Bourgogne-Franche-Comté",
+  [CVL]: "en Centre-Val de Loire",
+  [PDL]: "dans les Pays de la Loire",
+  [BRE]: "en Bretagne",
+  [NOR]: "en Normandie",
+  [COR]: "en Corse",
+};
+
+export const REGIONS: Region[] = Object.entries(REGION_PHRASES).map(([name, phrase]) => ({ name, slug: slugify(name), phrase }));
+const REGION_BY_NAME = new Map(REGIONS.map((r) => [r.name, r]));
+const REGION_BY_SLUG = new Map(REGIONS.map((r) => [r.slug, r]));
+
+export function getRegionBySlug(slug: string): Region | undefined {
+  return REGION_BY_SLUG.get(slug);
+}
+
+// Région (métropole) d'un code département, ou undefined (outre-mer).
+export function regionOfDepartement(code: string): Region | undefined {
+  const departement = BY_CODE.get(code);
+  return departement ? REGION_BY_NAME.get(departement.region) : undefined;
+}
+

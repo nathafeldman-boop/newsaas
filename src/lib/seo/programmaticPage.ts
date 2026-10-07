@@ -52,6 +52,12 @@ export function capitalize(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
+// "Assistant administratif" -> "assistant administratif", mais "RH" et
+// "BTP" restent des sigles.
+export function lowerFirst(label: string): string {
+  return /^\p{Lu}\p{Lu}/u.test(label) ? label : label.charAt(0).toLowerCase() + label.slice(1);
+}
+
 export function plural(n: number, singular: string, pluralForm = `${singular}s`) {
   return `${n.toLocaleString("fr-FR")} ${n > 1 ? pluralForm : singular}`;
 }
@@ -226,7 +232,7 @@ export function buildProgrammaticModel(
   } else if (city) {
     const metiers = metiersInCity(index, city, null).slice(0, 4);
     if (metiers.length > 0) {
-      paragraphs.push(`Les métiers qui recrutent le plus ${cityPhrase(city.label)} : ${metiers.map((m) => `${m.label.toLowerCase()} (${m.count})`).join(", ")}.`);
+      paragraphs.push(`Les métiers qui recrutent le plus ${cityPhrase(city.label)} : ${metiers.map((m) => `${lowerFirst(m.label)} (${m.count})`).join(", ")}.`);
     }
   }
   paragraphs.push(salaryAnswer(type, stats));

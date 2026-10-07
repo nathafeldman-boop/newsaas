@@ -3,6 +3,7 @@ import { extractOfferId } from "@/lib/offers/publicUrl";
 import { normalizeCityKey, titleCase } from "@/lib/offers/segments";
 import { resolveProgrammaticPage } from "@/lib/seo/programmaticPage";
 import { resolveDepartementPage } from "@/lib/seo/departementPage";
+import { resolveRegionPage } from "@/lib/seo/regionPage";
 import { getCompanyIndex } from "@/lib/seo/companyIndex";
 import { getProgrammaticIndex } from "@/lib/seo/programmaticIndex";
 import { formatCount, type OgCard } from "@/lib/seo/ogImage";
@@ -42,6 +43,26 @@ export async function programmaticOgCard(type: ContractType, slug: string, ville
     };
   } catch (err) {
     console.error("programmaticOgCard failed", err);
+    return GENERIC;
+  }
+}
+
+export async function regionOgCard(type: ContractType, region: string, metier?: string): Promise<OgCard> {
+  try {
+    const model = await resolveRegionPage(type, region, metier);
+    if (!model) return GENERIC;
+    const { stats } = model;
+    return {
+      kicker: `${type === "alternance" ? "Offres d'alternance" : "Offres de stage"} mises à jour chaque jour`,
+      title: model.h1,
+      stats: [
+        formatCount(stats.count, "offre"),
+        formatCount(stats.companyCount, "entreprise"),
+        formatCount(stats.recent7d, "nouvelle cette semaine", "nouvelles cette semaine"),
+      ],
+    };
+  } catch (err) {
+    console.error("regionOgCard failed", err);
     return GENERIC;
   }
 }

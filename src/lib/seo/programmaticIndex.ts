@@ -4,7 +4,7 @@ import { NOT_A_CITY, normalizeCityKey, slugify, titleCase } from "@/lib/offers/s
 import { PUBLIC_OFFERS_PAGE_SIZE } from "@/lib/offers/fetchPublicOffers";
 import { classifyMetier } from "@/lib/seo/metiers";
 import { isSchool } from "@/lib/seo/schools";
-import { departementFromLocation, getDepartement, learnCityDepartements } from "@/lib/seo/departements";
+import { departementFromLocation, getDepartement, getRegionBySlug, learnCityDepartements, regionOfDepartement } from "@/lib/seo/departements";
 import type { ContractType, OfferSource } from "@/types/database";
 
 // Seuils des pages programmatiques (décision D de SEO_ROADMAP.md) :
@@ -36,6 +36,10 @@ export type SegmentStats = {
 export type CityEntry = SegmentStats & { slug: string; label: string; dep: string | null };
 export type DepartementEntry = SegmentStats & { code: string; slug: string; label: string };
 export type DepartementComboEntry = SegmentStats & { metier: string; dep: string };
+// `departements` : offres par code département dans la région (pour le
+// bloc "départements qui recrutent", y compris ceux sans page propre).
+export type RegionEntry = SegmentStats & { slug: string; label: string; departements: { code: string; count: number }[] };
+export type RegionComboEntry = SegmentStats & { metier: string; region: string };
 export type MetierEntry = SegmentStats & { slug: string };
 export type ComboEntry = SegmentStats & { metier: string; city: string };
 
@@ -50,6 +54,9 @@ export type ProgrammaticIndex = {
   // Clés : code département ("92") et "metier/code".
   departements: Record<string, DepartementEntry>;
   depCombos: Record<string, DepartementComboEntry>;
+  // Clés : slug de région ("bretagne") et "metier/region".
+  regions: Record<string, RegionEntry>;
+  regionCombos: Record<string, RegionComboEntry>;
 };
 
 export type IndexRow = {
@@ -169,6 +176,8 @@ export function buildIndex(type: ContractType, rows: IndexRow[], now = Date.now(
   const combos = new Map<string, Accumulator>();
   const departements = new Map<string, Accumulator>();
   const depCombos = new Map<string, Accumulator>();
+  const regions = new Map<string, Accumulator>();
+  const regionCombos = new Map<string, Accumulator>();
   const learned = learnCityDepartements(rows.map((row) => row.location ?? ""));
 
   let recentTotal = 0;
@@ -192,6 +201,20 @@ export function buildIndex(type: ContractType, rows: IndexRow[], now = Date.now(
         if (!depCombos.has(key)) depCombos.set(key, newAccumulator());
         add(depCombos.get(key)!, row, isRecent, salary);
         countPlace(depCombos.get(key)!, isCity ? citySlug : null);
+      }
+      // Région : le "lieu" suivi est le département (une région dont un seul
+      // département concentre 90 % des offres dupliquerait sa page).
+      const region = regionOfDepartement(dep);
+      if (region) {
+        if (!regions.has(region.slug)) regions.set(region.slug, newAccumulator());
+        add(regions.get(region.slug)!, row, isRecent, salary);
+        countPlace(regions.get(region.slug)!, dep);
+        if (metier) {
+          const key = `${metier.slug}/${region.slug}`;
+          if (!regionCombos.has(key)) regionCombos.set(key, newAccumulator());
+          add(regionCombos.get(key)!, row, isRecent, salary);
+          countPlace(regionCombos.get(key)!, dep);
+        }
       }
     }
 
@@ -226,6 +249,8 @@ export function buildIndex(type: ContractType, rows: IndexRow[], now = Date.now(
     combos: {},
     departements: {},
     depCombos: {},
+    regions: {},
+    regionCombos: {},
   };
   for (const [slug, { label, acc }] of cities) {
     if (acc.count >= PAGE_MIN_OFFERS) index.cities[slug] = { slug, label, dep: topPlace(acc)?.place ?? null, ...finalize(acc) };
@@ -250,13 +275,26 @@ export function buildIndex(type: ContractType, rows: IndexRow[], now = Date.now(
       index.depCombos[key] = { metier, dep, ...finalize(acc) };
     }
   }
+  for (const [slug, acc] of regions) {
+    const region = getRegionBySlug(slug);
+    if (region && acc.count >= PAGE_MIN_OFFERS && spread(acc)) {
+      const departements = [...acc.places.entries()].map(([code, count]) => ({ code, count })).sort((x, y) => y.count - x.count);
+      index.regions[slug] = { slug, label: region.name, departements, ...finalize(acc) };
+    }
+  }
+  for (const [key, acc] of regionCombos) {
+    const [metier, region] = key.split("/");
+    if (acc.count >= PAGE_MIN_OFFERS && index.regions[region] && spread(acc)) {
+      index.regionCombos[key] = { metier, region, ...finalize(acc) };
+    }
+  }
   return index;
 }
 
 // Un seul scan du catalogue par type et par heure, partagé par toutes les
 // pages /alternance/* et /stage/* (sinon chaque page vue relirait ~3 000
 // offres).
-const cachedIndex = unstable_cache(computeIndex, ["programmatic-index-v6"], { revalidate: 3600 });
+const cachedIndex = unstable_cache(computeIndex, ["programmatic-index-v7"], { revalidate: 3600 });
 
 export function getProgrammaticIndex(type: ContractType): Promise<ProgrammaticIndex> {
   return cachedIndex(type);

@@ -6,7 +6,7 @@ import {
   type ProgrammaticIndex,
   type SegmentStats,
 } from "@/lib/seo/programmaticIndex";
-import { DEPARTEMENTS, getDepartementBySlug, type Departement } from "@/lib/seo/departements";
+import { DEPARTEMENTS, getDepartementBySlug, regionOfDepartement, type Departement } from "@/lib/seo/departements";
 import { companySlug, getCompanyIndex } from "@/lib/seo/companyIndex";
 import {
   OFFERS_OF,
@@ -15,6 +15,7 @@ import {
   capitalize,
   departementPath,
   listCompanies,
+  lowerFirst,
   plural,
   salaryAnswer,
   segmentPath,
@@ -110,7 +111,7 @@ export function buildDepartementModel(
   if (!metier) {
     const metiers = metiersInDepartement(index, dep, null).slice(0, 4);
     if (metiers.length > 0) {
-      paragraphs.push(`Les métiers qui recrutent le plus ${dep.phrase} : ${metiers.map((m) => `${m.label.toLowerCase()} (${m.count})`).join(", ")}.`);
+      paragraphs.push(`Les métiers qui recrutent le plus ${dep.phrase} : ${metiers.map((m) => `${lowerFirst(m.label)} (${m.count})`).join(", ")}.`);
     }
   }
   paragraphs.push(salaryAnswer(type, stats));
@@ -132,9 +133,13 @@ export function buildDepartementModel(
         count: otherStats.count,
       }
     : null;
+  const region = regionOfDepartement(dep.code);
+  const regionStats = region ? index.regions[region.slug] : undefined;
   const parentArea = metier
     ? { href: departementPath(type, dep.slug, null), label: `Toutes les ${OFFERS_OF[type]} ${dep.phrase}`, count: index.departements[dep.code].count }
-    : null;
+    : region && regionStats
+      ? { href: `/${type}/region/${region.slug}`, label: `${typeLabel} ${region.phrase}`, count: regionStats.count }
+      : null;
 
   const faq = [
     {
