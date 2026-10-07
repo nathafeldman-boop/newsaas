@@ -187,6 +187,19 @@ export async function ProgrammaticPageView({ model, pageParam }: { model: Progra
         </p>
       )}
 
+      {/* Juste après la liste : le visiteur qui l'a parcourue est le plus
+          susceptible de vouloir la suite (le bloc du bas reste, pour ceux
+          qui lisent jusqu'au bout). */}
+      <div className="card mt-6" style={{ padding: "var(--space-4) var(--space-5)" }}>
+        <p style={{ fontSize: 14.5, margin: "0 0 12px" }}>
+          <strong>{model.h1} : ne rate pas les prochaines.</strong> Crée ton profil gratuit en 1 minute : tu swipes les
+          nouvelles offres qui te correspondent dès leur publication, avec une alerte par mail si tu veux.
+        </p>
+        <Link href="/inscription" className="btn btn-primary">
+          Créer mon profil gratuit
+        </Link>
+      </div>
+
       <section className="mt-10">
         <h2 style={{ fontSize: 20, margin: "0 0 10px" }}>Ce qu&apos;il faut savoir</h2>
         {model.paragraphs.slice(1).map((paragraph) => (

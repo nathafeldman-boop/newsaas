@@ -437,6 +437,18 @@ export default async function PublicOfferPage({
         />
       </div>
 
+      <div className="card mt-4" style={{ padding: "var(--space-4) var(--space-5)" }}>
+        <p style={{ fontSize: 14.5, margin: "0 0 12px" }}>
+          <strong>
+            {links.market ? `${links.market.label} : ne rate pas les prochaines offres.` : "Ne rate pas les prochaines offres."}
+          </strong>{" "}
+          Crée ton profil gratuit en 1 minute : tu swipes les nouvelles offres qui te correspondent dès leur publication.
+        </p>
+        <Link href="/inscription" className="btn btn-primary">
+          Créer mon profil gratuit
+        </Link>
+      </div>
+
       {links.market && <MarketBlock market={links.market} contractType={offer.contract_type} />}
 
       {links.similar.length > 0 && (
