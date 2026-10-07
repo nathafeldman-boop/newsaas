@@ -1,13 +1,13 @@
 import type { AdzunaJob } from "@/lib/adzuna/client";
 import type { ContractType, OfferSource } from "@/types/database";
-import { classifyContractType as classifyContractTypeFromText, guessSector } from "@/lib/offers/classifyContract";
+import { classifyOfferContract, guessSector } from "@/lib/offers/classifyContract";
 
 // Classification/secteur : logique partagée avec les autres sources
 // agrégées (voir lib/offers/classifyContract.ts, extrait d'ici le 28/09 au
 // moment d'ajouter France Travail). Adzuna n'a pas de champ dédié fiable
 // pour les contrats français, donc on retombe sur le texte de l'annonce.
 export function classifyContractType(job: AdzunaJob): ContractType | null {
-  return classifyContractTypeFromText(`${job.title} ${job.description}`);
+  return classifyOfferContract(job.title, job.description);
 }
 
 function stripHtml(text: string): string {

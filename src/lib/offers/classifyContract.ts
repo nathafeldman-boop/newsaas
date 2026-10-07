@@ -105,3 +105,46 @@ export function classifyContractType(text: string): ContractType | null {
   }
   return null;
 }
+
+// Version stricte, utilisée par les synchros (France Travail, Adzuna) : le
+// mot « stage » ou « alternance » n'importe où dans la description ne
+// suffit plus. Avec la synchro par département (30 fois plus de résultats
+// pour le mot-clé « stage »), des CDI passaient pour des stages, y compris
+// dans Google Jobs : « Data analyst confirmé, hors stage et alternance »,
+// « Gestionnaire du service des stages », « Ingénieur structure » dont
+// l'annonce demande une « première expérience (stage ou alternance) ».
+// Règle : le titre décide ; sinon il faut une formulation qui désigne
+// vraiment le contrat (« contrat d'apprentissage », « convention de
+// stage », « stage de 6 mois »...).
+const TITLE_ALTERNANCE = /\b(alternance|alternant|alternante|alternants|apprentissage|apprenti|apprentie|apprentis|contrat pro|contrat de professionnalisation)\b/;
+const TITLE_STAGE = /\b(stage|stages|stagiaire|stagiaires|internship|intern)\b/;
+// Postes qui parlent de stages ou d'alternance sans en être.
+const NOT_A_PLACEMENT =
+  /\b(hors|sauf|pas de) (stages?|alternances?)\b|\b(gestionnaire|coordinat\w+|responsable|charge|chargee|referent\w*)( [\w'-]+){0,3} (des|du service des) (stages|alternances|apprentis)\b|\bdeveloppeu\w+ (de l.)?apprentissage\b/;
+const DESCRIPTION_ALTERNANCE = /contrat d.apprentissage|contrat de professionnalisation|contrat d.alternance|poste (a pourvoir )?en alternance/;
+const DESCRIPTION_STAGE =
+  /convention de stage|stage conventionne|\bstage (de |d.)?(fin d.etudes|pre.?embauche|obligatoire|\d+ ?(a \d+ )?(mois|semaines))|\bstage de \d/;
+
+function normalizeForContract(text: string): string {
+  return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[’']/g, "'");
+}
+
+function firstMatch(text: string, alternance: RegExp, stage: RegExp): ContractType | null {
+  const posAlt = text.search(alternance);
+  const posStage = text.search(stage);
+  if (posAlt < 0 && posStage < 0) return null;
+  if (posStage < 0) return "alternance";
+  if (posAlt < 0) return "stage";
+  return posAlt <= posStage ? "alternance" : "stage";
+}
+
+export function classifyOfferContract(title: string, description: string): ContractType | null {
+  const normalizedTitle = normalizeForContract(title);
+  if (NOT_A_PLACEMENT.test(normalizedTitle)) return null;
+  const fromTitle = firstMatch(normalizedTitle, TITLE_ALTERNANCE, TITLE_STAGE);
+  if (fromTitle) return fromTitle;
+  const normalizedDescription = normalizeForContract(description);
+  if (/\b(hors|sauf) (stages?|alternances?)\b/.test(normalizedDescription)) return null;
+  return firstMatch(normalizedDescription, DESCRIPTION_ALTERNANCE, DESCRIPTION_STAGE);
+}
+

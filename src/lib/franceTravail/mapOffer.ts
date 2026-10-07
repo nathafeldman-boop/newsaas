@@ -1,6 +1,6 @@
 import type { FranceTravailJob } from "@/lib/franceTravail/client";
 import type { ContractType, OfferSource } from "@/types/database";
-import { classifyContractType, guessSector } from "@/lib/offers/classifyContract";
+import { classifyOfferContract, guessSector } from "@/lib/offers/classifyContract";
 
 // Même doctrine que mapAdzunaJob (lib/adzuna/mapOffer.ts) : classification
 // alternance/stage et secteur devinés sur le texte de l'annonce (voir
@@ -31,8 +31,7 @@ export interface MappedOffer {
 export function mapFranceTravailJob(job: FranceTravailJob): MappedOffer | null {
   if (!job.id || !job.intitule || !job.description) return null;
 
-  const text = `${job.intitule} ${job.description}`;
-  const contractType = classifyContractType(text);
+  const contractType = classifyOfferContract(job.intitule, job.description);
   if (!contractType) return null;
 
   const company = job.entreprise?.nom?.trim();
