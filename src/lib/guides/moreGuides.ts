@@ -2657,4 +2657,212 @@ export const MORE_GUIDES: Guide[] = [
       { label: "Apprentissage dans le secteur public : décret du 24 avril 2020 (Centre Inffo)", url: "https://www.centre-inffo.fr/site-droit-formation/actualites-droit/adaptation-des-dispositions-reglementaires-sur-lapprentissage-dans-le-secteur-public-non-industriel-et-commercial" },
     ],
   },
+  {
+    slug: "bourse-et-alternance",
+    title: "Bourse du Crous et alternance : peut-on cumuler ?",
+    metaDescription:
+      "En alternance, tu perds la bourse sur critères sociaux ; en stage, tu la gardes. Pourquoi, quoi faire si tu signes en cours d'année, et les aides qui restent possibles.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    related: ["aides-alternants", "alternance-vs-stage", "logement-alternance-stage"],
+    intro: [
+      "La réponse courte : non en alternance, oui en stage. Dès que tu signes un contrat d'apprentissage ou de professionnalisation, tu n'as plus droit à la bourse sur critères sociaux du Crous. Pendant un stage, en revanche, tu la gardes. Voici pourquoi, et ce que tu peux toucher à la place.",
+    ],
+    sections: [
+      {
+        heading: "Pourquoi l'alternance fait perdre la bourse",
+        paragraphs: [
+          "La bourse sur critères sociaux est réservée aux étudiants en formation initiale qui n'ont pas de salaire. En alternance, tu es salarié : tu touches un salaire tous les mois et ta formation est financée sans que tu la paies (en apprentissage, elle est gratuite pour toi). Que ce soit en contrat d'apprentissage ou en contrat de professionnalisation, tu sors donc du cadre de la bourse.",
+        ],
+      },
+      {
+        heading: "Tu es boursier et tu signes un contrat en cours d'année ?",
+        list: [
+          "Préviens le Crous dès la signature, depuis ton espace sur messervices.etudiant.gouv.fr : la bourse s'arrête quand l'alternance commence.",
+          "Si tu ne dis rien, les mensualités versées après la signature risquent de t'être réclamées. Mieux vaut les éviter que de devoir les rembourser.",
+          "Si ton contrat est rompu et que tu reprends tes études sans contrat, rapproche-toi du Crous pour voir si tu peux retrouver tes droits.",
+        ],
+      },
+      {
+        heading: "Ce que tu gardes ou gagnes en alternance",
+        list: [
+          "Ton salaire, qui dépend de ton âge et de ton année de contrat (calcule-le avec notre simulateur de salaire en alternance).",
+          "Le logement en résidence Crous reste possible selon les places, et le Crous peut aussi proposer des aides d'urgence.",
+          "Les aides au logement de la CAF, la prime d'activité selon tes revenus, et l'aide Mobili-Jeune si ton employeur est du privé : le détail dans notre guide des aides aux alternants.",
+          "Ton salaire d'apprenti n'est pas imposable jusqu'au SMIC annuel (voir notre guide sur les impôts en alternance).",
+        ],
+      },
+      {
+        heading: "En stage : tu gardes ta bourse",
+        paragraphs: [
+          "Un stage fait partie de ta formation : tu restes étudiant, et ta bourse est maintenue pendant le stage si ta formation est habilitée à recevoir des boursiers. Elle se cumule avec la gratification de stage.",
+        ],
+      },
+      {
+        heading: "Alternance ou formation classique avec bourse : comment comparer",
+        paragraphs: [
+          "Pose les deux chiffres côte à côte : ton salaire d'apprenti sur 12 mois (simulateur) et le montant de ta bourse sur l'année. N'oublie pas qu'en alternance, tes frais de scolarité sont payés et tu accumules de l'expérience. Pour beaucoup d'étudiants, l'alternance rapporte plus, mais fais le calcul avec tes propres montants.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Peut-on toucher la bourse du Crous en alternance ?",
+        a: "Non : en contrat d'apprentissage ou de professionnalisation, tu es salarié et tu n'as plus droit à la bourse sur critères sociaux.",
+      },
+      {
+        q: "Garde-t-on sa bourse pendant un stage ?",
+        a: "Oui : la bourse est maintenue pendant un stage intégré à ta formation et se cumule avec la gratification de stage.",
+      },
+      {
+        q: "Que faire si je signe un contrat d'alternance en cours d'année ?",
+        a: "Préviens le Crous dès la signature : la bourse s'arrête au début du contrat, et les mensualités touchées après pourraient t'être réclamées.",
+      },
+    ],
+    sources: [
+      { label: "Étudiant en apprentissage ou en stage (réseau des Crous)", url: "https://www.lescrous.fr/espace-partenaires/les-situations-rencontrees-par-les-etudiants/etudiant-en-apprentissage-stage/" },
+      { label: "Boursiers : vos droits et vos devoirs (L'Étudiant)", url: "https://www.letudiant.fr/lifestyle/aides-financieres/boursiers-vos-droits-et-vos-devoirs-passes-a-la-loupe.html" },
+      { label: "Contrat d'apprentissage (service-public.gouv.fr)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F2918" },
+    ],
+  },
+  {
+    slug: "rythme-alternance",
+    title: "Rythme de l'alternance : combien de temps à l'école et en entreprise ?",
+    metaDescription:
+      "2 jours / 3 jours, 1 semaine / 3 semaines, blocs d'un mois : les rythmes d'alternance, ce que dit la loi (25 % de formation minimum en apprentissage) et comment choisir.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    related: ["contrat-apprentissage-ou-contrat-pro", "alternance-deux-villes", "conges-alternant"],
+    intro: [
+      "En alternance, tu partages ton temps entre l'école (ou le CFA) et l'entreprise. Le rythme change d'une formation à l'autre : quelques jours par semaine, une semaine sur trois, ou des blocs de plusieurs semaines. Voici ce que dit la loi, les rythmes les plus courants et comment choisir.",
+    ],
+    sections: [
+      {
+        heading: "Ce que dit la loi",
+        list: [
+          "Contrat d'apprentissage : la formation au CFA représente au moins 25 % de la durée totale du contrat.",
+          "Contrat de professionnalisation : la formation représente entre 15 % et 25 % de la durée du contrat, avec au moins 150 heures (plus si un accord de branche le prévoit).",
+          "Dans les deux cas, le temps passé en formation compte comme du temps de travail : tu es payé ces jours-là.",
+        ],
+      },
+      {
+        heading: "Les rythmes les plus courants",
+        table: {
+          headers: ["Rythme", "Pour qui", "À savoir"],
+          rows: [
+            ["2 jours école / 3 jours entreprise", "BTS, commerce, vente", "Tu es en entreprise chaque semaine : idéal pour suivre des clients ou un magasin."],
+            ["1 semaine école / 2 ou 3 semaines entreprise", "BUT, licence pro, bachelor", "Bon compromis : des périodes en entreprise assez longues pour avancer sur un projet."],
+            ["2 semaines / 2 semaines", "Bachelor, master", "Rythme régulier, pratique pour organiser ton logement."],
+            ["Blocs d'un mois ou plus", "Master, écoles d'ingénieurs", "Idéal pour les projets longs (développement, ingénierie) et si l'école est loin de l'entreprise."],
+          ],
+        },
+      },
+      {
+        heading: "Qui décide du rythme ?",
+        paragraphs: [
+          "C'est l'école ou le CFA qui fixe le rythme de chaque formation. L'entreprise l'accepte en signant le contrat. Demande le calendrier de l'année avant de candidater, et mets-le en avant en entretien : certains recruteurs cherchent un rythme précis.",
+        ],
+      },
+      {
+        heading: "Comment choisir ton rythme",
+        list: [
+          "Métiers de terrain (vente, commerce, relation client) : un rythme court te garde au contact des clients chaque semaine.",
+          "Métiers de projet (développement, data, ingénierie, marketing) : les blocs longs te laissent le temps de livrer quelque chose.",
+          "École et entreprise dans deux villes : préfère les blocs, sinon les trajets et le double loyer deviennent vite épuisants (voir notre guide sur l'alternance dans deux villes).",
+        ],
+      },
+      {
+        heading: "Et pendant les vacances scolaires ?",
+        paragraphs: [
+          "Tu es salarié : pas de vacances scolaires. Quand l'école ferme, tu es en entreprise. Tu as droit à 5 semaines de congés payés par an, comme les autres salariés, à poser en accord avec ton employeur (voir notre guide sur les congés d'un alternant).",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Quel est le rythme le plus courant en alternance ?",
+        a: "Il n'y a pas de rythme unique : 2 jours à l'école et 3 en entreprise en BTS, une semaine sur trois ou des blocs de plusieurs semaines en licence, bachelor ou master. Chaque école fixe le sien.",
+      },
+      {
+        q: "Combien de temps de formation en contrat d'apprentissage ?",
+        a: "Au moins 25 % de la durée totale du contrat. En contrat de professionnalisation, c'est entre 15 % et 25 %, avec un minimum de 150 heures.",
+      },
+      {
+        q: "Un alternant a-t-il les vacances scolaires ?",
+        a: "Non : il est salarié. Quand l'école ferme, il est en entreprise. Il a droit à 5 semaines de congés payés par an.",
+      },
+    ],
+    sources: [
+      { label: "Contrat d'apprentissage (service-public.gouv.fr)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F2918" },
+      { label: "Contrat de professionnalisation (service-public.gouv.fr)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F15478" },
+    ],
+  },
+  {
+    slug: "transport-alternance-stage",
+    title: "Transport en alternance ou en stage : 50 % de ton abonnement remboursé",
+    metaDescription:
+      "Alternant ou stagiaire, ton employeur doit rembourser la moitié de ton abonnement de transport en commun ou de vélo en libre-service. Quels abonnements, comment le demander.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    related: ["aides-alternants", "gratification-de-stage", "premier-jour-en-entreprise"],
+    intro: [
+      "Navigo, abonnement TCL, Tisséo ou vélo en libre-service : si tu vas au travail en transports en commun, ton employeur doit te rembourser la moitié de ton abonnement. Ça vaut pour les alternants comme pour les stagiaires. Beaucoup ne le demandent jamais : à Paris, la moitié d'un Navigo mensuel, c'est plus de 40 € par mois.",
+    ],
+    sections: [
+      {
+        heading: "La règle",
+        list: [
+          "Alternant (apprentissage ou contrat pro) : tu es salarié, donc tu as les mêmes droits que les autres salariés. L'employeur prend en charge 50 % de ton abonnement pour aller de chez toi à ton lieu de travail.",
+          "Stagiaire : la loi te donne le même droit, dans les mêmes conditions que les salariés de l'entreprise (article L124-13 du Code de l'éducation).",
+          "Ça marche aussi pour un abonnement à un service public de vélos en location.",
+        ],
+      },
+      {
+        heading: "Quels abonnements sont remboursés ?",
+        list: [
+          "Oui : les abonnements annuels, mensuels et hebdomadaires de transports en commun (métro, bus, tram, train régional) et de vélos en libre-service.",
+          "Non : les tickets à l'unité et les carnets.",
+          "Astuce : si tu payais au ticket, passe à un abonnement mensuel. Avec le remboursement, il te coûtera souvent moins cher.",
+        ],
+      },
+      {
+        heading: "Comment te faire rembourser",
+        list: [
+          "Envoie un justificatif de ton abonnement (attestation ou facture) au service RH ou à ton tuteur dès ton arrivée.",
+          "Le remboursement apparaît sur ta fiche de paie (ou avec ta gratification si tu es stagiaire), en général chaque mois.",
+          "Tu ne vois rien sur ta paie ? Demande-le simplement : c'est un droit, pas une faveur.",
+        ],
+      },
+      {
+        heading: "Et si tu viens en vélo, en voiture ou à pied ?",
+        paragraphs: [
+          "Le remboursement obligatoire ne concerne que les abonnements de transports en commun et de vélos en libre-service. Certaines entreprises versent en plus un forfait mobilités durables (vélo perso, covoiturage, trottinette) ou une prime de transport pour la voiture, mais ce n'est pas obligatoire : demande au service RH ce qui existe chez eux.",
+        ],
+      },
+      {
+        heading: "Et le trajet jusqu'à l'école ?",
+        paragraphs: [
+          "La prise en charge obligatoire concerne le trajet entre ton domicile et ton lieu de travail. Pour les trajets vers le CFA ou l'école, renseigne-toi auprès de ton CFA et de ta région, qui proposent parfois des aides au transport pour les apprentis.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Un alternant a-t-il droit au remboursement de son Navigo ?",
+        a: "Oui : comme tout salarié, l'alternant a droit à la prise en charge de 50 % de son abonnement de transport en commun pour le trajet domicile-travail.",
+      },
+      {
+        q: "Un stagiaire a-t-il droit au remboursement de ses transports ?",
+        a: "Oui : le Code de l'éducation lui donne droit à la prise en charge de ses frais de transport dans les mêmes conditions que les salariés, soit 50 % de l'abonnement.",
+      },
+      {
+        q: "Les tickets de métro à l'unité sont-ils remboursés ?",
+        a: "Non, seuls les abonnements (hebdomadaires, mensuels ou annuels) sont pris en charge.",
+      },
+    ],
+    sources: [
+      { label: "Prise en charge des frais de transport des alternants (question écrite, Assemblée nationale)", url: "https://questions.assemblee-nationale.fr/q17/17-5121QE.htm" },
+      { label: "Apprentis : titres-restaurant et frais de transport (info-tpe.fr, ministère du Travail)", url: "https://www.info-tpe.fr/faqs/apprenti-e/article/apprentis-acces-aux-titres-restaurant-et-au-remboursement-des-frais-transports" },
+    ],
+  },
 ];

@@ -357,10 +357,12 @@ export const GUIDE_CATEGORIES: { title: string; slugs: string[] }[] = [
       "chomage-fin-alternance",
       "logement-alternance-stage",
       "impots-alternant",
+      "bourse-et-alternance",
+      "transport-alternance-stage",
     ],
   },
   {
     title: "Pendant et après",
-    slugs: ["premier-jour-en-entreprise", "alternance-deux-villes", "rapport-de-stage", "soutenance-de-stage"],
+    slugs: ["premier-jour-en-entreprise", "rythme-alternance", "alternance-deux-villes", "rapport-de-stage", "soutenance-de-stage"],
   },
 ];
