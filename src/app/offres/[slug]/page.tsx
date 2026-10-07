@@ -203,6 +203,17 @@ function parseBaseSalary(salary: string | null) {
   return { "@type": "MonetaryAmount", currency: "EUR", value };
 }
 
+// Google Jobs accepte (et recommande) du HTML simple dans la description :
+// les retours à la ligne du texte France Travail deviennent des <br>, sinon
+// la description s'affiche en un seul bloc.
+function jobPostingDescription(text: string): string {
+  const escaped = text.trim().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return escaped
+    .split(/\n{2,}/)
+    .map((paragraph) => `<p>${paragraph.replace(/\n/g, "<br>")}</p>`)
+    .join("");
+}
+
 function jobPostingJsonLd(offer: Offer) {
   // Date à laquelle le cron retire réellement l'offre du site -- jamais dans
   // le passé tant que la fiche est en ligne (cron en retard d'un jour).
@@ -214,7 +225,7 @@ function jobPostingJsonLd(offer: Offer) {
     "@context": "https://schema.org",
     "@type": "JobPosting",
     title: offer.title,
-    description: offer.description || offer.title,
+    description: jobPostingDescription(offer.description || offer.title),
     identifier: {
       "@type": "PropertyValue",
       name: "Stageio",
