@@ -1670,6 +1670,7 @@ export default async function LandingPage() {
             { href: "/entreprises", label: "Entreprises qui recrutent" },
             { href: "/barometre-alternance-stage", label: "Baromètre 2026" },
             { href: "/guides", label: "Guides" },
+            { href: "/outils", label: "Outils gratuits" },
             { href: "/outils/simulateur-salaire-alternance", label: "Simulateur de salaire" },
             { href: "/outils/lettre-de-motivation-alternance", label: "Lettre de motivation alternance" },
             { href: "/outils/lettre-de-motivation-stage", label: "Lettre de motivation stage" },

@@ -9,6 +9,7 @@ export async function GET() {
   const entries: SitemapEntry[] = [
     { path: "/guides" },
     ...GUIDES.map((guide) => ({ path: `/guides/${guide.slug}`, lastModified: guide.updatedAt })),
+    { path: "/outils" },
     { path: "/outils/simulateur-salaire-alternance" },
     { path: "/outils/lettre-de-motivation-alternance" },
     { path: "/outils/lettre-de-motivation-stage" },

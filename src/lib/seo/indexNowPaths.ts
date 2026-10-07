@@ -16,6 +16,7 @@ const STATIC_PATHS = [
   "/alternance",
   "/stage",
   "/guides",
+  "/outils",
   "/outils/simulateur-salaire-alternance",
   "/outils/lettre-de-motivation-alternance",
   "/outils/lettre-de-motivation-stage",
