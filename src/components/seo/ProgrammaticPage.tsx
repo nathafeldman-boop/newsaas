@@ -206,6 +206,9 @@ export async function ProgrammaticPageView({ model, pageParam }: { model: Progra
       {model.formations && model.formations.length > 0 && (
         <LinkChips title={`${model.h1} : par diplôme`} links={model.formations} />
       )}
+      {model.regions && model.regions.length > 0 && (
+        <LinkChips title={`${model.h1} : par région`} links={model.regions} />
+      )}
       <LinkChips title="Les entreprises qui recrutent" links={model.companies} />
       {model.parentArea && (
         <p style={{ fontSize: 14, marginTop: 16 }}>

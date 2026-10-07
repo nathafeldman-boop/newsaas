@@ -11,6 +11,7 @@ import {
   listCompanies,
   lowerFirst,
   plural,
+  regionPath,
   salaryAnswer,
   segmentPath,
   type ProgrammaticModel,
@@ -21,9 +22,7 @@ import type { ContractType } from "@/types/database";
 // Pages /alternance/region/[region] et /alternance/region/[region]/[metier] :
 // même modèle que les pages département, un étage au-dessus.
 
-export function regionPath(type: ContractType, region: string, metier: string | null): string {
-  return `/${type}/region/${region}${metier ? `/${metier}` : ""}`;
-}
+export { regionPath };
 
 // Départements de la région avec leurs offres. Lien vers la page département
 // quand elle existe, sinon vers la page de la ville qui concentre ses offres

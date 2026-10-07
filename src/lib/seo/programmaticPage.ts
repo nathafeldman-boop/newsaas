@@ -41,6 +41,8 @@ export type ProgrammaticModel = {
   parentArea: SegmentLink | null;
   // Diplômes avec une page dans la ville (pages ville seulement).
   formations?: SegmentLink[];
+  // Régions qui ont une page pour ce métier (pages métier France entière).
+  regions?: SegmentLink[];
   companies: SegmentLink[];
   metier: Metier | null;
   city: CityEntry | null;
@@ -301,6 +303,7 @@ export function buildProgrammaticModel(
     crossType,
     parentArea: parentArea(index, metier, city),
     formations: city && !metier ? formationsInCity(index, city.slug) : undefined,
+    regions: metier && !city ? regionsForMetier(index, metier) : undefined,
     companies: [],
     metier,
     city,
@@ -321,6 +324,17 @@ function parentArea(index: ProgrammaticIndex, metier: Metier | null, city: CityE
 
 export function departementPath(type: ContractType, departementSlug: string, metier: string | null): string {
   return `/${type}/departement/${departementSlug}${metier ? `/${metier}` : ""}`;
+}
+
+export function regionPath(type: ContractType, region: string, metier: string | null): string {
+  return `/${type}/region/${region}${metier ? `/${metier}` : ""}`;
+}
+
+function regionsForMetier(index: ProgrammaticIndex, metier: Metier): SegmentLink[] {
+  return Object.values(index.regionCombos)
+    .filter((c) => c.metier === metier.slug && index.regions[c.region])
+    .sort((a, b) => b.count - a.count)
+    .map((c) => ({ href: regionPath(index.type, c.region, metier.slug), label: index.regions[c.region].label, count: c.count }));
 }
 
 export async function fetchOffersByIds(ids: string[]): Promise<PublicOfferRow[]> {
