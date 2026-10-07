@@ -3808,4 +3808,143 @@ export const MORE_GUIDES: Guide[] = [
       { label: "La bonne alternance avec France Travail", url: "https://www.francetravail.fr/candidat/vos-services-en-ligne/la-bonne-alternance.html" },
     ],
   },
+  {
+    slug: "maitre-d-apprentissage",
+    title: "Maître d'apprentissage : son rôle, les conditions, ce que tu peux attendre de lui",
+    metaDescription:
+      "Qui peut être maître d'apprentissage (diplôme et 1 an d'expérience, ou 2 ans d'expérience), combien d'apprentis il encadre, ses missions, et que faire s'il n'a pas le temps.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    related: ["premier-jour-en-entreprise", "rythme-alternance", "rupture-contrat-apprentissage"],
+    intro: [
+      "En apprentissage, une personne de l'entreprise est chargée de te former : ton maître d'apprentissage. C'est ton repère au quotidien, et le lien entre ton entreprise et ton CFA. Voici qui peut l'être, ce qu'il doit faire, et comment bien travailler avec lui.",
+    ],
+    sections: [
+      {
+        heading: "Qui peut être maître d'apprentissage",
+        list: [
+          "Un salarié de l'entreprise, ou l'employeur lui-même. Il doit être majeur et volontaire.",
+          "Il doit avoir les compétences fixées par la convention ou l'accord de branche de l'entreprise.",
+          "À défaut de règle de branche : un diplôme ou titre du même domaine que celui que tu prépares, d'un niveau au moins équivalent, avec 1 an d'expérience en lien avec ce métier ; ou, sans ce diplôme, 2 ans d'expérience en lien avec ce métier.",
+          "Les périodes de stage et d'apprentissage ne comptent pas dans cette expérience.",
+        ],
+      },
+      {
+        heading: "Combien d'apprentis par maître d'apprentissage",
+        paragraphs: [
+          "Deux apprentis au maximum en même temps, plus un apprenti dont la formation est prolongée après un échec à l'examen. La fonction peut aussi être partagée par une équipe de plusieurs salariés, avec un référent qui fait le lien avec ton CFA.",
+        ],
+      },
+      {
+        heading: "Son rôle",
+        list: [
+          "T'accueillir et t'intégrer dans l'équipe.",
+          "Te confier des missions en lien avec ton diplôme, et t'apprendre les gestes et les savoir-faire du métier.",
+          "Faire le lien avec ton CFA : livret d'apprentissage, échanges avec ton formateur, entretiens de suivi.",
+          "Faire le point régulièrement avec toi sur ce que tu as appris et ce qu'il reste à travailler.",
+          "Son employeur doit lui laisser le temps nécessaire pour t'accompagner et pour échanger avec le CFA.",
+        ],
+      },
+      {
+        heading: "Bien travailler avec ton maître d'apprentissage",
+        list: [
+          "Fixez ensemble, dès la première semaine, ce que tu dois savoir faire à la fin de l'année : ton référentiel de diplôme est une bonne base.",
+          "Garde une trace de tes missions dans ton livret d'apprentissage : c'est utile pour vos points et pour tes examens.",
+          "Préviens-le à l'avance de tes dates de cours et d'examens.",
+          "Pose tes questions au fil de l'eau plutôt que d'accumuler les difficultés.",
+        ],
+      },
+      {
+        heading: "S'il n'a pas le temps, ou s'il part",
+        paragraphs: [
+          "Si tu n'es jamais suivi, ou si on te confie surtout des tâches sans rapport avec ton diplôme, parles-en d'abord à ton maître d'apprentissage, puis à ton formateur du CFA : il peut organiser une rencontre avec l'entreprise. Si ton maître d'apprentissage quitte l'entreprise, l'employeur doit en désigner un autre qui remplit les conditions.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Qui peut être maître d'apprentissage ?",
+        a: "Un salarié majeur et volontaire de l'entreprise, ou l'employeur lui-même, qui a les compétences fixées par la branche. À défaut : un diplôme du même domaine d'un niveau au moins équivalent et 1 an d'expérience, ou 2 ans d'expérience en lien avec le métier.",
+      },
+      {
+        q: "Combien d'apprentis un maître d'apprentissage peut-il encadrer ?",
+        a: "Deux apprentis au maximum en même temps, plus un apprenti dont la formation est prolongée après un échec à l'examen.",
+      },
+      {
+        q: "Quelle est la différence entre maître d'apprentissage et tuteur ?",
+        a: "Le maître d'apprentissage accompagne un apprenti (contrat d'apprentissage). En contrat de professionnalisation, on parle de tuteur. Leur rôle est proche : former et suivre l'alternant dans l'entreprise.",
+      },
+      {
+        q: "Que faire si mon maître d'apprentissage ne s'occupe pas de moi ?",
+        a: "Parles-en d'abord avec lui, puis avec ton formateur du CFA, qui peut organiser une rencontre avec l'entreprise. L'employeur doit lui laisser le temps de t'accompagner.",
+      },
+    ],
+    sources: [
+      { label: "Article R6223-22 du Code du travail : compétences du maître d'apprentissage (Légifrance)", url: "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000037813428" },
+      { label: "Article R6223-6 du Code du travail : nombre d'apprentis par maître d'apprentissage (Légifrance)", url: "https://legifrance.gouv.fr/affichCodeArticle.do?cidTexte=LEGITEXT000006072050&idArticle=LEGIARTI000018497338" },
+    ],
+  },
+  {
+    slug: "carte-etudiant-des-metiers",
+    title: "Carte d'étudiant des métiers : les réductions étudiantes pour les apprentis",
+    metaDescription:
+      "Apprenti, tu as droit à la carte d'étudiant des métiers, gratuite et remise par ton CFA : tarifs étudiants au resto U, au cinéma, dans les transports. En contrat pro, sous conditions.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    related: ["aides-alternants", "logement-alternance-stage", "transport-alternance-stage"],
+    intro: [
+      "Tu es apprenti ? Tu as droit à une carte qui te permet d'avoir les mêmes réductions que les étudiants. Beaucoup d'alternants ne la demandent jamais. Voici à quoi elle sert et comment l'obtenir.",
+    ],
+    sections: [
+      {
+        heading: "C'est quoi ?",
+        paragraphs: [
+          "La carte d'étudiant des métiers porte la mention « Étudiant des métiers ». Prévue par le Code du travail, elle te permet de faire valoir ton statut partout en France pour bénéficier des réductions et avantages accordés aux étudiants.",
+        ],
+      },
+      {
+        heading: "Qui y a droit",
+        list: [
+          "Tous les apprentis en contrat d'apprentissage.",
+          "Les salariés en contrat de professionnalisation qui préparent une qualification enregistrée au RNCP, avec une formation d'au moins 12 mois.",
+        ],
+      },
+      {
+        heading: "Comment l'obtenir",
+        list: [
+          "C'est ton organisme de formation (ton CFA) qui te la remet. Elle est gratuite.",
+          "Si tu ne l'as pas reçue quelques semaines après le début de ta formation, demande-la au secrétariat de ton CFA.",
+          "En cas de rupture de ton contrat, elle n'est plus valable.",
+        ],
+      },
+      {
+        heading: "Les réductions possibles",
+        list: [
+          "Les restaurants universitaires et services du Crous, selon ton CROUS.",
+          "Les cinémas, musées, théâtres et salles de sport qui ont des tarifs étudiants.",
+          "Certains réseaux de transport et abonnements.",
+          "Les réductions dépendent de chaque commerce ou organisme : demande toujours si le tarif étudiant s'applique avec ta carte.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Un apprenti a-t-il droit à la carte d'étudiant ?",
+        a: "Oui : la carte d'étudiant des métiers, remise gratuitement par le CFA, donne accès aux mêmes réductions que les étudiants, partout en France.",
+      },
+      {
+        q: "La carte d'étudiant des métiers est-elle valable en contrat pro ?",
+        a: "Oui, si ton contrat prépare une qualification enregistrée au RNCP avec une formation d'au moins 12 mois.",
+      },
+      {
+        q: "Qui délivre la carte d'étudiant des métiers ?",
+        a: "Ton organisme de formation, c'est-à-dire ton CFA. Elle est gratuite : demande-la au secrétariat si tu ne l'as pas reçue.",
+      },
+    ],
+    sources: [
+      { label: "Article L6222-36-1 du Code du travail : carte d'étudiant des métiers des apprentis (Légifrance)", url: "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000024410251" },
+      { label: "Article L6325-6-2 du Code du travail : carte en contrat de professionnalisation (Légifrance)", url: "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000037387726" },
+      { label: "La carte étudiant des métiers (La bonne alternance)", url: "https://labonnealternance.apprentissage.beta.gouv.fr/guide-cfa/la-carte-etudiant-des-metiers" },
+    ],
+  },
 ];
