@@ -320,6 +320,8 @@ export const GUIDE_CATEGORIES: { title: string; slugs: string[] }[] = [
       "stage-de-3e",
       "annee-de-cesure",
       "alternance-fonction-publique",
+      "aide-soignant-alternance",
+      "educateur-specialise-apprentissage",
     ],
   },
   {

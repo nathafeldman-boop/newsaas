@@ -32,7 +32,7 @@ export const METIERS: Metier[] = [
   { slug: "design", label: "design et graphisme", domain: "en design et graphisme", pattern: /graphis|designer|\bux\b|\bui\b|infograph|motion design|direction artistique|webdesign/ },
   { slug: "community-manager", label: "community manager", domain: "de community manager", pattern: /community|social media|reseaux sociaux|content manager|createur de contenu|influence/ },
   { slug: "e-commerce", label: "e-commerce", domain: "en e-commerce", pattern: /e.?commerce|marketplace|webmerch/ },
-  { slug: "marketing", label: "marketing", domain: "en marketing", pattern: /market|\bseo\b|\bsea\b|growth|acquisition|\bcrm\b|chef de produit|brand|marque/ },
+  { slug: "marketing", label: "marketing", domain: "en marketing", pattern: /market|\bseo\b|\bsea\b|growth|acquisition|\bcrm\b|chef de produit|brand|marque|traff?ic manager/ },
   { slug: "communication", label: "communication", domain: "en communication", pattern: /communica|relations? presse|evenementiel|journalis|redact|attache de presse|traduct|traducteu|interprete/ },
   { slug: "audiovisuel", label: "audiovisuel", domain: "dans l'audiovisuel", pattern: /audiovisu|video|photograph|cadreu|monteu(r|se) (video|son)|ingenieu(r|se) du son|technicien(ne)? (du )?son|sonoris|regisseu|cinema|tournage|post.?production/ },
   { slug: "culture", label: "culture", domain: "dans la culture", pattern: /\bcultur(e\b|elle)|spectacle|musee|patrimoine|bibliothe|mediathe|\bedition|librair|galerie|artisti/ },

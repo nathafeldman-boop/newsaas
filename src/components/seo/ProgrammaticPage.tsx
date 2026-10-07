@@ -81,6 +81,22 @@ const TYPE_GUIDES: Record<ContractType, { slug: string; label: string }[]> = {
   ],
 };
 
+// Guide propre au métier ou au diplôme de la page, en tête de la liste (pages
+// métier, métier × ville, et leurs variantes département / région).
+const METIER_GUIDES: Record<string, { slug: string; label: string }> = {
+  "aide-soignant": { slug: "aide-soignant-alternance", label: "Aide-soignant en alternance (DEAS)" },
+  "educateur-specialise": { slug: "educateur-specialise-apprentissage", label: "Éducateur spécialisé en apprentissage" },
+  "affaires-publiques": { slug: "alternance-fonction-publique", label: "L'alternance dans la fonction publique" },
+  bts: { slug: "bts-bachelor-master-alternance", label: "BTS, bachelor ou master en alternance" },
+  bachelor: { slug: "bts-bachelor-master-alternance", label: "BTS, bachelor ou master en alternance" },
+  master: { slug: "bts-bachelor-master-alternance", label: "BTS, bachelor ou master en alternance" },
+};
+
+function pageGuides(type: ContractType, metier: string | undefined): { slug: string; label: string }[] {
+  const own = type === "alternance" && metier ? METIER_GUIDES[metier] : undefined;
+  return own ? [own, ...TYPE_GUIDES[type].filter((g) => g.slug !== own.slug)] : TYPE_GUIDES[type];
+}
+
 const statValue: React.CSSProperties = { fontSize: 24, fontWeight: 700, fontFamily: "var(--font-heading)", margin: 0 };
 const statLabel: React.CSSProperties = { fontSize: 12.5, margin: "2px 0 0" };
 
@@ -187,7 +203,7 @@ export async function ProgrammaticPageView({ model, pageParam }: { model: Progra
       <section className="mt-8">
         <h2 style={{ fontSize: 18, margin: "0 0 10px" }}>Nos guides pour {type === "alternance" ? "ton alternance" : "ton stage"}</h2>
         <div className="flex flex-wrap gap-2">
-          {TYPE_GUIDES[type].map((guide) => (
+          {pageGuides(type, model.metier?.slug).map((guide) => (
             <Link key={guide.slug} href={`/guides/${guide.slug}`} className="tag tag-neutral">
               {guide.label}
             </Link>

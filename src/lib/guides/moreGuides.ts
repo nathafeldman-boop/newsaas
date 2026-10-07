@@ -3491,4 +3491,155 @@ export const MORE_GUIDES: Guide[] = [
       { label: "Offre de stage aux collégiens et lycéens : la plateforme 1élève1stage (education.gouv.fr)", url: "https://www.education.gouv.fr/offre-de-stage-aux-collegiens-et-lyceens-ouverture-de-la-nouvelle-plateforme-1eleve1stage-462528" },
     ],
   },
+  {
+    slug: "aide-soignant-alternance",
+    title: "Aide-soignant en alternance : le DEAS en apprentissage, payé",
+    metaDescription:
+      "Devenir aide-soignant en alternance : DEAS en 18 mois maximum, payé et gratuit, dès 17 ans et sans diplôme. Sélection, employeurs qui recrutent, rythme, salaire : le guide.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    related: ["alternance-fonction-publique", "rythme-alternance", "cv-alternance"],
+    intro: [
+      "Le diplôme d'État d'aide-soignant (DEAS) se prépare aussi en apprentissage : tu es salarié d'un hôpital, d'une clinique ou d'un EHPAD, ta formation est payée par l'employeur et tu touches un salaire. C'est l'une des alternances où les employeurs cherchent le plus de candidats.",
+    ],
+    sections: [
+      {
+        heading: "Le DEAS en bref",
+        list: [
+          "Diplôme d'État de niveau 4 (niveau bac), délivré après une formation en institut de formation d'aide-soignant (IFAS).",
+          "1 540 heures de formation : 770 heures de théorie et de pratique à l'IFAS, 770 heures en milieu professionnel.",
+          "En apprentissage, la formation dure au maximum 18 mois.",
+          "Aucun diplôme n'est exigé pour entrer en formation. Il faut avoir au moins 17 ans à l'entrée.",
+        ],
+      },
+      {
+        heading: "Comment on entre en formation en apprentissage",
+        paragraphs: [
+          "Hors apprentissage, l'IFAS sélectionne les candidats sur dossier et entretien. En apprentissage, c'est l'employeur qui te sélectionne : il signe ton contrat, puis transmet ton dossier à l'IFAS, qui valide ton entrée.",
+          "Autrement dit, la vraie étape est de trouver l'employeur. Commence par repérer les IFAS proches de chez toi qui ouvrent des places en apprentissage : beaucoup ont déjà des établissements partenaires et peuvent t'orienter.",
+        ],
+      },
+      {
+        heading: "Qui recrute des apprentis aides-soignants",
+        list: [
+          "Les EHPAD et résidences pour personnes âgées : ce sont eux qui publient le plus d'offres.",
+          "Les hôpitaux publics et les cliniques privées.",
+          "Les services de soins infirmiers à domicile (SSIAD) et certaines structures du handicap.",
+          "À l'hôpital public, ton contrat d'apprentissage est un contrat de droit privé, avec les mêmes règles qu'ailleurs.",
+        ],
+      },
+      {
+        heading: "Le rythme et le salaire",
+        paragraphs: [
+          "Le rythme dépend de l'IFAS et de l'employeur : des semaines à l'institut alternent avec des périodes dans l'établissement. Les stages obligatoires du diplôme peuvent aussi te faire découvrir d'autres services.",
+          "Ton salaire suit la grille de l'apprentissage : un pourcentage du SMIC qui dépend de ton âge et de ton année de contrat. La formation est gratuite pour toi.",
+        ],
+      },
+      {
+        heading: "Ta candidature",
+        list: [
+          "Montre ta motivation pour le soin et le contact humain : bénévolat, aide à un proche, job en EHPAD, service civique, tout compte.",
+          "Parle de tes qualités concrètes : patience, écoute, résistance physique, ponctualité, travail en équipe et en horaires décalés.",
+          "Candidate directement auprès des établissements, même sans offre publiée : les EHPAD manquent souvent de personnel et répondent aux candidatures spontanées.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Peut-on faire la formation d'aide-soignant en alternance ?",
+        a: "Oui, le DEAS se prépare en apprentissage, en 18 mois au maximum. Tu es salarié d'un établissement de santé ou médico-social et ta formation est prise en charge.",
+      },
+      {
+        q: "Faut-il un diplôme pour devenir aide-soignant en apprentissage ?",
+        a: "Non, aucun diplôme n'est exigé. Il faut avoir au moins 17 ans à l'entrée en formation, et trouver un employeur qui te recrute en apprentissage.",
+      },
+      {
+        q: "Comment se passe la sélection en apprentissage ?",
+        a: "C'est l'employeur qui sélectionne son apprenti. Il transmet ensuite le dossier à l'IFAS, qui valide l'entrée en formation.",
+      },
+      {
+        q: "Combien gagne un apprenti aide-soignant ?",
+        a: "Le salaire suit la grille de l'apprentissage : un pourcentage du SMIC selon ton âge et ton année de contrat. Le simulateur de salaire de Stageio fait le calcul pour toi.",
+      },
+    ],
+    sources: [
+      { label: "Arrêté du 10 juin 2021 relatif à la formation conduisant au diplôme d'État d'aide-soignant (Légifrance)", url: "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000043646160" },
+      { label: "Nouvelles modalités d'admission aux formations d'aide-soignant et d'auxiliaire de puériculture (ARS Hauts-de-France)", url: "https://www.hauts-de-france.paps.sante.fr/nouvelles-modalites-dadmission-aux-formations-conduisant-aux-diplomes-detat-daide-soignant-et" },
+    ],
+  },
+  {
+    slug: "educateur-specialise-apprentissage",
+    title: "Éducateur spécialisé en apprentissage : le DEES en alternance",
+    metaDescription:
+      "Devenir éducateur spécialisé en apprentissage : DEES en 3 ans, grade licence, payé par une structure du social. Conditions, employeurs, admission, salaire : le guide.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    related: ["alternance-fonction-publique", "rythme-alternance", "candidature-spontanee-alternance"],
+    intro: [
+      "Le diplôme d'État d'éducateur spécialisé (DEES) peut se préparer en apprentissage : 3 ans de formation payés, en alternance entre une école de travail social et une structure qui accompagne des enfants, des adolescents ou des adultes en difficulté. À la clé, un diplôme de niveau bac+3.",
+    ],
+    sections: [
+      {
+        heading: "Le DEES en bref",
+        list: [
+          "3 ans de formation, en institut régional du travail social (IRTS) ou en école de travail social.",
+          "Le diplôme confère le grade de licence (bac+3).",
+          "Il faut le bac, ou un diplôme ou titre de niveau 4. Sinon, une dérogation est possible selon ton parcours (article D613-40 du code de l'éducation).",
+          "En apprentissage, il faut en principe avoir entre 16 et 29 ans révolus à la signature du contrat. Pas de limite d'âge si tu as une reconnaissance de travailleur handicapé (RQTH).",
+        ],
+      },
+      {
+        heading: "Qui recrute des apprentis éducateurs",
+        list: [
+          "Les établissements et services sociaux et médico-sociaux : foyers de l'enfance, maisons d'enfants (MECS), instituts médico-éducatifs (IME), foyers pour adultes handicapés…",
+          "Les associations de protection de l'enfance, de prévention spécialisée ou d'insertion.",
+          "Les collectivités, en particulier les départements (aide sociale à l'enfance).",
+        ],
+      },
+      {
+        heading: "Admission : l'avantage du contrat signé",
+        paragraphs: [
+          "Les écoles sélectionnent leurs étudiants, souvent avec un entretien. Bonne nouvelle : si tu as déjà signé un contrat d'apprentissage ou de professionnalisation avec un établissement social ou médico-social, tu es dispensé de cet entretien.",
+          "Concrètement : renseigne-toi tôt auprès des écoles de ta région sur leurs places en apprentissage et leur calendrier, et cherche ton employeur en parallèle. Les écoles connaissent souvent les structures qui accueillent des apprentis.",
+        ],
+      },
+      {
+        heading: "Le rythme et le salaire",
+        paragraphs: [
+          "Tu alternes entre l'école et ta structure, selon un calendrier fixé par l'école. La formation pratique est importante dans ce diplôme : en apprentissage, une bonne partie se fait chez ton employeur.",
+          "Ton salaire suit la grille de l'apprentissage, un pourcentage du SMIC selon ton âge et ton année de contrat, et la formation est gratuite pour toi.",
+        ],
+      },
+      {
+        heading: "Ta candidature",
+        list: [
+          "Mets en avant tes expériences auprès des autres : animation (BAFA), colonies, soutien scolaire, bénévolat, service civique.",
+          "Explique pourquoi ce public t'intéresse (enfance, handicap, insertion) : les recruteurs veulent un projet réfléchi.",
+          "Candidate spontanément auprès des structures près de chez toi : beaucoup recrutent des apprentis sans publier d'offre.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Peut-on devenir éducateur spécialisé en alternance ?",
+        a: "Oui, le DEES se prépare en apprentissage en 3 ans, dans une école de travail social, avec un contrat dans une structure sociale ou médico-sociale.",
+      },
+      {
+        q: "Quel niveau faut-il pour entrer en formation d'éducateur spécialisé ?",
+        a: "Le bac ou un diplôme de niveau 4. Sans ce niveau, une dérogation est possible selon ton parcours. Le diplôme obtenu confère le grade de licence.",
+      },
+      {
+        q: "Faut-il passer un entretien en apprentissage ?",
+        a: "Si tu as déjà signé un contrat d'apprentissage ou de professionnalisation avec un établissement social ou médico-social, tu es dispensé de l'entretien d'admission.",
+      },
+      {
+        q: "Jusqu'à quel âge peut-on faire le DEES en apprentissage ?",
+        a: "En principe jusqu'à 29 ans révolus à la signature du contrat, sans limite d'âge avec une reconnaissance de travailleur handicapé.",
+      },
+    ],
+    sources: [
+      { label: "DEES, diplôme d'État d'éducateur spécialisé (CIDJ)", url: "https://www.cidj.com/s-orienter/diplomes/dees-diplome-d-etat-d-educateur-specialise" },
+      { label: "Éducateur spécialisé, formation en apprentissage (IRTS Hauts-de-France)", url: "https://irtshdf.fr/formations/formation-metier/educateur-specialise-2/" },
+    ],
+  },
 ];
