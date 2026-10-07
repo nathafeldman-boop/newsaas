@@ -314,6 +314,8 @@ export const GUIDE_CATEGORIES: { title: string; slugs: string[] }[] = [
       "choisir-son-ecole-en-alternance",
       "bts-bachelor-master-alternance",
       "stage-de-fin-d-etudes",
+      "stage-a-l-etranger",
+      "annee-de-cesure",
     ],
   },
   {
@@ -345,6 +347,7 @@ export const GUIDE_CATEGORIES: { title: string; slugs: string[] }[] = [
     slugs: [
       "contrat-apprentissage-ou-contrat-pro",
       "alternance-age-limite",
+      "periode-essai-alternance",
       "rupture-contrat-apprentissage",
       "aides-alternants",
       "conges-alternant",
@@ -354,6 +357,6 @@ export const GUIDE_CATEGORIES: { title: string; slugs: string[] }[] = [
   },
   {
     title: "Pendant et après",
-    slugs: ["premier-jour-en-entreprise", "rapport-de-stage", "soutenance-de-stage"],
+    slugs: ["premier-jour-en-entreprise", "alternance-deux-villes", "rapport-de-stage", "soutenance-de-stage"],
   },
 ];

@@ -2060,4 +2060,293 @@ export const MORE_GUIDES: Guide[] = [
       { label: "Gratification minimale de stage (service-public.gouv.fr)", url: "https://entreprendre.service-public.gouv.fr/vosdroits/F32131" },
     ],
   },
+  {
+    slug: "periode-essai-alternance",
+    title: "Période d'essai en alternance : apprentissage et contrat pro, les règles",
+    metaDescription:
+      "Apprentissage : 45 jours en entreprise pour rompre librement. Contrat pro : période d'essai du CDD ou du CDI. Durées, renouvellement et comment ça se passe si ça s'arrête.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    related: ["rupture-contrat-apprentissage", "contrat-apprentissage-ou-contrat-pro", "premier-jour-en-entreprise"],
+    intro: [
+      "Les premières semaines d'une alternance servent à vérifier que ça colle, de ton côté comme de celui de l'entreprise. Mais les règles ne sont pas les mêmes en contrat d'apprentissage et en contrat de professionnalisation. Voici ce qu'il faut savoir.",
+    ],
+    sections: [
+      {
+        heading: "Contrat d'apprentissage : les 45 premiers jours en entreprise",
+        paragraphs: [
+          "Le contrat d'apprentissage ne parle pas de « période d'essai » au sens classique, mais l'effet est le même : pendant les 45 premiers jours de formation pratique en entreprise, consécutifs ou non, toi comme l'employeur pouvez rompre le contrat sans avoir à donner de motif. La rupture doit être faite par écrit.",
+          "Attention au calcul : seuls les jours passés en entreprise comptent, pas les jours de cours au CFA. Avec un rythme de 2 jours en entreprise par semaine, ces 45 jours peuvent donc s'étaler sur plusieurs mois.",
+          "Après ces 45 jours, la rupture n'est plus libre : accord écrit des deux parties, démission avec passage par le médiateur, ou licenciement dans des cas précis. On détaille tout dans notre guide sur la rupture du contrat d'apprentissage.",
+        ],
+      },
+      {
+        heading: "Contrat de professionnalisation : la période d'essai du droit commun",
+        paragraphs: [
+          "Le contrat de professionnalisation est un contrat de travail classique, en CDD ou en CDI. La période d'essai suit donc les règles habituelles. Elle n'est pas automatique : elle doit être prévue dans ton contrat.",
+        ],
+        table: {
+          headers: ["Type de contrat pro", "Durée maximale de la période d'essai"],
+          rows: [
+            ["CDD de 6 mois ou moins", "1 jour par semaine de contrat, dans la limite de 2 semaines"],
+            ["CDD de plus de 6 mois", "1 mois"],
+            ["CDI, employé ou ouvrier", "2 mois"],
+            ["CDI, agent de maîtrise ou technicien", "3 mois"],
+            ["CDI, cadre", "4 mois"],
+          ],
+        },
+      },
+      {
+        heading: "Peut-elle être renouvelée ?",
+        paragraphs: [
+          "En CDD, la période d'essai n'est pas renouvelable. En CDI, elle peut l'être une seule fois, et seulement si un accord de branche le prévoit et que ton contrat le mentionne. Le renouvellement doit être accepté par écrit, par toi, avant la fin de la première période.",
+        ],
+      },
+      {
+        heading: "Si l'entreprise met fin à l'essai",
+        paragraphs: [
+          "Pendant la période d'essai d'un contrat pro, l'employeur peut y mettre fin sans motif, mais il doit respecter un délai de prévenance qui dépend de ton temps de présence dans l'entreprise (de 24 heures à 1 mois). De ton côté, tu dois aussi prévenir, en général 48 heures à l'avance (24 heures si tu es là depuis moins de 8 jours).",
+          "Préviens tout de suite ton école ou ton CFA : il peut t'aider à retrouver une entreprise, et en apprentissage tu peux sous conditions continuer ta formation le temps d'en trouver une nouvelle.",
+        ],
+      },
+      {
+        heading: "Réussir ces premières semaines",
+        list: [
+          "Fais un point avec ton tuteur à la fin de la première semaine et au bout d'un mois : qu'est-ce qui va, qu'est-ce qui doit changer ?",
+          "Note ce que tu fais chaque semaine : utile pour ton école et pour montrer ta progression.",
+          "Si quelque chose ne va pas (missions sans rapport avec ta formation, horaires non respectés), parles-en tôt à ton tuteur puis à ton CFA.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Y a-t-il une période d'essai en contrat d'apprentissage ?",
+        a: "Pas sous ce nom, mais pendant les 45 premiers jours de formation pratique en entreprise (consécutifs ou non), l'apprenti comme l'employeur peuvent rompre le contrat librement, par écrit.",
+      },
+      {
+        q: "Les jours au CFA comptent-ils dans les 45 jours ?",
+        a: "Non, seuls les jours de formation pratique en entreprise sont comptés.",
+      },
+      {
+        q: "Quelle est la période d'essai d'un contrat pro en CDD de 12 mois ?",
+        a: "1 mois maximum, sans renouvellement possible.",
+      },
+    ],
+    sources: [
+      { label: "Contrat d'apprentissage (service-public.gouv.fr)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F2918" },
+      { label: "Contrat de professionnalisation (service-public.gouv.fr)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F15478" },
+    ],
+  },
+  {
+    slug: "annee-de-cesure",
+    title: "Année de césure : comment l'organiser (stage, job, voyage)",
+    metaDescription:
+      "Une année de césure pour faire un stage, travailler ou voyager sans perdre ta place : statut étudiant, convention, bourse, et comment préparer ton projet.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    related: ["trouver-un-stage", "stage-a-l-etranger", "convention-de-stage"],
+    intro: [
+      "La césure, c'est une pause dans tes études (un semestre ou une année universitaire au maximum) pour vivre une expérience : un stage long, un emploi, un service civique, un projet personnel ou un voyage. Bien préparée, elle pèse lourd sur un CV. Voici comment ça marche.",
+    ],
+    sections: [
+      {
+        heading: "Les règles principales",
+        list: [
+          "Durée : au maximum l'équivalent d'une année universitaire.",
+          "Tu restes inscrit dans ton établissement et tu gardes ton statut d'étudiant pendant toute la césure.",
+          "Une convention est signée entre toi et ton établissement : elle garantit ta réinscription dans ta formation à ton retour.",
+          "La césure est facultative et se fait à ta demande : ton établissement examine ton projet avant de donner son accord.",
+          "Bourse : tu peux demander à la conserver, mais c'est ton établissement qui décide selon ton projet.",
+        ],
+      },
+      {
+        heading: "Que faire pendant une césure ?",
+        table: {
+          headers: ["Option", "Pour qui", "À savoir"],
+          rows: [
+            ["Stage en entreprise", "Tester un métier, se constituer une vraie expérience", "Une convention de stage reste nécessaire, et les règles de gratification s'appliquent."],
+            ["Emploi (CDD, saisonnier...)", "Financer la suite de ses études, gagner en autonomie", "Tu es salarié, avec un vrai contrat de travail."],
+            ["Service civique", "S'engager dans une mission d'intérêt général", "Indemnisé, de 6 à 12 mois en général."],
+            ["Projet personnel ou entrepreneurial", "Créer une activité, un projet associatif", "Prépare un plan précis : ton école le demandera."],
+            ["Voyage, séjour linguistique", "Progresser en langue, ouvrir ses horizons", "Garde une trace de ce que tu fais pour le valoriser au retour."],
+          ],
+        },
+      },
+      {
+        heading: "Comment la demander",
+        list: [
+          "Renseigne-toi tôt (souvent au printemps pour l'année suivante) : chaque établissement fixe son calendrier et son dossier.",
+          "Prépare un projet écrit : ce que tu vas faire, pourquoi, et ce que tu en attends pour ta formation ou ton projet pro.",
+          "Demande quels sont les frais d'inscription pendant la césure : ils sont souvent réduits.",
+          "Vérifie avec le Crous ce qu'il advient de ta bourse et de ton logement étudiant.",
+        ],
+      },
+      {
+        heading: "Valoriser sa césure sur son CV",
+        paragraphs: [
+          "Une césure n'est pas un trou dans ton CV si tu la racontes avec des résultats : ce que tu as appris, ce que tu as produit, les responsabilités que tu as eues. Une ligne comme « Stage de 6 mois chez [entreprise] pendant ma césure : refonte du suivi client, 200 comptes gérés » vaut largement une année de cours en plus.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Est-ce qu'on reste étudiant pendant une année de césure ?",
+        a: "Oui : tu restes inscrit dans ton établissement et tu conserves ton statut d'étudiant pendant toute la période de césure.",
+      },
+      {
+        q: "Peut-on garder sa bourse pendant une césure ?",
+        a: "Tu peux demander son maintien, mais la décision revient à ton établissement, en fonction de ton projet.",
+      },
+      {
+        q: "Peut-on faire un stage pendant une année de césure ?",
+        a: "Oui, c'est même l'option la plus courante. Il faut une convention de stage, comme pour un stage classique.",
+      },
+    ],
+  },
+  {
+    slug: "stage-a-l-etranger",
+    title: "Faire un stage à l'étranger : démarches, financement et checklist",
+    metaDescription:
+      "Trouver un stage à l'étranger, la convention, le visa, l'assurance santé, les bourses (dont Erasmus+) : la checklist complète pour partir en stage hors de France.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    related: ["trouver-un-stage", "convention-de-stage", "annee-de-cesure"],
+    intro: [
+      "Un stage à l'étranger fait progresser en langue, donne une vraie ligne différenciante sur ton CV et te fait souvent grandir plus vite qu'un stage classique. Mais il demande plus de préparation : convention, visa, logement, santé, budget. Voici la checklist dans l'ordre.",
+    ],
+    sections: [
+      {
+        heading: "1. Trouver le stage (6 à 9 mois avant)",
+        list: [
+          "Commence par le service des relations internationales de ton école : offres réservées, entreprises partenaires, anciens déjà partis.",
+          "Cherche les filiales à l'étranger d'entreprises françaises : plus simples pour la convention et l'accompagnement.",
+          "Utilise LinkedIn en filtrant par pays, et envoie des candidatures spontanées en anglais ou dans la langue locale.",
+          "Adapte ton CV aux usages du pays (photo ou non, longueur, format) : renseigne-toi pays par pays.",
+        ],
+      },
+      {
+        heading: "2. La convention de stage",
+        paragraphs: [
+          "Si ton stage fait partie de ton cursus en France, une convention de stage est signée entre toi, ton école et l'organisme d'accueil, même à l'étranger. Elle précise tes missions, tes dates, ta gratification éventuelle et ta couverture santé et accidents. Fais-la valider avant de réserver quoi que ce soit.",
+          "La gratification minimale française ne s'impose pas toujours à une entreprise étrangère : ce qui compte, c'est ce que prévoit ta convention et le droit du pays. Négocie-la avant de partir.",
+        ],
+      },
+      {
+        heading: "3. Visa et autorisation de travail",
+        paragraphs: [
+          "Dans l'Union européenne, un étudiant français n'a pas besoin de visa. Hors UE, les règles changent d'un pays à l'autre et les délais peuvent être longs : consulte le site de l'ambassade du pays dès que ton stage est confirmé.",
+        ],
+      },
+      {
+        heading: "4. Santé et assurance",
+        list: [
+          "Dans l'UE : demande ta carte européenne d'assurance maladie (CEAM) sur ton compte Ameli, au moins 2 semaines avant le départ.",
+          "Hors UE : vérifie ce que couvre ta convention et prends une assurance santé internationale si nécessaire, les frais médicaux peuvent être très élevés.",
+          "Vérifie la couverture responsabilité civile et accidents du travail prévue par ta convention.",
+        ],
+      },
+      {
+        heading: "5. Financer ton stage",
+        list: [
+          "Erasmus+ : bourse pour les stages dans un pays participant au programme. Le montant dépend du pays : demande à ton école, qui gère les candidatures.",
+          "Aides de ta région ou de ton école à la mobilité internationale : chaque région a ses propres dispositifs.",
+          "Bourse sur critères sociaux : selon ta situation, elle peut être maintenue pendant le stage. Renseigne-toi auprès de ton école et du Crous.",
+          "Fais un budget complet : logement, transport, assurance, vie sur place. Dans certaines villes, le logement absorbe une grosse partie du budget.",
+        ],
+      },
+      {
+        heading: "6. Avant de partir",
+        list: [
+          "Pièce d'identité ou passeport valide pour toute la durée du séjour.",
+          "Logement trouvé avant le départ, ou au moins pour les premières semaines.",
+          "Copies numériques de tous tes documents (convention, assurance, passeport).",
+          "Inscription sur le fil Ariane du ministère des Affaires étrangères pour être contacté en cas de crise.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Faut-il une convention de stage pour un stage à l'étranger ?",
+        a: "Oui, si le stage fait partie de ton cursus en France : la convention est signée entre toi, ton école et l'organisme d'accueil, comme pour un stage en France.",
+      },
+      {
+        q: "Un stage à l'étranger est-il rémunéré ?",
+        a: "Ça dépend du pays et de l'entreprise : la gratification minimale française ne s'impose pas toujours à un organisme étranger. Ce qui compte, c'est ta convention. Des bourses comme Erasmus+ peuvent compléter.",
+      },
+      {
+        q: "Quand commencer à chercher un stage à l'étranger ?",
+        a: "6 à 9 mois avant le départ, pour avoir le temps de trouver, signer la convention et régler visa et logement.",
+      },
+    ],
+  },
+  {
+    slug: "alternance-deux-villes",
+    title: "Alternance dans deux villes : gérer l'école et l'entreprise loin l'une de l'autre",
+    metaDescription:
+      "École à Paris, entreprise à Lyon ? Comment organiser une alternance entre deux villes : logement, transport, aides possibles, rythme et budget.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    related: ["aides-alternants", "choisir-son-ecole-en-alternance", "premier-jour-en-entreprise"],
+    intro: [
+      "Trouver une entreprise loin de ton école, c'est fréquent : ça élargit beaucoup tes possibilités, mais ça demande de l'organisation et un budget. Avant de dire oui, fais les comptes et choisis la bonne formule.",
+    ],
+    sections: [
+      {
+        heading: "Est-ce compatible avec ton rythme ?",
+        paragraphs: [
+          "Le rythme de ton école change tout. Avec des périodes longues (2 à 4 semaines en entreprise, puis 1 à 2 semaines de cours), une double vie entre deux villes se gère bien. Avec un rythme de 2 ou 3 jours par semaine, les allers-retours hebdomadaires deviennent vite épuisants et chers.",
+        ],
+      },
+      {
+        heading: "Les formules de logement",
+        table: {
+          headers: ["Formule", "Avantages", "Inconvénients"],
+          rows: [
+            ["Logement près de l'entreprise + hébergement court près de l'école", "Tu vis là où tu passes le plus de temps", "Il faut trouver où dormir pendant les semaines de cours"],
+            ["Deux logements", "Confort et stabilité", "Le plus cher : à réserver aux salaires qui le permettent"],
+            ["Colocation ou sous-location à la semaine", "Souple et moins cher", "Moins d'intimité, à organiser à l'avance"],
+            ["Foyers de jeunes travailleurs, résidences pour alternants", "Loyers adaptés, durées flexibles", "Places limitées : demande tôt"],
+          ],
+        },
+      },
+      {
+        heading: "Les aides qui peuvent t'aider",
+        list: [
+          "Aide Mobili-Jeune d'Action Logement : jusqu'à 100 € par mois sur ton loyer si tu as moins de 30 ans et que tu gagnes au maximum 120 % du SMIC.",
+          "APL : uniquement pour ton logement principal. Fais ta simulation sur le site de la CAF.",
+          "Ton CFA : les frais d'hébergement et de restauration pendant les périodes de cours peuvent être en partie pris en charge. Demande ce qui est prévu.",
+          "Ton entreprise : certaines remboursent une partie des trajets ou aident au logement. Pose la question avant de signer.",
+          "Transport : l'employeur rembourse la moitié de ton abonnement de transport en commun pour aller au travail.",
+        ],
+      },
+      {
+        heading: "Fais ton budget avant de signer",
+        paragraphs: [
+          "Additionne loyers, trajets entre les deux villes, repas et abonnements, puis compare avec ton salaire net d'alternant et tes aides. Si le reste à vivre est trop faible, négocie avec l'entreprise (salaire au-dessus du minimum, aide au logement) ou cherche une entreprise plus proche de ton école.",
+        ],
+      },
+      {
+        heading: "Les bons réflexes",
+        list: [
+          "Réserve tes trains à l'avance et regarde les cartes de réduction jeunes.",
+          "Préviens ton tuteur de tes dates de cours dès le début, pour qu'il anticipe tes absences.",
+          "Prévois un temps de récupération : enchaîner trajets, cours et travail fatigue vite.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Peut-on faire une alternance avec une entreprise dans une autre ville que l'école ?",
+        a: "Oui, rien ne l'interdit. Il faut juste que le rythme école/entreprise soit tenable pour toi et que ton CFA et ton entreprise soient d'accord.",
+      },
+      {
+        q: "Peut-on toucher les APL pour deux logements ?",
+        a: "Non, les APL ne concernent que ton logement principal. D'autres aides (Mobili-Jeune, prise en charge par le CFA ou l'entreprise) peuvent compléter.",
+      },
+      {
+        q: "Qui paie les trajets entre l'école et l'entreprise ?",
+        a: "Ce n'est pas automatique : demande à ton CFA et à ton entreprise ce qu'ils prennent en charge. L'employeur rembourse dans tous les cas la moitié de ton abonnement de transport en commun domicile-travail.",
+      },
+    ],
+  },
 ];
