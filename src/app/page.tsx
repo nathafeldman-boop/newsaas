@@ -8,6 +8,8 @@ import { SwipeDemo } from "@/components/landing/SwipeDemo";
 import { Reveal } from "@/components/ui/Reveal";
 import { Highlight } from "@/components/ui/Highlight";
 import { getProgrammaticIndex } from "@/lib/seo/programmaticIndex";
+import { regionLinks } from "@/lib/seo/regionPage";
+import { getRegionBySlug } from "@/lib/seo/departements";
 import { getCompanyIndex } from "@/lib/seo/companyIndex";
 import { getMetier } from "@/lib/seo/metiers";
 
@@ -195,7 +197,7 @@ type DiscoveryLink = { href: string; label: string };
 // page la plus explorée par Google, c'est d'ici qu'il découvre le plus vite
 // les nouvelles pages. Best-effort : une erreur (ou un build sans base) masque
 // juste le bloc, jamais la page.
-async function getDiscoveryLinks(): Promise<{ metiers: DiscoveryLink[]; cities: DiscoveryLink[]; companies: DiscoveryLink[] } | null> {
+async function getDiscoveryLinks(): Promise<{ metiers: DiscoveryLink[]; cities: DiscoveryLink[]; regions: DiscoveryLink[]; companies: DiscoveryLink[] } | null> {
   try {
     const [alternance, companies] = await Promise.all([getProgrammaticIndex("alternance"), getCompanyIndex()]);
     return {
@@ -207,6 +209,7 @@ async function getDiscoveryLinks(): Promise<{ metiers: DiscoveryLink[]; cities: 
         .sort((a, b) => b.count - a.count)
         .slice(0, 12)
         .map((c) => ({ href: `/alternance/${c.slug}`, label: `Alternance ${/^(le|les)\s/i.test(c.label) ? c.label : `à ${c.label}`}` })),
+      regions: regionLinks(alternance).map((r) => ({ href: r.href, label: `Alternance ${getRegionBySlug(r.href.split("/").pop() ?? "")?.phrase ?? r.label}` })),
       companies: Object.values(companies.companies)
         .sort((a, b) => b.count - a.count)
         .slice(0, 10)
@@ -1479,6 +1482,7 @@ export default async function LandingPage() {
             {[
               { title: "Les métiers qui recrutent", links: discovery.metiers },
               { title: "Les villes", links: discovery.cities },
+              { title: "Les régions", links: discovery.regions },
               { title: "Les entreprises qui publient le plus", links: discovery.companies },
               { title: "Les guides les plus lus", links: POPULAR_GUIDES },
             ]
