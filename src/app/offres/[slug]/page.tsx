@@ -5,9 +5,10 @@ import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { offerExpiresAt } from "@/lib/offers/expiry";
-import { departementFromLocation, getDepartement } from "@/lib/seo/departements";
+import { departementFromLocation, getDepartement, getDepartementBySlug, getRegionBySlug } from "@/lib/seo/departements";
+import { cityPhrase } from "@/lib/seo/programmaticIndex";
 import { extractOfferId, offerPath, offerSlug } from "@/lib/offers/publicUrl";
-import { normalizeCityKey, titleCase } from "@/lib/offers/segments";
+import { normalizeCityKey, slugify, titleCase } from "@/lib/offers/segments";
 import { getOfferContextLinks, type OfferContextLinks } from "@/lib/offers/similarOffers";
 import { SITE_URL } from "@/lib/site";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
@@ -76,8 +77,26 @@ function offerTitle(offer: Offer): string {
   // La ville dans le titre : "intitulé + ville" est la requête la plus
   // fréquente d'un candidat. Pas de doublon si l'intitulé la contient déjà.
   const city = titleCase(normalizeCityKey(offer.location));
-  const withCity = city && !normalizeForMatch(offer.title).includes(normalizeForMatch(city)) ? ` à ${city}` : "";
+  const place = placePhrase(offer.location);
+  const withCity = place && !normalizeForMatch(offer.title).includes(normalizeForMatch(city)) ? ` ${place}` : "";
   return `${mentionsContract ? "" : `${CONTRACT_LABEL[offer.contract_type]} : `}${offer.title}${withCity} – ${offer.company}`;
+}
+
+// "à Lyon", "au Havre", mais "dans le Rhône" ou "en Bretagne" quand l'offre
+// n'indique qu'un département ou une région ("à Rhône" sinon). Vienne (38)
+// reste une ville : le code du lieu ne correspond pas au département 86.
+function placePhrase(location: string): string | null {
+  const key = normalizeCityKey(location);
+  if (!key) return null;
+  const slug = slugify(key);
+  const departement = getDepartementBySlug(slug);
+  if (departement) {
+    const code = departementFromLocation(location);
+    if (!code || code === departement.code) return departement.phrase;
+  }
+  const region = getRegionBySlug(slug);
+  if (region) return region.phrase;
+  return cityPhrase(titleCase(key));
 }
 
 function normalizeForMatch(text: string): string {
@@ -95,8 +114,8 @@ function truncateOnWord(text: string, max: number): string {
 // 155 premiers caractères bruts de la description étaient souvent un texte
 // générique d'entreprise identique sur toutes ses offres.
 function offerMetaDescription(offer: Offer): string {
-  const city = titleCase(normalizeCityKey(offer.location)) || offer.location;
-  const context = `${CONTRACT_LABEL[offer.contract_type]} chez ${offer.company} à ${city}${
+  const place = placePhrase(offer.location);
+  const context = `${CONTRACT_LABEL[offer.contract_type]} chez ${offer.company}${place ? ` ${place}` : ""}${
     offer.duration ? ` (${offer.duration})` : ""
   }.`;
   const snippet = offer.description.replace(/\s+/g, " ").trim();
