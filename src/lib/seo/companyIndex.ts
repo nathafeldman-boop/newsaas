@@ -1,5 +1,5 @@
 import { unstable_cache } from "next/cache";
-import { compactGroup, expandGroup, idEncoder, serializedKb, type Compacted } from "@/lib/seo/compactIds";
+import { compactGroup, expandGroup, fitCacheBudget, idEncoder, unpackIdTable, type Compacted } from "@/lib/seo/compactIds";
 import { createPublicClient, fetchAllRows } from "@/lib/supabase/public";
 import { NOT_A_CITY, normalizeCityKey, slugify, titleCase } from "@/lib/offers/segments";
 import { PUBLIC_OFFERS_PAGE_SIZE } from "@/lib/offers/fetchPublicOffers";
@@ -196,20 +196,20 @@ type CompactCompanyIndex = Omit<CompanyIndex, "companies"> & { companies: Record
 // Version mise en cache : ids compactés (voir compactIds.ts).
 async function computeCompactCompanyIndex(): Promise<CompactCompanyIndex> {
   const index = await computeCompanyIndex();
-  const encoder = idEncoder();
-  const compact = { ...index, companies: compactGroup(index.companies, encoder), idTable: encoder.table };
-  console.log(`company index: ${Object.keys(index.companies).length} entreprises, ${serializedKb(compact)} Ko`);
-  return compact;
+  return fitCacheBudget((maxIds) => {
+    const encoder = idEncoder();
+    return { ...index, companies: compactGroup(index.companies, encoder, maxIds), idTable: encoder.table };
+  }, `company index: ${Object.keys(index.companies).length} entreprises`);
 }
 
-const cachedCompanyIndex = unstable_cache(computeCompactCompanyIndex, ["company-index-v8"], { revalidate: 3600 });
+const cachedCompanyIndex = unstable_cache(computeCompactCompanyIndex, ["company-index-v9"], { revalidate: 3600 });
 
 let expanded: CompanyIndex | null = null;
 
 export async function getCompanyIndex(): Promise<CompanyIndex> {
   const compact = await cachedCompanyIndex();
   if (expanded && expanded.generatedAt === compact.generatedAt) return expanded;
-  expanded = { generatedAt: compact.generatedAt, companies: expandGroup(compact.companies, compact.idTable), aliases: compact.aliases ?? {} };
+  expanded = { generatedAt: compact.generatedAt, companies: expandGroup(compact.companies, unpackIdTable(compact.idTable)), aliases: compact.aliases ?? {} };
   return expanded;
 }
 

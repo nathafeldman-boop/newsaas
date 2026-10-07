@@ -1,5 +1,5 @@
 import { unstable_cache } from "next/cache";
-import { compactGroup, expandGroup, idEncoder, serializedKb, type Compacted } from "@/lib/seo/compactIds";
+import { compactGroup, expandGroup, fitCacheBudget, idEncoder, unpackIdTable, type Compacted } from "@/lib/seo/compactIds";
 import { createPublicClient, fetchAllRows } from "@/lib/supabase/public";
 import { NOT_A_CITY, normalizeCityKey, slugify, titleCase } from "@/lib/offers/segments";
 import { PUBLIC_OFFERS_PAGE_SIZE } from "@/lib/offers/fetchPublicOffers";
@@ -313,57 +313,118 @@ export function buildIndex(type: ContractType, rows: IndexRow[], now = Date.now(
 }
 
 type SegmentGroup = "cities" | "metiers" | "combos" | "departements" | "depCombos" | "regions" | "regionCombos";
-type CompactIndex = Omit<ProgrammaticIndex, SegmentGroup> & {
-  [K in SegmentGroup]: Record<string, Compacted<ProgrammaticIndex[K][string]>>;
-} & { idTable: string[] };
+type Scalars = Omit<ProgrammaticIndex, SegmentGroup>;
+type AnySegment = SegmentStats & Record<string, unknown>;
 
-// Version mise en cache : ids compactés (voir compactIds.ts).
-async function computeCompactIndex(type: ContractType): Promise<CompactIndex> {
-  const index = await computeIndex(type);
-  const encoder = idEncoder();
-  const compact = {
-    ...index,
-    cities: compactGroup(index.cities, encoder),
-    metiers: compactGroup(index.metiers, encoder),
-    combos: compactGroup(index.combos, encoder),
-    departements: compactGroup(index.departements, encoder),
-    depCombos: compactGroup(index.depCombos, encoder),
-    regions: compactGroup(index.regions, encoder),
-    regionCombos: compactGroup(index.regionCombos, encoder),
-    idTable: encoder.table,
-  };
-  console.log(`programmatic index ${type}: ${index.total} offres, ${serializedKb(compact)} Ko`);
-  return compact;
+function scalarsOf(index: Scalars): Scalars {
+  return { type: index.type, generatedAt: index.generatedAt, total: index.total, recent7d: index.recent7d, latest: index.latest };
 }
 
-function expandIndex(compact: CompactIndex): ProgrammaticIndex {
-  const { idTable, ...rest } = compact;
-  return {
-    ...rest,
-    cities: expandGroup(compact.cities, idTable),
-    metiers: expandGroup(compact.metiers, idTable),
-    combos: expandGroup(compact.combos, idTable),
-    departements: expandGroup(compact.departements, idTable),
-    depCombos: expandGroup(compact.depCombos, idTable),
-    regions: expandGroup(compact.regions, idTable),
-    regionCombos: expandGroup(compact.regionCombos, idTable),
+// L'index est mis en cache en plusieurs morceaux, chacun sa propre entrée
+// de cache et sa propre table d'ids (voir compactIds.ts) : d'un seul tenant,
+// il dépasserait la limite de 2 Mo vers 15 000 offres (synchro France
+// Travail par département). Les segments métier × ville et métier ×
+// département, de loin les plus nombreux, et les villes sont répartis sur
+// deux morceaux chacun.
+type Shard = { name: string; groups: SegmentGroup[]; part: number; parts: number };
+const SHARDS: Shard[] = [
+  { name: "core", groups: ["metiers", "departements", "regions"], part: 0, parts: 1 },
+  { name: "cities-0", groups: ["cities"], part: 0, parts: 2 },
+  { name: "cities-1", groups: ["cities"], part: 1, parts: 2 },
+  { name: "combos-0", groups: ["combos"], part: 0, parts: 2 },
+  { name: "combos-1", groups: ["combos"], part: 1, parts: 2 },
+  { name: "depCombos-0", groups: ["depCombos"], part: 0, parts: 2 },
+  { name: "depCombos-1", groups: ["depCombos"], part: 1, parts: 2 },
+  { name: "regionCombos", groups: ["regionCombos"], part: 0, parts: 1 },
+];
+
+type CompactShard = Scalars & {
+  segments: Partial<Record<SegmentGroup, Record<string, Compacted<AnySegment>>>>;
+  idTable: string[];
+};
+
+function keyPart(key: string, parts: number): number {
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) | 0;
+  return Math.abs(hash) % parts;
+}
+
+function compactShard(index: ProgrammaticIndex, shard: Shard): CompactShard {
+  return fitCacheBudget((maxIds) => {
+    const encoder = idEncoder();
+    const segments: CompactShard["segments"] = {};
+    for (const group of shard.groups) {
+      const entries = Object.entries(index[group] as Record<string, AnySegment>).filter(([key]) => keyPart(key, shard.parts) === shard.part);
+      segments[group] = compactGroup(Object.fromEntries(entries), encoder, maxIds);
+    }
+    return { ...scalarsOf(index), segments, idTable: encoder.table };
+  }, `programmatic index ${index.type} [${shard.name}]: ${index.total} offres`);
+}
+
+export function compactShards(index: ProgrammaticIndex): CompactShard[] {
+  return SHARDS.map((shard) => compactShard(index, shard));
+}
+
+// Le premier morceau ("core") porte les totaux.
+export function expandShards(shards: CompactShard[]): ProgrammaticIndex {
+  const index: ProgrammaticIndex = {
+    ...scalarsOf(shards[0]),
+    cities: {},
+    metiers: {},
+    combos: {},
+    departements: {},
+    depCombos: {},
+    regions: {},
+    regionCombos: {},
   };
+  for (const shard of shards) {
+    const ids = unpackIdTable(shard.idTable);
+    for (const [group, segments] of Object.entries(shard.segments) as [SegmentGroup, Record<string, Compacted<AnySegment>>][]) {
+      Object.assign(index[group], expandGroup(segments, ids));
+    }
+  }
+  return index;
+}
+
+// Les morceaux expirent ensemble : un seul scan du catalogue par instance
+// pour les recalculer tous (calcul partagé pendant quelques minutes).
+const COMPUTE_REUSE_MS = 5 * 60 * 1000;
+const computing = new Map<ContractType, { at: number; promise: Promise<ProgrammaticIndex> }>();
+
+function sharedIndex(type: ContractType): Promise<ProgrammaticIndex> {
+  const hit = computing.get(type);
+  if (hit && Date.now() - hit.at < COMPUTE_REUSE_MS) return hit.promise;
+  const promise = computeIndex(type);
+  computing.set(type, { at: Date.now(), promise });
+  promise.catch(() => {
+    if (computing.get(type)?.promise === promise) computing.delete(type);
+  });
+  return promise;
 }
 
 // Un seul scan du catalogue par type et par heure, partagé par toutes les
 // pages /alternance/* et /stage/* (sinon chaque page vue relirait tout le
 // catalogue).
-const cachedIndex = unstable_cache(computeCompactIndex, ["programmatic-index-v13"], { revalidate: 3600 });
+const cachedShard = unstable_cache(
+  async (type: ContractType, name: string): Promise<CompactShard> => {
+    const shard = SHARDS.find((s) => s.name === name);
+    if (!shard) throw new Error(`Morceau d'index inconnu : ${name}`);
+    return compactShard(await sharedIndex(type), shard);
+  },
+  ["programmatic-index-v14"],
+  { revalidate: 3600 },
+);
 
-// Décompacté une fois par version du cache (generatedAt), pas à chaque appel.
-const expanded = new Map<ContractType, ProgrammaticIndex>();
+// Décompacté une fois par version des morceaux, pas à chaque appel.
+const expanded = new Map<ContractType, { key: string; index: ProgrammaticIndex }>();
 
 export async function getProgrammaticIndex(type: ContractType): Promise<ProgrammaticIndex> {
-  const compact = await cachedIndex(type);
+  const shards = await Promise.all(SHARDS.map((shard) => cachedShard(type, shard.name)));
+  const key = shards.map((shard) => shard.generatedAt).join("|");
   const hit = expanded.get(type);
-  if (hit && hit.generatedAt === compact.generatedAt) return hit;
-  const index = expandIndex(compact);
-  expanded.set(type, index);
+  if (hit && hit.key === key) return hit.index;
+  const index = expandShards(shards);
+  expanded.set(type, { key, index });
   return index;
 }
 
