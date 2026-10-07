@@ -2,10 +2,10 @@ import { createPublicClient } from "@/lib/supabase/public";
 import { PUBLIC_OFFER_COLUMNS, type PublicOfferRow } from "@/lib/offers/fetchPublicOffers";
 import { getCitySegments, getSectorSegments, normalizeCityKey, slugify, type CitySegment, type Segment } from "@/lib/offers/segments";
 import { classifyFormations, classifyMetier } from "@/lib/seo/metiers";
-import { cityPhrase, getProgrammaticIndex } from "@/lib/seo/programmaticIndex";
+import { cityPhrase, getProgrammaticIndex, type SegmentStats } from "@/lib/seo/programmaticIndex";
 import { departementFromLocation, getDepartement, regionOfDepartement } from "@/lib/seo/departements";
 import { departementPath, fetchOffersByIds } from "@/lib/seo/programmaticPage";
-import { findCompany, getCompanyIndex } from "@/lib/seo/companyIndex";
+import { findCompanies, findCompany, getCompanyIndex } from "@/lib/seo/companyIndex";
 import type { Offer } from "@/types/database";
 
 const SIMILAR_OFFERS_LIMIT = 6;
@@ -28,6 +28,21 @@ export type OfferContextLinks = {
     formations: ProgrammaticLink[];
   };
   company: ProgrammaticLink | null;
+  // Le segment le plus précis dont relève l'offre (métier × ville, sinon
+  // métier × département, ville, métier en France) : chiffres propres à
+  // Stageio affichés sur la fiche, à côté du texte de l'annonce d'origine.
+  market: OfferMarket | null;
+};
+
+export type OfferMarket = {
+  label: string;
+  href: string;
+  count: number;
+  recent7d: number;
+  salaryMedian: number | null;
+  salaryN: number;
+  // Autres entreprises du segment qui ont leur page (hors celle de l'offre).
+  companies: ProgrammaticLink[];
 };
 
 async function getCompanyLink(offer: Offer): Promise<ProgrammaticLink | null> {
@@ -43,7 +58,11 @@ const GENERIC_FORMATIONS = new Set(["bts", "cap", "bac-pro"]);
 // plus proche à la plus large : même métier dans la ville, dans le
 // département, même ville, même métier dans la région, même département,
 // puis même métier en France (ids triés du plus récent).
-async function getProgrammaticLinks(offer: Offer): Promise<{ links: OfferContextLinks["programmatic"]; similarIds: string[] }> {
+type MarketSegment = { label: string; href: string; stats: SegmentStats };
+
+async function getProgrammaticLinks(
+  offer: Offer,
+): Promise<{ links: OfferContextLinks["programmatic"]; similarIds: string[]; market: MarketSegment | null }> {
   const index = await getProgrammaticIndex(offer.contract_type);
   const metier = classifyMetier(offer.title);
   const citySlug = slugify(normalizeCityKey(offer.location));
@@ -93,7 +112,29 @@ async function getProgrammaticLinks(offer: Offer): Promise<{ links: OfferContext
           : null,
     formations,
   };
-  return { links, similarIds };
+  const market: MarketSegment | null =
+    links.metierCity && comboStats
+      ? { label: links.metierCity.label, href: links.metierCity.href, stats: comboStats }
+      : links.departement && depMetierStats
+        ? { label: links.departement.label, href: links.departement.href, stats: depMetierStats }
+        : links.city && city
+          ? { label: links.city.label, href: links.city.href, stats: city }
+          : links.metier && metierStats
+            ? { label: `${links.metier.label} en France`, href: links.metier.href, stats: metierStats }
+            : null;
+  return { links, similarIds, market };
+}
+
+async function buildMarket(offer: Offer, segment: MarketSegment | null): Promise<OfferMarket | null> {
+  if (!segment) return null;
+  const index = await getCompanyIndex();
+  const own = findCompany(index, offer.company)?.slug;
+  const companies = findCompanies(index, segment.stats.topCompanies.map((c) => c.name))
+    .filter((c) => c.slug !== own)
+    .slice(0, 4)
+    .map((c) => ({ href: `/entreprises/${c.slug}`, label: c.label, count: c.count }));
+  const { count, recent7d, salaryMedian, salaryN } = segment.stats;
+  return { label: segment.label, href: segment.href, count, recent7d, salaryMedian, salaryN, companies };
 }
 
 // Maillage interne d'une fiche offre : sans ça, chaque fiche est une
@@ -103,12 +144,13 @@ async function getProgrammaticLinks(offer: Offer): Promise<{ links: OfferContext
 // jamais empêcher l'affichage de la fiche elle-même.
 export async function getOfferContextLinks(offer: Offer): Promise<OfferContextLinks> {
   try {
-    const [citySegments, sectorSegments, { links: programmatic, similarIds }, company] = await Promise.all([
+    const [citySegments, sectorSegments, { links: programmatic, similarIds, market: marketSegment }, company] = await Promise.all([
       getCitySegments(),
       getSectorSegments(),
       getProgrammaticLinks(offer),
       getCompanyLink(offer),
     ]);
+    const market = await buildMarket(offer, marketSegment);
     const city = citySegments.find((segment) => segment.locations.includes(offer.location)) ?? null;
     const sector = offer.sector ? (sectorSegments.find((segment) => segment.label === offer.sector) ?? null) : null;
 
@@ -140,9 +182,9 @@ export async function getOfferContextLinks(offer: Offer): Promise<OfferContextLi
       fill((data ?? []) as PublicOfferRow[]);
     }
 
-    return { city, sector, similar, programmatic, company };
+    return { city, sector, similar, programmatic, company, market };
   } catch (err) {
     console.error("getOfferContextLinks failed", err);
-    return { city: null, sector: null, similar: [], programmatic: { metier: null, city: null, metierCity: null, departement: null, formations: [] }, company: null };
+    return { city: null, sector: null, similar: [], programmatic: { metier: null, city: null, metierCity: null, departement: null, formations: [] }, company: null, market: null };
   }
 }

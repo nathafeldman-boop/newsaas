@@ -10,7 +10,8 @@ import { departementFromLocation, getDepartement, getDepartementBySlug, getRegio
 import { cityPhrase } from "@/lib/seo/programmaticIndex";
 import { extractOfferId, offerPath, offerSlug } from "@/lib/offers/publicUrl";
 import { normalizeCityKey, slugify, titleCase } from "@/lib/offers/segments";
-import { getOfferContextLinks, type OfferContextLinks } from "@/lib/offers/similarOffers";
+import { getOfferContextLinks, type OfferContextLinks, type OfferMarket } from "@/lib/offers/similarOffers";
+import { APPRENTICE_RATES, SMIC_MONTHLY_GROSS, STAGE_HOURLY_MIN, formatEuros, formatPercent } from "@/lib/salary/legalRates";
 import { SITE_URL } from "@/lib/site";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { ShareButtons } from "@/components/share/ShareButtons";
@@ -256,6 +257,61 @@ function jobPostingJsonLd(offer: Offer) {
   };
 }
 
+// Chiffres propres à Stageio sur la fiche (le texte de l'annonce, lui, est
+// repris de la source et se retrouve sur d'autres sites) : le marché du
+// métier dans la ville, le salaire médian indiqué, les autres entreprises
+// qui recrutent, et le minimum légal.
+function MarketBlock({ market, contractType }: { market: OfferMarket; contractType: Offer["contract_type"] }) {
+  const offersOf = contractType === "alternance" ? "offres d'alternance" : "offres de stage";
+  const n = (value: number) => value.toLocaleString("fr-FR");
+  const rates = APPRENTICE_RATES;
+  return (
+    <section className="mt-8">
+      <h2 style={{ fontSize: 18, margin: "0 0 10px" }}>{market.label} : les chiffres</h2>
+      <ul style={{ fontSize: 14.5, lineHeight: 1.7, margin: 0, paddingLeft: 20 }}>
+        <li>
+          <Link href={market.href}>
+            {n(market.count)} {offersOf}
+          </Link>{" "}
+          en ce moment sur Stageio
+          {market.recent7d > 0 ? `, dont ${n(market.recent7d)} publiée${market.recent7d > 1 ? "s" : ""} ces 7 derniers jours` : ""}.
+        </li>
+        {market.salaryMedian !== null && (
+          <li>
+            Salaire médian indiqué dans ces offres : {formatEuros(market.salaryMedian, 0)} brut par mois (sur {n(market.salaryN)} offres
+            France Travail qui l&apos;indiquent).
+          </li>
+        )}
+        {market.companies.length > 0 && (
+          <li>
+            Recrutent aussi :{" "}
+            {market.companies.map((company, i) => (
+              <span key={company.href}>
+                {i > 0 ? ", " : ""}
+                <Link href={company.href}>{company.label}</Link>
+              </span>
+            ))}
+            .
+          </li>
+        )}
+        {contractType === "alternance" ? (
+          <li>
+            Minimum légal d&apos;un apprenti en 1re année : {formatPercent(rates["18to20"][1])} du SMIC de 18 à 20 ans (
+            {formatEuros(SMIC_MONTHLY_GROSS * rates["18to20"][1], 0)} brut par mois), {formatPercent(rates["21to25"][1])} de 21 à 25 ans (
+            {formatEuros(SMIC_MONTHLY_GROSS * rates["21to25"][1], 0)}), 100 % à partir de 26 ans.{" "}
+            <Link href="/outils/simulateur-salaire-alternance">Calcule ton salaire</Link>
+          </li>
+        ) : (
+          <li>
+            Au-delà de 2 mois de stage, la gratification minimale est de {formatEuros(STAGE_HOURLY_MIN)} par heure.{" "}
+            <Link href="/guides/gratification-de-stage">Tout sur la gratification</Link>
+          </li>
+        )}
+      </ul>
+    </section>
+  );
+}
+
 const LISTING_LABEL: Record<Offer["contract_type"], string> = {
   alternance: "Offres d'alternance",
   stage: "Offres de stage",
@@ -375,6 +431,8 @@ export default async function PublicOfferPage({
           text={`${offer.title} chez ${offer.company} (${titleCase(normalizeCityKey(offer.location)) || offer.location}), regarde :`}
         />
       </div>
+
+      {links.market && <MarketBlock market={links.market} contractType={offer.contract_type} />}
 
       {links.similar.length > 0 && (
         <section className="mt-8">
