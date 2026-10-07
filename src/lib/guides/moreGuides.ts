@@ -3112,4 +3112,195 @@ export const MORE_GUIDES: Guide[] = [
       { label: "Accueillir un stagiaire de seconde avec la plateforme 1élève1stage (education.gouv.fr)", url: "https://www.education.gouv.fr/entreprise-association-service-public-accueillir-un-stagiaire-de-seconde-avec-la-plateforme-413793" },
     ],
   },
+  {
+    slug: "cdi-apres-alternance",
+    title: "CDI après l'alternance : ce qui change si ton entreprise t'embauche",
+    metaDescription:
+      "Embauché en CDI ou en CDD dans la même entreprise après ton apprentissage ? Pas de période d'essai, ancienneté reprise : tes droits, et comment décrocher l'embauche.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    related: ["chomage-fin-alternance", "contrat-apprentissage-ou-contrat-pro", "entretien-alternance"],
+    intro: [
+      "Ton alternance se termine et ton entreprise veut te garder ? Bonne nouvelle : la loi te protège plus que pour une embauche classique. Pas de période d'essai, et ton ancienneté démarre au début de ton apprentissage. Voici les règles, et comment mettre toutes les chances de ton côté.",
+    ],
+    sections: [
+      {
+        heading: "L'entreprise est-elle obligée de t'embaucher ?",
+        paragraphs: [
+          "Non. Le contrat d'alternance s'arrête à la date prévue, et l'employeur n'a aucune obligation de te proposer un poste. Si tu veux rester, parles-en tôt, plusieurs mois avant la fin du contrat.",
+        ],
+      },
+      {
+        heading: "Si tu es embauché dans la même entreprise après ton apprentissage",
+        list: [
+          "Pas de période d'essai : si ton contrat d'apprentissage est suivi d'un CDI, d'un CDD ou d'un contrat d'intérim dans la même entreprise, aucune période d'essai ne peut t'être imposée, sauf si la convention collective le prévoit (article L6222-16 du Code du travail).",
+          "Ancienneté reprise : la durée de ton apprentissage compte dans ton ancienneté et pour le calcul de ton salaire. Vérifie ta date d'ancienneté sur ta première fiche de paie.",
+          "Ton salaire n'est plus un pourcentage du SMIC : il se négocie comme pour n'importe quel salarié, au minimum au SMIC et au salaire minimum de ta convention collective.",
+        ],
+      },
+      {
+        heading: "Comment décrocher l'embauche",
+        list: [
+          "3 à 6 mois avant la fin : demande un point à ton tuteur sur la suite, sans attendre que la question vienne d'eux.",
+          "Prépare ton bilan : les projets menés, les résultats chiffrés, ce que tu sais faire seul aujourd'hui.",
+          "Renseigne-toi sur les postes ouverts dans l'entreprise, y compris dans d'autres équipes ou d'autres sites.",
+          "Si la réponse est non, demande une recommandation LinkedIn et des contacts : ton réseau d'alternance est ton meilleur atout pour la suite.",
+        ],
+      },
+      {
+        heading: "Et si tu n'es pas embauché ?",
+        list: [
+          "Tu peux toucher le chômage si tu remplis les conditions (voir notre guide sur le chômage en fin d'alternance).",
+          "Tu peux enchaîner sur une nouvelle alternance pour préparer un diplôme de niveau supérieur.",
+          "Mets à jour ton CV avec ton expérience d'alternance : c'est souvent elle qui fait la différence en entretien.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Y a-t-il une période d'essai en CDI après une alternance ?",
+        a: "Pas si tu es embauché dans la même entreprise : la loi interdit d'imposer une période d'essai après un contrat d'apprentissage, sauf disposition contraire de la convention collective.",
+      },
+      {
+        q: "L'apprentissage compte-t-il dans l'ancienneté ?",
+        a: "Oui : si tu es embauché dans la même entreprise, la durée de ton contrat d'apprentissage est prise en compte dans ton ancienneté et pour le calcul de ta rémunération.",
+      },
+      {
+        q: "Mon entreprise doit-elle m'embaucher à la fin de l'alternance ?",
+        a: "Non, il n'y a aucune obligation. Parles-en tôt avec ton tuteur si tu veux rester.",
+      },
+    ],
+    sources: [
+      { label: "Article L6222-16 du Code du travail (texte)", url: "https://www.maitredata.com/app/code/travail/l6222-16" },
+      { label: "Succession contrat d'apprentissage et CDI : l'ancienneté s'impose (Centre Inffo)", url: "https://www.centre-inffo.fr/site-droit-formation/actualites-droit/succession-contrat-dapprentissage-cdi-lanciennete-simpose-malgre-un-temps-de-latence" },
+    ],
+  },
+  {
+    slug: "temps-de-travail-apprenti",
+    title: "Temps de travail d'un apprenti : horaires, heures sup et règles pour les mineurs",
+    metaDescription:
+      "35 heures par semaine, cours compris, heures supplémentaires, repos, travail de nuit : les règles du temps de travail en apprentissage, et les protections spécifiques si tu as moins de 18 ans.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    related: ["conges-alternant", "rythme-alternance", "contrat-apprentissage-ou-contrat-pro"],
+    intro: [
+      "En alternance, tu es salarié : ton temps de travail suit les règles du Code du travail, avec une particularité de taille. Les heures de cours au CFA comptent comme du temps de travail. Et si tu as moins de 18 ans, des protections supplémentaires s'appliquent.",
+    ],
+    sections: [
+      {
+        heading: "Les règles pour tous les apprentis",
+        list: [
+          "35 heures par semaine, comme les autres salariés de l'entreprise.",
+          "Les heures de formation au CFA comptent comme du temps de travail effectif : une semaine de cours compte dans tes 35 heures.",
+          "Si tu as 18 ans ou plus, tu peux faire des heures supplémentaires dans les mêmes conditions que les autres salariés, et elles doivent être payées (ou récupérées) avec la majoration prévue.",
+          "Les durées maximales s'appliquent : 48 heures sur une même semaine, ou 44 heures en moyenne sur 12 semaines.",
+        ],
+      },
+      {
+        heading: "Si tu as moins de 18 ans",
+        list: [
+          "8 heures par jour au maximum, et 35 heures par semaine.",
+          "Heures supplémentaires : 5 heures par semaine au maximum, et seulement avec l'accord de l'inspection du travail après avis du médecin du travail.",
+          "Une pause de 30 minutes au moins après 4 heures 30 de travail.",
+          "Un repos de 12 heures consécutives entre deux journées (14 heures avant 16 ans), et 2 jours de repos consécutifs par semaine.",
+          "Le travail de nuit est en principe interdit, avec des dérogations dans certains secteurs comme la boulangerie ou la restauration.",
+        ],
+      },
+      {
+        heading: "Ce qu'il faut vérifier",
+        list: [
+          "Tes horaires sont-ils écrits dans ton contrat ou affichés dans l'entreprise ?",
+          "Tes heures supplémentaires apparaissent-elles sur ta fiche de paie ?",
+          "Tes semaines de cours sont-elles bien comptées comme travaillées, et payées normalement ?",
+        ],
+      },
+      {
+        heading: "En cas de problème",
+        paragraphs: [
+          "Commence par en parler à ton tuteur. Si rien ne change, ton CFA peut intervenir auprès de l'entreprise, et le médiateur de l'apprentissage de ta chambre consulaire (CCI, chambre de métiers ou chambre d'agriculture) aide à régler les désaccords. En dernier recours, l'inspection du travail.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Combien d'heures travaille un apprenti ?",
+        a: "35 heures par semaine, comme les autres salariés, en comptant les heures de cours au CFA, qui sont du temps de travail effectif.",
+      },
+      {
+        q: "Un apprenti peut-il faire des heures supplémentaires ?",
+        a: "Oui s'il a 18 ans ou plus, dans les mêmes conditions que les autres salariés. Avant 18 ans, 5 heures par semaine au maximum et seulement avec l'accord de l'inspection du travail.",
+      },
+      {
+        q: "Un apprenti mineur peut-il travailler la nuit ?",
+        a: "En principe non, sauf dérogations dans certains secteurs comme la boulangerie ou la restauration.",
+      },
+    ],
+    sources: [
+      { label: "Contrat d'apprentissage (service-public.gouv.fr)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F2918" },
+      { label: "Apprentis de moins de 18 ans : réglementation spécifique (CFMDA)", url: "https://www.cfmda.fr/fr/apprentis-de-moins-de-18-ans-reglementation-specifique_r_10081.html" },
+    ],
+  },
+  {
+    slug: "arret-maladie-alternance",
+    title: "Arrêt maladie en alternance : démarches, salaire et cours au CFA",
+    metaDescription:
+      "Malade pendant ton alternance ? Les démarches sous 48 heures, qui prévenir (employeur et CFA), les indemnités journalières, le maintien de salaire et ce qui se passe pour tes cours.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    related: ["conges-alternant", "rupture-contrat-apprentissage", "temps-de-travail-apprenti"],
+    intro: [
+      "En alternance, tu es salarié : en cas de maladie, tu as les mêmes droits que les autres salariés. Mais tu as deux « employeurs » à prévenir, l'entreprise et le CFA. Voici quoi faire, et ce que tu toucheras.",
+    ],
+    sections: [
+      {
+        heading: "Les démarches, sous 48 heures",
+        list: [
+          "Fais-toi prescrire un arrêt de travail par un médecin (en ligne, il est souvent transmis directement à l'Assurance maladie).",
+          "Envoie les volets 1 et 2 à ta CPAM si le médecin ne l'a pas fait en ligne.",
+          "Envoie le volet 3 à ton employeur, et une copie à ton CFA ou à ton école.",
+          "Préviens aussi ton tuteur et ton CFA dès le premier jour, par message ou par mail.",
+        ],
+      },
+      {
+        heading: "Ton arrêt couvre l'entreprise ET l'école",
+        paragraphs: [
+          "Un arrêt de travail couvre aussi bien les jours en entreprise que les jours de cours : ton absence au CFA est justifiée. Pense à récupérer les cours manqués, et préviens ton école si l'arrêt tombe pendant un examen.",
+        ],
+      },
+      {
+        heading: "Ce que tu touches pendant l'arrêt",
+        list: [
+          "Les indemnités journalières de l'Assurance maladie, à partir du 4e jour d'arrêt (les 3 premiers jours sont un délai de carence), si tu remplis les conditions d'ouverture de droits.",
+          "Un complément de ton employeur si ta convention collective, un accord d'entreprise ou ton contrat le prévoit, ou si tu as au moins un an d'ancienneté (complément légal).",
+          "Regarde ta fiche de paie du mois suivant : l'arrêt y apparaît, avec ce qui a été retenu et ce qui a été maintenu.",
+        ],
+      },
+      {
+        heading: "Les points d'attention",
+        list: [
+          "Respecte les horaires de sortie autorisés indiqués sur l'arrêt : des contrôles sont possibles.",
+          "Un arrêt maladie ne permet pas à l'employeur de rompre ton contrat pour ce motif.",
+          "En cas d'accident pendant le travail, sur le trajet ou au CFA, c'est un accident du travail : préviens ton employeur dans les 24 heures, les règles sont plus favorables.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Un apprenti malade doit-il prévenir son CFA ?",
+        a: "Oui : envoie une copie du volet 3 de l'arrêt à ton CFA, en plus de l'employeur. L'arrêt justifie aussi ton absence aux cours.",
+      },
+      {
+        q: "Un apprenti est-il payé pendant un arrêt maladie ?",
+        a: "Il touche les indemnités journalières de l'Assurance maladie à partir du 4e jour s'il remplit les conditions, et un complément de l'employeur si la convention collective le prévoit ou s'il a au moins un an d'ancienneté.",
+      },
+      {
+        q: "L'arrêt maladie compte-t-il pour les jours de cours ?",
+        a: "Oui, un arrêt de travail couvre indifféremment les jours en entreprise et les jours au CFA.",
+      },
+    ],
+    sources: [
+      { label: "Contrat d'apprentissage (service-public.gouv.fr)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F2918" },
+      { label: "Arrêt maladie : indemnités journalières (service-public.gouv.fr)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F3053" },
+    ],
+  },
 ];

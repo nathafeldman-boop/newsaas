@@ -361,10 +361,12 @@ export const GUIDE_CATEGORIES: { title: string; slugs: string[] }[] = [
       "impots-alternant",
       "bourse-et-alternance",
       "transport-alternance-stage",
+      "temps-de-travail-apprenti",
+      "arret-maladie-alternance",
     ],
   },
   {
     title: "Pendant et après",
-    slugs: ["premier-jour-en-entreprise", "rythme-alternance", "alternance-deux-villes", "rapport-de-stage", "soutenance-de-stage", "attestation-de-stage"],
+    slugs: ["premier-jour-en-entreprise", "rythme-alternance", "alternance-deux-villes", "rapport-de-stage", "soutenance-de-stage", "attestation-de-stage", "cdi-apres-alternance"],
   },
 ];
