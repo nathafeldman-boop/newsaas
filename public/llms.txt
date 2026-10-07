@@ -28,6 +28,7 @@
 ## Pages clés
 
 - [Accueil](https://www.stageio.fr/) — présentation du produit, démo interactive du swipe, avis d'utilisateurs.
+- [Stageio, c'est quoi ?](https://www.stageio.fr/a-propos) — présentation de Stageio, chiffres à jour (offres, villes, entreprises), sources des offres (France Travail, Adzuna, sites carrières), gratuit et Premium, contact.
 - [Offres d'alternance et de stage](https://www.stageio.fr/offres) — catalogue public des offres actives, consultable sans compte.
 - [Offres d'alternance](https://www.stageio.fr/offres/alternance)
 - [Offres de stage](https://www.stageio.fr/offres/stage)

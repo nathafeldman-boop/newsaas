@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 
-// Partage en un geste (WhatsApp / partage natif du téléphone / copie du
-// lien) : canal d'acquisition gratuit et automatique -- chaque étudiant qui
+// Partage en un geste (WhatsApp / LinkedIn / partage natif du téléphone /
+// copie du lien) : canal d'acquisition gratuit et automatique -- chaque étudiant qui
 // envoie une offre ou son résultat de simulateur à ses potes ramène des
 // visiteurs. Le lien partagé porte utm_source=partage, donc les visites et
 // inscriptions générées apparaissent dans le tableau "par source" de l'admin.
@@ -62,6 +62,14 @@ export function ShareButtons({
           className="btn btn-secondary"
         >
           WhatsApp
+        </a>
+        <a
+          href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(tagged("linkedin"))}`}
+          target="_blank"
+          rel="noopener nofollow"
+          className="btn btn-secondary"
+        >
+          LinkedIn
         </a>
         <button type="button" className="btn btn-secondary" onClick={nativeShare}>
           Envoyer à un pote

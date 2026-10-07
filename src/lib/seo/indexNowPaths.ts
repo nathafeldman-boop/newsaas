@@ -9,6 +9,7 @@ import type { ContractType } from "@/types/database";
 // Pages dont le contenu bouge chaque jour (compteurs, dernières offres).
 const STATIC_PATHS = [
   "/",
+  "/a-propos",
   "/offres",
   "/offres/alternance",
   "/offres/stage",

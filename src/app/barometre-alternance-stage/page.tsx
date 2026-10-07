@@ -3,7 +3,7 @@ import { ShareButtons } from "@/components/share/ShareButtons";
 import type { Metadata } from "next";
 import { getProgrammaticIndex, cityPhrase, type ProgrammaticIndex } from "@/lib/seo/programmaticIndex";
 import { getCompanyIndex } from "@/lib/seo/companyIndex";
-import { getMetier } from "@/lib/seo/metiers";
+import { getMetier, METIERS } from "@/lib/seo/metiers";
 import { SMIC_EFFECTIVE_DATE, SMIC_MONTHLY_GROSS, STAGE_HOURLY_MIN, formatEuros, internshipGratification, round2 } from "@/lib/salary/legalRates";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { SITE_URL } from "@/lib/site";
@@ -271,6 +271,24 @@ export default async function BarometrePage() {
         </>
       )}
 
+      {lead1 && (
+        <div className="card elev-sm mt-8" style={{ padding: "var(--space-6)" }}>
+          <h2 style={{ fontSize: 17, margin: "0 0 8px" }}>Citer ces chiffres</h2>
+          <p style={{ fontSize: 14, margin: "0 0 10px" }}>
+            Journaliste, école, CFA, blog ? Les chiffres sont libres de reprise, avec un lien vers cette page. Exemple :
+          </p>
+          <blockquote style={{ fontSize: 14, margin: 0, paddingLeft: 12, borderLeft: "3px solid var(--color-accent)" }}>
+            « Selon le baromètre Stageio, {alternance.total.toLocaleString("fr-FR")} offres d&apos;alternance et{" "}
+            {stage.total.toLocaleString("fr-FR")} offres de stage étaient en ligne en France le {date}. Le métier qui
+            recrute le plus d&apos;alternants est « {lead1.label} » ({pct(lead1.count, alternance.total)} % des offres)
+            {leadCity ? <>, et {leadCity.label} est la ville qui en propose le plus</> : null}. » (source : stageio.fr/barometre-alternance-stage)
+          </blockquote>
+          <p style={{ fontSize: 13, margin: "10px 0 0" }}>
+            Besoin de chiffres pour ta ville ou ta filière ? Écris à <a href="mailto:contact@stageio.fr">contact@stageio.fr</a>.
+          </p>
+        </div>
+      )}
+
       <ShareButtons
         title="Partager le baromètre"
         url={`${SITE_URL}${PATH}`}
@@ -289,7 +307,7 @@ export default async function BarometrePage() {
       <p style={{ fontSize: 13.5, margin: 0 }}>
         Toutes les offres d&apos;alternance (apprentissage et contrat de professionnalisation) et de stage actives sur
         Stageio, collectées chaque jour auprès de France Travail et d&apos;Adzuna ; une offre retirée par sa source
-        sort du baromètre. Métier déduit de l&apos;intitulé du poste (36 familles), ville normalisée à partir du lieu
+        sort du baromètre. Métier déduit de l&apos;intitulé du poste ({METIERS.length} familles), ville normalisée à partir du lieu
         indiqué (les offres localisées seulement au niveau d&apos;un département ou d&apos;une région ne comptent pas
         dans le classement des villes). Salaires : uniquement ceux indiqués par l&apos;employeur dans les offres France
         Travail, convertis en brut mensuel. Libre de reprise en citant « Baromètre Stageio » avec un lien vers cette

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { SITE_URL } from "@/lib/site";
+import { CONTACT_EMAIL, SITE_URL, SOCIAL_PROFILES } from "@/lib/site";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { getPublicReviewStats, getPublicTestimonials, type PublicTestimonial } from "@/lib/reviews/publicStats";
 import { SwipeDemo } from "@/components/landing/SwipeDemo";
@@ -134,7 +134,10 @@ const organizationJsonLd = {
   url: SITE_URL,
   logo: `${SITE_URL}/logo.png`,
   image: `${SITE_URL}/og-image.jpg`,
-  sameAs: [],
+  description:
+    "Plateforme française pour trouver une alternance ou un stage : les offres se consultent comme des cartes à swiper, triées selon le profil de l'étudiant.",
+  email: CONTACT_EMAIL,
+  sameAs: SOCIAL_PROFILES.map((profile) => profile.url),
 };
 
 // Sert au "nom du site" affiché par Google au-dessus du titre. Plus de
@@ -1614,6 +1617,7 @@ export default async function LandingPage() {
             Stageio
           </span>
           {[
+            { href: "/a-propos", label: "Stageio, c'est quoi ?" },
             { href: "/alternance", label: "Alternance par métier et ville" },
             { href: "/stage", label: "Stage par métier et ville" },
             { href: "/entreprises", label: "Entreprises qui recrutent" },

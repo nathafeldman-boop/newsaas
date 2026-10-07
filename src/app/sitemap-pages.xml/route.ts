@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 // doublons de /alternance/[ville] et /stage/[ville]).
 const STATIC_PATHS = [
   "/",
+  "/a-propos",
   "/offres",
   "/offres/alternance",
   "/offres/stage",
