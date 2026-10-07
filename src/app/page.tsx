@@ -390,7 +390,11 @@ export default async function LandingPage() {
             alignItems: "center",
           }}
         >
-          <Reveal>
+          {/* Pas de <Reveal> ici : le titre et l'accroche sont l'élément LCP de
+              la page. Masqués (opacity 0) jusqu'à l'exécution de framer-motion,
+              ils n'apparaissaient qu'après le JavaScript (LCP 3,8 s sur mobile
+              simulé, Lighthouse du 07/10) ; visibles dès le HTML désormais. */}
+          <div>
             <h1
               style={{
                 margin: 0,
@@ -472,7 +476,7 @@ export default async function LandingPage() {
                 CV facultatif · partout en France
               </p>
             </div>
-          </Reveal>
+          </div>
 
           <Reveal delay={0.1}>
             <div
