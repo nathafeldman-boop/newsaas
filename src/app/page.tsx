@@ -211,7 +211,13 @@ type DiscoveryLink = { href: string; label: string };
 // page la plus explorée par Google, c'est d'ici qu'il découvre le plus vite
 // les nouvelles pages. Best-effort : une erreur (ou un build sans base) masque
 // juste le bloc, jamais la page.
-async function getDiscoveryLinks(): Promise<{ metiers: DiscoveryLink[]; cities: DiscoveryLink[]; regions: DiscoveryLink[]; companies: DiscoveryLink[] } | null> {
+async function getDiscoveryLinks(): Promise<{
+  metiers: DiscoveryLink[];
+  formations: DiscoveryLink[];
+  cities: DiscoveryLink[];
+  regions: DiscoveryLink[];
+  companies: DiscoveryLink[];
+} | null> {
   try {
     const [alternance, companies] = await Promise.all([getProgrammaticIndex("alternance"), getCompanyIndex()]);
     return {
@@ -220,6 +226,11 @@ async function getDiscoveryLinks(): Promise<{ metiers: DiscoveryLink[]; cities: 
         .sort((a, b) => b.count - a.count)
         .slice(0, 12)
         .map((m) => ({ href: `/alternance/${m.slug}`, label: `Alternance ${getMetier(m.slug)?.label ?? m.slug}` })),
+      formations: Object.values(alternance.metiers)
+        .filter((m) => isFormation(m.slug))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10)
+        .map((m) => ({ href: `/alternance/${m.slug}`, label: `${getMetier(m.slug)?.label ?? m.slug} en alternance` })),
       cities: Object.values(alternance.cities)
         .sort((a, b) => b.count - a.count)
         .slice(0, 12)
@@ -1533,6 +1544,7 @@ export default async function LandingPage() {
             <h2 style={{ ...h2Style, maxWidth: "20ch" }}>Par métier, par ville, par entreprise.</h2>
             {[
               { title: "Les métiers qui recrutent", links: discovery.metiers },
+              { title: "Par diplôme", links: discovery.formations },
               { title: "Les villes", links: discovery.cities },
               { title: "Les régions", links: discovery.regions },
               { title: "Les entreprises qui publient le plus", links: discovery.companies },
