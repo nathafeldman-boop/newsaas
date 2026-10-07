@@ -316,6 +316,7 @@ export const GUIDE_CATEGORIES: { title: string; slugs: string[] }[] = [
       "stage-de-fin-d-etudes",
       "stage-a-l-etranger",
       "annee-de-cesure",
+      "alternance-fonction-publique",
     ],
   },
   {
@@ -355,6 +356,7 @@ export const GUIDE_CATEGORIES: { title: string; slugs: string[] }[] = [
       "convention-de-stage",
       "chomage-fin-alternance",
       "logement-alternance-stage",
+      "impots-alternant",
     ],
   },
   {

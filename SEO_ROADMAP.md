@@ -205,7 +205,7 @@ Ce qui fait passer du bas au haut de la fourchette : les backlinks (aucun code n
 - [x] 07/10 : une entreprise n'est plus comptée deux fois quand la casse diffère (« Alticome » / « ALTICOME »).
 - [x] 07/10 : `lastmod` réel dans les sitemaps (date de la dernière offre publiée sur la page, plus l'heure de génération pour toutes). Le cron IndexNow n'envoie plus que les pages qui ont reçu une offre depuis la veille. Les pages métier France entière renvoient vers leurs pages région × métier, et chaque fiche offre vers sa page département (métier × département quand elle existe).
 - [ ] Filtrer les annonces d'écoles du catalogue lui-même (décision produit)
-- [x] Phase 3 — 40 guides rédigés (faits juridiques vérifiés sur sources officielles) + 4 outils (1 en ligne : le simulateur)
+- [x] Phase 3 — 42 guides rédigés (faits juridiques vérifiés sur sources officielles) + 4 outils (1 en ligne : le simulateur)
 - [ ] Phase 4 — hubs, baromètre, Search Console, suivi 100 mots-clés, dashboard
 
 ---
@@ -259,6 +259,10 @@ Ce qui fait passer du bas au haut de la fourchette : les backlinks (aucun code n
 38. ✅ Logement pendant l'alternance ou le stage ⚖️
 39. ✅ Gérer deux villes (école et entreprise)
 40. ✅ Refuser une offre poliment (modèle de mail)
+
+**Ajouts hors plan**
+41. ✅ Impôts en alternance : déclarer son salaire d'apprenti (21 622 € exonérés sur les revenus 2025) ⚖️
+42. ✅ Alternance dans la fonction publique (majoration de 10 ou 20 points facultative depuis 2020) ⚖️
 
 ---
 

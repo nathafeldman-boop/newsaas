@@ -2504,4 +2504,157 @@ export const MORE_GUIDES: Guide[] = [
       { label: "Aides au logement d'un étudiant (service-public.gouv.fr)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F1563" },
     ],
   },
+  {
+    slug: "impots-alternant",
+    title: "Impôts en alternance : faut-il déclarer ton salaire d'apprenti ?",
+    metaDescription:
+      "Salaire d'apprenti exonéré jusqu'à 21 622 € (revenus 2025), contrat pro imposable, rattachement aux parents, prélèvement à la source : ce que tu dois déclarer et comment.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    related: ["aides-alternants", "gratification-de-stage", "contrat-apprentissage-ou-contrat-pro"],
+    intro: [
+      "Première fiche de paie, première déclaration d'impôts : en alternance, la question tombe vite. La réponse dépend surtout de ton contrat. En apprentissage, ton salaire est exonéré jusqu'à un plafond que tu ne dépasseras presque jamais. En contrat de professionnalisation, il se déclare comme n'importe quel salaire. Voici les règles, puis comment remplir ta déclaration.",
+    ],
+    sections: [
+      {
+        heading: "Apprenti : ton salaire est exonéré jusqu'au SMIC annuel",
+        paragraphs: [
+          "En contrat d'apprentissage, dans le privé comme dans le public, ton salaire n'est imposable que pour la partie qui dépasse le montant annuel du SMIC : 21 622 € pour les revenus 2025, déclarés au printemps 2026 (article 81 bis du Code général des impôts). Comme un salaire d'apprenti est un pourcentage du SMIC, tu restes en général en dessous : rien d'imposable.",
+          "Exemple : tu as touché 22 000 € de salaire d'apprenti en 2025. Seuls 378 € (22 000 − 21 622) sont à déclarer.",
+        ],
+      },
+      {
+        heading: "Contrat de professionnalisation : pas d'exonération spécifique",
+        paragraphs: [
+          "L'exonération des apprentis ne s'applique pas au contrat de professionnalisation. Ton salaire se déclare en entier, comme celui de n'importe quel salarié. Avec un salaire modeste, l'impôt final est souvent faible, voire nul une fois les abattements appliqués, mais tu dois quand même le déclarer.",
+        ],
+      },
+      {
+        heading: "Déclarer seul ou être rattaché à tes parents ?",
+        list: [
+          "Tu peux être rattaché au foyer fiscal de tes parents si tu as moins de 21 ans au 1er janvier de l'année des revenus, ou moins de 25 ans si tu poursuis tes études.",
+          "Si tu es rattaché, ce sont tes parents qui déclarent ton salaire dans leur déclaration, avec la même exonération : seule la partie au-dessus du plafond compte. Tu dois signer une demande de rattachement sur papier libre, qu'ils gardent en cas de contrôle.",
+          "Si tu déclares seul, tu fais ta propre déclaration. Tes parents peuvent alors déduire de leurs revenus l'aide qu'ils te versent (pension alimentaire), dans certaines limites.",
+          "Quelle option choisir ? Ça dépend des revenus de chacun : fais les deux simulations sur le simulateur d'impôt d'impots.gouv.fr avant de décider.",
+        ],
+      },
+      {
+        heading: "Le prélèvement à la source",
+        paragraphs: [
+          "Apprenti : tant que ton salaire cumulé de l'année reste sous le SMIC annuel, ton employeur ne prélève pas d'impôt sur ta paie.",
+          "Contrat pro : ton employeur applique ton taux de prélèvement. Pour un premier emploi, sans taux connu, il applique un taux par défaut qui dépend de ton salaire, nul pour les petits salaires. Tu peux consulter et modifier ton taux dans ton espace sur impots.gouv.fr.",
+        ],
+      },
+      {
+        heading: "Remplir ta déclaration, étape par étape",
+        list: [
+          "Ta première déclaration peut se faire en ligne sur impots.gouv.fr. Garde tes fiches de paie de l'année, surtout celle de décembre, qui indique le cumul imposable.",
+          "Vérifie le montant de salaire prérempli : seule la partie imposable doit y figurer. Corrige-le s'il ne correspond pas.",
+          "Même avec 0 € imposable, fais ta déclaration : tu reçois ensuite un avis d'impôt (de non-imposition), souvent demandé pour un logement, une bourse ou des aides.",
+          "Tu as eu plusieurs contrats dans l'année (job d'été, CDD, alternance) ? Chacun suit sa propre règle : l'exonération des apprentis ne concerne que le salaire d'apprenti.",
+        ],
+      },
+      {
+        heading: "Et la gratification de stage ? Et les jobs étudiants ?",
+        paragraphs: [
+          "Même principe pour les stagiaires : la gratification de stage est exonérée dans la même limite du SMIC annuel (voir notre guide sur la gratification de stage). Les salaires de jobs étudiants ont leur propre exonération, dans la limite de 3 fois le SMIC mensuel, si tu as 25 ans au plus au 1er janvier de l'année.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Un apprenti paie-t-il des impôts ?",
+        a: "En général non : son salaire est exonéré d'impôt sur le revenu jusqu'au montant annuel du SMIC (21 622 € pour les revenus 2025). Seule la partie au-dessus est imposable.",
+      },
+      {
+        q: "Le salaire d'un contrat de professionnalisation est-il imposable ?",
+        a: "Oui, il se déclare en entier : l'exonération réservée aux apprentis ne s'applique pas au contrat de professionnalisation.",
+      },
+      {
+        q: "Mes parents doivent-ils déclarer mon salaire d'apprenti ?",
+        a: "Seulement si tu es rattaché à leur foyer fiscal : ils déclarent alors la partie de ton salaire qui dépasse le plafond d'exonération. Si tu déclares seul, c'est toi qui le fais.",
+      },
+    ],
+    sources: [
+      { label: "Comment est imposé le salaire d'un apprenti ? (service-public.gouv.fr)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F11249" },
+      { label: "Le rattachement d'un enfant majeur au foyer fiscal (economie.gouv.fr)", url: "https://www.economie.gouv.fr/particuliers/impots-et-fiscalite/gerer-mon-impot-sur-le-revenu/le-rattachement-dun-enfant-majeur-au-foyer-fiscal-quels-avantages" },
+      { label: "C'est ma première déclaration, que dois-je déclarer ? (impots.gouv.fr)", url: "https://www.impots.gouv.fr/particulier/questions/cest-ma-premiere-declaration-que-dois-je-declarer" },
+    ],
+  },
+  {
+    slug: "alternance-fonction-publique",
+    title: "Alternance dans la fonction publique : mairie, hôpital, ministère",
+    metaDescription:
+      "Mairie, hôpital, ministère : comment trouver un apprentissage dans la fonction publique, ton salaire et les majorations possibles, tes droits et ce qui se passe après le contrat.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    related: ["trouver-une-alternance", "candidature-spontanee-alternance", "aides-alternants"],
+    intro: [
+      "L'État, les collectivités (mairies, départements, régions) et les hôpitaux recrutent des apprentis, du CAP au master : informatique, RH, comptabilité, communication, petite enfance, espaces verts, social... Une bonne piste si tu vises le service public, ou si tu cherches une alternance en dehors des entreprises privées.",
+    ],
+    sections: [
+      {
+        heading: "Qui recrute des apprentis dans le public ?",
+        list: [
+          "La fonction publique d'État : ministères, préfectures, services de l'État dans les régions et les départements, établissements publics.",
+          "La fonction publique territoriale : communes, intercommunalités, départements, régions.",
+          "La fonction publique hospitalière : hôpitaux, EHPAD et établissements médico-sociaux publics.",
+        ],
+      },
+      {
+        heading: "Quel contrat ?",
+        paragraphs: [
+          "Dans l'administration, l'alternance passe par le contrat d'apprentissage : le contrat de professionnalisation est réservé aux entreprises. Tu es salarié, avec un vrai contrat de travail, des congés payés et un temps de formation au CFA compté comme du temps de travail. Mais tu n'es pas fonctionnaire : le contrat s'arrête à la date prévue.",
+        ],
+      },
+      {
+        heading: "Ton salaire",
+        paragraphs: [
+          "La base est la même que dans le privé : un pourcentage du SMIC qui dépend de ton âge et de ton année de contrat (calcule-le avec notre simulateur de salaire en alternance).",
+          "L'employeur public peut ajouter une majoration de 10 ou 20 points. Avant 2020, elle était automatique selon le niveau du diplôme préparé ; depuis le décret du 24 avril 2020, chaque employeur décide. Pose la question avant de signer : la différence peut dépasser 300 € brut par mois.",
+        ],
+      },
+      {
+        heading: "Où trouver les offres",
+        list: [
+          "Choisir le service public (choisirleservicepublic.gouv.fr) : la plateforme officielle de recrutement des trois fonctions publiques, avec de nombreuses offres d'apprentissage.",
+          "Emploi-territorial.fr : les offres des collectivités, y compris des petites communes.",
+          "Les sites des hôpitaux et des collectivités de ta ville, rubrique « recrutement » ou « emploi ».",
+          "La candidature spontanée au service RH : une mairie ou un service qui n'a rien publié peut quand même accueillir un apprenti si le poste correspond à ta formation.",
+          "Comme dans le privé, beaucoup d'offres sortent au printemps pour une rentrée en septembre : commence tôt.",
+        ],
+      },
+      {
+        heading: "Et après le contrat ?",
+        paragraphs: [
+          "Un apprentissage dans le public ne fait pas de toi un fonctionnaire : pour être titularisé, il faut en principe réussir un concours. Mais l'expérience compte : tu connais le fonctionnement de l'administration, tu as un réseau, et tu peux enchaîner sur un poste de contractuel ou préparer les concours qui t'intéressent.",
+        ],
+      },
+      {
+        heading: "Les aides",
+        paragraphs: [
+          "Tu as droit à la plupart des aides des alternants (aides au logement de la CAF, prime d'activité selon tes revenus). Attention : l'aide Mobili-Jeune d'Action Logement est réservée aux alternants du secteur privé. Le détail dans notre guide des aides aux alternants.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Peut-on faire une alternance dans une mairie ?",
+        a: "Oui : les communes, comme les départements, les régions, les hôpitaux et les services de l'État, recrutent des apprentis, du CAP au master.",
+      },
+      {
+        q: "Combien gagne un apprenti dans la fonction publique ?",
+        a: "Au minimum la même chose que dans le privé : un pourcentage du SMIC selon ton âge et ton année de contrat. L'employeur peut ajouter 10 ou 20 points, sans y être obligé depuis 2020.",
+      },
+      {
+        q: "Devient-on fonctionnaire après un apprentissage ?",
+        a: "Non, pas automatiquement : il faut en principe passer un concours. L'apprentissage reste un bon tremplin pour découvrir le métier et décrocher un poste de contractuel.",
+      },
+    ],
+    sources: [
+      { label: "L'apprentissage, le bon choix pour vous (fonction-publique.gouv.fr)", url: "https://www.fonction-publique.gouv.fr/devenir-agent-public/lapprentissage-le-bon-choix-pour-vous" },
+      { label: "Apprentissage dans la fonction publique : quelles sont les règles ? (service-public.gouv.fr)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F3059" },
+      { label: "Apprentissage dans le secteur public : décret du 24 avril 2020 (Centre Inffo)", url: "https://www.centre-inffo.fr/site-droit-formation/actualites-droit/adaptation-des-dispositions-reglementaires-sur-lapprentissage-dans-le-secteur-public-non-industriel-et-commercial" },
+    ],
+  },
 ];
