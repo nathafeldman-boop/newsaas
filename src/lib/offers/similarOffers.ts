@@ -1,7 +1,7 @@
 import { createPublicClient } from "@/lib/supabase/public";
 import { PUBLIC_OFFER_COLUMNS, type PublicOfferRow } from "@/lib/offers/fetchPublicOffers";
 import { getCitySegments, getSectorSegments, normalizeCityKey, slugify, type CitySegment, type Segment } from "@/lib/offers/segments";
-import { classifyMetier } from "@/lib/seo/metiers";
+import { classifyFormations, classifyMetier } from "@/lib/seo/metiers";
 import { cityPhrase, getProgrammaticIndex } from "@/lib/seo/programmaticIndex";
 import { departementFromLocation, getDepartement, regionOfDepartement } from "@/lib/seo/departements";
 import { departementPath, fetchOffersByIds } from "@/lib/seo/programmaticPage";
@@ -24,6 +24,8 @@ export type OfferContextLinks = {
     city: ProgrammaticLink | null;
     metierCity: ProgrammaticLink | null;
     departement: ProgrammaticLink | null;
+    // Pages diplôme citées dans l'intitulé ("BTS MCO à Lyon", sinon "BTS MCO").
+    formations: ProgrammaticLink[];
   };
   company: ProgrammaticLink | null;
 };
@@ -35,6 +37,7 @@ async function getCompanyLink(offer: Offer): Promise<ProgrammaticLink | null> {
 }
 
 const TYPE_LABEL = { alternance: "Alternance", stage: "Stage" } as const;
+const GENERIC_FORMATIONS = new Set(["bts", "cap", "bac-pro"]);
 
 // Liens programmatiques + offres candidates pour "Offres similaires", de la
 // plus proche à la plus large : même métier dans la ville, dans le
@@ -59,6 +62,20 @@ async function getProgrammaticLinks(offer: Offer): Promise<{ links: OfferContext
       [comboStats, depMetierStats, city, regionMetierStats, depStats, metierStats].flatMap((stats) => stats?.ids ?? []),
     ),
   ].filter((id) => id !== offer.id);
+  // Le diplôme le plus précis d'abord ("BTS MCO" avant "BTS", "CAP AEPE"
+  // avant "CAP").
+  const formations = classifyFormations(offer.title)
+    .sort((a, b) => Number(GENERIC_FORMATIONS.has(a.slug)) - Number(GENERIC_FORMATIONS.has(b.slug)))
+    .map((formation) => {
+      const combo = city ? index.combos[`${formation.slug}/${city.slug}`] : undefined;
+      if (combo && city) {
+        return { href: `/${offer.contract_type}/${formation.slug}/${city.slug}`, label: `${typeLabel} ${formation.label} ${cityPhrase(city.label)}`, count: combo.count };
+      }
+      const national = index.metiers[formation.slug];
+      return national ? { href: `/${offer.contract_type}/${formation.slug}`, label: `${typeLabel} ${formation.label}`, count: national.count } : null;
+    })
+    .filter((link): link is ProgrammaticLink => link !== null)
+    .slice(0, 2);
   const links: OfferContextLinks["programmatic"] = {
     metier: metier && metierStats
       ? { href: `/${offer.contract_type}/${metier.slug}`, label: `${typeLabel} ${metier.label}`, count: metierStats.count }
@@ -74,6 +91,7 @@ async function getProgrammaticLinks(offer: Offer): Promise<{ links: OfferContext
         : depStats
           ? { href: departementPath(offer.contract_type, departement.slug, null), label: `${typeLabel}${where}`, count: depStats.count }
           : null,
+    formations,
   };
   return { links, similarIds };
 }
@@ -125,6 +143,6 @@ export async function getOfferContextLinks(offer: Offer): Promise<OfferContextLi
     return { city, sector, similar, programmatic, company };
   } catch (err) {
     console.error("getOfferContextLinks failed", err);
-    return { city: null, sector: null, similar: [], programmatic: { metier: null, city: null, metierCity: null, departement: null }, company: null };
+    return { city: null, sector: null, similar: [], programmatic: { metier: null, city: null, metierCity: null, departement: null, formations: [] }, company: null };
   }
 }
