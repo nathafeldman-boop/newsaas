@@ -151,7 +151,7 @@ async function computeCompactCompanyIndex(): Promise<CompactCompanyIndex> {
   return compact;
 }
 
-const cachedCompanyIndex = unstable_cache(computeCompactCompanyIndex, ["company-index-v6"], { revalidate: 3600 });
+const cachedCompanyIndex = unstable_cache(computeCompactCompanyIndex, ["company-index-v7"], { revalidate: 3600 });
 
 let expanded: CompanyIndex | null = null;
 
