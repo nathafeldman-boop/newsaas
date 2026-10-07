@@ -46,7 +46,18 @@ Ce que je fais déjà en automatique :
 **Pour que les IA citent Stageio** quand on leur demande « quel site pour trouver une alternance » :
 - **Être cité sur d'autres sites.** Une IA se fie à ce que disent les autres sites, pas seulement au tien. Vise les articles du type « les meilleurs sites pour trouver une alternance » (L'Étudiant, Diplomeo, blogs d'écoles) : propose-leur d'ajouter Stageio, avec le baromètre comme preuve de sérieux.
 - **Reddit et forums** (r/etudiants, r/france, forums de BTS) : réponds vraiment à la question posée, et mets le lien seulement quand il aide. Un compte qui ne poste que des liens est banni, et ça nuit à la marque.
-- **Un test simple chaque mois** : demande à ChatGPT, Gemini et Perplexity « c'est quoi Stageio ? » et « site pour trouver une alternance en swipant ». Note ce qu'ils répondent.
+- **Un test simple chaque mois** : demande à ChatGPT, Gemini, Perplexity, Meta AI (dans WhatsApp) et Grok « c'est quoi Stageio ? », « je ne trouve pas d'alternance, comment faire ? » et « quel site pour trouver une alternance ? ». Note ce qu'ils répondent, et compare d'un mois sur l'autre.
+
+**Meta AI (WhatsApp, Instagram) et Grok**
+- Meta AI s'appuie sur des moteurs de recherche, dont Bing : l'import Bing Webmaster Tools ci-dessus compte aussi pour lui.
+- Grok cherche beaucoup sur X : un compte X Stageio qui publie les chiffres du baromètre et les guides utiles lui donne de la matière.
+- Dans les deux cas, ce sont surtout les mentions sur d'autres sites (articles, forums, Reddit) qui font qu'une IA recommande un site. Impossible de forcer une IA à le faire, et c'est très bien comme ça : aucune astuce cachée, juste être utile et cité.
+
+**Déjà fait côté site (07/10)**
+- `stageio.fr/llms.txt` (résumé pour les IA) et `stageio.fr/llms-full.txt` (texte complet des 57 guides).
+- Les robots des IA sont autorisés : OpenAI, Anthropic, Perplexity, Google, Apple, Meta, Mistral, DuckDuckGo, Amazon.
+- Deux pages qui répondent exactement aux questions posées aux IA : « Je ne trouve pas d'alternance : que faire ? » et « Quel site pour trouver une alternance ? » (comparatif honnête, Stageio dedans).
+- Une FAQ sur `stageio.fr/a-propos` : gratuit ou pas, prix, origine des offres, résiliation. C'est là que les IA vont chercher pour répondre à « c'est quoi Stageio ».
 
 ---
 

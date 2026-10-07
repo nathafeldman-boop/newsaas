@@ -166,7 +166,13 @@ function buildWebApplicationJsonLd(reviewStats: { count: number; average: number
     url: SITE_URL,
     applicationCategory: "BusinessApplication",
     operatingSystem: "Web",
-    offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" },
+    // Prix réels (voir /premium) : gratuit pour parcourir les offres,
+    // Premium pour liker, candidater, la lettre IA et l'audit de CV.
+    offers: [
+      { "@type": "Offer", name: "Gratuit", price: "0", priceCurrency: "EUR" },
+      { "@type": "Offer", name: "Premium mensuel (sans engagement)", price: "7.99", priceCurrency: "EUR" },
+      { "@type": "Offer", name: "Premium à vie (paiement unique)", price: "39.99", priceCurrency: "EUR" },
+    ],
     ...(reviewStats.count > 0 && reviewStats.average !== null
       ? {
           aggregateRating: {
