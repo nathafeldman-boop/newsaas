@@ -340,6 +340,7 @@ export const GUIDE_CATEGORIES: { title: string; slugs: string[] }[] = [
       "entretien-de-stage",
       "se-presenter-en-entretien",
       "questions-a-poser-en-entretien",
+      "mail-de-remerciement",
       "refuser-une-offre",
     ],
   },
@@ -363,6 +364,6 @@ export const GUIDE_CATEGORIES: { title: string; slugs: string[] }[] = [
   },
   {
     title: "Pendant et après",
-    slugs: ["premier-jour-en-entreprise", "rythme-alternance", "alternance-deux-villes", "rapport-de-stage", "soutenance-de-stage"],
+    slugs: ["premier-jour-en-entreprise", "rythme-alternance", "alternance-deux-villes", "rapport-de-stage", "soutenance-de-stage", "attestation-de-stage"],
   },
 ];

@@ -206,7 +206,7 @@ Ce qui fait passer du bas au haut de la fourchette : les backlinks (aucun code n
 - [x] 07/10 : `lastmod` réel dans les sitemaps (date de la dernière offre publiée sur la page, plus l'heure de génération pour toutes). Le cron IndexNow n'envoie plus que les pages qui ont reçu une offre depuis la veille. Les pages métier France entière renvoient vers leurs pages région × métier, et chaque fiche offre vers sa page département (métier × département quand elle existe).
 - [x] 07/10 : synchro France Travail découpée par département (cron `sync-france-travail-departements`, 6 passages par nuit de 22 h à 3 h UTC, tout le pays chaque jour). Avant : ~1 000 offres d'alternance France Travail seulement (plafond de l'API à ~1 150 résultats par recherche) contre ~3 100 offres Adzuna non indexables. Index SEO compacté pour tenir sous la limite de 2 Mo du cache (~1,1 Mo pour 19 000 offres). ⚠️ À surveiller : taille de la base Supabase si elle est sur l'offre gratuite (500 Mo).
 - [ ] Filtrer les annonces d'écoles du catalogue lui-même (décision produit)
-- [x] Phase 3 — 45 guides rédigés (faits juridiques vérifiés sur sources officielles) + 4 outils (1 en ligne : le simulateur)
+- [x] Phase 3 — 47 guides rédigés (faits juridiques vérifiés sur sources officielles) + 4 outils (1 en ligne : le simulateur)
 - [ ] Phase 4 — hubs, baromètre, Search Console, suivi 100 mots-clés, dashboard
 
 ---
@@ -267,6 +267,8 @@ Ce qui fait passer du bas au haut de la fourchette : les backlinks (aucun code n
 43. ✅ Bourse du Crous et alternance (pas de bourse en alternance, maintenue en stage) ⚖️
 44. ✅ Rythme de l'alternance (25 % de formation minimum en apprentissage, 15 à 25 % en contrat pro) ⚖️
 45. ✅ Transport : 50 % de l'abonnement remboursé aux alternants et aux stagiaires ⚖️
+46. ✅ Mail de remerciement après un entretien ou un stage (3 modèles)
+47. ✅ Attestation de stage (obligatoire, validation de 2 trimestres de retraite dans les 2 ans) ⚖️
 
 ---
 

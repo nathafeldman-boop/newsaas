@@ -2865,4 +2865,162 @@ export const MORE_GUIDES: Guide[] = [
       { label: "Apprentis : titres-restaurant et frais de transport (info-tpe.fr, ministère du Travail)", url: "https://www.info-tpe.fr/faqs/apprenti-e/article/apprentis-acces-aux-titres-restaurant-et-au-remboursement-des-frais-transports" },
     ],
   },
+  {
+    slug: "mail-de-remerciement",
+    title: "Mail de remerciement après un entretien ou un stage : modèles",
+    metaDescription:
+      "Le mail de remerciement à envoyer après un entretien d'alternance ou de stage, et à la fin de ton stage : quand l'envoyer, quoi dire, et 3 modèles à copier.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    related: ["relancer-candidature", "entretien-alternance", "refuser-une-offre"],
+    intro: [
+      "Un mail de remerciement prend 3 minutes et te démarque : peu de candidats l'envoient. Après un entretien, il rappelle ta motivation au recruteur au moment où il compare les profils. À la fin d'un stage, il laisse une bonne dernière impression et garde la porte ouverte pour une alternance, un CDD ou une recommandation.",
+    ],
+    sections: [
+      {
+        heading: "Quand l'envoyer",
+        list: [
+          "Après un entretien : le jour même ou le lendemain matin, au plus tard. Après, il perd son effet.",
+          "À la fin d'un stage ou d'une alternance : ton dernier jour ou le lendemain, à ton tuteur, et un mot plus court à l'équipe.",
+          "À qui : à la personne qui t'a reçu. Si vous étiez plusieurs, un mail à chacun ou un mail groupé qui les cite tous.",
+        ],
+      },
+      {
+        heading: "Ce qu'il doit contenir",
+        list: [
+          "Un merci précis : cite un sujet abordé en entretien ou un projet du stage. Un merci générique ne sert à rien.",
+          "Un rappel de ta motivation en une phrase, avec ce que tu apportes.",
+          "Pas de pavé : 5 à 8 lignes maximum, sans pièce jointe sauf si on te l'a demandé.",
+          "Relis-toi : une faute d'orthographe dans un mail de 6 lignes se voit.",
+        ],
+      },
+      {
+        heading: "Modèle 1 : après un entretien d'alternance ou de stage",
+        paragraphs: [
+          "Objet : Merci pour notre échange – alternance [intitulé du poste]",
+          "Bonjour [Madame / Monsieur Nom],",
+          "Merci pour le temps que vous m'avez accordé aujourd'hui. Notre échange sur [sujet précis : le lancement de la nouvelle offre, l'organisation de l'équipe...] m'a confirmé mon envie de rejoindre [entreprise] pour mon alternance en [formation].",
+          "Je suis convaincu(e) que [une compétence ou une expérience] me permettra d'être rapidement utile à l'équipe. Je reste disponible pour toute information complémentaire.",
+          "Bien cordialement,",
+          "[Prénom Nom] – [téléphone]",
+        ],
+      },
+      {
+        heading: "Modèle 2 : à ton tuteur, à la fin de ton stage",
+        paragraphs: [
+          "Objet : Merci pour ces [X] mois de stage",
+          "Bonjour [Prénom],",
+          "Mon stage se termine aujourd'hui et je tenais à vous remercier pour votre accompagnement. J'ai beaucoup appris, en particulier sur [compétence ou projet], et je repars avec [ce que tu as gagné : de l'autonomie, une première expérience en...].",
+          "Si une opportunité d'alternance ou de poste se présente dans l'équipe, je serais ravi(e) d'en discuter. Je me permettrai aussi de vous demander une recommandation sur LinkedIn.",
+          "Encore merci et à bientôt,",
+          "[Prénom Nom]",
+        ],
+      },
+      {
+        heading: "Modèle 3 : à l'équipe, ton dernier jour",
+        paragraphs: [
+          "Objet : Merci à toute l'équipe !",
+          "Bonjour à tous,",
+          "C'est mon dernier jour chez [entreprise] : merci pour votre accueil, votre patience et tout ce que vous m'avez appris pendant ces [X] mois. Je garde un super souvenir de [un moment ou un projet].",
+          "Vous pouvez me retrouver sur LinkedIn : [lien]. À bientôt, j'espère !",
+          "[Prénom]",
+        ],
+      },
+      {
+        heading: "Après le mail",
+        list: [
+          "Pas de réponse une semaine après l'entretien ? Une relance polie est normale (voir notre guide pour relancer une candidature).",
+          "À la fin d'un stage : ajoute ton tuteur et tes collègues sur LinkedIn dans la foulée, et récupère ton attestation de stage.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Faut-il envoyer un mail de remerciement après un entretien ?",
+        a: "Oui, c'est rarement fait et ça marque : envoie-le le jour même ou le lendemain, en 5 à 8 lignes, avec un détail précis de l'entretien et un rappel de ta motivation.",
+      },
+      {
+        q: "Que mettre dans un mail de fin de stage ?",
+        a: "Un merci précis à ton tuteur (un projet, une compétence apprise), ton intérêt pour une suite éventuelle (alternance, poste) et une demande de recommandation LinkedIn.",
+      },
+      {
+        q: "Un mail de remerciement peut-il faire changer une décision ?",
+        a: "Il ne remplace pas l'entretien, mais quand deux profils se valent, le candidat qui a montré sa motivation jusqu'au bout part avec un avantage.",
+      },
+    ],
+  },
+  {
+    slug: "attestation-de-stage",
+    title: "Attestation de stage : ce qu'elle contient et à quoi elle sert",
+    metaDescription:
+      "L'attestation de stage est obligatoire à la fin de chaque stage. Ce qu'elle doit indiquer, comment l'obtenir, et comment elle te permet de valider jusqu'à 2 trimestres de retraite.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    related: ["convention-de-stage", "gratification-de-stage", "rapport-de-stage"],
+    intro: [
+      "À la fin de ton stage, l'entreprise doit te remettre une attestation de stage. Ce n'est pas un détail : ton école peut te la demander pour valider ton stage, elle prouve ton expérience sur ton CV, et elle te permet de faire compter ton stage pour ta retraite. Voici ce qu'elle contient et quoi en faire.",
+    ],
+    sections: [
+      {
+        heading: "Une obligation pour l'entreprise",
+        paragraphs: [
+          "L'organisme qui t'accueille doit te remettre une attestation de stage à la fin du stage (article D124-9 du Code de l'éducation). Son modèle est fixé par un arrêté : c'est un document standard, que l'entreprise remplit.",
+        ],
+      },
+      {
+        heading: "Ce qu'elle doit indiquer",
+        list: [
+          "Tes nom et prénom, ton école et ta formation.",
+          "Le nom et l'adresse de l'organisme d'accueil.",
+          "Les dates de début et de fin, et la durée effective totale du stage.",
+          "Le montant total de la gratification que tu as touchée, s'il y en a une.",
+        ],
+      },
+      {
+        heading: "Comment l'obtenir",
+        list: [
+          "Demande-la à ton tuteur ou au service RH une ou deux semaines avant la fin du stage, pour l'avoir ton dernier jour.",
+          "Vérifie la durée et le montant de la gratification : ce sont eux qui comptent pour la retraite.",
+          "Garde-la précieusement, en version papier et en PDF : on te la redemandera, parfois des années plus tard.",
+        ],
+      },
+      {
+        heading: "Faire compter ton stage pour ta retraite",
+        paragraphs: [
+          "Un stage gratifié peut être validé pour ta retraite, dans la limite de 2 trimestres, en payant une cotisation. La demande se fait dans les 2 ans qui suivent la fin du stage, avec l'attestation de stage, qui indique la durée et le montant de la gratification.",
+          "C'est une démarche à faire tôt : passé le délai de 2 ans, ce n'est plus possible. Renseigne-toi auprès de ta caisse de retraite (pour la plupart des stages en entreprise, l'Assurance retraite) pour connaître le montant à payer.",
+        ],
+      },
+      {
+        heading: "Attestation de stage, convention, rapport : ne confonds pas",
+        table: {
+          headers: ["Document", "Quand", "Qui le fait"],
+          rows: [
+            ["Convention de stage", "Avant le début du stage", "Ton école, l'entreprise et toi (signée par les trois)"],
+            ["Attestation de stage", "À la fin du stage", "L'entreprise"],
+            ["Rapport de stage", "Après le stage", "Toi, pour ton école"],
+          ],
+        },
+      },
+    ],
+    faq: [
+      {
+        q: "L'entreprise est-elle obligée de me donner une attestation de stage ?",
+        a: "Oui : l'organisme d'accueil doit remettre une attestation de stage à chaque stagiaire à la fin du stage, avec la durée effective et le montant total de la gratification.",
+      },
+      {
+        q: "Un stage compte-t-il pour la retraite ?",
+        a: "Un stage gratifié peut être validé dans la limite de 2 trimestres, en payant une cotisation, si tu en fais la demande dans les 2 ans qui suivent la fin du stage.",
+      },
+      {
+        q: "Quelle différence entre attestation et convention de stage ?",
+        a: "La convention est signée avant le stage par l'école, l'entreprise et toi ; l'attestation est remise par l'entreprise à la fin du stage.",
+      },
+    ],
+    sources: [
+      { label: "Encadrement des stages, décret du 27 novembre 2014 (Bulletin officiel de l'Éducation nationale)", url: "https://www.education.gouv.fr/bo/14/Hebdo46/MENS1422390D.htm" },
+      { label: "Accueil d'un stagiaire : les obligations de l'entreprise (economie.gouv.fr)", url: "https://www.economie.gouv.fr/entreprises/gerer-ses-ressources-humaines-et-ses-salaries/accueil-dun-stagiaire-quelles-sont-vos-obligations" },
+      { label: "Attestation de stage : le modèle fixé par arrêté (Legisocial)", url: "https://www.legisocial.fr/actualites-sociales/1351-attestation-de-stage-le-modele-est-fixe-par-un-arrete.html" },
+    ],
+  },
 ];
