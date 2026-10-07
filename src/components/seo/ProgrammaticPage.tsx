@@ -198,6 +198,8 @@ export async function ProgrammaticPageView({ model, pageParam }: { model: Progra
           <Link href="/outils/simulateur-salaire-alternance">
             {type === "alternance" ? "Calculer mon salaire d'alternant" : "Calculer ma gratification de stage"}
           </Link>
+          {" · "}
+          <Link href={`/outils/lettre-de-motivation-${type}`}>Écrire ma lettre de motivation (gratuit)</Link>
         </p>
       </section>
 

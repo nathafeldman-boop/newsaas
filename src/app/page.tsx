@@ -1559,6 +1559,8 @@ export default async function LandingPage() {
               <Link href="/barometre-alternance-stage">Baromètre 2026</Link>
               {" · "}
               <Link href="/outils/simulateur-salaire-alternance">Simulateur de salaire</Link>
+              {" · "}
+              <Link href="/outils/lettre-de-motivation-alternance">Lettre de motivation (générateur)</Link>
             </p>
           </section>
         )}

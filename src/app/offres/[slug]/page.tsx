@@ -425,6 +425,10 @@ export default async function PublicOfferPage({
             Postuler à cette offre
           </a>
         )}
+        <p style={{ fontSize: 13, margin: "10px 0 0", textAlign: "center" }}>
+          Besoin d&apos;une lettre de motivation ?{" "}
+          <Link href={`/outils/lettre-de-motivation-${offer.contract_type}`}>Écris-la en 2 minutes avec notre générateur gratuit</Link>
+        </p>
         <ShareButtons
           title="Cette offre peut intéresser un pote ?"
           url={`${SITE_URL}${offerPath(offer)}`}
