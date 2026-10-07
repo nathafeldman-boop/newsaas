@@ -28,13 +28,47 @@ const SCOPE = "api_offresdemploiv2 o2dsoffre";
 export const PAGE_SIZE = 150;
 export const MAX_RANGE_END = 1149;
 
-let cachedToken: { value: string; expiresAt: number } | null = null;
+// Limite de l'API : 3 appels par seconde par application, au-delà HTTP 429.
+// Les synchros lancent plusieurs recherches en parallèle (jusqu'à 4 pour la
+// synchro par département) : tous les appels de recherche passent par cette
+// file, espacés d'au moins 350 ms (~2,9 par seconde).
+const MIN_INTERVAL_MS = 350;
+let nextSlot = 0;
 
+async function throttle(): Promise<void> {
+  const now = Date.now();
+  const wait = Math.max(0, nextSlot - now);
+  nextSlot = Math.max(now, nextSlot) + MIN_INTERVAL_MS;
+  if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+}
+
+const MAX_429_RETRIES = 3;
+
+function retryDelayMs(res: Response, attempt: number): number {
+  const retryAfter = Number(res.headers.get("Retry-After"));
+  return Number.isFinite(retryAfter) && retryAfter > 0 ? Math.min(retryAfter, 10) * 1000 : 1000 * (attempt + 1);
+}
+
+let cachedToken: { value: string; expiresAt: number } | null = null;
+let pendingToken: Promise<string> | null = null;
+
+// Un seul jeton demandé à la fois, même quand plusieurs recherches démarrent
+// ensemble.
 async function getAccessToken(): Promise<string> {
   const now = Date.now();
   if (cachedToken && cachedToken.expiresAt > now + 5000) {
     return cachedToken.value;
   }
+  if (!pendingToken) {
+    pendingToken = fetchAccessToken().finally(() => {
+      pendingToken = null;
+    });
+  }
+  return pendingToken;
+}
+
+async function fetchAccessToken(): Promise<string> {
+  const now = Date.now();
 
   const clientId = process.env.FRANCE_TRAVAIL_CLIENT_ID;
   const clientSecret = process.env.FRANCE_TRAVAIL_CLIENT_SECRET;
@@ -102,13 +136,19 @@ export async function searchFranceTravailPage(
   url.searchParams.set("motsCles", what);
   if (departement) url.searchParams.set("departement", departement);
 
-  const res = await fetch(url.toString(), {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: "application/json",
-      Range: `offres=${rangeStart}-${rangeEnd}`,
-    },
-  });
+  let res: Response;
+  for (let attempt = 0; ; attempt++) {
+    await throttle();
+    res = await fetch(url.toString(), {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+        Range: `offres=${rangeStart}-${rangeEnd}`,
+      },
+    });
+    if (res.status !== 429 || attempt >= MAX_429_RETRIES) break;
+    await new Promise((resolve) => setTimeout(resolve, retryDelayMs(res, attempt)));
+  }
 
   if (res.status === 204) return { jobs: [], totalResults: 0 };
 

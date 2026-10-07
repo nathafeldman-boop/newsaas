@@ -7,15 +7,16 @@ import { DEPARTEMENTS } from "@/lib/seo/departements";
 // ~1 150 résultats, donc la recherche nationale "alternance" ne ramenait
 // qu'environ 1 000 offres d'alternance sur toutes celles publiées (07/10).
 // Ici, même recherche découpée par département. 101 départements x 3 mots-
-// clés ne tiennent pas dans une exécution : six exécutions par nuit (voir
-// vercel.json), chacune sur un sixième des départements, donc tout le pays
-// est revu chaque jour, bien avant la désactivation des offres pas revues
-// depuis 10 jours (faite par sync-france-travail).
+// clés ne tiennent pas dans une exécution (l'API limite à 3 appels par
+// seconde, voir client.ts) : huit exécutions par nuit (voir vercel.json),
+// chacune sur un huitième des départements, donc tout le pays est revu
+// chaque jour, bien avant la désactivation des offres pas revues depuis 10
+// jours (faite par sync-france-travail).
 
 export const maxDuration = 60;
 
 const QUERIES = ["alternance", "apprentissage", "stage"];
-const SLICES = 6;
+const SLICES = 8;
 const CONCURRENCY = 4;
 // Marge avant le maxDuration de 60 s : les streams en cours s'arrêtent
 // proprement à la page suivante.
@@ -48,12 +49,14 @@ export async function GET(request: NextRequest) {
   }
 
   const startedAt = Date.now();
-  // Exécutions de 22 h à 3 h UTC (sur le plan Hobby, un cron part dans
-  // l'heure prévue) : l'heure dit quelle tranche (22 % 6 = 4, 23 % 6 = 5,
+  // Exécutions de 20 h à 3 h UTC (sur le plan Hobby, un cron part dans
+  // l'heure prévue) : l'heure dit quelle tranche (20 % 8 = 4 ... 23 % 8 = 7,
   // puis 0 à 3).
   const slice = new Date(startedAt).getUTCHours() % SLICES;
   const departements = DEPARTEMENTS.filter((_, i) => i % SLICES === slice).map((d) => d.code);
-  const tasks = departements.flatMap((departement) => QUERIES.map((what) => ({ what, departement })));
+  // "alternance" d'abord dans tous les départements de la tranche : si le
+  // temps manque, ce sont les recherches secondaires qui sautent.
+  const tasks = QUERIES.flatMap((what) => departements.map((departement) => ({ what, departement })));
 
   const syncStartedAt = new Date(startedAt).toISOString();
   const admin = createAdminClient();
