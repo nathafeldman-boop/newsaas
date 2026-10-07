@@ -35,7 +35,7 @@
 - [Stage par métier et par ville](https://www.stageio.fr/stage)
 - [Entreprises qui recrutent en alternance et en stage](https://www.stageio.fr/entreprises) — une page par entreprise : nombre d'offres, villes, métiers.
 - [Baromètre 2026 de l'alternance et des stages](https://www.stageio.fr/barometre-alternance-stage) — métiers et villes qui recrutent le plus, salaires indiqués, entreprises les plus actives (données Stageio mises à jour chaque jour, reprise libre avec lien).
-- [Guides](https://www.stageio.fr/guides) — alternance vs stage, contrat d'apprentissage ou contrat pro, rupture du contrat d'apprentissage, aides aux alternants 2026, congés d'un alternant, âge limite, trouver une alternance ou un stage, CV, lettres de motivation, entretien, relance, candidature spontanée, convention et rapport de stage.
+- [Guides](https://www.stageio.fr/guides) — alternance vs stage, contrat d'apprentissage ou contrat pro, rupture du contrat d'apprentissage, aides aux alternants 2026, congés d'un alternant, âge limite, trouver une alternance ou un stage (y compris via LinkedIn), CV de stage, lettres et mails de candidature, se présenter en entretien, questions à poser au recruteur, relance, candidature spontanée, refuser une offre, convention et rapport de stage.
 - [Simulateur de salaire en alternance 2026](https://www.stageio.fr/outils/simulateur-salaire-alternance) — salaire minimum brut et net d'un apprenti, d'un contrat pro ou d'un stagiaire selon l'âge et l'année de contrat (barèmes légaux, SMIC du 1er juin 2026).
 - Des pages existent aussi par secteur (`/offres/secteur/<secteur>`) et par ville (`/offres/ville/<ville>`) pour les secteurs/villes avec suffisamment d'offres actives.
 - [Créer un compte](https://www.stageio.fr/inscription)

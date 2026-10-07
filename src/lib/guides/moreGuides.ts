@@ -815,4 +815,357 @@ export const MORE_GUIDES: Guide[] = [
       { label: "Contrat de professionnalisation (service-public.gouv.fr)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F15478" },
     ],
   },
+  {
+    slug: "cv-stage",
+    title: "CV pour un stage : la structure qui marche quand on n'a pas (encore) d'expérience",
+    metaDescription:
+      "Quoi mettre sur un CV de stage quand on débute : rubriques, ordre, projets, jobs étudiants, compétences. La structure d'un CV d'une page qui donne envie de te rencontrer.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    intro: [
+      "Personne n'attend d'un étudiant une carrière de 10 ans. Ce que le recruteur cherche sur un CV de stage : ce que tu sais faire, ce que tu as déjà prouvé (même hors entreprise) et pourquoi ce stage. Voici comment le montrer sur une seule page.",
+    ],
+    sections: [
+      {
+        heading: "La structure d'un CV de stage, dans l'ordre",
+        list: [
+          "En-tête : prénom, nom, téléphone, mail, ville, lien LinkedIn. Pas d'adresse complète ni de date de naissance.",
+          "Titre : le stage visé et les dates (« Stage en marketing digital – 6 mois à partir de janvier 2027 »).",
+          "Formation : ton diplôme en cours en premier, avec les matières ou projets en lien avec le stage.",
+          "Expériences et projets : stages, jobs étudiants, projets d'école, associatif. Tout compte s'il montre une compétence.",
+          "Compétences : outils et logiciels, langues avec un niveau réaliste, 2 ou 3 savoir-être prouvés ailleurs sur le CV.",
+          "Centres d'intérêt : seulement s'ils disent quelque chose de toi (sport en compétition, projet perso, bénévolat).",
+        ],
+      },
+      {
+        heading: "Pas d'expérience ? Mets en avant tes projets",
+        paragraphs: [
+          "Un projet d'école, un site que tu as créé, un événement organisé pour ton asso : décris-les comme des expériences, avec une ligne sur ce que tu as fait et une ligne sur le résultat (« Organisation d'un tournoi de 120 participants, budget de 2 000 € tenu »). C'est souvent plus parlant qu'un job sans lien avec le poste.",
+        ],
+      },
+      {
+        heading: "Les jobs étudiants comptent",
+        paragraphs: [
+          "Serveur, vendeur, babysitting, livraison : ces expériences prouvent que tu es fiable, que tu tiens un rythme et que tu sais gérer des clients. Mets-les, avec une compétence précise à chaque fois (« gestion de la caisse et des encaissements, 300 clients par jour »).",
+        ],
+      },
+      {
+        heading: "Adapter ton CV à chaque offre en 5 minutes",
+        list: [
+          "Reprends dans ton titre l'intitulé exact du stage.",
+          "Remonte en premier l'expérience ou le projet le plus proche des missions.",
+          "Reprends 3 ou 4 mots-clés de l'offre dans tes compétences (logiciels, méthodes) : beaucoup d'entreprises trient les CV avec un logiciel.",
+        ],
+      },
+      {
+        heading: "Les erreurs qui font décrocher le recruteur",
+        list: [
+          "Plus d'une page.",
+          "Une photo de vacances ou une adresse mail fantaisiste.",
+          "Des fautes d'orthographe.",
+          "Un niveau de langue surévalué (il sera testé en entretien).",
+          "Un PDF nommé « CV.pdf » : nomme-le « CV-Prenom-Nom-Stage-Marketing.pdf ».",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Faut-il mettre une photo sur un CV de stage ?",
+        a: "Ce n'est pas obligatoire en France. Si tu en mets une, choisis une photo sobre et récente, sur fond neutre.",
+      },
+      {
+        q: "Quelle longueur pour un CV de stage ?",
+        a: "Une page, toujours. Le recruteur le lit en quelques secondes : l'essentiel doit sauter aux yeux.",
+      },
+    ],
+  },
+  {
+    slug: "mail-candidature-stage-alternance",
+    title: "Mail de candidature pour un stage ou une alternance : modèles à copier",
+    metaDescription:
+      "Objet, corps du mail, pièces jointes, signature : comment écrire un mail de candidature pour un stage ou une alternance, avec 2 modèles prêts à adapter.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    intro: [
+      "Le mail est la première chose que le recruteur lit, avant ton CV. Un mail court, précis et sans faute donne envie d'ouvrir tes pièces jointes. Voici comment l'écrire, avec deux modèles.",
+    ],
+    sections: [
+      {
+        heading: "L'objet : clair et cherchable",
+        paragraphs: [
+          "Indique le type de contrat, le poste et ton nom : « Candidature alternance – Assistant RH – Léa Martin ». S'il y a une référence d'offre, ajoute-la. Le recruteur doit pouvoir retrouver ton mail en tapant le nom du poste.",
+        ],
+      },
+      {
+        heading: "Le corps du mail en 4 phrases",
+        list: [
+          "Qui tu es : formation, école, et le poste visé.",
+          "Pourquoi cette entreprise : un élément précis, pas une généralité.",
+          "Ce que tu apportes : une réalisation concrète en lien avec les missions.",
+          "La suite : tes pièces jointes, tes disponibilités pour un échange.",
+        ],
+      },
+      {
+        heading: "Modèle 1 : réponse à une offre",
+        paragraphs: [
+          "Objet : Candidature [stage/alternance] – [intitulé du poste] – [Prénom Nom]",
+          "Bonjour [Madame/Monsieur Nom], étudiant en [formation] à [école], je vous adresse ma candidature pour le poste de [intitulé] publié sur [site]. [Entreprise] m'attire particulièrement pour [raison précise]. Lors de [expérience ou projet], j'ai [réalisation concrète], une expérience directement utile pour [mission de l'offre]. Vous trouverez ci-joint mon CV et ma lettre de motivation. Je serais ravi d'échanger avec vous à votre convenance. Bien cordialement, [Prénom Nom] – [téléphone] – [lien LinkedIn]",
+        ],
+      },
+      {
+        heading: "Modèle 2 : version courte pour un formulaire ou LinkedIn",
+        paragraphs: [
+          "Bonjour [Prénom], je prépare un [diplôme] à [école] et je cherche [un stage / une alternance] en [métier] à partir de [date]. Votre offre de [intitulé] correspond exactement à ce que je cherche, notamment pour [élément de l'offre]. Mon CV est en pièce jointe : seriez-vous disponible pour en parler ? Merci et belle journée, [Prénom Nom]",
+        ],
+      },
+      {
+        heading: "Les pièces jointes",
+        list: [
+          "En PDF uniquement, jamais en Word.",
+          "Des noms de fichiers clairs : « CV-Prenom-Nom.pdf », « LM-Prenom-Nom-Entreprise.pdf ».",
+          "Pour une alternance, ajoute ton calendrier d'alternance si tu l'as.",
+        ],
+      },
+      {
+        heading: "Avant d'envoyer",
+        list: [
+          "Relis le nom de l'entreprise et du recruteur (une erreur de nom = candidature à la poubelle).",
+          "Envoie-toi le mail d'abord pour vérifier l'affichage et les pièces jointes.",
+          "Utilise une adresse mail sobre (prenom.nom@...).",
+          "Note la date d'envoi pour relancer au bout de 7 à 10 jours ouvrés.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Faut-il écrire la lettre de motivation dans le corps du mail ?",
+        a: "Non : le mail doit être court (5 à 8 lignes). Mets la lettre complète en pièce jointe si l'offre la demande.",
+      },
+      {
+        q: "Quel est le meilleur moment pour envoyer une candidature ?",
+        a: "En semaine, le matin, quand les recruteurs trient leurs mails. Évite le vendredi soir et le week-end.",
+      },
+    ],
+  },
+  {
+    slug: "questions-a-poser-en-entretien",
+    title: "Les questions à poser au recruteur à la fin d'un entretien (stage ou alternance)",
+    metaDescription:
+      "« Avez-vous des questions ? » : 15 questions à poser au recruteur en entretien de stage ou d'alternance, celles qui marquent des points et celles à éviter.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    intro: [
+      "« Avez-vous des questions ? » arrive à la fin de presque tous les entretiens. Répondre « non » donne l'impression que le poste ne t'intéresse pas vraiment. Prépare 3 ou 4 questions parmi celles-ci.",
+    ],
+    sections: [
+      {
+        heading: "Sur le poste et les missions",
+        list: [
+          "À quoi ressemblera une semaine type ?",
+          "Quels seront les premiers projets sur lesquels je travaillerai ?",
+          "Quels outils ou logiciels utilise l'équipe au quotidien ?",
+          "Qu'est-ce qui ferait de ce stage (ou de cette alternance) une réussite pour vous ?",
+        ],
+      },
+      {
+        heading: "Sur l'équipe et l'encadrement",
+        list: [
+          "Qui sera mon tuteur, et comment se passe le suivi au quotidien ?",
+          "Combien de personnes compte l'équipe, et avec quels autres services travaille-t-elle ?",
+          "Comment se passe l'intégration des nouveaux arrivants ?",
+        ],
+      },
+      {
+        heading: "Sur l'entreprise et l'avenir",
+        list: [
+          "Quels sont les grands projets de l'équipe pour l'année à venir ?",
+          "Qu'ont fait les stagiaires ou alternants précédents après leur contrat ?",
+          "Y a-t-il des possibilités d'embauche à la fin du contrat ?",
+        ],
+      },
+      {
+        heading: "Sur la suite du recrutement",
+        list: [
+          "Quelles sont les prochaines étapes ?",
+          "Quand pensez-vous revenir vers moi ?",
+        ],
+      },
+      {
+        heading: "Les questions à éviter en premier entretien",
+        list: [
+          "Celles dont la réponse est sur le site de l'entreprise (ça montre que tu n'as pas préparé).",
+          "Démarrer par les congés, le télétravail ou les avantages : garde-les pour la fin du processus.",
+          "« Est-ce que j'ai le poste ? » : demande plutôt les prochaines étapes.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Combien de questions poser en fin d'entretien ?",
+        a: "2 à 4 questions suffisent. Prépares-en davantage, car certaines auront peut-être déjà trouvé leur réponse pendant l'entretien.",
+      },
+      {
+        q: "Peut-on poser une question sur le salaire en entretien d'alternance ?",
+        a: "Oui, à la fin et simplement, d'autant que le minimum est fixé par la loi selon ton âge et ton année de contrat. Tu peux demander si l'entreprise applique la grille légale ou une grille plus favorable.",
+      },
+    ],
+  },
+  {
+    slug: "se-presenter-en-entretien",
+    title: "Se présenter en entretien en 1 minute : la méthode et un exemple",
+    metaDescription:
+      "« Présentez-vous » : la structure passé-présent-futur pour se présenter en 1 minute en entretien de stage ou d'alternance, avec un exemple complet et les erreurs à éviter.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    intro: [
+      "C'est souvent la première question de l'entretien, et celle qui donne le ton. Une présentation d'une minute, préparée mais pas récitée, met le recruteur dans de bonnes dispositions pour la suite.",
+    ],
+    sections: [
+      {
+        heading: "La structure : passé, présent, futur",
+        list: [
+          "Passé (15 secondes) : ton parcours en une phrase et l'expérience qui t'a le plus appris.",
+          "Présent (20 secondes) : ce que tu prépares, ce que tu sais faire, ce qui t'intéresse dans le métier.",
+          "Futur (20 secondes) : pourquoi ce poste et cette entreprise sont la suite logique.",
+        ],
+      },
+      {
+        heading: "Exemple de présentation pour une alternance",
+        paragraphs: [
+          "« Je m'appelle Léa, j'ai 20 ans. Après un bac STMG, j'ai fait un BTS NDRC, et c'est mon job d'été en boutique qui m'a donné le goût de la relation client : j'y ai géré la caisse et dépassé mon objectif de ventes du mois d'août. Aujourd'hui je prépare un bachelor commerce, et ce qui me plaît le plus, c'est la prospection et le suivi des clients sur la durée. Votre poste de chargée de clientèle m'intéresse parce que vous travaillez avec des PME locales, et c'est exactement le type de relation que je veux développer pendant mes deux ans d'alternance. »",
+        ],
+      },
+      {
+        heading: "Les erreurs à éviter",
+        list: [
+          "Réciter ton CV ligne par ligne.",
+          "Parler de ta vie privée sans lien avec le poste.",
+          "Dépasser 2 minutes : le recruteur décroche.",
+          "Apprendre par cœur un texte : retiens la structure et 2 ou 3 phrases clés, pas un discours.",
+        ],
+      },
+      {
+        heading: "S'entraîner efficacement",
+        paragraphs: [
+          "Chronomètre-toi à voix haute 3 ou 4 fois, puis enregistre-toi en vidéo une fois : tu repéreras les tics de langage et les passages trop longs. Adapte la dernière partie (le « futur ») à chaque entreprise.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Combien de temps doit durer une présentation en entretien ?",
+        a: "Entre 1 minute et 1 minute 30. Au-delà, le recruteur décroche ; en dessous de 30 secondes, tu passes à côté de l'occasion de te mettre en valeur.",
+      },
+      {
+        q: "Faut-il donner son âge en se présentant ?",
+        a: "Ce n'est pas obligatoire. En alternance, ça peut être utile car ton âge détermine ton salaire minimum, mais le recruteur l'a souvent déjà sur ton dossier.",
+      },
+    ],
+  },
+  {
+    slug: "trouver-alternance-linkedin",
+    title: "Trouver une alternance ou un stage avec LinkedIn : la méthode pas à pas",
+    metaDescription:
+      "Profil, recherche d'offres, messages aux managers, alertes : comment utiliser LinkedIn pour trouver une alternance ou un stage, avec un modèle de message d'approche.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    intro: [
+      "LinkedIn n'est pas qu'un CV en ligne : c'est l'endroit où tu peux parler directement aux personnes qui recrutent. Bien utilisé, il te fait passer devant des candidats qui ne font qu'envoyer des CV.",
+    ],
+    sections: [
+      {
+        heading: "1. Un profil qui donne envie de cliquer",
+        list: [
+          "Une photo nette où l'on voit ton visage.",
+          "Un titre explicite : « Étudiant en BTS GPME – En recherche d'alternance en gestion à Lyon dès septembre ».",
+          "Un résumé de 3 ou 4 lignes : ce que tu prépares, ce que tu sais faire, ce que tu cherches.",
+          "Active la mention « Ouvert aux opportunités » visible par les recruteurs.",
+        ],
+      },
+      {
+        heading: "2. Chercher les offres et créer des alertes",
+        paragraphs: [
+          "Dans l'onglet Emplois, cherche « alternance [métier] » ou « stage [métier] » et filtre par ville et par date de publication. Crée une alerte pour être prévenu des nouvelles offres. Complète avec une plateforme qui regroupe les offres de plusieurs sources : les annonces publiées depuis moins de 3 jours sont celles où tu as le plus de chances.",
+        ],
+      },
+      {
+        heading: "3. Contacter directement les managers",
+        paragraphs: [
+          "Repère l'entreprise qui t'intéresse, puis dans l'onglet « Personnes », cherche le responsable du service visé. Envoie une demande de connexion avec une note courte, ou un message si tu as LinkedIn Premium.",
+        ],
+      },
+      {
+        heading: "Modèle de message d'approche",
+        paragraphs: [
+          "« Bonjour [Prénom], je prépare un [diplôme] à [école] et je cherche une alternance en [métier] à partir de [mois]. Votre équipe [nom] m'intéresse beaucoup, notamment pour [projet ou élément précis]. Prendriez-vous des alternants cette année ? Je peux vous envoyer mon CV. Merci d'avance ! »",
+        ],
+      },
+      {
+        heading: "4. Publier ta recherche",
+        paragraphs: [
+          "Un post simple (« Je cherche une alternance en [métier] à [ville] à partir de [mois], voici ce que je sais faire… ») avec ton CV en visuel est souvent partagé par ton réseau, tes profs et ton école. Utilise les hashtags #alternance ou #stage et ta ville.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Faut-il LinkedIn Premium pour trouver une alternance ?",
+        a: "Non. La version gratuite suffit : demande de connexion avec une note, recherche d'offres, alertes et publications.",
+      },
+      {
+        q: "Combien de personnes contacter par jour ?",
+        a: "Mieux vaut 5 à 10 messages personnalisés par jour que des dizaines de messages identiques, que LinkedIn peut limiter.",
+      },
+    ],
+  },
+  {
+    slug: "refuser-une-offre",
+    title: "Refuser une offre de stage ou d'alternance poliment (modèle de mail)",
+    metaDescription:
+      "Tu as accepté ailleurs ? Comment refuser une offre de stage ou d'alternance sans te griller, avec un modèle de mail de refus court et professionnel.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    intro: [
+      "Bonne nouvelle : tu as plusieurs propositions. Refuser une offre fait partie du jeu, à condition de le faire vite et proprement : le monde professionnel est petit, et cette entreprise pourrait te recontacter plus tard.",
+    ],
+    sections: [
+      {
+        heading: "Les 3 règles",
+        list: [
+          "Réponds vite : dès que ta décision est prise, pour que l'entreprise puisse contacter un autre candidat.",
+          "Par écrit, même si tu as aussi appelé.",
+          "Court, sincère et positif : remercie, donne une raison simple, laisse la porte ouverte.",
+        ],
+      },
+      {
+        heading: "Modèle de mail de refus",
+        paragraphs: [
+          "Objet : Votre proposition de [stage/alternance] – [intitulé]",
+          "Bonjour [Madame/Monsieur Nom], je vous remercie sincèrement pour votre proposition et pour le temps que vous m'avez accordé pendant le processus de recrutement. Après réflexion, j'ai choisi de donner suite à une autre proposition, plus proche de [mon projet / ma spécialisation / ma ville d'études]. Ce choix n'a pas été facile, car votre équipe et le poste m'ont beaucoup plu. J'espère que nos chemins se recroiseront. Bien cordialement, [Prénom Nom]",
+        ],
+      },
+      {
+        heading: "Faut-il donner la vraie raison ?",
+        paragraphs: [
+          "Reste simple et honnête sans entrer dans les détails : « un projet plus proche de ma spécialisation » ou « une entreprise plus proche de mon école » suffisent. Inutile de comparer les salaires ou de critiquer l'offre.",
+        ],
+      },
+      {
+        heading: "Et si tu avais déjà dit oui ?",
+        paragraphs: [
+          "Si la convention de stage ou le contrat n'est pas encore signé, préviens immédiatement l'entreprise, par téléphone puis par écrit, en t'excusant pour le changement. Une fois le contrat d'alternance signé, ce ne sont plus les mêmes règles : renseigne-toi sur la rupture du contrat d'apprentissage.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Peut-on refuser une offre après l'avoir acceptée à l'oral ?",
+        a: "Oui, tant que rien n'est signé, mais préviens le plus vite possible et excuse-toi : l'entreprise a peut-être déjà refusé d'autres candidats.",
+      },
+      {
+        q: "Faut-il appeler ou écrire pour refuser une offre ?",
+        a: "Les deux sont bien : un appel est plus personnel, mais confirme toujours par un mail court.",
+      },
+    ],
+  },
 ];
