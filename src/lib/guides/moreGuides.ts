@@ -3303,4 +3303,69 @@ export const MORE_GUIDES: Guide[] = [
       { label: "Arrêt maladie : indemnités journalières (service-public.gouv.fr)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F3053" },
     ],
   },
+  {
+    slug: "aides-embauche-apprenti",
+    title: "Aides à l'embauche d'un apprenti en 2026 : l'argument pour convaincre une entreprise",
+    metaDescription:
+      "Jusqu'à 4 500 € pour un BTS, 2 000 € pour une licence ou un master : les aides 2026 versées à l'employeur qui embauche un apprenti. Montants, conditions, et comment t'en servir pour décrocher ton contrat.",
+    publishedAt: "2026-10-07",
+    updatedAt: "2026-10-07",
+    related: ["candidature-spontanee-alternance", "alternance-sans-entreprise", "contrat-apprentissage-ou-contrat-pro"],
+    intro: [
+      "Beaucoup de petites entreprises hésitent à prendre un apprenti parce qu'elles pensent que ça coûte cher. Or l'État verse une aide à l'employeur la première année du contrat : de quoi couvrir une bonne partie de ton salaire. Si tu connais ces montants, tu as un argument concret à glisser dans ta candidature ou en entretien.",
+    ],
+    sections: [
+      {
+        heading: "L'aide exceptionnelle 2026",
+        paragraphs: [
+          "Pour les contrats d'apprentissage conclus entre le 8 mars et le 31 décembre 2026, l'État verse à l'employeur une aide exceptionnelle au titre de la première année du contrat (décret n° 2026-168 du 6 mars 2026). Son montant dépend de la taille de l'entreprise et du niveau du diplôme que tu prépares.",
+        ],
+        table: {
+          headers: ["Diplôme préparé", "Entreprise de moins de 250 salariés", "Entreprise de 250 salariés et plus"],
+          rows: [
+            ["Jusqu'au bac (CAP, bac pro, BP...)", "jusqu'à 5 000 €", "jusqu'à 2 000 €"],
+            ["Bac+2 (BTS...)", "jusqu'à 4 500 €", "jusqu'à 1 500 €"],
+            ["Bac+3 à bac+5 (licence, bachelor, master, ingénieur)", "jusqu'à 2 000 €", "jusqu'à 750 €"],
+            ["Apprenti reconnu travailleur handicapé", "jusqu'à 6 000 €", "jusqu'à 6 000 €"],
+          ],
+        },
+      },
+      {
+        heading: "Les conditions à connaître",
+        list: [
+          "Seuls les contrats d'apprentissage sont concernés par cette aide, pas les contrats de professionnalisation.",
+          "Les entreprises de 250 salariés et plus doivent en plus respecter des conditions sur la part d'alternants dans leur effectif.",
+          "L'aide est versée chaque mois par l'État, après la transmission du contrat : l'employeur n'a pas de dossier séparé à monter.",
+          "Les montants changent souvent d'une année sur l'autre : vérifie toujours les règles en vigueur à la date de signature du contrat.",
+        ],
+      },
+      {
+        heading: "Comment t'en servir pour décrocher ton contrat",
+        list: [
+          "Dans une candidature spontanée à une PME, ajoute une phrase : « Pour un contrat d'apprentissage en BTS, votre entreprise peut bénéficier d'une aide de l'État allant jusqu'à 4 500 € la première année. »",
+          "En entretien, si le recruteur hésite sur le coût, rappelle que l'aide couvre une bonne partie de ton salaire la première année (calcule-le avec notre simulateur de salaire en alternance).",
+          "Propose de faire simple : ton CFA s'occupe des démarches avec l'entreprise (contrat, financement de la formation par l'OPCO).",
+          "Vise les petites entreprises : ce sont elles qui touchent les aides les plus élevées, et souvent elles n'y pensent pas.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Quel est le montant de l'aide à l'embauche d'un apprenti en 2026 ?",
+        a: "Pour les contrats conclus du 8 mars au 31 décembre 2026, jusqu'à 5 000 € jusqu'au bac, 4 500 € pour un bac+2 et 2 000 € au-delà dans une entreprise de moins de 250 salariés ; moins dans les grandes entreprises ; jusqu'à 6 000 € pour un apprenti reconnu travailleur handicapé.",
+      },
+      {
+        q: "L'aide concerne-t-elle le contrat de professionnalisation ?",
+        a: "Non, l'aide exceptionnelle 2026 concerne les contrats d'apprentissage.",
+      },
+      {
+        q: "Qui touche l'aide à l'embauche d'un apprenti ?",
+        a: "L'employeur, pour la première année du contrat. Elle ne change pas ton salaire, mais rend ton embauche moins coûteuse pour l'entreprise.",
+      },
+    ],
+    sources: [
+      { label: "Décret n° 2026-168 du 6 mars 2026 relatif à l'aide exceptionnelle aux employeurs d'apprentis (Légifrance)", url: "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000053634597" },
+      { label: "Aide exceptionnelle à l'embauche d'apprentis : publication du décret (Centre Inffo)", url: "https://www.centre-inffo.fr/site-droit-formation/actualites-droit/aide-exceptionnelle-a-lembauche-dapprentis-publication-du-decret" },
+    ],
+  },
 ];

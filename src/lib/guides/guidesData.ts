@@ -311,6 +311,7 @@ export const GUIDE_CATEGORIES: { title: string; slugs: string[] }[] = [
       "alternance-sans-entreprise",
       "trouver-alternance-linkedin",
       "candidature-spontanee-alternance",
+      "aides-embauche-apprenti",
       "choisir-son-ecole-en-alternance",
       "bts-bachelor-master-alternance",
       "stage-de-fin-d-etudes",

@@ -208,7 +208,7 @@ Ce qui fait passer du bas au haut de la fourchette : les backlinks (aucun code n
 - [x] 07/10 : analyse Search Console (3 derniers mois, export de Nathan) : ~2 170 clics, dont ~1 720 sur la marque. Hors marque, le trafic vient des fiches offres (947 pages, 426 clics, 12 900 impressions ; « Fiche d'emploi » Google Jobs : 188 clics, 7 437 impressions). Les fiches les plus cliquées sont aujourd'hui expirées : le trafic offres dépend d'un flux continu d'offres fraîches indexables (d'où la synchro France Travail par département). Pages ajoutées d'après les requêtes réelles : métiers aide-soignant, petite enfance, éducateur spécialisé ; diplômes BTS Électrotechnique (« bts electrotechnique alternance » : 217 impressions, position 4) et bac pro MSPC. Offres similaires des fiches expirées : même métier dans la région puis en France avant le repli par secteur. ⚠️ À surveiller dans Search Console (Apparence > Fiche d'emploi) : les fiches Adzuna sont en noindex depuis le 06/10, leur trafic va baisser ; la synchro France Travail doit le remplacer.
 - [x] 07/10 : Google Indexing API branchée (cron `google-indexing`, 5 h 50 UTC) : chaque nouvelle fiche offre éligible à Google Jobs est signalée à Google le jour même (200 par jour, les plus récentes d'abord). ⏳ Nathan : créer le compte de service et coller sa clé dans Vercel (`GOOGLE_INDEXING_SERVICE_ACCOUNT`), voir `docs/google-indexing-api.md`. Correction : les offres de plus de 30 jours encore en ligne chez leur source ne basculent plus chaque jour entre « active » et « expirée ».
 - [ ] Filtrer les annonces d'écoles du catalogue lui-même (décision produit)
-- [x] Phase 3 — 51 guides rédigés (faits juridiques vérifiés sur sources officielles) + 4 outils (1 en ligne : le simulateur)
+- [x] Phase 3 — 52 guides rédigés (faits juridiques vérifiés sur sources officielles) + 4 outils (1 en ligne : le simulateur)
 - [ ] Phase 4 — hubs, baromètre, Search Console, suivi 100 mots-clés, dashboard
 
 ---
@@ -275,6 +275,7 @@ Ce qui fait passer du bas au haut de la fourchette : les backlinks (aucun code n
 49. ✅ CDI après l'alternance (pas de période d'essai, ancienneté reprise : art. L6222-16) ⚖️
 50. ✅ Temps de travail d'un apprenti (35 h cours compris, règles pour les mineurs) ⚖️
 51. ✅ Arrêt maladie en alternance (48 h, CFA, indemnités journalières) ⚖️
+52. ✅ Aides à l'embauche d'un apprenti 2026 (décret n° 2026-168 du 6 mars 2026), angle « convaincre une entreprise » ⚖️
 
 ---
 
