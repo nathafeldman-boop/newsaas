@@ -315,6 +315,27 @@ export const FORMATIONS: Metier[] = [
     about: "Le bac professionnel (niveau 4) se prépare en apprentissage dans de nombreux métiers techniques, commerciaux et de service.",
   },
   {
+    slug: "advf",
+    label: "titre pro ADVF",
+    domain: "en titre pro ADVF",
+    pattern: /\badvf\b|assistante? de vie aux familles/,
+    about: "Le titre professionnel ADVF (assistant de vie aux familles) est une certification de niveau 3 (niveau CAP) du ministère du Travail. Il forme à l'accompagnement à domicile des personnes âgées ou handicapées et à la garde d'enfants, et se prépare souvent en alternance.",
+  },
+  {
+    slug: "bp",
+    label: "BP",
+    domain: "en BP",
+    pattern: /\bbp\b|brevet professionnel/,
+    about: "Le BP (brevet professionnel) est un diplôme de niveau 4 (niveau bac) qui se prépare en 2 ans en alternance, en général après un CAP, dans les métiers de l'artisanat et des services : coiffure, boulangerie, boucherie, esthétique, fleuriste...",
+  },
+  {
+    slug: "cqp",
+    label: "CQP",
+    domain: "en CQP",
+    pattern: /\bcqp\b|certificat de qualification professionnelle/,
+    about: "Le CQP (certificat de qualification professionnelle) est créé par une branche professionnelle pour attester d'un savoir-faire précis. Il se prépare le plus souvent en contrat de professionnalisation.",
+  },
+  {
     slug: "titre-pro",
     label: "titre pro",
     domain: "en titre pro",
