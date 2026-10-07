@@ -1,4 +1,5 @@
 import { unstable_cache } from "next/cache";
+import { compactGroup, expandGroup, idEncoder, serializedKb, type Compacted } from "@/lib/seo/compactIds";
 import { createPublicClient, fetchAllRows } from "@/lib/supabase/public";
 import { NOT_A_CITY, normalizeCityKey, slugify, titleCase } from "@/lib/offers/segments";
 import { PUBLIC_OFFERS_PAGE_SIZE } from "@/lib/offers/fetchPublicOffers";
@@ -311,13 +312,59 @@ export function buildIndex(type: ContractType, rows: IndexRow[], now = Date.now(
   return index;
 }
 
-// Un seul scan du catalogue par type et par heure, partagé par toutes les
-// pages /alternance/* et /stage/* (sinon chaque page vue relirait ~3 000
-// offres).
-const cachedIndex = unstable_cache(computeIndex, ["programmatic-index-v10"], { revalidate: 3600 });
+type SegmentGroup = "cities" | "metiers" | "combos" | "departements" | "depCombos" | "regions" | "regionCombos";
+type CompactIndex = Omit<ProgrammaticIndex, SegmentGroup> & {
+  [K in SegmentGroup]: Record<string, Compacted<ProgrammaticIndex[K][string]>>;
+} & { idTable: string[] };
 
-export function getProgrammaticIndex(type: ContractType): Promise<ProgrammaticIndex> {
-  return cachedIndex(type);
+// Version mise en cache : ids compactés (voir compactIds.ts).
+async function computeCompactIndex(type: ContractType): Promise<CompactIndex> {
+  const index = await computeIndex(type);
+  const encoder = idEncoder();
+  const compact = {
+    ...index,
+    cities: compactGroup(index.cities, encoder),
+    metiers: compactGroup(index.metiers, encoder),
+    combos: compactGroup(index.combos, encoder),
+    departements: compactGroup(index.departements, encoder),
+    depCombos: compactGroup(index.depCombos, encoder),
+    regions: compactGroup(index.regions, encoder),
+    regionCombos: compactGroup(index.regionCombos, encoder),
+    idTable: encoder.table,
+  };
+  console.log(`programmatic index ${type}: ${index.total} offres, ${serializedKb(compact)} Ko`);
+  return compact;
+}
+
+function expandIndex(compact: CompactIndex): ProgrammaticIndex {
+  const { idTable, ...rest } = compact;
+  return {
+    ...rest,
+    cities: expandGroup(compact.cities, idTable),
+    metiers: expandGroup(compact.metiers, idTable),
+    combos: expandGroup(compact.combos, idTable),
+    departements: expandGroup(compact.departements, idTable),
+    depCombos: expandGroup(compact.depCombos, idTable),
+    regions: expandGroup(compact.regions, idTable),
+    regionCombos: expandGroup(compact.regionCombos, idTable),
+  };
+}
+
+// Un seul scan du catalogue par type et par heure, partagé par toutes les
+// pages /alternance/* et /stage/* (sinon chaque page vue relirait tout le
+// catalogue).
+const cachedIndex = unstable_cache(computeCompactIndex, ["programmatic-index-v11"], { revalidate: 3600 });
+
+// Décompacté une fois par version du cache (generatedAt), pas à chaque appel.
+const expanded = new Map<ContractType, ProgrammaticIndex>();
+
+export async function getProgrammaticIndex(type: ContractType): Promise<ProgrammaticIndex> {
+  const compact = await cachedIndex(type);
+  const hit = expanded.get(type);
+  if (hit && hit.generatedAt === compact.generatedAt) return hit;
+  const index = expandIndex(compact);
+  expanded.set(type, index);
+  return index;
 }
 
 export function cityPhrase(label: string): string {

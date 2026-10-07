@@ -1,4 +1,5 @@
 import { unstable_cache } from "next/cache";
+import { compactGroup, expandGroup, idEncoder, serializedKb, type Compacted } from "@/lib/seo/compactIds";
 import { createPublicClient, fetchAllRows } from "@/lib/supabase/public";
 import { NOT_A_CITY, normalizeCityKey, slugify, titleCase } from "@/lib/offers/segments";
 import { PUBLIC_OFFERS_PAGE_SIZE } from "@/lib/offers/fetchPublicOffers";
@@ -139,10 +140,26 @@ async function computeCompanyIndex(): Promise<CompanyIndex> {
   return buildCompanyIndex(rows);
 }
 
-const cachedCompanyIndex = unstable_cache(computeCompanyIndex, ["company-index-v4"], { revalidate: 3600 });
+type CompactCompanyIndex = Omit<CompanyIndex, "companies"> & { companies: Record<string, Compacted<CompanyEntry>>; idTable: string[] };
 
-export function getCompanyIndex(): Promise<CompanyIndex> {
-  return cachedCompanyIndex();
+// Version mise en cache : ids compactés (voir compactIds.ts).
+async function computeCompactCompanyIndex(): Promise<CompactCompanyIndex> {
+  const index = await computeCompanyIndex();
+  const encoder = idEncoder();
+  const compact = { ...index, companies: compactGroup(index.companies, encoder), idTable: encoder.table };
+  console.log(`company index: ${Object.keys(index.companies).length} entreprises, ${serializedKb(compact)} Ko`);
+  return compact;
+}
+
+const cachedCompanyIndex = unstable_cache(computeCompactCompanyIndex, ["company-index-v5"], { revalidate: 3600 });
+
+let expanded: CompanyIndex | null = null;
+
+export async function getCompanyIndex(): Promise<CompanyIndex> {
+  const compact = await cachedCompanyIndex();
+  if (expanded && expanded.generatedAt === compact.generatedAt) return expanded;
+  expanded = { generatedAt: compact.generatedAt, companies: expandGroup(compact.companies, compact.idTable) };
+  return expanded;
 }
 
 export function companySlug(company: string): string {
