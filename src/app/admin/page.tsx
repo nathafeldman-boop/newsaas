@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { submitIndexNowAction } from "@/app/admin/seo-actions";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { fetchAllRows } from "@/lib/supabase/public";
 import { startOfTodayParis } from "@/lib/date";
 import { STEP_IDS, STEP_LABELS, type StepId } from "@/lib/onboarding/steps";
 import { LineAreaChart } from "@/components/admin/charts/LineAreaChart";
@@ -289,6 +290,37 @@ export default async function AdminDashboardPage({
     (a, b) => (visitorsBySource.get(b)?.size ?? 0) - (visitorsBySource.get(a)?.size ?? 0),
   );
 
+  // Revenu par source : la question n'est pas "combien de visites" mais
+  // "combien rapporte chaque canal" (audit SEO du 07/10, section KPI). Cohorte
+  // = inscrits des 30 derniers jours, revenu = ce qu'ils ont payé depuis
+  // (total_paid_cents). Paginé : "profiles" dépasse le Max Rows (1000).
+  const cohortSince = new Date();
+  cohortSince.setDate(cohortSince.getDate() - 30);
+  let cohort: { utm_source: string | null; total_paid_cents: number }[] = [];
+  try {
+    cohort = await fetchAllRows((from, to) =>
+      admin
+        .from("profiles")
+        .select("utm_source, total_paid_cents")
+        .gte("created_at", cohortSince.toISOString())
+        .order("created_at")
+        .range(from, to),
+    );
+  } catch (err) {
+    console.error("AdminDashboardPage: revenue by source query failed", err);
+  }
+  const revenueBySource = new Map<string, { signups: number; payers: number; cents: number }>();
+  for (const p of cohort) {
+    const source = p.utm_source || UNKNOWN_SOURCE;
+    const entry = revenueBySource.get(source) ?? { signups: 0, payers: 0, cents: 0 };
+    entry.signups += 1;
+    if ((p.total_paid_cents ?? 0) > 0) entry.payers += 1;
+    entry.cents += p.total_paid_cents ?? 0;
+    revenueBySource.set(source, entry);
+  }
+  const revenueSources = [...revenueBySource.entries()].sort((a, b) => b[1].cents - a[1].cents || b[1].signups - a[1].signups);
+  const euros = (cents: number) => `${(cents / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+
   const stepStats = new Map<StepId, { viewed: number; completed: number }>();
   for (const id of STEP_IDS) stepStats.set(id, { viewed: 0, completed: 0 });
   for (const row of funnelStats ?? []) {
@@ -399,6 +431,42 @@ export default async function AdminDashboardPage({
                   <td style={{ padding: "6px 0", fontWeight: source === UNKNOWN_SOURCE ? 400 : 700 }}>{source}</td>
                   <td style={{ padding: "6px 0" }}>{visitorsBySource.get(source)?.size ?? 0}</td>
                   <td style={{ padding: "6px 0" }}>{signupsBySource.get(source) ?? 0}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </SectionCard>
+
+      <SectionCard
+        title="Revenu par source — inscrits des 30 derniers jours"
+        subtitle="Combien rapporte chaque canal : inscrits sur 30 jours, combien ont payé, revenu encaissé depuis. Même détection de source que ci-dessus (google = référencement, partage = boutons de partage...)."
+      >
+        {revenueSources.length === 0 ? (
+          <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>
+            Aucun inscrit sur les 30 derniers jours.
+          </p>
+        ) : (
+          <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ textAlign: "left", color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
+                <th style={{ padding: "4px 0", fontWeight: 500 }}>Source</th>
+                <th style={{ padding: "4px 0", fontWeight: 500 }}>Inscrits</th>
+                <th style={{ padding: "4px 0", fontWeight: 500 }}>Payants</th>
+                <th style={{ padding: "4px 0", fontWeight: 500 }}>Revenu</th>
+                <th style={{ padding: "4px 0", fontWeight: 500 }}>Revenu / inscrit</th>
+              </tr>
+            </thead>
+            <tbody>
+              {revenueSources.map(([source, r]) => (
+                <tr key={source} style={{ borderTop: "1px solid var(--color-divider)" }}>
+                  <td style={{ padding: "6px 0", fontWeight: source === UNKNOWN_SOURCE ? 400 : 700 }}>{source}</td>
+                  <td style={{ padding: "6px 0" }}>{r.signups}</td>
+                  <td style={{ padding: "6px 0" }}>
+                    {r.payers} ({Math.round((r.payers / r.signups) * 100)} %)
+                  </td>
+                  <td style={{ padding: "6px 0" }}>{euros(r.cents)}</td>
+                  <td style={{ padding: "6px 0" }}>{euros(Math.round(r.cents / r.signups))}</td>
                 </tr>
               ))}
             </tbody>

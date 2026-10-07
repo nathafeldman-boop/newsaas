@@ -62,7 +62,9 @@ export function xmlResponse(xml: string): Response {
 
 export const SITEMAP_FILES = [
   "/sitemap-pages.xml",
+  "/sitemap-guides.xml",
   "/sitemap-metiers-villes.xml",
+  "/sitemap-territoires.xml",
   "/sitemap-entreprises.xml",
   "/sitemap-offres-alternance.xml",
   "/sitemap-offres-stage.xml",
