@@ -31,7 +31,13 @@ export async function cacheCvTextAction(): Promise<void> {
     if (!file) return;
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const text = await extractCvText(buffer, profile.cv_path);
+    // Un PDF mal formé peut bloquer l'extraction : /cv a atteint la limite
+    // de 300 s le 08/10. Au-delà de 20 s on abandonne, comme pour tout autre
+    // échec de cette action (silencieuse, l'upload est déjà acté).
+    const text = await Promise.race([
+      extractCvText(buffer, profile.cv_path),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error("extraction du CV : plus de 20 s")), 20_000)),
+    ]);
     // Postgres "text" refuse le caractere NUL, qu'une extraction PDF
     // malformee peut produire -- vu en prod (code 22P05), ce qui cassait
     // silencieusement le cache pour ce CV precis.
