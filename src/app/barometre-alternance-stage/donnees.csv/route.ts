@@ -1,5 +1,5 @@
 import { getProgrammaticIndex, type ProgrammaticIndex, type SegmentStats } from "@/lib/seo/programmaticIndex";
-import { getMetier, isFormation } from "@/lib/seo/metiers";
+import { getMetier, isFormation, isSpecialite } from "@/lib/seo/metiers";
 import type { ContractType } from "@/types/database";
 
 // Données du baromètre en CSV (une ligne par type de contrat x métier /
@@ -31,7 +31,7 @@ function rows(type: ContractType, index: ProgrammaticIndex): (string | number | 
   ];
   return [
     ...Object.values(index.metiers)
-      .filter((m) => !isFormation(m.slug))
+      .filter((m) => !isFormation(m.slug) && !isSpecialite(m.slug))
       .sort((a, b) => b.count - a.count)
       .map((m) => line("metier", m.slug, getMetier(m.slug)?.label ?? m.slug, m)),
     ...Object.values(index.metiers)

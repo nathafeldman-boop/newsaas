@@ -4,7 +4,7 @@ import { compactGroup, expandGroup, fitCacheBudget, idEncoder, unpackIdTable, ty
 import { byPublishedDescThenId, fetchAllRowsByIdCursor } from "@/lib/supabase/public";
 import { NOT_A_CITY, normalizeCityKey, preferCityNamedInTitle, slugify, titleCase } from "@/lib/offers/segments";
 import { PUBLIC_OFFERS_PAGE_SIZE } from "@/lib/offers/fetchPublicOffers";
-import { classifyFormations, classifyMetier } from "@/lib/seo/metiers";
+import { classifyFormations, classifyMetier, classifySpecialites } from "@/lib/seo/metiers";
 import { isSchool } from "@/lib/seo/schools";
 import { departementFromLocation, getDepartement, getRegionBySlug, learnCityDepartements, regionOfDepartement } from "@/lib/seo/departements";
 import type { ContractType, OfferSource } from "@/types/database";
@@ -248,10 +248,11 @@ export function buildIndex(type: ContractType, rows: IndexRow[], now = Date.now(
       add(cities.get(citySlug)!.acc, row, isRecent, salary);
       countPlace(cities.get(citySlug)!.acc, dep);
     }
-    // Métier + diplômes cités dans l'intitulé (BTS MCO...) : mêmes pages
-    // France entière et × ville, mais pas d'échelle département / région
-    // pour les diplômes (trop peu d'offres, pages quasi identiques).
-    for (const tag of [metier, ...classifyFormations(row.title)]) {
+    // Métier + spécialités (préparateur en pharmacie...) + diplômes cités
+    // dans l'intitulé (BTS MCO...) : mêmes pages France entière et × ville,
+    // mais pas d'échelle département / région pour les spécialités et les
+    // diplômes (trop peu d'offres, pages quasi identiques).
+    for (const tag of [metier, ...classifySpecialites(row.title), ...classifyFormations(row.title)]) {
       if (!tag) continue;
       if (!metiers.has(tag.slug)) metiers.set(tag.slug, newAccumulator());
       add(metiers.get(tag.slug)!, row, isRecent, salary);
@@ -415,7 +416,7 @@ const cachedShard = unstable_cache(
     if (!shard) throw new Error(`Morceau d'index inconnu : ${name}`);
     return compactShard(await sharedIndex(type), shard);
   },
-  ["programmatic-index-v14"],
+  ["programmatic-index-v15"],
   { revalidate: 3600 },
 );
 

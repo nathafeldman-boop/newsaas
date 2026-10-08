@@ -1,6 +1,6 @@
 import { createPublicClient } from "@/lib/supabase/public";
 import { PUBLIC_OFFER_COLUMNS, PUBLIC_OFFERS_PAGE_SIZE, type PublicOfferRow } from "@/lib/offers/fetchPublicOffers";
-import { FORMATIONS, getMetier, isFormation, METIERS, type Metier } from "@/lib/seo/metiers";
+import { FORMATIONS, getMetier, isFormation, LISTED_METIERS, type Metier } from "@/lib/seo/metiers";
 import { CITY_COORDINATES, distanceKm } from "@/lib/seo/cityCoordinates";
 import {
   INDEXABLE_MIN_OFFERS,
@@ -141,7 +141,7 @@ function nearbyCities(
 }
 
 function metiersInCity(index: ProgrammaticIndex, city: CityEntry, exclude: string | null): SegmentLink[] {
-  return METIERS.map((m) => ({ m, stats: index.combos[`${m.slug}/${city.slug}`] }))
+  return LISTED_METIERS.map((m) => ({ m, stats: index.combos[`${m.slug}/${city.slug}`] }))
     .filter((x) => x.stats && x.m.slug !== exclude)
     .sort((a, b) => b.stats!.count - a.stats!.count)
     .slice(0, 12)
@@ -165,7 +165,7 @@ function citiesForMetier(index: ProgrammaticIndex, metier: Metier): SegmentLink[
 }
 
 function topMetiers(index: ProgrammaticIndex): SegmentLink[] {
-  return METIERS.map((m) => ({ m, stats: index.metiers[m.slug] }))
+  return LISTED_METIERS.map((m) => ({ m, stats: index.metiers[m.slug] }))
     .filter((x) => x.stats)
     .sort((a, b) => b.stats!.count - a.stats!.count)
     .map((x) => ({ href: segmentPath(index.type, x.m.slug, null), label: capitalize(x.m.label), count: x.stats!.count }));

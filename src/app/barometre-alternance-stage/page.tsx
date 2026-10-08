@@ -3,7 +3,7 @@ import { ShareButtons } from "@/components/share/ShareButtons";
 import type { Metadata } from "next";
 import { getProgrammaticIndex, cityPhrase, type ProgrammaticIndex } from "@/lib/seo/programmaticIndex";
 import { getCompanyIndex } from "@/lib/seo/companyIndex";
-import { getMetier, isFormation, METIERS } from "@/lib/seo/metiers";
+import { getMetier, isFormation, isSpecialite, METIERS } from "@/lib/seo/metiers";
 import { SMIC_EFFECTIVE_DATE, SMIC_MONTHLY_GROSS, STAGE_HOURLY_MIN, formatEuros, internshipGratification, round2 } from "@/lib/salary/legalRates";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { SITE_URL } from "@/lib/site";
@@ -46,7 +46,7 @@ export async function generateMetadata(): Promise<Metadata> {
 // qui ont leurs propres pages mais ne sont pas des métiers.
 function topMetiers(index: ProgrammaticIndex, n = 10) {
   return Object.values(index.metiers)
-    .filter((m) => !isFormation(m.slug))
+    .filter((m) => !isFormation(m.slug) && !isSpecialite(m.slug))
     .sort((a, b) => b.count - a.count)
     .slice(0, n)
     .map((m) => ({ slug: m.slug, label: capitalize(getMetier(m.slug)?.label ?? m.slug), count: m.count, salary: m.salaryMedian, salaryN: m.salaryN }));
@@ -112,7 +112,7 @@ export default async function BarometrePage() {
   const companyList = Object.values(companies.companies).sort((a, b) => b.count - a.count);
   const topCompanies = companyList.slice(0, 10);
   const salaryRows = Object.values(alternance.metiers)
-    .filter((m) => m.salaryMedian !== null && !isFormation(m.slug))
+    .filter((m) => m.salaryMedian !== null && !isFormation(m.slug) && !isSpecialite(m.slug))
     .sort((a, b) => (b.salaryMedian ?? 0) - (a.salaryMedian ?? 0))
     .slice(0, 10);
 

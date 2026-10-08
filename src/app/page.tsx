@@ -11,7 +11,7 @@ import { getProgrammaticIndex } from "@/lib/seo/programmaticIndex";
 import { regionLinks } from "@/lib/seo/regionPage";
 import { getRegionBySlug } from "@/lib/seo/departements";
 import { getCompanyIndex } from "@/lib/seo/companyIndex";
-import { getMetier, isFormation } from "@/lib/seo/metiers";
+import { getMetier, isFormation, isSpecialite } from "@/lib/seo/metiers";
 import { offerPath } from "@/lib/offers/publicUrl";
 import { isJobPostingEligible } from "@/lib/seo/jobPosting";
 
@@ -222,7 +222,7 @@ async function getDiscoveryLinks(): Promise<{
     const [alternance, companies] = await Promise.all([getProgrammaticIndex("alternance"), getCompanyIndex()]);
     return {
       metiers: Object.values(alternance.metiers)
-        .filter((m) => !isFormation(m.slug))
+        .filter((m) => !isFormation(m.slug) && !isSpecialite(m.slug))
         .sort((a, b) => b.count - a.count)
         .slice(0, 12)
         .map((m) => ({ href: `/alternance/${m.slug}`, label: `Alternance ${getMetier(m.slug)?.label ?? m.slug}` })),

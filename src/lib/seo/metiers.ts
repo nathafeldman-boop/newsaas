@@ -350,10 +350,60 @@ export function classifyFormations(title: string): Metier[] {
   return FORMATIONS.filter((formation) => formation.pattern.test(formation.caseSensitive ? withCase : normalized));
 }
 
-const METIER_BY_SLUG = new Map([...METIERS, ...FORMATIONS].map((metier) => [metier.slug, metier]));
+// Sp\u00e9cialit\u00e9s : m\u00e9tiers pr\u00e9cis tr\u00e8s recherch\u00e9s (\u00ab alternance pr\u00e9parateur en
+// pharmacie \u00bb, \u00ab assistant dentaire alternance \u00bb\u2026) mais rang\u00e9s dans une
+// famille plus large (sant\u00e9, RH). \u00c9tiquette en plus de la famille, comme les
+// dipl\u00f4mes : l'offre reste compt\u00e9e dans \u00ab sant\u00e9 \u00bb, aucune page existante ne
+// perd d'offres. Pages France enti\u00e8re et \u00d7 ville, pr\u00e9sent\u00e9es comme des
+// m\u00e9tiers (pas dans les blocs \u00ab par dipl\u00f4me \u00bb), hors barom\u00e8tre (doublons).
+export const SPECIALITES: Metier[] = [
+  {
+    slug: "preparateur-pharmacie",
+    label: "pr\u00e9parateur en pharmacie",
+    domain: "en pharmacie",
+    pattern: /preparat[^,;]{0,20}pharmac|\bdeust\b[^,;]{0,30}pharmac|(apprenti|alternan|contrat (de )?pro)[^,;]{0,20}\bpharmacie\b/,
+    about: "En pharmacie, l'apprenti pr\u00e9parateur d\u00e9livre les m\u00e9dicaments sous le contr\u00f4le du pharmacien, conseille les clients, g\u00e8re les stocks et r\u00e9alise des pr\u00e9parations. Depuis la rentr\u00e9e 2023, le m\u00e9tier se pr\u00e9pare avec le DEUST Pr\u00e9parateur-technicien en pharmacie (bac+2), qui a remplac\u00e9 le BP : 2 ans, uniquement en apprentissage, candidature apr\u00e8s le bac sur Parcoursup.",
+  },
+  {
+    slug: "assistant-dentaire",
+    label: "assistant dentaire",
+    domain: "en cabinet dentaire",
+    pattern: /assistan[^,;]{0,8}dentaire|aide dentaire|secretaire[^,;]{0,6}dentaire/,
+    about: "L'assistant dentaire accueille les patients, assiste le chirurgien-dentiste au fauteuil, pr\u00e9pare et st\u00e9rilise les instruments et g\u00e8re les rendez-vous. Le titre d'assistant dentaire (niveau 4, niveau bac) est obligatoire pour exercer : il se pr\u00e9pare en alternance, en contrat d'apprentissage ou de professionnalisation, en g\u00e9n\u00e9ral sur 18 mois.",
+  },
+  {
+    slug: "secretaire-medical",
+    label: "secr\u00e9taire m\u00e9dical",
+    domain: "en secr\u00e9tariat m\u00e9dical",
+    pattern: /secretaire[^,;]{0,6}medic|secretariat medical|medico.?administrati/,
+    about: "Le secr\u00e9taire m\u00e9dical accueille les patients, g\u00e8re les agendas des soignants, les dossiers et la facturation, en cabinet, en clinique, \u00e0 l'h\u00f4pital ou en centre de sant\u00e9. Dipl\u00f4me souvent pr\u00e9par\u00e9 : titre professionnel Secr\u00e9taire assistant m\u00e9dico-administratif (niveau 4, niveau bac), en g\u00e9n\u00e9ral en un an d'alternance.",
+  },
+  {
+    slug: "gestionnaire-de-paie",
+    label: "gestionnaire de paie",
+    domain: "en paie",
+    pattern: /\bpaie\b|payroll/,
+    about: "Le gestionnaire de paie calcule les salaires, v\u00e9rifie les cotisations sociales, g\u00e8re les entr\u00e9es et sorties des salari\u00e9s et contr\u00f4le les donn\u00e9es de paie, en entreprise ou en cabinet d'expertise comptable. Dipl\u00f4me souvent pr\u00e9par\u00e9 : titre professionnel Gestionnaire de paie (niveau 5, bac+2), en g\u00e9n\u00e9ral en un an d'alternance.",
+  },
+];
+
+export function classifySpecialites(title: string): Metier[] {
+  const normalized = normalizeTitle(title);
+  return SPECIALITES.filter((specialite) => specialite.pattern.test(normalized));
+}
+
+// Familles de m\u00e9tiers puis sp\u00e9cialit\u00e9s : ce qu'on pr\u00e9sente comme \u00ab m\u00e9tiers \u00bb
+// dans les listes de liens (hubs, pages ville).
+export const LISTED_METIERS: Metier[] = [...METIERS, ...SPECIALITES];
+
+const METIER_BY_SLUG = new Map([...METIERS, ...SPECIALITES, ...FORMATIONS].map((metier) => [metier.slug, metier]));
 
 export function isFormation(slug: string): boolean {
   return FORMATIONS.some((formation) => formation.slug === slug);
+}
+
+export function isSpecialite(slug: string): boolean {
+  return SPECIALITES.some((specialite) => specialite.slug === slug);
 }
 
 export function getMetier(slug: string): Metier | undefined {

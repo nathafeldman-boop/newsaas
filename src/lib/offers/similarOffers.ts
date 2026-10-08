@@ -1,7 +1,7 @@
 import { createPublicClient } from "@/lib/supabase/public";
 import { PUBLIC_OFFER_COLUMNS, type PublicOfferRow } from "@/lib/offers/fetchPublicOffers";
 import { getCitySegments, getSectorSegments, normalizeCityKey, slugify, type CitySegment, type Segment } from "@/lib/offers/segments";
-import { classifyFormations, classifyMetier } from "@/lib/seo/metiers";
+import { classifyFormations, classifyMetier, classifySpecialites } from "@/lib/seo/metiers";
 import { cityPhrase, getProgrammaticIndex, type SegmentStats } from "@/lib/seo/programmaticIndex";
 import { departementFromLocation, getDepartement, regionOfDepartement } from "@/lib/seo/departements";
 import { departementPath, fetchOffersByIds } from "@/lib/seo/programmaticPage";
@@ -81,10 +81,14 @@ async function getProgrammaticLinks(
       [comboStats, depMetierStats, city, regionMetierStats, depStats, metierStats].flatMap((stats) => stats?.ids ?? []),
     ),
   ].filter((id) => id !== offer.id);
-  // Le diplôme le plus précis d'abord ("BTS MCO" avant "BTS", "CAP AEPE"
-  // avant "CAP").
-  const formations = classifyFormations(offer.title)
-    .sort((a, b) => Number(GENERIC_FORMATIONS.has(a.slug)) - Number(GENERIC_FORMATIONS.has(b.slug)))
+  // Spécialité d'abord (« préparateur en pharmacie »), puis le diplôme le
+  // plus précis ("BTS MCO" avant "BTS", "CAP AEPE" avant "CAP").
+  const formations = [
+    ...classifySpecialites(offer.title),
+    ...classifyFormations(offer.title).sort(
+      (a, b) => Number(GENERIC_FORMATIONS.has(a.slug)) - Number(GENERIC_FORMATIONS.has(b.slug)),
+    ),
+  ]
     .map((formation) => {
       const combo = city ? index.combos[`${formation.slug}/${city.slug}`] : undefined;
       if (combo && city) {

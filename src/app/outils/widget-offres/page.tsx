@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { CONTACT_EMAIL, SITE_URL } from "@/lib/site";
 import { cityPhrase, getProgrammaticIndex } from "@/lib/seo/programmaticIndex";
-import { METIERS, isFormation } from "@/lib/seo/metiers";
+import { LISTED_METIERS } from "@/lib/seo/metiers";
 import { WidgetBuilder } from "@/components/widget/WidgetBuilder";
 
 // Pour les écoles, CFA, BDE et sites étudiants : les offres d'alternance ou
@@ -26,7 +26,7 @@ export default async function WidgetOffersPage() {
       .slice(0, TOP_CITIES)
       .map((c) => ({ slug: c.slug, label: c.label, phrase: cityPhrase(c.label) }))
       .sort((a, b) => a.label.localeCompare(b.label, "fr"));
-  const metiers = METIERS.filter((m) => !isFormation(m.slug))
+  const metiers = LISTED_METIERS
     .map((m) => ({ slug: m.slug, label: m.label.charAt(0).toUpperCase() + m.label.slice(1) }))
     .sort((a, b) => a.label.localeCompare(b.label, "fr"));
 
