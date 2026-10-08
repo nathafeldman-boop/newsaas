@@ -7,7 +7,20 @@ import Link from "next/link";
 // France Travail) : rien ne s'interpose avant. Quand la personne revient
 // sur l'onglet Stageio, un encart lui propose de créer son profil pour les
 // offres suivantes.
-export function ApplyButton({ href, followUp, signupHref }: { href: string; followUp: string; signupHref: string }) {
+// `compact` : version en haut de fiche, sous le titre (les descriptions
+// France Travail font jusqu'à 4 000 caractères : sur téléphone, le bouton du
+// bas est loin).
+export function ApplyButton({
+  href,
+  followUp,
+  signupHref,
+  compact = false,
+}: {
+  href: string;
+  followUp: string;
+  signupHref: string;
+  compact?: boolean;
+}) {
   const [clicked, setClicked] = useState(false);
   return (
     <>
@@ -15,8 +28,8 @@ export function ApplyButton({ href, followUp, signupHref }: { href: string; foll
         href={href}
         target="_blank"
         rel="noopener nofollow"
-        className="btn btn-primary btn-block"
-        style={{ marginTop: 24 }}
+        className={compact ? "btn btn-primary" : "btn btn-primary btn-block"}
+        style={{ marginTop: compact ? 16 : 24, ...(compact ? { alignSelf: "flex-start" } : {}) }}
         onClick={() => setClicked(true)}
       >
         Postuler à cette offre

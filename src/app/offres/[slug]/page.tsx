@@ -396,6 +396,9 @@ export default async function PublicOfferPage({
   const links = await getOfferContextLinks(offer);
   const crumbs = breadcrumbItems(offer, links);
   const signupLink = offerSignupHref(offer);
+  const applyFollowUp = `Une seule candidature suffit rarement : crée ton profil gratuit en 1 minute et swipe les autres offres${
+    links.market ? ` «\u00a0${links.market.label}\u00a0»` : ""
+  } dès leur publication.`;
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-10 sm:px-9">
@@ -434,6 +437,12 @@ export default async function PublicOfferPage({
           {offer.remote_policy && <span className="tag tag-neutral">🏠 {offer.remote_policy}</span>}
         </div>
 
+        {offer.apply_url && (
+          <div>
+            <ApplyButton href={offer.apply_url} signupHref={signupLink} followUp={applyFollowUp} compact />
+          </div>
+        )}
+
         <h2 style={{ fontSize: 16, margin: "24px 0 8px" }}>Description</h2>
         <p style={{ fontSize: 14, whiteSpace: "pre-line" }}>{offer.description}</p>
 
@@ -448,9 +457,7 @@ export default async function PublicOfferPage({
           <ApplyButton
             href={offer.apply_url}
             signupHref={signupLink}
-            followUp={`Une seule candidature suffit rarement : crée ton profil gratuit en 1 minute et swipe les autres offres${
-              links.market ? ` «\u00a0${links.market.label}\u00a0»` : ""
-            } dès leur publication.`}
+            followUp={applyFollowUp}
           />
         )}
         <p style={{ fontSize: 13, margin: "10px 0 0", textAlign: "center" }}>
