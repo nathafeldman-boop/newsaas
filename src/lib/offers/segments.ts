@@ -286,10 +286,26 @@ async function fetchSegmentPage(filter: (query: SegmentQuery) => SegmentQuery, k
 
 type SegmentQuery = ReturnType<ReturnType<ReturnType<typeof createPublicClient>["from"]>["select"]>;
 
+// En cache 1 h par page (comme les segments eux-mêmes) : la base n'est
+// interrogée qu'une fois par heure et par page au lieu de chaque visite.
+// /offres/ville a encore dépassé le délai du rôle anon le 08/10 (17 h 52,
+// 21 h 39 UTC) ; l'index qui règle le fond est proposé dans SEO_ROADMAP.md.
+// Une erreur n'est pas mise en cache.
+const cachedSegmentPage = unstable_cache(
+  (column: "sector" | "location", values: string[], knownCount: number, page: number) =>
+    fetchSegmentPage(
+      (query) => (column === "sector" ? query.eq("sector", values[0]) : query.in("location", values)),
+      knownCount,
+      page,
+    ),
+  ["offers-segment-page-v1"],
+  { revalidate: SEGMENTS_REVALIDATE_SECONDS },
+);
+
 export async function fetchOffersForSector(segment: Segment, page: number) {
-  return fetchSegmentPage((query) => query.eq("sector", segment.label), segment.count, page);
+  return cachedSegmentPage("sector", [segment.label], segment.count, page);
 }
 
 export async function fetchOffersForCity(segment: CitySegment, page: number) {
-  return fetchSegmentPage((query) => query.in("location", segment.locations), segment.count, page);
+  return cachedSegmentPage("location", segment.locations, segment.count, page);
 }
