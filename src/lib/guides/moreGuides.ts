@@ -3025,9 +3025,9 @@ export const MORE_GUIDES: Guide[] = [
   },
   {
     slug: "stage-de-seconde",
-    title: "Stage de seconde 2027 : comment le trouver (et le réussir)",
+    title: "Stage de seconde 2026-2027 : dates, comment le trouver et le réussir",
     metaDescription:
-      "Le stage de seconde est obligatoire : 2 semaines d'observation du 14 au 25 juin 2027 pour tous les élèves de seconde générale et technologique. Où chercher, comment demander, quoi écrire, et les règles.",
+      "Stage de seconde 2026-2027 : obligatoire, 2 semaines d'observation du 14 au 25 juin 2027 pour tous les élèves de seconde générale et technologique. Où chercher, comment demander, quoi écrire, et les règles.",
     publishedAt: "2026-10-07",
     updatedAt: "2026-10-07",
     related: ["stage-de-3e", "candidature-spontanee-alternance", "mail-candidature-stage-alternance", "premier-jour-en-entreprise"],
