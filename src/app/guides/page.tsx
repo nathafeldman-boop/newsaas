@@ -4,9 +4,8 @@ import { GUIDE_CATEGORIES, GUIDES, getGuide } from "@/lib/guides/guidesData";
 import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Guides alternance et stage",
-  description:
-    "Tous nos guides pour trouver une alternance ou un stage : calendrier, CV, lettre de motivation, entretien, contrat, salaire, gratification et aides 2026.",
+  title: `Guides alternance et stage 2026 : ${GUIDES.length} guides gratuits`,
+  description: `${GUIDES.length} guides gratuits pour trouver une alternance ou un stage : calendrier, Parcoursup, CV, lettre de motivation, entretien, contrat, salaire, gratification et aides 2026.`,
   alternates: { canonical: `${SITE_URL}/guides` },
 };
 
@@ -27,7 +26,8 @@ export default function GuidesIndexPage() {
     <div className="mx-auto max-w-2xl px-5 py-10 sm:px-9">
       <h1 style={{ fontSize: 28, margin: 0 }}>Guides alternance et stage</h1>
       <p style={{ fontSize: 14, margin: "8px 0 0" }}>
-        Tout ce qu&apos;il faut savoir pour trouver et réussir une alternance ou un stage.
+        {GUIDES.length} guides pour trouver et réussir une alternance ou un stage, avec les règles 2026 vérifiées sur
+        les sources officielles.
       </p>
 
       {sections().map((section) => (
