@@ -17,6 +17,7 @@ import {
   type AgeBracket,
 } from "@/lib/salary/legalRates";
 import { SITE_URL } from "@/lib/site";
+import { signupHref } from "@/lib/signup/intent";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { getProgrammaticIndex, type ProgrammaticIndex } from "@/lib/seo/programmaticIndex";
 import { getMetier, isFormation } from "@/lib/seo/metiers";
@@ -349,7 +350,7 @@ export default async function SalarySimulatorPage() {
           profil. Tu swipes, tu candidates.
         </p>
         <div className="flex flex-wrap gap-3">
-          <Link href="/inscription" className="btn btn-primary">
+          <Link href={signupHref({ type: "alternance" })} className="btn btn-primary">
             Créer mon compte gratuitement
           </Link>
           <Link href="/offres/alternance" className="btn btn-secondary">
