@@ -1,6 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { compactGroup, expandGroup, fitCacheBudget, idEncoder, unpackIdTable, type Compacted } from "@/lib/seo/compactIds";
-import { createPublicClient, fetchAllRows } from "@/lib/supabase/public";
+import { byPublishedDescThenId, createPublicClient, fetchAllRowsByIdCursor } from "@/lib/supabase/public";
 import { NOT_A_CITY, normalizeCityKey, slugify, titleCase } from "@/lib/offers/segments";
 import { PUBLIC_OFFERS_PAGE_SIZE } from "@/lib/offers/fetchPublicOffers";
 import { classifyMetier } from "@/lib/seo/metiers";
@@ -179,16 +179,15 @@ export function buildCompanyIndex(rows: Row[], now = Date.now()): CompanyIndex {
 
 async function computeCompanyIndex(): Promise<CompanyIndex> {
   const supabase = createPublicClient();
-  const rows = await fetchAllRows<Row>((from, to) =>
-    supabase
+  const rows = await fetchAllRowsByIdCursor<Row>((afterId, limit) => {
+    let query = supabase
       .from("offers")
       .select("id, title, company, location, contract_type, salary, published_at, source")
-      .eq("is_active", true)
-      .order("published_at", { ascending: false })
-      .order("id")
-      .range(from, to),
-  );
-  return buildCompanyIndex(rows);
+      .eq("is_active", true);
+    if (afterId) query = query.gt("id", afterId);
+    return query.order("id").limit(limit);
+  });
+  return buildCompanyIndex(rows.sort(byPublishedDescThenId));
 }
 
 type CompactCompanyIndex = Omit<CompanyIndex, "companies"> & { companies: Record<string, Compacted<CompanyEntry>>; idTable: string[] };

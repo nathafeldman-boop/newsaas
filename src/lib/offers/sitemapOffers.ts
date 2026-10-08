@@ -1,4 +1,4 @@
-import { createPublicClient, fetchAllRows } from "@/lib/supabase/public";
+import { createPublicClient, fetchAllRows, fetchAllRowsByIdCursor } from "@/lib/supabase/public";
 import { offerPath } from "@/lib/offers/publicUrl";
 import { SITEMAP_MAX_URLS, type SitemapEntry } from "@/lib/seo/sitemapXml";
 import type { ContractType, Offer } from "@/types/database";
@@ -20,18 +20,16 @@ function toEntry(offer: Row): OfferSitemapEntry {
 // requête et ne recevait en réalité que 1000 offres sur ~5 000.
 export async function fetchOfferSitemapEntries(type: ContractType): Promise<OfferSitemapEntry[]> {
   const supabase = createPublicClient();
-  const rows = await fetchAllRows<Row>(
-    (from, to) =>
-      supabase
-        .from("offers")
-        .select("id, title, company, location, published_at, created_at")
-        .eq("is_active", true)
-        .eq("contract_type", type)
-        .neq("source", "adzuna")
-        .order("id")
-        .range(from, to),
-    SITEMAP_MAX_URLS,
-  );
+  const rows = await fetchAllRowsByIdCursor<Row>((afterId, limit) => {
+    let query = supabase
+      .from("offers")
+      .select("id, title, company, location, published_at, created_at")
+      .eq("is_active", true)
+      .eq("contract_type", type)
+      .neq("source", "adzuna");
+    if (afterId) query = query.gt("id", afterId);
+    return query.order("id").limit(limit);
+  }, SITEMAP_MAX_URLS);
   return rows.map(toEntry);
 }
 

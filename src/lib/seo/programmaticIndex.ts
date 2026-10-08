@@ -1,6 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { compactGroup, expandGroup, fitCacheBudget, idEncoder, unpackIdTable, type Compacted } from "@/lib/seo/compactIds";
-import { createPublicClient, fetchAllRows } from "@/lib/supabase/public";
+import { byPublishedDescThenId, createPublicClient, fetchAllRowsByIdCursor } from "@/lib/supabase/public";
 import { NOT_A_CITY, normalizeCityKey, preferCityNamedInTitle, slugify, titleCase } from "@/lib/offers/segments";
 import { PUBLIC_OFFERS_PAGE_SIZE } from "@/lib/offers/fetchPublicOffers";
 import { classifyFormations, classifyMetier } from "@/lib/seo/metiers";
@@ -170,17 +170,17 @@ function finalize(acc: Accumulator): SegmentStats {
 
 async function computeIndex(type: ContractType): Promise<ProgrammaticIndex> {
   const supabase = createPublicClient();
-  const rows = await fetchAllRows<IndexRow>((from, to) =>
-    supabase
+  const rows = await fetchAllRowsByIdCursor<IndexRow>((afterId, limit) => {
+    let query = supabase
       .from("offers")
       .select("id, title, company, location, salary, published_at, source")
       .eq("is_active", true)
-      .eq("contract_type", type)
-      .order("published_at", { ascending: false })
-      .order("id")
-      .range(from, to),
-  );
-  return buildIndex(type, rows);
+      .eq("contract_type", type);
+    if (afterId) query = query.gt("id", afterId);
+    return query.order("id").limit(limit);
+  });
+  // buildIndex attend les offres de la plus récente à la plus ancienne.
+  return buildIndex(type, rows.sort(byPublishedDescThenId));
 }
 
 // Partie pure (testable sans base) : rows déjà triées du plus récent au

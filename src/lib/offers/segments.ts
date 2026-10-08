@@ -1,5 +1,5 @@
 import { unstable_cache } from "next/cache";
-import { createPublicClient, fetchAllRows } from "@/lib/supabase/public";
+import { createPublicClient, fetchAllRowsByIdCursor } from "@/lib/supabase/public";
 import type { PublicOfferRow } from "@/lib/offers/fetchPublicOffers";
 import { PUBLIC_OFFERS_PAGE_SIZE, PUBLIC_OFFER_COLUMNS, isPageOutOfRange } from "@/lib/offers/fetchPublicOffers";
 
@@ -37,15 +37,11 @@ export type CitySegment = Segment & { locations: string[] };
 
 async function computeSectorSegments(): Promise<Segment[]> {
   const supabase = createPublicClient();
-  const rows = await fetchAllRows<{ sector: string | null }>((from, to) =>
-    supabase
-      .from("offers")
-      .select("sector")
-      .eq("is_active", true)
-      .not("sector", "is", null)
-      .order("id")
-      .range(from, to),
-  );
+  const rows = await fetchAllRowsByIdCursor<{ id: string; sector: string | null }>((afterId, limit) => {
+    let query = supabase.from("offers").select("id, sector").eq("is_active", true).not("sector", "is", null);
+    if (afterId) query = query.gt("id", afterId);
+    return query.order("id").limit(limit);
+  });
 
   const counts = new Map<string, number>();
   for (const row of rows) {
@@ -157,9 +153,11 @@ export function preferCityNamedInTitle(location: string, title: string): string 
 
 async function computeCitySegments(): Promise<CitySegment[]> {
   const supabase = createPublicClient();
-  const rows = await fetchAllRows<{ location: string | null }>((from, to) =>
-    supabase.from("offers").select("location").eq("is_active", true).order("id").range(from, to),
-  );
+  const rows = await fetchAllRowsByIdCursor<{ id: string; location: string | null }>((afterId, limit) => {
+    let query = supabase.from("offers").select("id, location").eq("is_active", true);
+    if (afterId) query = query.gt("id", afterId);
+    return query.order("id").limit(limit);
+  });
 
   const bySlug = new Map<string, { label: string; count: number; locations: Set<string> }>();
   for (const row of rows) {

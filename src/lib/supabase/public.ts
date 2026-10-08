@@ -47,3 +47,40 @@ export async function fetchAllRows<T>(
   }
   return rows;
 }
+
+// Lecture complète du catalogue par curseur sur l'id (« les 1000 suivantes
+// après tel id ») plutôt que par décalage : avec .range(9000, 9999), la base
+// relit les 9000 premières lignes à chaque page, soit un coût qui croît
+// avec le carré du catalogue -- c'est ce qui dépassait le délai du rôle anon
+// au recalcul de l'index des pages (08/10, sans aucune synchro en cours).
+// Ici chaque ligne n'est lue qu'une fois. Pages lues l'une après l'autre
+// (chaque page dépend de la précédente) ; résultat trié par id.
+// `fetchPage` doit appliquer ses filtres, puis le filtre id > afterId quand
+// il est fourni, et trier par id croissant avec la limite donnée.
+export async function fetchAllRowsByIdCursor<T extends { id: string }>(
+  fetchPage: (afterId: string | null, limit: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>,
+  maxRows = 100_000,
+): Promise<T[]> {
+  const rows: T[] = [];
+  let afterId: string | null = null;
+  while (rows.length < maxRows) {
+    const { data, error } = await fetchPage(afterId, Math.min(POSTGREST_MAX_ROWS, maxRows - rows.length));
+    if (error) throw new Error(error.message);
+    if (!data || data.length === 0) break;
+    rows.push(...data);
+    if (data.length < POSTGREST_MAX_ROWS) break;
+    afterId = data[data.length - 1].id;
+  }
+  return rows;
+}
+
+// Même ordre que .order("published_at", { ascending: false }).order("id")
+// côté Postgres, pour les lectures par curseur qu'il faut ensuite trier du
+// plus récent au plus ancien (les uuid en hexadécimal se comparent comme
+// en base).
+export function byPublishedDescThenId(a: { id: string; published_at: string | null }, b: { id: string; published_at: string | null }): number {
+  const pa = a.published_at ?? "";
+  const pb = b.published_at ?? "";
+  if (pa !== pb) return pa < pb ? 1 : -1;
+  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+}
