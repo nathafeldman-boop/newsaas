@@ -8,6 +8,9 @@
 
 ## Le produit
 
+- Appli web : elle s'ouvre dans le navigateur du téléphone ou de l'ordinateur,
+  sans rien télécharger, et s'installe sur l'écran d'accueil du téléphone
+  comme une appli.
 - Inscription gratuite, onboarding en quelques étapes (secteurs visés,
   métiers recherchés, ville et mobilité, compétences, niveau d'études,
   disponibilité, type de contrat recherché — alternance et/ou stage).
