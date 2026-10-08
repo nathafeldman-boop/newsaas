@@ -287,7 +287,8 @@ export default async function SalarySimulatorPage() {
               {metiers.map((m, i) => (
                 <span key={m.slug}>
                   {i > 0 && ", "}
-                  <Link href={`/alternance/${m.slug}`}>{upperFirst(m.label)}</Link> ({formatEuros(m.median, 0)})
+                  <Link href={`/alternance/${m.slug}`}>{upperFirst(m.label)}</Link> ({formatEuros(m.median, 0)}
+                  {Math.abs(m.median - SMIC_MONTHLY_GROSS) < 5 ? ", le SMIC" : ""})
                 </span>
               ))}
               . Classement complet dans le{" "}
