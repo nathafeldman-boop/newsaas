@@ -163,7 +163,7 @@ Ce qui fait passer du bas au haut de la fourchette : les backlinks (aucun code n
 
 ## 8. Actions à faire par Nathan
 
-1. ✅ **Search Console** : en place depuis le lancement (site validé, sitemap envoyé, plus de 2 000 clics au 07/10). À faire : vérifier dans « Sitemaps » que les 7 sous-sitemaps sont lus, et suivre Requêtes / Pages (positions 5 à 20).
+1. ✅ **Search Console** : en place depuis le lancement (site validé, sitemap envoyé, plus de 2 000 clics au 07/10). À faire : vérifier dans « Sitemaps » que les 8 sous-sitemaps sont lus, et suivre Requêtes / Pages (positions 5 à 20).
 0. **⚠️ Prioritaire : ajouter `CRON_SECRET` dans Vercel** (voir section 9, 08/10) : aujourd'hui n'importe qui peut déclencher les crons, dont ceux qui envoient des e-mails.
 2. **Bing Webmaster Tools** : importer depuis Search Console (Bing alimente ChatGPT Search et Copilot).
 3. Vercel → Domains : rediriger `newsaas-seven.vercel.app` vers `www.stageio.fr` (optionnel, il est déjà en noindex).
@@ -177,6 +177,8 @@ Ce qui fait passer du bas au haut de la fourchette : les backlinks (aucun code n
 11. Envoyer le baromètre à 5-10 médias étudiants ou emploi (L'Étudiant, Studyrama, blogs de CFA, BDE) : chiffres exclusifs et reprise libre avec lien. C'est le moyen le plus rapide d'obtenir des backlinks.
 12. Parrainage : aujourd'hui il ne rapporte rien au parrain (badges seulement). Décider d'une vraie récompense (par ex. 1 semaine Premium offerte par ami inscrit) : décision de prix, je ne l'ai pas codée.
 13. Avis / témoignages (décision E) : uniquement de vrais utilisateurs, avec leur accord. Jamais de faux avis : c'est une pratique commerciale trompeuse (art. L121-2 du code de la consommation).
+14. Stripe : vérifier le client `cus_UzQA5SAz0U9rr6` (événements d'abonnement sans compte Stageio lié depuis le 01/10, voir section 9).
+15. Mesure : le tableau « par source » de `/admin` distingue maintenant les IA (chatgpt, perplexity, gemini, meta-ai, grok, deepseek, mistral) et inclut les inscriptions par Google. Le regarder chaque semaine pour voir ce qui rapporte des inscrits.
 
 ---
 
