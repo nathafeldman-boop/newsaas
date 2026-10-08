@@ -2,22 +2,7 @@ import { getMetier, METIERS, type Metier } from "@/lib/seo/metiers";
 import { INDEXABLE_MIN_OFFERS, getProgrammaticIndex, type ProgrammaticIndex, type SegmentStats } from "@/lib/seo/programmaticIndex";
 import { REGIONS, getDepartement, getRegionBySlug, regionOfDepartement, type Region } from "@/lib/seo/departements";
 import { findCompanies, getCompanyIndex } from "@/lib/seo/companyIndex";
-import {
-  OFFERS_OF,
-  OTHER_TYPE,
-  TYPE_LABEL,
-  capitalize,
-  departementPath,
-  freshAndSalary,
-  listCompanies,
-  lowerFirst,
-  plural,
-  regionPath,
-  salaryAnswer,
-  segmentPath,
-  type ProgrammaticModel,
-  type SegmentLink,
-} from "@/lib/seo/programmaticPage";
+import { OFFERS_OF, OTHER_TYPE, TYPE_LABEL, capitalize, departementPath, freshAndSalary, listCompanies, lowerFirst, plural, regionPath, salaryAnswer, segmentPath, type ProgrammaticModel, type SegmentLink, monthYear } from "@/lib/seo/programmaticPage";
 import type { ContractType } from "@/types/database";
 
 // Pages /alternance/region/[region] et /alternance/region/[region]/[metier] :
@@ -174,7 +159,7 @@ export function buildRegionModel(
     type,
     path,
     h1,
-    title: `${h1} : ${plural(stats.count, "offre")}`,
+    title: `${h1} : ${plural(stats.count, "offre")} en ${monthYear(index.generatedAt)}`,
     description: `${plural(stats.count, OFFERS_OF[type].replace("offres", "offre"), OFFERS_OF[type])}${domain} ${region.phrase} chez ${plural(stats.companyCount, "entreprise")}${companiesHint ? ` (${companiesHint}…)` : ""}${freshAndSalary(stats)} Mis à jour chaque jour.`,
     indexable: stats.count >= INDEXABLE_MIN_OFFERS,
     stats,

@@ -63,6 +63,12 @@ export function freshAndSalary(stats: SegmentStats): string {
   return `${fresh}.${salary}`;
 }
 
+// « octobre 2026 » (heure de Paris), pour les titres : sur une recherche
+// d'offres, le mois en cours dans le titre signale une liste à jour.
+export function monthYear(iso: string): string {
+  return new Date(iso).toLocaleDateString("fr-FR", { month: "long", year: "numeric", timeZone: "Europe/Paris" });
+}
+
 export function capitalize(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
@@ -303,7 +309,7 @@ export function buildProgrammaticModel(
     type,
     path: segmentPath(type, metier?.slug ?? null, city?.slug ?? null),
     h1,
-    title: `${h1} : ${plural(stats.count, "offre")}`,
+    title: `${h1} : ${plural(stats.count, "offre")} en ${monthYear(index.generatedAt)}`,
     description: `${plural(stats.count, OFFERS_OF[type].replace("offres", "offre"), OFFERS_OF[type])}${domain}${where} chez ${plural(stats.companyCount, "entreprise")}${companiesHint ? ` (${companiesHint}…)` : ""}${freshAndSalary(stats)} Mis à jour chaque jour.`,
     indexable: stats.count >= INDEXABLE_MIN_OFFERS,
     stats,

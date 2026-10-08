@@ -8,21 +8,7 @@ import {
 } from "@/lib/seo/programmaticIndex";
 import { DEPARTEMENTS, getDepartementBySlug, regionOfDepartement, type Departement } from "@/lib/seo/departements";
 import { findCompanies, getCompanyIndex } from "@/lib/seo/companyIndex";
-import {
-  OFFERS_OF,
-  OTHER_TYPE,
-  TYPE_LABEL,
-  capitalize,
-  departementPath,
-  freshAndSalary,
-  listCompanies,
-  lowerFirst,
-  plural,
-  salaryAnswer,
-  segmentPath,
-  type ProgrammaticModel,
-  type SegmentLink,
-} from "@/lib/seo/programmaticPage";
+import { OFFERS_OF, OTHER_TYPE, TYPE_LABEL, capitalize, departementPath, freshAndSalary, listCompanies, lowerFirst, plural, salaryAnswer, segmentPath, type ProgrammaticModel, type SegmentLink, monthYear } from "@/lib/seo/programmaticPage";
 import type { ContractType } from "@/types/database";
 
 // Pages /alternance/departement/[dep] et /alternance/departement/[dep]/[metier].
@@ -167,7 +153,7 @@ export function buildDepartementModel(
     type,
     path,
     h1,
-    title: `${h1} : ${plural(stats.count, "offre")}`,
+    title: `${h1} : ${plural(stats.count, "offre")} en ${monthYear(index.generatedAt)}`,
     description: `${plural(stats.count, OFFERS_OF[type].replace("offres", "offre"), OFFERS_OF[type])}${domain} ${dep.phrase} (${dep.code}) chez ${plural(stats.companyCount, "entreprise")}${companiesHint ? ` (${companiesHint}…)` : ""}${freshAndSalary(stats)} Mis à jour chaque jour.`,
     indexable: stats.count >= INDEXABLE_MIN_OFFERS,
     stats,
