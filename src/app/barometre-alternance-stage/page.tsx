@@ -291,6 +291,35 @@ export default async function BarometrePage() {
         </>
       )}
 
+      <h2 style={h2}>Le contexte national en {YEAR}</h2>
+      <p style={{ fontSize: 14, margin: "0 0 8px" }}>
+        Nos chiffres décrivent les offres en ligne. Pour les remettre en perspective, d&apos;après le baromètre de La
+        Bonne Alternance publié le 13 mai 2026 :
+      </p>
+      <ul style={{ fontSize: 14, lineHeight: 1.65, margin: 0, paddingLeft: 20, listStyle: "disc" }}>
+        <li>
+          les entrées en contrat d&apos;apprentissage ont reculé de 4,8 % en 2025, une première depuis la réforme de
+          2018 ;
+        </li>
+        <li>
+          au 1er trimestre 2026, la plateforme a reçu environ 320 000 candidatures, avec un pic en mars (+58 % sur un
+          an), pour un nombre d&apos;offres déposées presque stable ; les candidatures spontanées représentent 74 % des
+          démarches ;
+        </li>
+        <li>
+          dans l&apos;enseignement supérieur, les nouvelles entrées en apprentissage ont baissé de 12,4 % en janvier
+          2026 sur un an (chiffres de la DARES cités par le baromètre).
+        </li>
+      </ul>
+      <p style={{ fontSize: 13, margin: "8px 0 0" }}>
+        Source :{" "}
+        <a href="https://labonnealternance.apprentissage.beta.gouv.fr/barometre" target="_blank" rel="noopener">
+          baromètre La Bonne Alternance
+        </a>{" "}
+        (données de la plateforme, non exhaustives du marché). En clair : plus de candidats pour un peu moins de
+        places, d&apos;où l&apos;intérêt de postuler vite aux offres récentes et de soigner chaque candidature.
+      </p>
+
       {lead1 && (
         <div className="card elev-sm mt-8" style={{ padding: "var(--space-6)" }}>
           <h2 style={{ fontSize: 17, margin: "0 0 8px" }}>Citer ces chiffres</h2>
