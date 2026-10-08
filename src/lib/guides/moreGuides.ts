@@ -3649,12 +3649,18 @@ export const MORE_GUIDES: Guide[] = [
     metaDescription:
       "Tu ne trouves pas d'alternance ? Ce qui bloque (CV, ciblage, zone), les 3 mois au CFA sans entreprise, la rentrée décalée, le contrat pro : le plan concret pour signer ton contrat.",
     publishedAt: "2026-10-07",
-    updatedAt: "2026-10-07",
-    related: ["alternance-sans-entreprise", "candidature-spontanee-alternance", "sites-pour-trouver-une-alternance", "relancer-candidature"],
+    updatedAt: "2026-10-08",
+    related: ["alternance-sans-entreprise", "la-bonne-alternance", "candidature-spontanee-alternance", "sites-pour-trouver-une-alternance"],
     intro: [
       "Des dizaines de candidatures, peu de réponses, et la rentrée est passée ? Tu es loin d'être le seul. La bonne nouvelle : il reste du temps, et la plupart des blocages se corrigent. Voici comment trouver ce qui coince, puis le plan pour signer ton contrat.",
     ],
     sections: [
+      {
+        heading: "Ce n'est pas que toi : le marché est plus serré",
+        paragraphs: [
+          "Les entrées en apprentissage ont baissé de 4,8 % en 2025, une première depuis 2018, pendant que les candidatures explosent : La Bonne Alternance en a reçu 58 % de plus en mars 2026 qu'en mars 2025. Plus de candidats pour un peu moins de places, donc. Ce qui fait la différence aujourd'hui, ce n'est pas d'envoyer plus de CV identiques, c'est de mieux cibler et de personnaliser chaque candidature.",
+        ],
+      },
       {
         heading: "D'abord, trouve ce qui bloque",
         table: {
@@ -3730,6 +3736,7 @@ export const MORE_GUIDES: Guide[] = [
     sources: [
       { label: "Durée et dates du contrat d'apprentissage (Code du travail, L6222-7 à L6222-14, Légifrance)", url: "https://www.legifrance.gouv.fr/codes/id/LEGISCTA000006195910" },
       { label: "Contrat d'apprentissage (service-public.gouv.fr)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F2918" },
+      { label: "Baromètre La bonne alternance (13 mai 2026)", url: "https://labonnealternance.apprentissage.beta.gouv.fr/barometre" },
       { label: "La deuxième rentrée de l'alternance (L'Étudiant)", url: "https://www.letudiant.fr/alternance/alternance-et-apprentissage/la-deuxieme-rentree-de-l-alternance-12026.html" },
     ],
   },
