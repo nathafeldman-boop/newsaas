@@ -6,6 +6,38 @@ import { getGuide, GUIDES } from "@/lib/guides/guidesData";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { SITE_URL } from "@/lib/site";
 
+// Guides pour collégiens et lycéens (stage d'observation) : hors de la cible
+// de l'appli (18-25 ans), pas d'encart d'inscription au milieu du texte.
+const SCHOOL_GUIDES = new Set(["stage-de-3e", "stage-de-seconde"]);
+
+// Encart d'inscription glissé après la 2e section : la personne a déjà lu
+// de quoi juger le guide, et c'est souvent là qu'elle décroche.
+function GuideSignupNudge({ slug }: { slug: string }) {
+  const stage = /stage|convention|gratification|rapport|soutenance|attestation/.test(slug);
+  const alternance = /alternance|alternant|apprenti|contrat|cfa|bts|bachelor/.test(slug);
+  const [question, offers] =
+    stage && !alternance
+      ? ["Tu cherches un stage ?", "de stage"]
+      : alternance && !stage
+        ? ["Tu cherches une alternance ?", "d'alternance"]
+        : ["Tu cherches une alternance ou un stage ?", "d'alternance et de stage"];
+  return (
+    <aside
+      className="card mt-6"
+      style={{ padding: "var(--space-4)", background: "var(--color-accent-100)", color: "var(--color-accent-800)" }}
+    >
+      <p style={{ fontSize: 14, margin: 0 }}>
+        <strong>{question}</strong> Stageio réunit les offres {offers} de France Travail et d&apos;Adzuna, mises à jour
+        chaque jour. Crée ton profil gratuit : tu swipes celles qui te correspondent, triées selon ta ville et ton
+        métier.
+      </p>
+      <Link href="/inscription" className="btn btn-primary" style={{ alignSelf: "flex-start", marginTop: 8 }}>
+        Créer mon profil gratuit
+      </Link>
+    </aside>
+  );
+}
+
 export function generateStaticParams() {
   return GUIDES.map((g) => ({ slug: g.slug }));
 }
@@ -108,7 +140,7 @@ export default async function GuidePage({
           </p>
         ))}
 
-        {guide.sections.map((section) => (
+        {guide.sections.map((section, sectionIndex) => (
           <section key={section.heading} style={{ marginTop: 28 }}>
             <h2 style={{ fontSize: 18, margin: "0 0 10px" }}>{section.heading}</h2>
 
@@ -164,6 +196,7 @@ export default async function GuidePage({
                 </table>
               </div>
             )}
+            {sectionIndex === 1 && !SCHOOL_GUIDES.has(guide.slug) && <GuideSignupNudge slug={guide.slug} />}
           </section>
         ))}
 
@@ -234,7 +267,7 @@ export default async function GuidePage({
         <p style={{ fontSize: 14, margin: "0 0 12px" }}>
           Crée ton compte pour matcher avec des offres qui correspondent à ton profil.
         </p>
-        <Link href="/inscription" className="btn btn-secondary">
+        <Link href="/inscription" className="btn btn-primary">
           Créer mon compte gratuitement
         </Link>
       </div>
