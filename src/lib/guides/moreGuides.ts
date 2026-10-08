@@ -1994,11 +1994,11 @@ export const MORE_GUIDES: Guide[] = [
   },
   {
     slug: "stage-de-fin-d-etudes",
-    title: "Stage de fin d'études : comment le choisir pour décrocher un CDI",
+    title: "Stage de fin d'études 2027 : quand postuler et comment le choisir pour décrocher un CDI",
     metaDescription:
-      "Le stage de fin d'études est souvent ton premier pas vers un CDI. Comment choisir l'entreprise et les missions, quand chercher, et ce que dit la loi si tu es embauché après.",
+      "Stage de fin d'études en 2027 : les offres pour février et mars sortent dès l'automne. Quand postuler, comment choisir l'entreprise et les missions, et ce que dit la loi si tu es embauché après.",
     publishedAt: "2026-10-07",
-    updatedAt: "2026-10-07",
+    updatedAt: "2026-10-08",
     related: ["gratification-de-stage", "trouver-un-stage", "convention-de-stage"],
     intro: [
       "Le stage de fin d'études n'est pas un stage comme les autres : c'est souvent le dernier avant ton premier emploi, et beaucoup d'entreprises s'en servent comme période de recrutement. Bien le choisir peut te faire gagner des mois de recherche d'emploi.",
