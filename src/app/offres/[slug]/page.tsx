@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { offerRemovalDate } from "@/lib/offers/expiry";
-import { isJobPostingEligible } from "@/lib/seo/jobPosting";
+import { UNNAMED_EMPLOYER, isJobPostingEligible } from "@/lib/seo/jobPosting";
 import { departementFromLocation, getDepartement, getDepartementBySlug, getRegionBySlug } from "@/lib/seo/departements";
 import { cityPhrase, parseMonthlySalary } from "@/lib/seo/programmaticIndex";
 import { extractOfferId, offerPath, offerSlug } from "@/lib/offers/publicUrl";
@@ -83,7 +83,10 @@ function offerTitle(offer: Offer): string {
   const city = titleCase(normalizeCityKey(offer.location));
   const place = placePhrase(offer.location);
   const withCity = place && !normalizeForMatch(offer.title).includes(normalizeForMatch(city)) ? ` ${place}` : "";
-  return `${mentionsContract ? "" : `${CONTRACT_LABEL[offer.contract_type]} : `}${offer.title}${withCity} – ${offer.company}`;
+  // Employeur masqué (« Entreprise non communiquée », ~14 % des offres France
+  // Travail) : la mention prend de la place dans Google sans rien apprendre.
+  const company = UNNAMED_EMPLOYER.test(offer.company) ? "" : ` – ${offer.company}`;
+  return `${mentionsContract ? "" : `${CONTRACT_LABEL[offer.contract_type]} : `}${offer.title}${withCity}${company}`;
 }
 
 // "à Lyon", "au Havre", mais "dans le Rhône" ou "en Bretagne" quand l'offre
