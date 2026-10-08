@@ -376,6 +376,7 @@ export const MORE_GUIDES: Guide[] = [
         heading: "Ce qu'il faut mettre dans l'introduction",
         paragraphs: [
           "Présente le contexte (ta formation, pourquoi ce stage), l'entreprise en une ou deux phrases, ta mission principale et, si ton école le demande, la problématique. Termine par l'annonce du plan.",
+          "Exemple à adapter : « Dans le cadre de ma deuxième année de [formation] à [établissement], j'ai effectué un stage de [durée] au sein de [entreprise], [activité en une phrase], du [date] au [date]. J'ai rejoint le service [nom], où ma mission principale était de [mission]. Ce stage m'a amené(e) à me demander [problématique, si demandée]. Après avoir présenté l'entreprise et mon service, je décrirai mes missions, puis je ferai le bilan de ce que ce stage m'a appris. »",
         ],
       },
       {
@@ -388,6 +389,13 @@ export const MORE_GUIDES: Guide[] = [
         heading: "Le bilan : ce qui fait la différence",
         paragraphs: [
           "C'est la partie la plus lue. Montre ce que tu as appris (compétences techniques et relationnelles), les difficultés rencontrées et comment tu les as gérées, et ce que ce stage change pour ton projet professionnel.",
+        ],
+      },
+      {
+        heading: "La conclusion : un exemple",
+        paragraphs: [
+          "Résume ce que tu as fait et appris, réponds à ta problématique si tu en avais une, puis ouvre sur ton projet professionnel. Par exemple :",
+          "« Ce stage chez [entreprise] m'a permis de [mission principale] et de développer [deux compétences précises]. J'ai notamment appris à [apprentissage concret], ce qui m'a conforté(e) dans mon envie de [projet : poursuite d'études, métier visé]. L'an prochain, je souhaite [suite concrète : alternance, spécialisation, stage dans tel domaine]. »",
         ],
       },
       {
