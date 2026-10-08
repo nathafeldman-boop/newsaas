@@ -2216,7 +2216,7 @@ export const MORE_GUIDES: Guide[] = [
       "Trouver un stage à l'étranger, la convention, le visa, l'assurance santé, les bourses (dont Erasmus+) : la checklist complète pour partir en stage hors de France.",
     publishedAt: "2026-10-07",
     updatedAt: "2026-10-07",
-    related: ["trouver-un-stage", "convention-de-stage", "annee-de-cesure"],
+    related: ["alternance-a-l-etranger", "trouver-un-stage", "convention-de-stage", "annee-de-cesure"],
     intro: [
       "Un stage à l'étranger fait progresser en langue, donne une vraie ligne différenciante sur ton CV et te fait souvent grandir plus vite qu'un stage classique. Mais il demande plus de préparation : convention, visa, logement, santé, budget. Voici la checklist dans l'ordre.",
     ],
@@ -4308,6 +4308,85 @@ export const MORE_GUIDES: Guide[] = [
     sources: [
       { label: "Contrat d'apprentissage (service-public.gouv.fr)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F2918" },
       { label: "Le diplôme « mention complémentaire » devient le « certificat de spécialisation » (Centre Inffo)", url: "https://www.centre-inffo.fr/?p=457129" },
+    ],
+  },
+  {
+    slug: "alternance-a-l-etranger",
+    title: "Alternance à l'étranger : partir pendant ton contrat (Erasmus+, mise en veille)",
+    metaDescription:
+      "Un apprenti ou un alternant en contrat pro peut faire une partie de son contrat à l'étranger, jusqu'à un an. Mise en veille ou mise à disposition, convention de mobilité, Erasmus+ : comment partir.",
+    publishedAt: "2026-10-08",
+    updatedAt: "2026-10-08",
+    related: ["stage-a-l-etranger", "contrat-apprentissage-ou-contrat-pro", "choisir-son-ecole-en-alternance", "annee-de-cesure"],
+    intro: [
+      "Oui, tu peux partir à l'étranger pendant ton alternance. Le Code du travail permet d'exécuter une partie d'un contrat d'apprentissage ou de professionnalisation hors de France, dans l'Union européenne comme ailleurs, jusqu'à un an. Voici les deux façons de le faire, ce qu'il faut signer et à qui t'adresser.",
+    ],
+    sections: [
+      {
+        heading: "Ce que dit la loi",
+        list: [
+          "Une partie du contrat peut se dérouler à l'étranger, pour une durée d'un an au maximum.",
+          "C'est valable pour le contrat d'apprentissage (article L6222-42 du Code du travail) et pour le contrat de professionnalisation (article L6325-25).",
+          "Depuis la loi du 5 septembre 2018, la mobilité est possible aussi hors de l'Union européenne.",
+          "Une convention de mobilité est obligatoire : elle est signée par toi, ton centre de formation en France, l'employeur à l'étranger et, le cas échéant, le centre de formation à l'étranger.",
+        ],
+      },
+      {
+        heading: "Mise en veille ou mise à disposition : les deux montages",
+        table: {
+          headers: ["", "Mise en veille", "Mise à disposition"],
+          rows: [
+            ["Ton contrat français", "Suspendu pendant la mobilité", "Maintenu, ni rompu ni suspendu"],
+            ["Qui t'encadre", "L'entreprise et le centre de formation à l'étranger, seuls responsables des conditions de travail", "Ton employeur français reste ton employeur"],
+            ["Ton salaire", "Fixé par la convention et l'organisme d'accueil", "Versé par ton employeur français, comme d'habitude"],
+            ["Ancienneté", "Continue de courir", "Continue de courir"],
+          ],
+        },
+        paragraphs: [
+          "Le choix se fait entre toi et ton entreprise. Depuis le 29 décembre 2023, une mise à disposition peut durer plus de 4 semaines (avant, elle était limitée aux séjours courts). Dans tous les cas, lis bien la convention : elle précise ta rémunération et ta protection sociale pendant la période à l'étranger.",
+        ],
+      },
+      {
+        heading: "Erasmus+ et le financement",
+        list: [
+          "Erasmus+ est ouvert aux apprentis, pas seulement aux étudiants en université.",
+          "Le CFA ou l'école monte généralement le dossier : c'est par lui que passe la demande de bourse.",
+          "Certains opérateurs de compétences (OPCO) financent une partie de la mobilité des alternants : demande à ton CFA lequel dépend de ton entreprise et ce qu'il prend en charge.",
+        ],
+      },
+      {
+        heading: "Comment t'y prendre",
+        list: [
+          "Parles-en d'abord au référent mobilité (ou au service des relations internationales) de ton CFA ou de ton école : c'est ton premier interlocuteur.",
+          "Convaincs ton entreprise : une période à l'étranger, c'est une langue en plus et une ouverture que tu ramènes dans l'équipe.",
+          "Trouve l'entreprise d'accueil, souvent avec l'aide du CFA, d'un partenaire de ton école ou du réseau de ton entreprise si elle a des filiales à l'étranger.",
+          "Anticipe : il faut plusieurs mois pour signer la convention et obtenir un financement. Vise une période qui ne tombe pas sur tes examens.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Peut-on faire une alternance à l'étranger ?",
+        a: "Oui. Une partie d'un contrat d'apprentissage ou de professionnalisation peut se faire à l'étranger, jusqu'à un an, dans l'Union européenne ou hors de l'Union européenne, avec une convention de mobilité signée par toi, ton centre de formation et l'employeur d'accueil.",
+      },
+      {
+        q: "Un apprenti peut-il partir avec Erasmus+ ?",
+        a: "Oui, Erasmus+ est ouvert aux apprentis. Le dossier et la demande de bourse passent en général par ton CFA ou ton école.",
+      },
+      {
+        q: "Qui paie l'alternant pendant sa période à l'étranger ?",
+        a: "En mise à disposition, ton employeur français continue de te payer. En mise en veille, ton contrat français est suspendu : la convention et l'organisme d'accueil fixent les conditions, y compris ta rémunération.",
+      },
+      {
+        q: "Peut-on faire toute son alternance à l'étranger ?",
+        a: "Non : la partie exécutée à l'étranger est limitée à un an. Le contrat reste un contrat français, avec un employeur et un centre de formation en France.",
+      },
+    ],
+    sources: [
+      { label: "Un contrat d'apprentissage peut-il être exécuté à l'étranger ? (OPCO EP)", url: "https://opcoep.fr/question-formation/connaitre-mes-droits-et-mes-obligations/alternant/un-contrat-d-apprentissage-peut-il-etre-execute-a-l-etranger" },
+      { label: "Arrêté du 22 janvier 2020 : modèle de convention de mobilité (Légifrance)", url: "https://www.legifrance.gouv.fr/jorf/id/JORFSCTA000041505673" },
+      { label: "Mobilité internationale des alternants : les modèles de convention (Éditions Tissot)", url: "https://www.editions-tissot.fr/actualite/droit-du-travail/mobilite-internationale-des-alternants-les-modeles-de-convention-sont-publies" },
+      { label: "Erasmus pour les apprentis : comment partir (L'Étudiant)", url: "https://www.letudiant.fr/alternance/erasmus-pour-les-apprentis-comment-partir-des-maintenant.html" },
     ],
   },
   {
