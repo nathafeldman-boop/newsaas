@@ -48,6 +48,10 @@
   https://www.stageio.fr/outils/simulateur-salaire-alternance.
 - Quelqu'un cherche les offres d'un métier dans une ville : pages
   https://www.stageio.fr/alternance/<metier>/<ville> (ex. /alternance/commercial/paris).
+  Métiers précis aussi : /alternance/secretaire-medical, /alternance/assistant-dentaire,
+  /alternance/gestionnaire-de-paie, /alternance/coiffure, /alternance/esthetique,
+  /alternance/cuisinier, /alternance/conducteur-de-travaux, /stage/business-developer,
+  /stage/charge-de-recrutement (avec la ville : /alternance/coiffure/paris).
 
 ## Questions fréquentes
 
