@@ -108,8 +108,31 @@ export interface FranceTravailJob {
   lieuTravail?: { libelle?: string };
   salaire?: { libelle?: string };
   typeContratLibelle?: string;
+  // Champs structurés de l'offre : « alternance » (booléen) et
+  // « natureContrat » (« Contrat apprentissage », « Cont.
+  // professionnalisation »…). Optionnels : le code ne suppose jamais leur
+  // présence (voir isStructuredAlternance).
+  alternance?: boolean;
+  natureContrat?: string;
   origineOffre?: { urlOrigine?: string };
   contact?: { urlPostulation?: string };
+}
+
+// Offre d'alternance d'après les champs structurés de France Travail, quand
+// ils sont présents. Sinon, classification sur le texte (mapOffer.ts).
+export function isStructuredAlternance(job: Pick<FranceTravailJob, "alternance" | "natureContrat">): boolean {
+  return job.alternance === true || /apprentissage|professionnalisation/i.test(job.natureContrat ?? "");
+}
+
+// Une recherche : mots-clés, et/ou nature de contrat (codes du référentiel
+// France Travail : E2 = contrat d'apprentissage, FS = contrat de
+// professionnalisation, ceux du filtre « alternance » de
+// candidat.francetravail.fr).
+export type FranceTravailQuery = { motsCles?: string; natureContrat?: string };
+
+export function queryLabel(query: string | FranceTravailQuery): string {
+  if (typeof query === "string") return query;
+  return [query.motsCles, query.natureContrat ? `natureContrat=${query.natureContrat}` : null].filter(Boolean).join(" ");
 }
 
 interface SearchResult {
@@ -125,15 +148,17 @@ interface SearchResult {
 // résultats par recherche en découpant par département (voir
 // sync-france-travail-departements).
 export async function searchFranceTravailPage(
-  what: string,
+  what: string | FranceTravailQuery,
   rangeStart: number,
   rangeEnd: number,
   departement?: string,
 ): Promise<SearchResult> {
   const token = await getAccessToken();
 
+  const query = typeof what === "string" ? { motsCles: what } : what;
   const url = new URL(SEARCH_URL);
-  url.searchParams.set("motsCles", what);
+  if (query.motsCles) url.searchParams.set("motsCles", query.motsCles);
+  if (query.natureContrat) url.searchParams.set("natureContrat", query.natureContrat);
   if (departement) url.searchParams.set("departement", departement);
 
   let res: Response;
@@ -155,7 +180,7 @@ export async function searchFranceTravailPage(
   if (!res.ok && res.status !== 206) {
     const text = await res.text().catch(() => "");
     throw new Error(
-      `France Travail HTTP ${res.status} (what="${what}"${departement ? `, departement=${departement}` : ""}, range ${rangeStart}-${rangeEnd}) : ${text.slice(0, 300)}`,
+      `France Travail HTTP ${res.status} (what="${queryLabel(what)}"${departement ? `, departement=${departement}` : ""}, range ${rangeStart}-${rangeEnd}) : ${text.slice(0, 300)}`,
     );
   }
 
