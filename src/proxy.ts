@@ -72,16 +72,29 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
     });
   }
 
+  // Seules les ouvertures de page comptent comme visite. Next précharge en
+  // arrière-plan les liens visibles à l'écran (un hub de 150 liens = des
+  // dizaines de requêtes), et retire ses propres en-têtes de préchargement
+  // avant d'appeler ce proxy (FLIGHT_HEADERS) : on s'appuie donc sur
+  // l'en-tête du navigateur, « document » pour une page ouverte, « empty »
+  // pour les fetch du routeur (préchargements et navigations internes).
+  // Visiteurs distincts et sources inchangés (toute visite commence par une
+  // ouverture de page) ; sans en-tête (vieux navigateur), on compte.
+  const fetchDest = request.headers.get("sec-fetch-dest");
+  const isPageLoad = fetchDest === null || fetchDest === "document";
+
   // waitUntil (proxy tourne sur le runtime Node.js depuis Next 16) : la
   // navigation réelle ne doit jamais attendre ce log analytics, ni échouer
   // à cause de lui.
-  event.waitUntil(
-    logVisit(visitorId, request.nextUrl.pathname, request.headers.get("user-agent"), {
-      source: utmSource,
-      medium: utmMedium,
-      campaign: utmCampaign,
-    }),
-  );
+  if (isPageLoad) {
+    event.waitUntil(
+      logVisit(visitorId, request.nextUrl.pathname, request.headers.get("user-agent"), {
+        source: utmSource,
+        medium: utmMedium,
+        campaign: utmCampaign,
+      }),
+    );
+  }
 
   // Clic sur un lien d'affiliation (?aff=CODE) -- avant même l'inscription,
   // donc capturé ici plutôt que côté formulaire : fonctionne même si la
