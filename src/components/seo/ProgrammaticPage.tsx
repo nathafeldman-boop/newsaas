@@ -20,6 +20,7 @@ import { SITE_URL } from "@/lib/site";
 import { SMIC_MONTHLY_GROSS, formatEuros, internshipGratification, round2 } from "@/lib/salary/legalRates";
 import type { ContractType } from "@/types/database";
 import { METIER_GUIDES } from "@/lib/guides/contextGuides";
+import { HubEditorial } from "@/components/seo/HubEditorial";
 
 type RouteProps = {
   type: ContractType;
@@ -285,7 +286,7 @@ export async function hubMetadata(type: ContractType): Promise<Metadata> {
   const { index } = await getHubModel(type);
   const text = HUB_TEXT[type];
   return {
-    title: `${type === "alternance" ? "Alternance" : "Stage"} : ${index.total.toLocaleString("fr-FR")} offres par métier et par ville`,
+    title: `${type === "alternance" ? "Alternance" : "Stage"} ${new Date().getFullYear()} : ${index.total.toLocaleString("fr-FR")} offres par métier et par ville`,
     description: `${index.total.toLocaleString("fr-FR")} ${text.intro}. Commercial, RH, marketing, développeur… à Paris, Lyon, Lille et partout en France.`,
     alternates: { canonical: `${SITE_URL}/${type}` },
   };
@@ -309,8 +310,9 @@ export async function ProgrammaticHub({ type }: { type: ContractType }) {
       <LinkChips title="Par diplôme" links={formations} />
       <LinkChips title="Par région" links={regionLinks(index)} />
       <LinkChips title="Par département" links={departementLinks(index)} />
+      <HubEditorial type={type} />
       <p style={{ fontSize: 14, marginTop: 24 }}>
-        <Link href="/outils/simulateur-salaire-alternance">Simulateur de salaire</Link>
+        <Link href="/outils/simulateur-salaire-alternance">Salaire en alternance 2026</Link>
         {" · "}
         <Link href={type === "alternance" ? "/stage" : "/alternance"}>
           {type === "alternance" ? "Offres de stage par métier et par ville" : "Offres d'alternance par métier et par ville"}
