@@ -1,6 +1,6 @@
 # Être cité par ChatGPT, Gemini, Meta AI et Google
 
-*Préparé le 08/10/2026. À faire par Nathan ou Marceau : 5 à 10 envois par jour, un par un.*
+*Préparé le 08/10/2026 (6 cibles ajoutées l'après-midi). À faire par Nathan ou Marceau : 5 à 10 envois par jour, un par un.*
 
 ## Pourquoi c'est le levier n° 1 maintenant
 
@@ -36,6 +36,12 @@ Demander l'ajout de Stageio dans la liste. Le nom de l'auteur est en haut de l'a
 | 2 | Au Futur | https://aufutur.fr/etudes-superieures/trouver-alternance-rentree-ete/ |
 | 3 | digiSchool (stage) | https://www.digischool.fr/articles/orientation/stage/comment-trouver-stage/ |
 | 3 | Diplomeo (stage) | https://diplomeo.com/actualite-comment_trouver_un_stage |
+| 1 | NetworkGlue (« Alternance 2026 : top 10 des meilleurs sites ») | https://networkglue.fr/blog/meilleurs-sites-alternance-2026 |
+| 1 | France Apprentissage (« 22 sites pour trouver ») | https://www.franceapprentissage.fr/offres-dapprentissage-22-sites-pour-trouver-a-coup-sur/ |
+| 2 | Institut F2I (école, « meilleurs job boards 2026 ») | https://www.institut-f2i.fr/meilleurs-job-boards-decrocher-ton-alternance/ |
+| 2 | Vivalternance | https://vivalternance.fr/meilleures-plateformes-trouver-alternance/ |
+| 2 | LiveCampus (école, article 2025 à mettre à jour) | https://www.livecampus.fr/blog-post/les-meilleurs-jobboards-pour-trouver-son-alternance-en-2025 |
+| 3 | ISCIO (école) | https://www.iscio.net/meilleurs-exemples-trouver-son-alternance/ |
 
 ### B. Presse : l'angle « appli »
 
