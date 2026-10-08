@@ -19,6 +19,7 @@ import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { SITE_URL } from "@/lib/site";
 import { SMIC_MONTHLY_GROSS, formatEuros, internshipGratification, round2 } from "@/lib/salary/legalRates";
 import type { ContractType } from "@/types/database";
+import { METIER_GUIDES } from "@/lib/guides/contextGuides";
 
 type RouteProps = {
   type: ContractType;
@@ -84,15 +85,6 @@ const TYPE_GUIDES: Record<ContractType, { slug: string; label: string }[]> = {
 
 // Guide propre au métier ou au diplôme de la page, en tête de la liste (pages
 // métier, métier × ville, et leurs variantes département / région).
-const METIER_GUIDES: Record<string, { slug: string; label: string }> = {
-  "aide-soignant": { slug: "aide-soignant-alternance", label: "Aide-soignant en alternance (DEAS)" },
-  "educateur-specialise": { slug: "educateur-specialise-apprentissage", label: "Éducateur spécialisé en apprentissage" },
-  "affaires-publiques": { slug: "alternance-fonction-publique", label: "L'alternance dans la fonction publique" },
-  bts: { slug: "bts-bachelor-master-alternance", label: "BTS, bachelor ou master en alternance" },
-  bachelor: { slug: "bts-bachelor-master-alternance", label: "BTS, bachelor ou master en alternance" },
-  master: { slug: "bts-bachelor-master-alternance", label: "BTS, bachelor ou master en alternance" },
-};
-
 function pageGuides(type: ContractType, metier: string | undefined): { slug: string; label: string }[] {
   const own = type === "alternance" && metier ? METIER_GUIDES[metier] : undefined;
   return own ? [own, ...TYPE_GUIDES[type].filter((g) => g.slug !== own.slug)] : TYPE_GUIDES[type];

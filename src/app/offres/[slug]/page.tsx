@@ -16,6 +16,7 @@ import { SITE_URL } from "@/lib/site";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { ShareButtons } from "@/components/share/ShareButtons";
 import { ApplyButton } from "@/components/offers/ApplyButton";
+import { offerGuides } from "@/lib/guides/contextGuides";
 import type { Offer } from "@/types/database";
 
 // ISR : chaque fiche est rendue à la 1re visite puis servie depuis le cache
@@ -517,6 +518,15 @@ export default async function PublicOfferPage({
           {offer.contract_type === "alternance" ? "Simuler mon salaire d'alternant" : "Calculer ma gratification de stage"}
         </Link>
       </div>
+      <p style={{ fontSize: 13.5, margin: "14px 0 0" }}>
+        Guides utiles :{" "}
+        {offerGuides(offer.contract_type, offer.title).map((guide, i) => (
+          <span key={guide.slug}>
+            {i > 0 && " · "}
+            <Link href={`/guides/${guide.slug}`}>{guide.label}</Link>
+          </span>
+        ))}
+      </p>
 
       <div className="card elev-sm mt-6" style={{ padding: "var(--space-6)", textAlign: "center" }}>
         <p style={{ fontSize: 14, margin: "0 0 12px" }}>
