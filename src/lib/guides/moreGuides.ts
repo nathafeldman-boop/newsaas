@@ -169,6 +169,7 @@ export const MORE_GUIDES: Guide[] = [
       "Beaucoup d'entreprises prennent des alternants sans publier d'offre. Comment les repérer, à qui écrire et quoi envoyer, avec un modèle de mail de candidature spontanée.",
     publishedAt: "2026-10-06",
     updatedAt: "2026-10-06",
+    related: ["la-bonne-alternance", "mail-candidature-stage-alternance", "relancer-candidature", "je-ne-trouve-pas-d-alternance"],
     intro: [
       "Toutes les alternances ne sont pas publiées en ligne. Beaucoup d'entreprises, surtout les PME, accueillent des alternants chaque année sans jamais diffuser d'annonce. La candidature spontanée te permet d'arriver avant les autres, sans concurrence directe.",
     ],
@@ -3739,7 +3740,7 @@ export const MORE_GUIDES: Guide[] = [
       "La Bonne Alternance, France Travail, Indeed, HelloWork, LinkedIn, Welcome to the Jungle, JobTeaser, Stageio : ce que chaque site fait de mieux pour trouver ton alternance.",
     publishedAt: "2026-10-07",
     updatedAt: "2026-10-07",
-    related: ["je-ne-trouve-pas-d-alternance", "trouver-une-alternance", "trouver-alternance-linkedin", "candidature-spontanee-alternance"],
+    related: ["je-ne-trouve-pas-d-alternance", "la-bonne-alternance", "trouver-une-alternance", "candidature-spontanee-alternance"],
     intro: [
       "Il n'existe pas un seul bon site pour trouver une alternance : les offres sont éparpillées, et les meilleures opportunités ne sont pas toujours publiées. On est Stageio, donc on a un avis intéressé sur la question. Voici quand même, honnêtement, à quoi sert chaque site, et comment les combiner.",
     ],
@@ -3806,6 +3807,92 @@ export const MORE_GUIDES: Guide[] = [
     sources: [
       { label: "La bonne alternance : à propos (service public)", url: "https://labonnealternance.apprentissage.beta.gouv.fr/a-propos" },
       { label: "La bonne alternance avec France Travail", url: "https://www.francetravail.fr/candidat/vos-services-en-ligne/la-bonne-alternance.html" },
+    ],
+  },
+  {
+    slug: "la-bonne-alternance",
+    title: "La Bonne Alternance : comment s'en servir pour décrocher ton alternance (2026)",
+    metaDescription:
+      "La Bonne Alternance, le service public de l'alternance : offres, entreprises qui recrutent sans publier d'offre, candidature spontanée sans compte. Mode d'emploi, limites et ce qu'il faut ajouter.",
+    publishedAt: "2026-10-08",
+    updatedAt: "2026-10-08",
+    related: ["candidature-spontanee-alternance", "sites-pour-trouver-une-alternance", "je-ne-trouve-pas-d-alternance", "relancer-candidature"],
+    intro: [
+      "La Bonne Alternance est le service public en ligne pour trouver une alternance. Sa force : il ne montre pas seulement des offres, il repère aussi les entreprises qui ont de bonnes chances d'embaucher un alternant, même quand elles n'ont rien publié. Bien utilisé, c'est le meilleur outil pour les candidatures spontanées. Voici comment t'en servir, ses limites, et quoi faire à côté.",
+    ],
+    sections: [
+      {
+        heading: "C'est quoi, exactement ?",
+        paragraphs: [
+          "Le service a été lancé par Pôle emploi (aujourd'hui France Travail), repris en 2020 par la mission interministérielle pour l'apprentissage (communauté beta.gouv.fr), et il est édité depuis 2025 par la DGEFP, au ministère du Travail. Il est gratuit.",
+        ],
+        list: [
+          "Des offres d'alternance : celles déposées directement sur la plateforme, et celles qu'elle reprend de France Travail et de partenaires (HelloWork, Meteojob, sites carrières de grands groupes…).",
+          "Des entreprises « susceptibles de recruter » : elles n'ont pas publié d'offre, mais leurs recrutements passés montrent qu'elles embauchent des alternants. C'est là que se jouent les candidatures spontanées.",
+          "Des formations en apprentissage, si tu n'as pas encore ton école ou ton CFA.",
+        ],
+      },
+      {
+        heading: "Comment il choisit les entreprises",
+        paragraphs: [
+          "Chaque mois, un algorithme développé avec France Travail analyse les recrutements passés des entreprises (CDI, CDD et contrats en alternance) pour prédire celles qui ont des chances d'embaucher dans les mois qui viennent. France Travail indique en repérer environ 300 000 par mois. Les entreprises affichées tournent, pour que tous les candidats n'écrivent pas aux mêmes.",
+          "Retiens surtout ça : « susceptible de recruter » est une prédiction, pas une offre. Une entreprise de la liste peut très bien ne prendre personne cette année.",
+        ],
+      },
+      {
+        heading: "Le mode d'emploi en 6 étapes",
+        list: [
+          "Cherche par métier ou par diplôme visé, puis par ville, et élargis le rayon si tu peux te déplacer.",
+          "Traite à part les deux types de résultats : les offres (postule vite, elles partent) et les entreprises à démarcher (candidature spontanée).",
+          "Avant d'écrire à une entreprise, regarde ce qu'elle fait (son site, sa page LinkedIn) : 3 lignes qui montrent que tu la connais valent plus qu'une lettre type.",
+          "Envoie ton CV et ton message depuis la fiche quand le contact est disponible ; sinon, cherche l'adresse de candidature sur le site de l'entreprise.",
+          "Note chaque envoi dans un tableau (date, entreprise, contact) et relance une fois, une dizaine de jours après, si tu n'as pas de réponse.",
+          "Vise 5 à 10 candidatures soignées par semaine plutôt que 50 copiées-collées : les recruteurs repèrent tout de suite un message envoyé à tout le monde.",
+        ],
+      },
+      {
+        heading: "Ses limites, à connaître",
+        list: [
+          "Beaucoup de silences : une candidature spontanée n'appelle pas forcément de réponse. C'est normal, ce n'est pas un jugement sur toi.",
+          "Des fiches sans contact : il faut alors chercher toi-même la bonne personne.",
+          "Plus de monde sur les mêmes entreprises : d'après le baromètre de La Bonne Alternance (mai 2026), la plateforme a reçu 58 % de candidatures de plus en mars 2026 qu'en mars 2025, et les candidatures spontanées représentent 74 % des démarches. Dans le même temps, les entrées en apprentissage ont reculé de 4,8 % en 2025, une première depuis 2018. Se démarquer compte plus que jamais.",
+          "Une partie des offres vient d'autres sites : tu les retrouves aussi ailleurs, inutile de postuler deux fois.",
+        ],
+      },
+      {
+        heading: "Avec quoi la combiner",
+        list: [
+          "Une source d'offres que tu regardes chaque jour : France Travail, ou Stageio, qui réunit les offres de plusieurs sources par métier et par ville et te les fait parcourir en swipant.",
+          "LinkedIn pour le réseau : un message court à un recruteur ou à un ancien de ton école ouvre souvent plus de portes qu'une candidature de plus.",
+          "Ton école ou ton CFA : demande la liste de leurs entreprises partenaires.",
+          "Une lettre adaptée à chaque entreprise : notre générateur gratuit te donne une base à personnaliser en 2 minutes, et le générateur de CV sort un PDF propre d'une page.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "La Bonne Alternance est-elle gratuite ?",
+        a: "Oui, c'est un service public gratuit. Selon le service, il n'est pas nécessaire de créer un compte pour envoyer sa candidature.",
+      },
+      {
+        q: "Est-ce que les entreprises répondent vraiment ?",
+        a: "Pas toujours : une entreprise « susceptible de recruter » n'a pas forcément de poste ouvert. Personnalise chaque message, relance une fois une dizaine de jours après, et continue en parallèle à répondre à des offres publiées.",
+      },
+      {
+        q: "La Bonne Alternance ou Stageio ?",
+        a: "Les deux se complètent. La Bonne Alternance est imbattable pour trouver les entreprises à démarcher en candidature spontanée. Stageio sert à parcourir chaque jour les offres publiées de plusieurs sources, triées par métier et par ville, en swipant ; la consultation est gratuite.",
+      },
+      {
+        q: "Quel lien avec 1jeune1solution ?",
+        a: "1jeune1solution, le portail de l'État pour les jeunes, relaie une partie des offres de La Bonne Alternance. Tu peux chercher sur l'un ou l'autre.",
+      },
+    ],
+    sources: [
+      { label: "La bonne alternance : à propos", url: "https://labonnealternance.apprentissage.beta.gouv.fr/a-propos" },
+      { label: "La bonne alternance avec France Travail", url: "https://www.francetravail.fr/candidat/vos-services-en-ligne/la-bonne-alternance.html" },
+      { label: "Ministère du Travail : fiche La bonne alternance (2025)", url: "https://travail-emploi.gouv.fr/sites/travail-emploi/files/2025-01/LBA-2025.pdf" },
+      { label: "Baromètre La bonne alternance (13 mai 2026)", url: "https://labonnealternance.apprentissage.beta.gouv.fr/barometre" },
+      { label: "DREETS Nouvelle-Aquitaine : comparatif des plateformes (novembre 2025)", url: "https://nouvelle-aquitaine.dreets.gouv.fr/sites/nouvelle-aquitaine.dreets.gouv.fr/IMG/pdf/dossiers_comparatif_plateforme_041225.pdf" },
     ],
   },
   {
