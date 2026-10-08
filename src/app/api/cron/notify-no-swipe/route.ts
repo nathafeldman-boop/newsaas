@@ -19,6 +19,13 @@ export const maxDuration = 60;
 
 const REMINDER_DELAY_HOURS = 24;
 
+// Arrêt propre avant le maxDuration de 60 s : le 07/10, avec l'afflux
+// d'inscriptions, la boucle a été coupée net par Vercel (un profil pouvait
+// alors être marqué sans recevoir l'email). Les profils restants passent au
+// run suivant, les plus anciens d'abord. Envois toujours un par un (limite
+// de débit de Resend).
+const TIME_BUDGET_MS = 45_000;
+
 export async function GET(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
   if (secret) {
@@ -28,7 +35,8 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const cutoff = new Date(Date.now() - REMINDER_DELAY_HOURS * 3600 * 1000);
+  const startedAt = Date.now();
+  const cutoff = new Date(startedAt - REMINDER_DELAY_HOURS * 3600 * 1000);
   const admin = createAdminClient();
 
   const { data: profiles, error: profilesError } = await admin
@@ -38,7 +46,8 @@ export async function GET(request: NextRequest) {
     .is("no_swipe_reminder_sent_at", null)
     .is("search_completed_at", null)
     .lte("created_at", cutoff.toISOString())
-    .not("email", "is", null);
+    .not("email", "is", null)
+    .order("created_at", { ascending: true });
 
   if (profilesError) {
     return NextResponse.json({ error: profilesError.message }, { status: 500 });
@@ -51,7 +60,10 @@ export async function GET(request: NextRequest) {
   let skipped = 0;
   const errors: string[] = [];
 
+  let processed = 0;
   for (const profile of profiles ?? []) {
+    if (Date.now() - startedAt > TIME_BUDGET_MS) break;
+    processed++;
     try {
       const { count: swipeCount, error: swipeError } = await admin
         .from("swipes")
@@ -97,5 +109,8 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ profilesChecked: profiles?.length ?? 0, emailed, skipped, errors });
+  const summary = { profilesChecked: processed, remaining: (profiles?.length ?? 0) - processed, emailed, skipped, errors: errors.length };
+  console.log(`notify-no-swipe: ${JSON.stringify(summary)}`);
+  if (errors.length > 0) console.error(`notify-no-swipe errors: ${errors.slice(0, 10).join(" | ")}`);
+  return NextResponse.json({ ...summary, errors });
 }
