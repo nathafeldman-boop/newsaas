@@ -2982,11 +2982,11 @@ export const MORE_GUIDES: Guide[] = [
   },
   {
     slug: "attestation-de-stage",
-    title: "Attestation de stage : ce qu'elle contient et à quoi elle sert",
+    title: "Attestation de stage : modèle, contenu et à quoi elle sert",
     metaDescription:
-      "L'attestation de stage est obligatoire à la fin de chaque stage. Ce qu'elle doit indiquer, comment l'obtenir, et comment elle te permet de valider jusqu'à 2 trimestres de retraite.",
+      "L'attestation de stage est obligatoire à la fin de chaque stage. Un modèle à remplir, ce qu'elle doit indiquer, comment l'obtenir, et comment elle te permet de valider jusqu'à 2 trimestres de retraite.",
     publishedAt: "2026-10-07",
-    updatedAt: "2026-10-07",
+    updatedAt: "2026-10-08",
     related: ["convention-de-stage", "gratification-de-stage", "rapport-de-stage"],
     intro: [
       "À la fin de ton stage, l'entreprise doit te remettre une attestation de stage. Ce n'est pas un détail : ton école peut te la demander pour valider ton stage, elle prouve ton expérience sur ton CV, et elle te permet de faire compter ton stage pour ta retraite. Voici ce qu'elle contient et quoi en faire.",
@@ -3005,6 +3005,18 @@ export const MORE_GUIDES: Guide[] = [
           "Le nom et l'adresse de l'organisme d'accueil.",
           "Les dates de début et de fin, et la durée effective totale du stage.",
           "Le montant total de la gratification que tu as touchée, s'il y en a une.",
+        ],
+      },
+      {
+        heading: "Modèle d'attestation de stage",
+        paragraphs: [
+          "Ton école fournit souvent son propre formulaire, à utiliser en priorité. Sinon, l'entreprise peut reprendre ce modèle, qui contient les mentions obligatoires :",
+          "« ATTESTATION DE STAGE",
+          "L'organisme d'accueil [nom de l'entreprise], [adresse], représenté par [nom et fonction], atteste que [prénom et nom du stagiaire], étudiant(e) en [intitulé de la formation] à [nom de l'établissement], a effectué un stage dans le cadre de ses études du [date de début] au [date de fin], soit une durée effective totale de [nombre] heures (ou [nombre] semaines).",
+          "Montant total de la gratification versée : [montant] € (ou : aucune gratification versée).",
+          "Fait à [ville], le [date].",
+          "Nom, fonction et signature du représentant de l'organisme d'accueil, cachet de l'entreprise »",
+          "La durée effective et le montant de la gratification sont les deux informations qui servent à faire valider le stage pour ta retraite : vérifie-les avant de partir.",
         ],
       },
       {
@@ -3038,6 +3050,10 @@ export const MORE_GUIDES: Guide[] = [
       {
         q: "L'entreprise est-elle obligée de me donner une attestation de stage ?",
         a: "Oui : l'organisme d'accueil doit remettre une attestation de stage à chaque stagiaire à la fin du stage, avec la durée effective et le montant total de la gratification.",
+      },
+      {
+        q: "Existe-t-il un modèle d'attestation de stage ?",
+        a: "Le modèle est fixé par arrêté et beaucoup d'écoles fournissent leur formulaire. Il doit indiquer l'organisme d'accueil, ton identité et ta formation, les dates et la durée effective du stage, et le montant total de la gratification. Un modèle à remplir est sur cette page.",
       },
       {
         q: "Un stage compte-t-il pour la retraite ?",
