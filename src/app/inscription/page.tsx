@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { RegisterForm } from "@/components/auth/RegisterForm";
 import type { Metadata } from "next";
 import { SITE_URL } from "@/lib/site";
+import { fetchActiveOfferCount } from "@/lib/offers/fetchPublicOffers";
 
 export const metadata: Metadata = {
   title: "Inscription gratuite",
@@ -26,6 +27,10 @@ export default async function InscriptionPage({
   const affiliateCode = aff ?? cookieStore.get("aff_code")?.value ?? null;
   // Même logique pour l'attribution publicitaire (utm_source) : voir proxy.ts.
   const utmSource = utmSourceParam ?? cookieStore.get("utm_source")?.value ?? null;
+  // Réassurance : le vrai nombre d'offres (compte en cache 10 min), arrondi à
+  // la centaine inférieure. Sans compte disponible, la ligne disparaît.
+  const offerCount = await fetchActiveOfferCount("all").catch(() => 0);
+  const roundedCount = Math.floor(offerCount / 100) * 100;
 
   return (
     <div className="flex-1 flex items-center justify-center px-6 py-12">
@@ -43,6 +48,12 @@ export default async function InscriptionPage({
         >
           Deux minutes, puis des offres qui te correspondent.
         </p>
+        {roundedCount >= 1000 && (
+          <p style={{ fontSize: 13, margin: "8px 0 0", color: "var(--color-accent-700)", fontWeight: 600 }}>
+            Gratuit · plus de {roundedCount.toLocaleString("fr-FR")} offres d&apos;alternance et de stage · mises à jour
+            chaque jour
+          </p>
+        )}
         <div className="mt-6">
           <Suspense>
             <RegisterForm initialAffiliateCode={affiliateCode} initialUtmSource={utmSource} />
