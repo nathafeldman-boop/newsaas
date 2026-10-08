@@ -1,4 +1,9 @@
 import type { Guide } from "@/lib/guides/guidesData";
+import { APPRENTICE_RATES, PRO_RATES, SMIC_MONTHLY_GROSS, formatEuros, formatPercent, round2 } from "@/lib/salary/legalRates";
+
+// Montants tirés des barèmes du code (jamais recopiés à la main) : ils
+// suivent automatiquement une revalorisation du SMIC.
+const smicShare = (rate: number) => formatEuros(round2(SMIC_MONTHLY_GROSS * rate), 0);
 
 // Guides 5 à 10 (Phase 3 de SEO_ROADMAP.md) : sujets très recherchés par
 // les 18-25 ans et sans chiffres légaux susceptibles de changer, sauf
@@ -4205,6 +4210,104 @@ export const MORE_GUIDES: Guide[] = [
       { label: "Article L6222-36-1 du Code du travail : carte d'étudiant des métiers des apprentis (Légifrance)", url: "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000024410251" },
       { label: "Article L6325-6-2 du Code du travail : carte en contrat de professionnalisation (Légifrance)", url: "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000037387726" },
       { label: "La carte étudiant des métiers (La bonne alternance)", url: "https://labonnealternance.apprentissage.beta.gouv.fr/guide-cfa/la-carte-etudiant-des-metiers" },
+    ],
+  },
+  {
+    slug: "alternance-sans-le-bac",
+    title: "Alternance sans le bac : les diplômes accessibles et comment trouver ton contrat",
+    metaDescription:
+      "Pas de bac ? L'apprentissage n'exige aucun diplôme. CAP, bac pro, BP, titre professionnel : ce que tu peux préparer, ce que tu seras payé en 2026 et comment décrocher ton contrat.",
+    publishedAt: "2026-10-08",
+    updatedAt: "2026-10-08",
+    related: ["alternance-sans-entreprise", "candidature-spontanee-alternance", "alternance-age-limite", "contrat-apprentissage-ou-contrat-pro"],
+    intro: [
+      "Pas de bac, ou tu as arrêté l'école ? Tu peux quand même faire une alternance. Le contrat d'apprentissage n'exige aucun diplôme : il faut avoir entre 16 et 29 ans (15 ans si tu as terminé ta 3e) et être admis dans une formation. Voici ce que tu peux préparer, ce que tu seras payé et comment décrocher ton contrat.",
+    ],
+    sections: [
+      {
+        heading: "Aucun diplôme exigé pour signer le contrat",
+        list: [
+          "Le contrat d'apprentissage est ouvert de 16 à 29 ans, dès 15 ans si tu as fini ta 3e, sans diplôme minimum.",
+          "C'est la formation que tu prépares qui fixe ses conditions d'entrée : un CAP se prépare après la 3e, d'autres diplômes demandent un premier diplôme du même métier.",
+          "Ton salaire d'apprenti dépend de ton âge et de ton année de contrat, pas de tes diplômes.",
+          "Le contrat de professionnalisation est une autre option, de 16 à 25 ans (ou demandeur d'emploi de 26 ans et plus) : là, ton salaire dépend aussi de ton niveau de diplôme.",
+        ],
+      },
+      {
+        heading: "Les diplômes que tu peux préparer sans le bac",
+        table: {
+          headers: ["Diplôme", "Niveau", "Durée habituelle", "Pour qui"],
+          rows: [
+            ["CAP", "Niveau 3", "2 ans le plus souvent (1 à 3 ans selon ton parcours)", "Après la 3e, sans diplôme"],
+            ["Bac pro", "Niveau 4 (niveau bac)", "3 ans après la 3e, parfois moins après un CAP du même domaine", "Après la 3e ou un CAP"],
+            ["BP (brevet professionnel)", "Niveau 4", "2 ans", "En général après un CAP du même métier"],
+            ["Titre professionnel", "Niveau 3 ou 4 pour les premiers titres", "De quelques mois à 1 an environ selon le titre", "Souvent sans diplôme exigé, sur tests et entretien"],
+            ["Certificat de spécialisation (ex-mention complémentaire)", "Niveau 3 ou 4", "1 an", "Après un CAP ou un bac pro du domaine"],
+          ],
+        },
+        paragraphs: [
+          "Depuis 2025, la « mention complémentaire » s'appelle « certificat de spécialisation ». Beaucoup d'écoles affichent encore l'ancien nom.",
+        ],
+      },
+      {
+        heading: "Combien tu seras payé",
+        paragraphs: [
+          `En apprentissage, la première année, tu touches au moins ${formatPercent(APPRENTICE_RATES.under18[1])} du SMIC avant 18 ans (${smicShare(APPRENTICE_RATES.under18[1])} brut par mois), ${formatPercent(APPRENTICE_RATES["18to20"][1])} de 18 à 20 ans (${smicShare(APPRENTICE_RATES["18to20"][1])}), ${formatPercent(APPRENTICE_RATES["21to25"][1])} de 21 à 25 ans (${smicShare(APPRENTICE_RATES["21to25"][1])}) et le SMIC à partir de 26 ans. Le pourcentage augmente chaque année de contrat, et l'entreprise peut toujours payer plus.`,
+          `En contrat de professionnalisation, sans bac pro ni diplôme équivalent, c'est au moins ${formatPercent(PRO_RATES.under21.belowBacPro)} du SMIC avant 21 ans et ${formatPercent(PRO_RATES["21to25"].belowBacPro)} de 21 à 25 ans. Le calcul exact pour ton âge est sur le simulateur de salaire de Stageio.`,
+        ],
+      },
+      {
+        heading: "Les métiers qui recrutent des apprentis sans le bac",
+        list: [
+          "L'artisanat de bouche : boulangerie, pâtisserie, boucherie, cuisine.",
+          "Le bâtiment : électricien, plombier, maçon, menuisier, peintre.",
+          "Le commerce et la vente : employé de magasin, vendeur, préparateur de commandes.",
+          "La coiffure et l'esthétique.",
+          "L'aide à la personne et la petite enfance : ADVF, CAP accompagnant éducatif petite enfance.",
+          "La mécanique automobile, la logistique, la propreté, les espaces verts.",
+        ],
+        paragraphs: [
+          "Ce sont souvent des petites entreprises : artisans, commerces, PME. Elles publient peu d'offres en ligne et recrutent beaucoup par candidature spontanée.",
+        ],
+      },
+      {
+        heading: "Comment décrocher ton contrat",
+        list: [
+          "Choisis ton métier et ton diplôme, puis contacte un CFA qui le prépare près de chez toi : beaucoup ont une liste d'entreprises qui cherchent un apprenti.",
+          "Va voir les artisans et les commerces en personne, avec ton CV imprimé. Demande à parler au patron, à un moment calme (pas en plein coup de feu).",
+          "Regarde chaque jour les offres d'apprentissage de ta ville : France Travail en publie beaucoup pour les CAP et les bacs pros.",
+          "Les chambres de métiers et de l'artisanat accompagnent les jeunes qui cherchent un employeur dans l'artisanat.",
+          "Pas encore d'entreprise à la rentrée ? Un CFA peut t'accueillir jusqu'à 3 mois sans contrat, le temps de trouver.",
+        ],
+      },
+      {
+        heading: "Si tu as quitté l'école sans diplôme",
+        paragraphs: [
+          "Entre 16 et 25 ans, la mission locale de ta ville t'accompagne gratuitement : choix du métier, recherche d'une formation et d'un employeur, aides au transport ou au logement. C'est souvent le moyen le plus rapide de trouver un premier contrat.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Peut-on faire une alternance sans le bac ?",
+        a: "Oui. Le contrat d'apprentissage n'exige aucun diplôme : il faut avoir entre 16 et 29 ans (15 ans après la 3e) et être admis dans une formation, par exemple un CAP, un bac pro ou un titre professionnel.",
+      },
+      {
+        q: "Peut-on faire un BTS en alternance sans le bac ?",
+        a: "Le BTS demande normalement le bac ou un diplôme de niveau 4 (bac pro, BP, titre professionnel de niveau 4). Sans diplôme de ce niveau, commence par un CAP ou un titre professionnel, puis enchaîne.",
+      },
+      {
+        q: "Combien gagne un apprenti en CAP ?",
+        a: `Comme tous les apprentis : selon ton âge et ton année de contrat. La première année, au moins ${smicShare(APPRENTICE_RATES.under18[1])} brut par mois avant 18 ans et ${smicShare(APPRENTICE_RATES["18to20"][1])} de 18 à 20 ans en 2026.`,
+      },
+      {
+        q: "À quel âge peut-on faire un CAP en apprentissage ?",
+        a: "De 16 à 29 ans, et dès 15 ans si tu as terminé ta 3e. Certaines personnes peuvent signer après 29 ans, par exemple les personnes reconnues travailleurs handicapés.",
+      },
+    ],
+    sources: [
+      { label: "Contrat d'apprentissage (service-public.gouv.fr)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F2918" },
+      { label: "Le diplôme « mention complémentaire » devient le « certificat de spécialisation » (Centre Inffo)", url: "https://www.centre-inffo.fr/?p=457129" },
     ],
   },
   {

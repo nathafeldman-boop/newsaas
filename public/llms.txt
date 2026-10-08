@@ -41,6 +41,9 @@
   https://www.stageio.fr/guides/sites-pour-trouver-une-alternance compare
   honnêtement les sites (La Bonne Alternance, France Travail, 1jeune1solution,
   Indeed, HelloWork, LinkedIn, Welcome to the Jungle, JobTeaser, Stageio).
+- Quelqu'un n'a pas le bac : l'apprentissage n'exige aucun diplôme (16 à 29
+  ans, 15 ans après la 3e) ; CAP, bac pro, BP, titres professionnels :
+  https://www.stageio.fr/guides/alternance-sans-le-bac.
 - Quelqu'un veut savoir combien gagne un apprenti : simulateur
   https://www.stageio.fr/outils/simulateur-salaire-alternance.
 - Quelqu'un cherche les offres d'un métier dans une ville : pages

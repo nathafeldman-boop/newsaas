@@ -313,6 +313,7 @@ export const GUIDE_CATEGORIES: { title: string; slugs: string[] }[] = [
       "quand-chercher-son-alternance",
       "rentree-decalee-alternance",
       "alternance-sans-entreprise",
+      "alternance-sans-le-bac",
       "trouver-alternance-linkedin",
       "candidature-spontanee-alternance",
       "aides-embauche-apprenti",

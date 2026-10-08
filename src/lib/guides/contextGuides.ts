@@ -11,6 +11,10 @@ export const METIER_GUIDES: Record<string, GuideLink> = {
   bts: { slug: "bts-bachelor-master-alternance", label: "BTS, bachelor ou master en alternance" },
   bachelor: { slug: "bts-bachelor-master-alternance", label: "BTS, bachelor ou master en alternance" },
   master: { slug: "bts-bachelor-master-alternance", label: "BTS, bachelor ou master en alternance" },
+  cap: { slug: "alternance-sans-le-bac", label: "Alternance sans le bac : les diplômes accessibles" },
+  "bac-pro": { slug: "alternance-sans-le-bac", label: "Alternance sans le bac : les diplômes accessibles" },
+  bp: { slug: "alternance-sans-le-bac", label: "Alternance sans le bac : les diplômes accessibles" },
+  "titre-pro": { slug: "alternance-sans-le-bac", label: "Alternance sans le bac : les diplômes accessibles" },
 };
 
 // Ce qui sert à quelqu'un qui lit une annonce et s'apprête à postuler.
