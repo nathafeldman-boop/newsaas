@@ -112,15 +112,22 @@ export default async function AdminPremiumPage({
 
   const paymentIssueRows = paymentIssueProfiles ?? [];
 
-  const sessionCounts = await Promise.all(
-    rows.map((p) =>
-      admin
-        .from("user_events")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", p.id)
-        .eq("event_type", "login"),
-    ),
-  );
+  // Une requête de comptage par abonné, mais 10 à la fois : toutes lancées
+  // en même temps (une par abonné), elles ont fait manquer de mémoire la
+  // fonction (12 h 24 UTC le 08/10) puis atteint la limite de 300 s.
+  const sessionCounts: { count: number | null }[] = [];
+  for (let i = 0; i < rows.length; i += 10) {
+    const batch = await Promise.all(
+      rows.slice(i, i + 10).map((p) =>
+        admin
+          .from("user_events")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", p.id)
+          .eq("event_type", "login"),
+      ),
+    );
+    sessionCounts.push(...batch.map(({ count }) => ({ count })));
+  }
 
   return (
     <div>
