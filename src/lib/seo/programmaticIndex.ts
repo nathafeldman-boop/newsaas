@@ -1,7 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { compactGroup, expandGroup, fitCacheBudget, idEncoder, unpackIdTable, type Compacted } from "@/lib/seo/compactIds";
 import { createPublicClient, fetchAllRows } from "@/lib/supabase/public";
-import { NOT_A_CITY, normalizeCityKey, slugify, titleCase } from "@/lib/offers/segments";
+import { NOT_A_CITY, normalizeCityKey, preferCityNamedInTitle, slugify, titleCase } from "@/lib/offers/segments";
 import { PUBLIC_OFFERS_PAGE_SIZE } from "@/lib/offers/fetchPublicOffers";
 import { classifyFormations, classifyMetier } from "@/lib/seo/metiers";
 import { isSchool } from "@/lib/seo/schools";
@@ -202,10 +202,13 @@ export function buildIndex(type: ContractType, rows: IndexRow[], now = Date.now(
     if (isRecent) recentTotal += 1;
     const salary = row.source === "adzuna" ? null : parseMonthlySalary(row.salary);
     const metier = classifyMetier(row.title);
-    const cityKey = row.location ? normalizeCityKey(row.location) : "";
+    // Même règle qu'à l'import Adzuna (« Allauch, Marseille » pour une offre
+    // titrée « Marseille ») : appliquée ici aussi aux offres déjà en base.
+    const location = row.location ? preferCityNamedInTitle(row.location, row.title) : null;
+    const cityKey = location ? normalizeCityKey(location) : "";
     const citySlug = cityKey ? slugify(cityKey) : "";
     const isCity = Boolean(citySlug) && !NOT_A_CITY.has(citySlug);
-    const dep = row.location ? departementFromLocation(row.location, learned) : null;
+    const dep = location ? departementFromLocation(location, learned) : null;
 
     if (dep) {
       if (!departements.has(dep)) departements.set(dep, newAccumulator());
