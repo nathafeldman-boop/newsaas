@@ -539,11 +539,11 @@ export const MORE_GUIDES: Guide[] = [
   },
   {
     slug: "rupture-contrat-apprentissage",
-    title: "Rupture du contrat d'apprentissage : comment arrêter ton alternance (et dans quels cas)",
+    title: "Rupture du contrat d'apprentissage : les cas possibles et les modèles de lettre",
     metaDescription:
-      "Pendant les 45 premiers jours, après, par accord, par démission avec le médiateur ou par licenciement : toutes les façons de rompre un contrat d'apprentissage et les délais à respecter.",
+      "Pendant les 45 premiers jours, après, par accord, par démission avec le médiateur ou par licenciement : toutes les façons de rompre un contrat d'apprentissage, les délais à respecter et deux modèles de lettre.",
     publishedAt: "2026-10-07",
-    updatedAt: "2026-10-07",
+    updatedAt: "2026-10-08",
     intro: [
       "Ton alternance ne se passe pas comme prévu ? Un contrat d'apprentissage peut être rompu, mais les règles changent complètement selon que tu es dans les 45 premiers jours ou après. Voici les cas possibles.",
     ],
@@ -569,6 +569,27 @@ export const MORE_GUIDES: Guide[] = [
         ],
       },
       {
+        heading: "Modèle : rupture d'un commun accord",
+        paragraphs: [
+          "À rédiger en deux exemplaires, signés par toi et par l'employeur (et par ton représentant légal si tu es mineur). L'employeur informe ensuite ton CFA et l'organisme qui a enregistré le contrat.",
+          "« Objet : rupture d'un commun accord du contrat d'apprentissage",
+          "Les soussignés, [ton prénom et nom], apprenti(e), et [nom de l'entreprise], représentée par [nom et fonction], conviennent d'un commun accord de mettre fin au contrat d'apprentissage conclu le [date de signature], à compter du [date de fin].",
+          "Fait à [ville], le [date], en deux exemplaires.",
+          "Signature de l'apprenti(e) – Signature de l'employeur »",
+        ],
+      },
+      {
+        heading: "Modèle : démission après saisine du médiateur",
+        paragraphs: [
+          "Après les 45 premiers jours, saisis d'abord le médiateur de l'apprentissage, puis envoie ce courrier à ton employeur au moins 5 jours calendaires plus tard, par lettre recommandée avec accusé de réception ou remis en main propre contre signature. Si tu es mineur, ton représentant légal signe aussi le courrier. Préviens aussi ton CFA.",
+          "« Objet : rupture de mon contrat d'apprentissage",
+          "Madame, Monsieur,",
+          "Je vous informe de ma décision de mettre fin à mon contrat d'apprentissage conclu le [date de signature]. J'ai saisi le médiateur de l'apprentissage de [CCI, chambre de métiers ou chambre d'agriculture] le [date de saisine]. Mon contrat prendra fin le [date, au moins 7 jours calendaires après la réception de ce courrier].",
+          "Je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distinguées.",
+          "[Ton prénom et nom], le [date] »",
+        ],
+      },
+      {
         heading: "Et ta formation après la rupture ?",
         paragraphs: [
           "Ton CFA peut te garder en formation pendant quelques mois le temps de retrouver une entreprise : renseigne-toi auprès de lui dès que la rupture se profile. Et commence tout de suite à chercher un nouvel employeur, les pages Stageio par métier et par ville listent les entreprises qui recrutent en ce moment.",
@@ -579,6 +600,10 @@ export const MORE_GUIDES: Guide[] = [
       {
         q: "Peut-on démissionner d'un contrat d'apprentissage ?",
         a: "Oui. Pendant les 45 premiers jours en entreprise, librement. Après, tu dois saisir le médiateur de l'apprentissage, informer ton employeur au moins 5 jours calendaires après, puis respecter un délai d'au moins 7 jours calendaires avant la rupture.",
+      },
+      {
+        q: "Existe-t-il un modèle de lettre de rupture du contrat d'apprentissage ?",
+        a: "Oui : une rupture d'un commun accord se rédige en deux exemplaires signés par toi et l'employeur (et ton représentant légal si tu es mineur). Pour une démission après les 45 premiers jours, tu informes l'employeur par écrit après avoir saisi le médiateur. Les deux modèles sont sur cette page.",
       },
       {
         q: "L'employeur peut-il me licencier comme un salarié classique ?",
