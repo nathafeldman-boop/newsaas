@@ -3896,6 +3896,91 @@ export const MORE_GUIDES: Guide[] = [
     ],
   },
   {
+    slug: "parcoursup-alternance",
+    title: "Parcoursup et alternance : faire ses vœux en apprentissage (2027)",
+    metaDescription:
+      "Sur Parcoursup, les formations en apprentissage ont leurs propres vœux (10 en plus des 10 classiques), mais l'admission n'est définitive qu'avec un contrat signé. Comment ça marche et quand chercher ton entreprise.",
+    publishedAt: "2026-10-08",
+    updatedAt: "2026-10-08",
+    related: ["quand-chercher-son-alternance", "bts-bachelor-master-alternance", "alternance-sans-entreprise", "choisir-son-ecole-en-alternance"],
+    intro: [
+      "Beaucoup de BTS, de BUT et d'autres formations se font en apprentissage, et on y candidate sur Parcoursup comme pour le reste. Avec une différence de taille : être accepté par la formation ne suffit pas, il faut aussi une entreprise qui signe ton contrat. Voici comment marchent les vœux en apprentissage, d'après les règles de la session 2026, et pourquoi il faut chercher ton entreprise dès maintenant.",
+    ],
+    sections: [
+      {
+        heading: "Les règles en bref",
+        list: [
+          "Les vœux en apprentissage sont comptés à part : jusqu'à 10 vœux en apprentissage, en plus des 10 vœux en formation classique. Ils ne te font perdre aucun autre vœu.",
+          "Pour les trouver, coche « formations en apprentissage » dans le moteur de recherche de Parcoursup.",
+          "Seul le contrat d'apprentissage est concerné, pas le contrat de professionnalisation.",
+          "La formation peut te répondre « oui » sous réserve que tu signes un contrat d'apprentissage : ton admission ne devient définitive qu'une fois le contrat signé avec une entreprise.",
+          "Une fois le contrat signé, tu le transmets à l'école ou au CFA, qui valide ton inscription.",
+        ],
+      },
+      {
+        heading: "Le calendrier",
+        paragraphs: [
+          "Le calendrier officiel de la session 2027 n'est pas encore publié : il sort sur parcoursup.gouv.fr en fin d'année. Pour te repérer, voici les dates de la session 2026, qui varient peu d'une année sur l'autre.",
+        ],
+        table: {
+          headers: ["Étape", "Session 2026", "Session 2027"],
+          rows: [
+            ["Ouverture des inscriptions et des vœux", "19 janvier 2026", "mi-janvier 2027 (à confirmer)"],
+            ["Dernier jour pour formuler ses vœux", "12 mars 2026", "mi-mars 2027 (à confirmer)"],
+            ["Dossier complet et vœux confirmés", "1er avril 2026", "début avril 2027 (à confirmer)"],
+            ["Début des réponses", "2 juin 2026", "début juin 2027 (à confirmer)"],
+            ["Phase complémentaire", "à partir du 11 juin 2026", "juin 2027 (à confirmer)"],
+          ],
+        },
+      },
+      {
+        heading: "Pourquoi chercher ton entreprise dès maintenant",
+        paragraphs: [
+          "Sans contrat, pas d'admission définitive. Or les entreprises recrutent leurs alternants en grande partie entre le printemps et la rentrée, et les places partent aux premiers qui candidatent. Si tu attends les réponses de Parcoursup en juin pour commencer à chercher, tu n'auras que l'été devant toi.",
+        ],
+        list: [
+          "Dès l'automne : repère les entreprises de ton secteur près de chez toi, et les entreprises partenaires des formations que tu vises (demande-les aux journées portes ouvertes).",
+          "De janvier à mars : candidate en parallèle de tes vœux, avec un CV d'une page et une lettre adaptée à chaque entreprise.",
+          "Au printemps : relance, passe les entretiens. Beaucoup de CFA aident leurs futurs apprentis à trouver une entreprise : demande-leur.",
+          "Si tu n'as pas d'entreprise à la rentrée : certains CFA te laissent commencer la formation pendant 3 mois en attendant ton contrat (voir notre guide sur l'alternance sans entreprise).",
+        ],
+      },
+      {
+        heading: "Les erreurs à éviter",
+        list: [
+          "Ne faire que des vœux en apprentissage : garde des vœux en formation classique au cas où tu ne trouverais pas d'entreprise.",
+          "Confondre l'école et l'employeur : la formation te forme, l'entreprise te salarie. Il te faut les deux.",
+          "Croire que l'école te trouvera forcément une entreprise : elle peut t'aider, mais c'est à toi de candidater.",
+          "Payer pour une place : une formation en apprentissage est financée, tu ne paies pas de frais de scolarité.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Combien de vœux en apprentissage peut-on faire sur Parcoursup ?",
+        a: "Pour la session 2026, jusqu'à 10 vœux en apprentissage, en plus des 10 vœux en formation classique. Vérifie les règles 2027 sur parcoursup.gouv.fr quand le calendrier sera publié.",
+      },
+      {
+        q: "Peut-on être accepté en apprentissage sans entreprise ?",
+        a: "La formation peut t'accepter sous réserve que tu signes un contrat d'apprentissage. Ton inscription ne devient définitive qu'avec ce contrat. Certains CFA permettent de commencer jusqu'à 3 mois sans entreprise, le temps d'en trouver une.",
+      },
+      {
+        q: "Le contrat de professionnalisation passe-t-il par Parcoursup ?",
+        a: "Non, les formations en alternance sur Parcoursup concernent le contrat d'apprentissage. Pour un contrat de professionnalisation, tu t'inscris directement auprès de l'organisme de formation.",
+      },
+      {
+        q: "Quand chercher son entreprise quand on vise une formation en apprentissage ?",
+        a: "Dès maintenant, en parallèle de tes vœux. Les entreprises recrutent surtout entre le printemps et la rentrée, et ton admission dépend du contrat signé.",
+      },
+    ],
+    sources: [
+      { label: "Parcoursup (site officiel)", url: "https://www.parcoursup.gouv.fr/" },
+      { label: "L'Étudiant : Parcoursup, comment s'inscrire dans une formation en apprentissage", url: "https://www.letudiant.fr/etudes/parcoursup/parcoursup-comment-s-inscrire-dans-une-formation-en-apprentissage.html" },
+      { label: "Diplomeo : apprentissage sur Parcoursup 2026", url: "https://diplomeo.com/actualite-parcoursup_formations_apprentissage_tuto" },
+      { label: "Au Futur : Parcoursup 2026, le calendrier", url: "https://aufutur.fr/parcoursup/parcoursup-dates/" },
+    ],
+  },
+  {
     slug: "maitre-d-apprentissage",
     title: "Maître d'apprentissage : son rôle, les conditions, ce que tu peux attendre de lui",
     metaDescription:

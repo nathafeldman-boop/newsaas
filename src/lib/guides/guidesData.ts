@@ -317,6 +317,7 @@ export const GUIDE_CATEGORIES: { title: string; slugs: string[] }[] = [
       "candidature-spontanee-alternance",
       "aides-embauche-apprenti",
       "choisir-son-ecole-en-alternance",
+      "parcoursup-alternance",
       "bts-bachelor-master-alternance",
       "stage-de-fin-d-etudes",
       "stage-a-l-etranger",
