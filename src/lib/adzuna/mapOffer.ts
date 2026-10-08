@@ -1,3 +1,4 @@
+import { preferCityNamedInTitle } from "@/lib/offers/segments";
 import type { AdzunaJob } from "@/lib/adzuna/client";
 import type { ContractType, OfferSource } from "@/types/database";
 import { classifyOfferContract, guessSector } from "@/lib/offers/classifyContract";
@@ -48,7 +49,7 @@ export function mapAdzunaJob(job: AdzunaJob): MappedOffer | null {
   return {
     title: job.title,
     company: job.company.display_name,
-    location: job.location.display_name,
+    location: preferCityNamedInTitle(job.location.display_name, job.title),
     contract_type: contractType,
     sector: guessSector(job.category?.label, job.title, job.description),
     description: stripHtml(job.description).slice(0, 4000),

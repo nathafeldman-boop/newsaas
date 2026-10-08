@@ -137,6 +137,24 @@ export const NOT_A_CITY = new Set(
   ],
 );
 
+// Adzuna range parfois une offre d'une grande ville sous une commune
+// voisine : « Allauch, Marseille » pour « Vendeur OM - Marseille » (82 offres
+// sur la page Allauch le 08/10, presque toutes titrées « Marseille »). Quand
+// le lieu est « commune, ville », que le titre cite la ville et pas la
+// commune, l'offre est rattachée à la ville. « Ville, Département » et les
+// arrondissements ne sont pas concernés.
+export function preferCityNamedInTitle(location: string, title: string): string {
+  const parts = location.split(",").map((part) => part.trim()).filter(Boolean);
+  if (parts.length !== 2 || /arrondissement/i.test(parts[0])) return location;
+  const [commune, city] = parts;
+  const citySlug = slugify(city);
+  const communeSlug = slugify(commune);
+  if (!citySlug || !communeSlug || citySlug === communeSlug || NOT_A_CITY.has(citySlug)) return location;
+  const titleSlug = `-${slugify(title)}-`;
+  if (!titleSlug.includes(`-${citySlug}-`) || titleSlug.includes(`-${communeSlug}-`)) return location;
+  return city;
+}
+
 async function computeCitySegments(): Promise<CitySegment[]> {
   const supabase = createPublicClient();
   const rows = await fetchAllRows<{ location: string | null }>((from, to) =>
