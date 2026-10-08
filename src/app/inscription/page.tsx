@@ -5,6 +5,8 @@ import { RegisterForm } from "@/components/auth/RegisterForm";
 import type { Metadata } from "next";
 import { SITE_URL } from "@/lib/site";
 import { fetchActiveOfferCount } from "@/lib/offers/fetchPublicOffers";
+import { resolveSignupIntent, signupHeadline } from "@/lib/signup/intent";
+import { RememberSignupCity } from "@/components/signup/RememberSignupCity";
 
 export const metadata: Metadata = {
   title: "Inscription gratuite",
@@ -16,9 +18,12 @@ export const metadata: Metadata = {
 export default async function InscriptionPage({
   searchParams,
 }: {
-  searchParams: Promise<{ aff?: string; utm_source?: string }>;
+  searchParams: Promise<{ aff?: string; utm_source?: string; type?: string; metier?: string; ville?: string }>;
 }) {
-  const { aff, utm_source: utmSourceParam } = await searchParams;
+  const { aff, utm_source: utmSourceParam, type, metier, ville } = await searchParams;
+  // Contexte de la page d'où vient le visiteur (voir lib/signup/intent.ts).
+  const intent = resolveSignupIntent({ type, metier, ville });
+  const headline = signupHeadline(intent);
   // Fallback cookie (voir proxy.ts) : le lien affilié amène désormais sur la
   // home plutôt que directement ici, donc "aff" n'est plus forcément présent
   // dans l'URL de cette page -- sans ce fallback, l'attribution se perdrait
@@ -46,8 +51,9 @@ export default async function InscriptionPage({
             margin: "6px 0 0",
           }}
         >
-          Deux minutes, puis des offres qui te correspondent.
+          {headline ?? "Deux minutes, puis des offres qui te correspondent."}
         </p>
+        {intent.city && <RememberSignupCity city={intent.city} />}
         {roundedCount >= 1000 && (
           <p style={{ fontSize: 13, margin: "8px 0 0", color: "var(--color-accent-700)", fontWeight: 600 }}>
             Gratuit · plus de {roundedCount.toLocaleString("fr-FR")} offres d&apos;alternance et de stage · mises à jour

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { fetchActiveOfferCount, fetchPublicOffers } from "@/lib/offers/fetchPublicOffers";
+import { signupHref } from "@/lib/signup/intent";
 import { PublicOffersGrid } from "@/components/offers/PublicOffersGrid";
 import { OffersSegmentNav } from "@/components/offers/OffersSegmentNav";
 import { LinkChips } from "@/components/seo/ProgrammaticPage";
@@ -57,7 +58,7 @@ export async function OffersTypePage({ type, page }: { type: ContractType; page:
         <strong>{fr(count)}</strong> offres {OF[type]} actives
         {recent > 0 ? <>, dont {fr(recent)} publiées ces 7 derniers jours</> : null}. La liste est mise
         à jour chaque jour à partir de France Travail et d&apos;Adzuna.{" "}
-        <Link href="/inscription">Crée ton profil gratuit</Link> pour swiper celles qui te correspondent.
+        <Link href={signupHref({ type })}>Crée ton profil gratuit</Link> pour swiper celles qui te correspondent.
       </p>
       {type === "alternance" && (
         <p style={{ fontSize: 14, margin: "4px 0 0" }}>

@@ -28,6 +28,11 @@ const PRIVATE_DISALLOW = [
   "/onboarding",
   "/auth/",
   "/candidature/",
+  // Variantes contextuelles de l'inscription (?type=…&ville=…, liens des
+  // pages métier / ville) : même page que /inscription, à ne pas explorer
+  // une par une. /inscription seule reste autorisée (règle plus longue =
+  // prioritaire pour les URL avec paramètres).
+  "/inscription?",
 ];
 
 // Agents connus des moteurs "réponse" / IA (ChatGPT, Perplexity, Claude,

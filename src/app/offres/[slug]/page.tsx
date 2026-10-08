@@ -16,6 +16,8 @@ import { SITE_URL } from "@/lib/site";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { ShareButtons } from "@/components/share/ShareButtons";
 import { ApplyButton } from "@/components/offers/ApplyButton";
+import { signupHref } from "@/lib/signup/intent";
+import { classifyMetier } from "@/lib/seo/metiers";
 import { offerGuides } from "@/lib/guides/contextGuides";
 import type { Offer } from "@/types/database";
 
@@ -393,6 +395,7 @@ export default async function PublicOfferPage({
 
   const links = await getOfferContextLinks(offer);
   const crumbs = breadcrumbItems(offer, links);
+  const signupLink = offerSignupHref(offer);
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-10 sm:px-9">
@@ -444,6 +447,7 @@ export default async function PublicOfferPage({
         {offer.apply_url && (
           <ApplyButton
             href={offer.apply_url}
+            signupHref={signupLink}
             followUp={`Une seule candidature suffit rarement : crée ton profil gratuit en 1 minute et swipe les autres offres${
               links.market ? ` «\u00a0${links.market.label}\u00a0»` : ""
             } dès leur publication.`}
@@ -468,7 +472,7 @@ export default async function PublicOfferPage({
           </strong>{" "}
           Crée ton profil gratuit en 1 minute : tu swipes les nouvelles offres qui te correspondent dès leur publication.
         </p>
-        <Link href="/inscription" className="btn btn-primary">
+        <Link href={signupLink} className="btn btn-primary">
           Créer mon profil gratuit
         </Link>
       </div>
@@ -535,12 +539,22 @@ export default async function PublicOfferPage({
         <p style={{ fontSize: 14, margin: "0 0 12px" }}>
           Crée ton compte pour swiper d&apos;autres offres qui matchent ton profil.
         </p>
-        <Link href="/inscription" className="btn btn-secondary">
+        <Link href={signupLink} className="btn btn-secondary">
           Créer mon compte gratuitement
         </Link>
       </div>
     </div>
   );
+}
+
+// Lien d'inscription qui reprend le métier et la ville de l'offre (voir
+// lib/signup/intent.ts) : accroche de l'inscription et ville pré-remplie.
+function offerSignupHref(offer: Offer): string {
+  return signupHref({
+    type: offer.contract_type,
+    metier: classifyMetier(offer.title)?.slug,
+    city: titleCase(normalizeCityKey(offer.location)),
+  });
 }
 
 // Offre retirée : plus de JobPosting, page en noindex (voir generateMetadata),
@@ -549,6 +563,7 @@ export default async function PublicOfferPage({
 async function ExpiredOffer({ offer }: { offer: Offer }) {
   const links = await getOfferContextLinks(offer);
   const city = titleCase(normalizeCityKey(offer.location)) || offer.location;
+  const signupLink = offerSignupHref(offer);
   return (
     <div className="mx-auto max-w-2xl px-5 py-10 sm:px-9">
       <div className="card elev-sm" style={{ padding: "var(--space-6)" }}>
@@ -574,7 +589,7 @@ async function ExpiredOffer({ offer }: { offer: Offer }) {
           <strong>Ne rate pas la prochaine.</strong> Crée ton profil gratuit en 1 minute : les nouvelles offres
           {links.market ? ` «\u00a0${links.market.label}\u00a0»` : ""} arrivent dans ton fil dès leur publication.
         </p>
-        <Link href="/inscription" className="btn btn-primary" style={{ alignSelf: "flex-start", marginTop: 8 }}>
+        <Link href={signupLink} className="btn btn-primary" style={{ alignSelf: "flex-start", marginTop: 8 }}>
           Créer mon profil gratuit
         </Link>
       </div>

@@ -21,6 +21,7 @@ import { SMIC_MONTHLY_GROSS, formatEuros, internshipGratification, round2 } from
 import type { ContractType } from "@/types/database";
 import { METIER_GUIDES } from "@/lib/guides/contextGuides";
 import { HubEditorial } from "@/components/seo/HubEditorial";
+import { signupHref } from "@/lib/signup/intent";
 
 type RouteProps = {
   type: ContractType;
@@ -103,6 +104,7 @@ export async function ProgrammaticPage({ type, slug, ville, pageParam }: RoutePr
 // Rendu commun aux pages métier / ville / département.
 export async function ProgrammaticPageView({ model, pageParam }: { model: ProgrammaticModel; pageParam?: string }) {
   const type = model.type;
+  const signupLink = signupHref({ type, metier: model.metier?.slug, city: model.city?.label });
 
   const page = parsePageParam(pageParam);
   const totalPages = listedPages(model.stats);
@@ -188,7 +190,7 @@ export async function ProgrammaticPageView({ model, pageParam }: { model: Progra
           <strong>{model.h1} : ne rate pas les prochaines.</strong> Crée ton profil gratuit en 1 minute : tu swipes les
           nouvelles offres qui te correspondent dès leur publication, avec une alerte par mail si tu veux.
         </p>
-        <Link href="/inscription" className="btn btn-primary">
+        <Link href={signupLink} className="btn btn-primary">
           Créer mon profil gratuit
         </Link>
       </div>
@@ -261,7 +263,7 @@ export async function ProgrammaticPageView({ model, pageParam }: { model: Progra
           Ne rate plus aucune offre : crée ton profil, les nouvelles offres qui te correspondent arrivent dans ton
           fil chaque jour.
         </p>
-        <Link href="/inscription" className="btn btn-primary">
+        <Link href={signupLink} className="btn btn-primary">
           Créer mon compte gratuitement
         </Link>
       </div>

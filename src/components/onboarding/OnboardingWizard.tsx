@@ -19,6 +19,7 @@ import {
   AVAILABILITY_OPTIONS,
 } from "@/lib/onboarding/options";
 import { STEP_IDS, STEP_LABELS, type StepId } from "@/lib/onboarding/steps";
+import { forgetSignupCity, readSignupCity } from "@/lib/signup/intentStorage";
 
 // Onboarding "sans clavier" : tout se fait au tap (tuiles/chips), avec un
 // échappatoire texte optionnel là où une liste ne peut pas tout couvrir
@@ -261,6 +262,17 @@ export function OnboardingWizard({
 
   const [city, setCity] = useState(initialProfile?.city ?? "");
   const [cityCustomOpen, setCityCustomOpen] = useState(false);
+  // Ville de la page d'où vient l'inscription (« Alternance commercial à
+  // Lyon ») : pré-remplie seulement si le profil n'en a pas encore. Lue
+  // après le montage (localStorage n'existe pas au rendu serveur), et
+  // modifiable comme n'importe quelle valeur à l'étape « ville ».
+  useEffect(() => {
+    if (initialProfile?.city) return;
+    const remembered = readSignupCity();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (remembered) setCity((current) => current || remembered);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // Aucune présélection par défaut : les deux tuiles pré-cochées piégeaient
   // les nouveaux comptes (initialProfile null) qui tapaient sur celle
   // qu'ils voulaient, la désélectionnant sans le savoir puisqu'elle était
@@ -451,6 +463,7 @@ export function OnboardingWizard({
     }
 
     void logOnboardingEvent(userId, "onboarding_step_completed", "outro");
+    forgetSignupCity();
 
     if (initialProfile?.referred_by) {
       await markReferralGrantedAction(userId);
