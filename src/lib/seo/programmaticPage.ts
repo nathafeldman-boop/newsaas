@@ -1,6 +1,6 @@
 import { createPublicClient } from "@/lib/supabase/public";
 import { PUBLIC_OFFER_COLUMNS, PUBLIC_OFFERS_PAGE_SIZE, type PublicOfferRow } from "@/lib/offers/fetchPublicOffers";
-import { FORMATIONS, getMetier, METIERS, type Metier } from "@/lib/seo/metiers";
+import { FORMATIONS, getMetier, isFormation, METIERS, type Metier } from "@/lib/seo/metiers";
 import { CITY_COORDINATES, distanceKm } from "@/lib/seo/cityCoordinates";
 import {
   INDEXABLE_MIN_OFFERS,
@@ -214,7 +214,10 @@ export function buildProgrammaticModel(
         ? `${plural(stats.recent7d, "offre")} ${stats.recent7d > 1 ? "ont" : "a"} été publiée${stats.recent7d > 1 ? "s" : ""} ces 7 derniers jours : le marché bouge, les premiers à postuler sont les plus lus.`
         : "Aucune nouvelle offre cette semaine : postule sans attendre à celles qui sont en ligne."),
   );
-  if (metier?.about) paragraphs.push(metier.about);
+  // Diplômes : le paragraphe vaut pour chaque ville. Métiers : seulement sur
+  // la page nationale, pour ne pas répéter le même texte sur des centaines
+  // de pages métier × ville.
+  if (metier?.about && (!city || isFormation(metier.slug))) paragraphs.push(metier.about);
   if (stats.topCompanies.length > 0) {
     paragraphs.push(`Les entreprises qui recrutent le plus : ${listCompanies(stats, 4)}.`);
   }
