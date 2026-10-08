@@ -1,4 +1,5 @@
 import { unstable_cache } from "next/cache";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createPublicClient } from "@/lib/supabase/public";
 import type { ContractType } from "@/types/database";
 
@@ -28,11 +29,15 @@ export function isPageOutOfRange(error: { code?: string }): boolean {
 // compris, sur ?page=2..N) et a déjà dépassé le délai de la base
 // (statement timeout, /offres/stage le 07/10), alors que le catalogue
 // grossit avec la synchro France Travail par département.
+// Client service role, comme l'accueil : le rôle anon a un délai très court
+// et le recalcul en arrière-plan échouait encore le 08/10 pendant les
+// écritures de la synchro (la page gardait alors l'ancien compte). Un seul
+// comptage par type toutes les 10 minutes, jamais par visite.
 const cachedActiveCount = unstable_cache(
   async (type: ContractType | "all") => {
     // GET limité à une ligne plutôt qu'un HEAD : même compte, et compatible
     // avec tous les intermédiaires.
-    let query = createPublicClient().from("offers").select("id", { count: "exact" }).eq("is_active", true).range(0, 0);
+    let query = createAdminClient().from("offers").select("id", { count: "exact" }).eq("is_active", true).range(0, 0);
     if (type !== "all") query = query.eq("contract_type", type);
     const { count, error } = await query;
     if (error) throw new Error(error.message);
