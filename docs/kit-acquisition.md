@@ -207,10 +207,14 @@ Le site a déjà un bouton WhatsApp sur chaque offre et sur chaque page métier 
 L'email est prêt : `docs/email-barometre.md`.
 
 **Angles qui intéressent les journalistes** (chiffres du baromètre) :
-- « Le social et l'éducation recrutent plus d'alternants que la vente » (489 contre 429 offres).
-- « Une seule entreprise publie 472 offres d'alternance » (Vitalliance, aide à domicile).
-- « Paris concentre 10 % des offres d'alternance, Strasbourg arrive 2e » (177).
-- « Un apprenti de 18 ans gagne au moins 803 € brut en 1re année ».
+
+⚠️ Attends le 09/10 avant d'envoyer quoi que ce soit avec des chiffres de villes ou de métiers. Le 08/10 au matin, une partie des départements n'avait pas encore été synchronisée (Rhône, Haute-Garonne…) : Lyon et Toulouse étaient sous-représentés et Strasbourg apparaissait 2e à tort. Le correctif est en ligne, et tout le pays repasse dans la journée. Le jour de l'envoi, reprends les chiffres directement sur la page du baromètre.
+
+- Le métier qui recrute le plus d'alternants (le social et l'éducation devançait la vente le 08/10, à revérifier).
+- L'entreprise qui publie le plus d'offres d'alternance (classement « entreprises » du baromètre).
+- Les villes qui concentrent les offres (à reprendre après le 09/10).
+- « Un apprenti de 18 ans gagne au moins 803 € brut en 1re année » (minimum légal, fiable).
+- Le salaire médian réellement indiqué dans les offres, par diplôme (CAP, titre pro, BTS) : page salaire.
 
 **Cibles** : L'Étudiant, Studyrama, Diplomeo, Jobteaser (blog), le Parisien Étudiant, la presse régionale (rubrique emploi), les journaux étudiants, les services relations entreprises des CFA et des IUT, les BDE.
 
