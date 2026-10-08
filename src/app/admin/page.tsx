@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { submitIndexNowAction } from "@/app/admin/seo-actions";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { fetchAllRows } from "@/lib/supabase/public";
+import { POSTGREST_MAX_ROWS, fetchAllRows } from "@/lib/supabase/public";
 import { startOfTodayParis } from "@/lib/date";
 import { STEP_IDS, STEP_LABELS, type StepId } from "@/lib/onboarding/steps";
 import { LineAreaChart } from "@/components/admin/charts/LineAreaChart";
@@ -99,17 +99,33 @@ function SectionCard({ title, subtitle, children }: { title: string; subtitle?: 
   );
 }
 
-// fetchAllRows lève une erreur ; ici on garde la forme { data, error } des
-// autres requêtes du tableau de bord, qui s'affiche même si une requête échoue.
-async function allRowsOrError<T>(
-  fetchPage: Parameters<typeof fetchAllRows<T>>[0],
+// Visites depuis `since`, lues par curseur sur created_at (index
+// site_visits_created_at_idx) : chaque page de 1000 lignes est une simple
+// lecture d'index. La première version (08/10 midi) paginait par décalage
+// avec un tri created_at + id, que la base refaisait sur toute la période à
+// chaque page : /admin a atteint la limite de 300 s. Deux visites à la même
+// microseconde à la jonction de deux pages : l'une peut être sautée,
+// négligeable pour des comptes de visiteurs. Forme { data, error } comme les
+// autres requêtes du tableau de bord.
+async function readVisitsSince<T extends { created_at: string }>(
+  admin: ReturnType<typeof createAdminClient>,
+  columns: string,
+  since: Date,
   maxRows: number,
 ): Promise<{ data: T[] | null; error: Error | null }> {
-  try {
-    return { data: await fetchAllRows<T>(fetchPage, maxRows), error: null };
-  } catch (error) {
-    return { data: null, error: error instanceof Error ? error : new Error(String(error)) };
+  const rows: T[] = [];
+  let after: string | null = null;
+  while (rows.length < maxRows) {
+    let query = admin.from("site_visits").select(columns);
+    query = after ? query.gt("created_at", after) : query.gte("created_at", since.toISOString());
+    const { data, error } = await query.order("created_at").limit(POSTGREST_MAX_ROWS);
+    if (error) return { data: null, error: new Error(error.message) };
+    const page = (data ?? []) as unknown as T[];
+    rows.push(...page);
+    if (page.length < POSTGREST_MAX_ROWS) break;
+    after = page[page.length - 1].created_at;
   }
+  return { data: rows, error: null };
 }
 
 export default async function AdminDashboardPage({
@@ -221,17 +237,7 @@ export default async function AdminDashboardPage({
     // site_visits les dépasse (les préchargements de liens y étaient même
     // comptés jusqu'au 08/10) -- les visiteurs de la période étaient
     // calculés sur un échantillon tronqué.
-    allRowsOrError<{ visitor_id: string; created_at: string }>(
-      (from, to) =>
-        admin
-          .from("site_visits")
-          .select("visitor_id, created_at")
-          .gte("created_at", visitsSince.toISOString())
-          .order("created_at")
-          .order("id")
-          .range(from, to),
-      60_000,
-    ),
+    readVisitsSince<{ visitor_id: string; created_at: string }>(admin, "visitor_id, created_at", visitsSince, 60_000),
     // Agrégation côté base (voir migration 20260915000001) plutôt qu'un
     // SELECT brut sur user_events : avec 7 étapes x 2 événements, cette
     // requête dépasse le Max Rows (1000) dès quelques centaines
@@ -245,15 +251,10 @@ export default async function AdminDashboardPage({
     admin.from("reviews").select("*").order("created_at", { ascending: false }).limit(5000),
     // Attribution pub (voir migration 20260927000000_utm_tracking.sql) :
     // bornée à aujourd'hui, mais paginée quand même (même piège Max Rows).
-    allRowsOrError<{ visitor_id: string; utm_source: string | null }>(
-      (from, to) =>
-        admin
-          .from("site_visits")
-          .select("visitor_id, utm_source")
-          .gte("created_at", todayStart.toISOString())
-          .order("created_at")
-          .order("id")
-          .range(from, to),
+    readVisitsSince<{ visitor_id: string; utm_source: string | null; created_at: string }>(
+      admin,
+      "visitor_id, utm_source, created_at",
+      todayStart,
       20_000,
     ),
     admin.from("profiles").select("utm_source").gte("created_at", todayStart.toISOString()),
