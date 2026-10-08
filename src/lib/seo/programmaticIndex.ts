@@ -416,7 +416,7 @@ const cachedShard = unstable_cache(
     if (!shard) throw new Error(`Morceau d'index inconnu : ${name}`);
     return compactShard(await sharedIndex(type), shard);
   },
-  ["programmatic-index-v15"],
+  ["programmatic-index-v16"],
   { revalidate: 3600 },
 );
 
