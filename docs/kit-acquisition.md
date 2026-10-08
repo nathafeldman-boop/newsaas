@@ -220,6 +220,10 @@ L'email est prêt : `docs/email-barometre.md`.
 
 Envoie un email par cible, personnalisé : jamais un envoi groupé.
 
+**Le widget, à proposer aux BDE, CFA et écoles** : https://www.stageio.fr/outils/widget-offres
+
+Le site d'un BDE ou d'un CFA colle un code (2 lignes) et affiche les 6 dernières offres d'alternance ou de stage de sa ville, éventuellement d'un métier. Pour eux : une page « offres » à jour sans rien faire. Pour nous : un lien « Stageio » sur un site d'école (lien de qualité, durable) et des clics étudiants comptés dans `/admin` (source « widget »). Message prêt dans `docs/citations-ia.md` (universités). Ne promets rien d'autre que ce que le widget fait : pas d'exclusivité, pas de rémunération.
+
 ---
 
 ## 7. Ce que j'attends de toi
