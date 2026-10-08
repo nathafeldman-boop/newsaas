@@ -25,6 +25,7 @@ import { HubEditorial } from "@/components/seo/HubEditorial";
 import { signupHref } from "@/lib/signup/intent";
 import { CITY_ARTICLE_ALIASES, NOT_A_CITY, slugify } from "@/lib/offers/segments";
 import { getDepartementBySlug } from "@/lib/seo/departements";
+import { StickySignupBar } from "@/components/signup/StickySignupBar";
 
 type RouteProps = {
   type: ContractType;
@@ -301,6 +302,7 @@ export async function ProgrammaticPageView({ model, pageParam }: { model: Progra
           Créer mon compte gratuitement
         </Link>
       </div>
+      <StickySignupBar href={signupLink} />
     </div>
   );
 }
@@ -377,6 +379,7 @@ export async function ProgrammaticHub({ type }: { type: ContractType }) {
           Créer mon compte gratuitement
         </Link>
       </div>
+      <StickySignupBar href={signupHref({ type })} />
     </div>
   );
 }

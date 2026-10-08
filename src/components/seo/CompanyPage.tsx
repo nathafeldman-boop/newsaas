@@ -9,6 +9,8 @@ import { fetchOffersByIds, listedPages, pageIds } from "@/lib/seo/programmaticPa
 import { pagedPath, pagedTitle, parsePageParam } from "@/lib/seo/pagination";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { SITE_URL } from "@/lib/site";
+import { StickySignupBar } from "@/components/signup/StickySignupBar";
+import { signupHref } from "@/lib/signup/intent";
 
 export async function companyMetadata(slug: string, pageParam?: string): Promise<Metadata> {
   const model = await resolveCompanyPage(slug);
@@ -127,6 +129,7 @@ export async function CompanyPage({ slug, pageParam }: { slug: string; pageParam
           Créer mon compte gratuitement
         </Link>
       </div>
+      <StickySignupBar href={signupHref({})} />
     </div>
   );
 }
@@ -160,6 +163,7 @@ export async function CompaniesHub() {
         {" · "}
         <Link href="/outils/simulateur-salaire-alternance">Simulateur de salaire</Link>
       </p>
+      <StickySignupBar href={signupHref({})} />
     </div>
   );
 }

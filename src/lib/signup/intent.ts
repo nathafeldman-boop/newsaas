@@ -37,6 +37,16 @@ export function resolveSignupIntent(params: { type?: string; metier?: string; vi
 
 const OFFERS: Record<ContractType, string> = { alternance: "offres d'alternance", stage: "offres de stage" };
 
+// Barre d'inscription des pages publiques (voir StickySignupBar) : toujours
+// un texte, générique sans contexte.
+export function signupBarText(intent: SignupIntent): string {
+  const what = intent.type ? OFFERS[intent.type] : "offres d'alternance et de stage";
+  const parts = [`Reçois les nouvelles ${what}`];
+  if (intent.metier) parts.push(intent.metier.domain);
+  if (intent.city) parts.push(cityPhrase(intent.city));
+  return `${parts.join(" ")} dès leur publication. Gratuit.`;
+}
+
 // Accroche de la page d'inscription, null sans contexte (accroche générique).
 export function signupHeadline(intent: SignupIntent): string | null {
   if (!intent.type && !intent.metier && !intent.city) return null;

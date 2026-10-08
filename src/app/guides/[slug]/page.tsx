@@ -7,6 +7,7 @@ import type { Metadata } from "next";
 import { getGuide, GUIDES } from "@/lib/guides/guidesData";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { SITE_URL } from "@/lib/site";
+import { StickySignupBar } from "@/components/signup/StickySignupBar";
 
 // Guides pour collégiens et lycéens (stage d'observation) : hors de la cible
 // de l'appli (18-25 ans), pas d'encart d'inscription au milieu du texte.
@@ -34,9 +35,16 @@ const GUIDE_CITY_LINKS = [
   { slug: "grenoble", label: "Grenoble" },
 ];
 
-function GuideSignupNudge({ slug }: { slug: string }) {
+function guideSignupType(slug: string): "stage" | "alternance" | null {
   const stage = /stage|convention|gratification|rapport|soutenance|attestation/.test(slug);
   const alternance = /alternance|alternant|apprenti|contrat|cfa|bts|bachelor/.test(slug);
+  return stage && !alternance ? "stage" : alternance && !stage ? "alternance" : null;
+}
+
+function GuideSignupNudge({ slug }: { slug: string }) {
+  const type = guideSignupType(slug);
+  const stage = type === "stage";
+  const alternance = type === "alternance";
   const [question, offers] =
     stage && !alternance
       ? ["Tu cherches un stage ?", "de stage"]
@@ -54,7 +62,7 @@ function GuideSignupNudge({ slug }: { slug: string }) {
         métier.
       </p>
       <Link
-        href={signupHref({ type: stage && !alternance ? "stage" : alternance && !stage ? "alternance" : null })}
+        href={signupHref({ type })}
         className="btn btn-primary"
         style={{ alignSelf: "flex-start", marginTop: 8 }}
       >
@@ -321,6 +329,7 @@ export default async function GuidePage({
           Créer mon compte gratuitement
         </Link>
       </div>
+      <StickySignupBar href={signupHref({ type: guideSignupType(guide.slug) })} />
     </div>
   );
 }

@@ -20,6 +20,7 @@ import { signupHref } from "@/lib/signup/intent";
 import { classifyMetier } from "@/lib/seo/metiers";
 import { offerGuides } from "@/lib/guides/contextGuides";
 import type { Offer } from "@/types/database";
+import { StickySignupBar } from "@/components/signup/StickySignupBar";
 
 // ISR : chaque fiche est rendue à la 1re visite puis servie depuis le cache
 // Vercel pendant 1 h, au lieu d'un rendu + requête Supabase à chaque passage
@@ -550,6 +551,7 @@ export default async function PublicOfferPage({
           Créer mon compte gratuitement
         </Link>
       </div>
+      <StickySignupBar href={signupLink} />
     </div>
   );
 }
@@ -629,6 +631,7 @@ async function ExpiredOffer({ offer }: { offer: Offer }) {
           {LISTING_LABEL[offer.contract_type]}
         </Link>
       </div>
+      <StickySignupBar href={signupLink} />
     </div>
   );
 }

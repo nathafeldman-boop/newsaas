@@ -10,6 +10,7 @@ import { getHubModel } from "@/lib/seo/programmaticPage";
 import { SITE_URL } from "@/lib/site";
 import { pagedPath, pagedTitle } from "@/lib/seo/pagination";
 import type { ContractType } from "@/types/database";
+import { StickySignupBar } from "@/components/signup/StickySignupBar";
 
 // /offres/alternance et /offres/stage : la liste complète d'un type, la page
 // qui répond à « offre alternance » / « offre d'alternance » (5 500
@@ -78,6 +79,7 @@ export async function OffersTypePage({ type, page }: { type: ContractType; page:
           <LinkChips title={`Offres ${OF[type]} par ville`} links={hub.cities.slice(0, 16)} />
         </>
       )}
+      <StickySignupBar href={signupHref({ type })} />
     </div>
   );
 }
