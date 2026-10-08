@@ -227,7 +227,9 @@ Ce qui fait passer du bas au haut de la fourchette : les backlinks (aucun code n
   create index concurrently if not exists offers_active_id_idx on public.offers (id) where is_active;
   create index concurrently if not exists offers_active_created_idx on public.offers (created_at desc) where is_active;
   create index concurrently if not exists user_events_event_type_idx on public.user_events (event_type);
+  create index concurrently if not exists offers_active_location_published_idx on public.offers (location, published_at desc) where is_active;
   ```
+  La dernière ligne (ajoutée le 08/10 à 18 h) : `/offres/ville/*` a dépassé le délai 2 fois (07/10 13 h 13, 08/10 17 h 52) ; la page cherche les offres d'une liste de lieux, triées par date, et la base parcourt toutes les offres actives faute d'index sur le lieu.
 - [ ] Admin (proposition, migration à valider par Nathan) : l'entonnoir d'onboarding de `/admin` dépasse le délai de la base (3 fois depuis le 15/09) car `onboarding_funnel_stats()` filtre `user_events` sur `event_type` seul, alors que le seul index existant commence par `user_id` (`user_events_user_type_idx`). Correctif proposé : `create index concurrently user_events_event_type_idx on public.user_events (event_type);`.
 - [ ] Vitesse (à vérifier, pas urgent) : les logs montrent `iad1` (Washington) pour les appels faits depuis mes outils et `fra1` (Francfort) pour les visites sur www.stageio.fr. Nathan : comparer Vercel → Settings → Functions → Region avec la région du projet Supabase (Settings → General) ; si elles sont éloignées, rapprocher la région des fonctions de la base.
 - [x] 08/10 : dossier `docs/citations-ia.md` (comparatifs que reprennent les IA, presse, AlternativeTo, universités, messages prêts). Guide stage de seconde titré « 2026-2027 » (« stage seconde 2026 » : 4 400 recherches/mois).
