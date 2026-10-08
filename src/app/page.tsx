@@ -283,6 +283,7 @@ const POPULAR_GUIDES = [
   { href: "/guides/je-ne-trouve-pas-d-alternance", label: "Je ne trouve pas d'alternance" },
   { href: "/guides/sites-pour-trouver-une-alternance", label: "Quel site ou appli pour trouver une alternance" },
   { href: "/guides/la-bonne-alternance", label: "La Bonne Alternance : mode d'emploi" },
+  { href: "/guides/alternance-sans-le-bac", label: "Alternance sans le bac" },
   { href: "/guides/parcoursup-alternance", label: "Parcoursup et alternance" },
   { href: "/guides/quand-chercher-son-alternance", label: "Quand chercher son alternance" },
   { href: "/guides/gratification-de-stage", label: "Gratification de stage 2026" },
@@ -292,6 +293,7 @@ const POPULAR_GUIDES = [
   { href: "/guides/aides-alternants", label: "Aides aux alternants" },
   { href: "/guides/entretien-alternance", label: "Entretien d'alternance" },
   { href: "/guides/trouver-un-stage", label: "Trouver un stage" },
+  { href: "/guides/stage-de-fin-d-etudes", label: "Stage de fin d'études 2027" },
 ];
 
 export default async function LandingPage() {
