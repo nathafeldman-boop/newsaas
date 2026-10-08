@@ -2417,7 +2417,7 @@ export const MORE_GUIDES: Guide[] = [
     metaDescription:
       "Fin de contrat d'apprentissage ou de professionnalisation : as-tu droit au chômage (ARE) ? Conditions, démarches, montant et ce qui change si le contrat est rompu avant la fin.",
     publishedAt: "2026-10-07",
-    updatedAt: "2026-10-07",
+    updatedAt: "2026-10-08",
     related: ["rupture-contrat-apprentissage", "aides-alternants", "contrat-apprentissage-ou-contrat-pro"],
     intro: [
       "Bonne nouvelle : en alternance, tu es salarié. À la fin de ton contrat d'apprentissage ou de professionnalisation, tu peux donc toucher l'allocation chômage (l'ARE, allocation d'aide au retour à l'emploi), à condition de remplir les mêmes conditions que les autres salariés. Voici lesquelles et comment t'y prendre.",
@@ -2471,6 +2471,10 @@ export const MORE_GUIDES: Guide[] = [
       },
     ],
     faq: [
+      {
+        q: "Touche-t-on une prime de précarité à la fin d'une alternance ?",
+        a: "En principe non : l'indemnité de fin de contrat (prime de précarité) n'est pas due à la fin d'un contrat d'apprentissage ni d'un contrat de professionnalisation, sauf si ton contrat ou la convention collective de l'entreprise la prévoit. Vérifie-les.",
+      },
       {
         q: "Un apprenti a-t-il droit au chômage à la fin de son contrat ?",
         a: "Oui. L'apprenti est un salarié : s'il a travaillé au moins 6 mois au cours des 24 derniers mois et que son contrat est arrivé à son terme, il peut toucher l'allocation chômage après s'être inscrit à France Travail.",
@@ -3261,7 +3265,7 @@ export const MORE_GUIDES: Guide[] = [
     metaDescription:
       "35 heures par semaine, cours compris, heures supplémentaires, repos, travail de nuit : les règles du temps de travail en apprentissage, et les protections spécifiques si tu as moins de 18 ans.",
     publishedAt: "2026-10-07",
-    updatedAt: "2026-10-07",
+    updatedAt: "2026-10-08",
     related: ["conges-alternant", "rythme-alternance", "contrat-apprentissage-ou-contrat-pro"],
     intro: [
       "En alternance, tu es salarié : ton temps de travail suit les règles du Code du travail, avec une particularité de taille. Les heures de cours au CFA comptent comme du temps de travail. Et si tu as moins de 18 ans, des protections supplémentaires s'appliquent.",
@@ -3302,6 +3306,10 @@ export const MORE_GUIDES: Guide[] = [
       },
     ],
     faq: [
+      {
+        q: "Peut-on avoir un job étudiant en plus de son alternance ?",
+        a: "Oui, à condition de respecter les durées maximales de travail, tous emplois confondus et temps de formation compris (pour un majeur : 10 heures par jour et 48 heures par semaine), et de ne pas travailler pour un concurrent de ton entreprise. Si tu es mineur, les limites sont plus strictes : parles-en à ton CFA.",
+      },
       {
         q: "Combien d'heures travaille un apprenti ?",
         a: "35 heures par semaine, comme les autres salariés, en comptant les heures de cours au CFA, qui sont du temps de travail effectif.",
