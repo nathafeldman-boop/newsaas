@@ -15,6 +15,7 @@ import { APPRENTICE_RATES, SMIC_MONTHLY_GROSS, STAGE_HOURLY_MIN, formatEuros, fo
 import { SITE_URL } from "@/lib/site";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { ShareButtons } from "@/components/share/ShareButtons";
+import { ApplyButton } from "@/components/offers/ApplyButton";
 import type { Offer } from "@/types/database";
 
 // ISR : chaque fiche est rendue à la 1re visite puis servie depuis le cache
@@ -437,15 +438,12 @@ export default async function PublicOfferPage({
         )}
 
         {offer.apply_url && (
-          <a
+          <ApplyButton
             href={offer.apply_url}
-            target="_blank"
-            rel="noopener nofollow"
-            className="btn btn-primary btn-block"
-            style={{ marginTop: 24 }}
-          >
-            Postuler à cette offre
-          </a>
+            followUp={`Une seule candidature suffit rarement : crée ton profil gratuit en 1 minute et swipe les autres offres${
+              links.market ? ` «\u00a0${links.market.label}\u00a0»` : ""
+            } dès leur publication.`}
+          />
         )}
         <p style={{ fontSize: 13, margin: "10px 0 0", textAlign: "center" }}>
           Besoin d&apos;une lettre de motivation ou d&apos;un CV ? Nos générateurs gratuits :{" "}
