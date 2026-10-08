@@ -158,7 +158,13 @@ export default async function GuidePage({
       </Link>
 
       <article className="card elev-sm mt-4" style={{ padding: "var(--space-6)" }}>
-        <h1 style={{ fontSize: 26, margin: "4px 0 16px" }}>{guide.title}</h1>
+        <h1 style={{ fontSize: 26, margin: "4px 0 6px" }}>{guide.title}</h1>
+        <p style={{ fontSize: 13, margin: "0 0 16px", color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
+          Mis à jour le{" "}
+          <time dateTime={guide.updatedAt}>
+            {new Date(`${guide.updatedAt}T12:00:00Z`).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Paris" })}
+          </time>
+        </p>
 
         {guide.intro.map((p, i) => (
           <p key={i} style={{ fontSize: 15, lineHeight: 1.6, margin: "0 0 12px" }}>
