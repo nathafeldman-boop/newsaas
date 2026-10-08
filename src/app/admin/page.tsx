@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { submitIndexNowAction } from "@/app/admin/seo-actions";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { POSTGREST_MAX_ROWS, fetchAllRows } from "@/lib/supabase/public";
+import { fetchAllRows } from "@/lib/supabase/public";
+import { getOnboardingFunnelStats, getTodayVisitorsBySource, getWeekdayAverages } from "@/lib/admin/dashboardStats";
 import { startOfTodayParis } from "@/lib/date";
 import { STEP_IDS, STEP_LABELS, type StepId } from "@/lib/onboarding/steps";
 import { LineAreaChart } from "@/components/admin/charts/LineAreaChart";
 import { WeekdayBarChart } from "@/components/admin/charts/WeekdayBarChart";
-import { bucketizeSignups, computeWeekdayAverages, periodStart, type Period } from "@/lib/admin/analytics";
+import { bucketizeSignups, periodStart, type Period } from "@/lib/admin/analytics";
 import { moderateReviewAction } from "./reviews-actions";
 
 const PERIODS: Period[] = ["7j", "30j", "90j", "tout"];
@@ -99,35 +100,6 @@ function SectionCard({ title, subtitle, children }: { title: string; subtitle?: 
   );
 }
 
-// Visites depuis `since`, lues par curseur sur created_at (index
-// site_visits_created_at_idx) : chaque page de 1000 lignes est une simple
-// lecture d'index. La première version (08/10 midi) paginait par décalage
-// avec un tri created_at + id, que la base refaisait sur toute la période à
-// chaque page : /admin a atteint la limite de 300 s. Deux visites à la même
-// microseconde à la jonction de deux pages : l'une peut être sautée,
-// négligeable pour des comptes de visiteurs. Forme { data, error } comme les
-// autres requêtes du tableau de bord.
-async function readVisitsSince<T extends { created_at: string }>(
-  admin: ReturnType<typeof createAdminClient>,
-  columns: string,
-  since: Date,
-  maxRows: number,
-): Promise<{ data: T[] | null; error: Error | null }> {
-  const rows: T[] = [];
-  let after: string | null = null;
-  while (rows.length < maxRows) {
-    let query = admin.from("site_visits").select(columns);
-    query = after ? query.gt("created_at", after) : query.gte("created_at", since.toISOString());
-    const { data, error } = await query.order("created_at").limit(POSTGREST_MAX_ROWS);
-    if (error) return { data: null, error: new Error(error.message) };
-    const page = (data ?? []) as unknown as T[];
-    rows.push(...page);
-    if (page.length < POSTGREST_MAX_ROWS) break;
-    after = page[page.length - 1].created_at;
-  }
-  return { data: rows, error: null };
-}
-
 export default async function AdminDashboardPage({
   searchParams,
 }: {
@@ -172,6 +144,35 @@ export default async function AdminDashboardPage({
   const ANNUALIZATION_BY_INTERVAL: Record<string, number> = { day: 365, week: 52, month: 12, year: 1 };
   const DEFAULT_MONTHLY_PRICE_CENTS = 799;
 
+  // Visites (graphique par jour de semaine, sources du jour) : en cache et
+  // lues en parallèle, voir lib/admin/dashboardStats.ts. Lancées avant le reste
+  // pour que tout parte en même temps ; une erreur n'affecte que ces blocs.
+  const UNKNOWN_SOURCE = "direct / inconnu";
+  const weekdayAveragesPromise = getWeekdayAverages(period).catch((err) => {
+    console.error("AdminDashboardPage: visits query failed", err);
+    return [0, 0, 0, 0, 0, 0, 0];
+  });
+  const visitorsBySourcePromise = getTodayVisitorsBySource(todayStart.toISOString(), UNKNOWN_SOURCE).catch((err) => {
+    console.error("AdminDashboardPage: visits today query failed", err);
+    return [] as [string, number][];
+  });
+
+  // Revenu par source (voir plus bas) : cohorte des inscrits des 30 derniers
+  // jours, paginée ("profiles" dépasse le Max Rows de 1000).
+  const cohortSince = new Date();
+  cohortSince.setDate(cohortSince.getDate() - 30);
+  const cohortPromise = fetchAllRows<{ utm_source: string | null; total_paid_cents: number }>((from, to) =>
+    admin
+      .from("profiles")
+      .select("utm_source, total_paid_cents")
+      .gte("created_at", cohortSince.toISOString())
+      .order("created_at")
+      .range(from, to),
+  ).catch((err) => {
+    console.error("AdminDashboardPage: revenue by source query failed", err);
+    return [] as { utm_source: string | null; total_paid_cents: number }[];
+  });
+
   // Chaque stat vient désormais d'une requête ciblée (count exact côté
   // Postgres, ou colonnes minimales + filtre de date) plutôt que d'un seul
   // SELECT * sans limite sur toute la table profiles -- cette dernière
@@ -192,10 +193,8 @@ export default async function AdminDashboardPage({
     { count: activeOffers },
     { count: swipesTotal },
     { count: applicationsTotal },
-    { data: visits, error: visitsError },
-    { data: funnelStats, error: funnelStatsError },
+    funnelStats,
     { data: reviewRows, error: reviewsError },
-    { data: visitsToday, error: visitsTodayError },
     { data: signupsTodayRows, error: signupsTodayRowsError },
   ] = await Promise.all([
     admin.from("profiles").select("id", { count: "exact", head: true }),
@@ -233,30 +232,20 @@ export default async function AdminDashboardPage({
     admin.from("offers").select("id", { count: "exact", head: true }).eq("is_active", true),
     admin.from("swipes").select("id", { count: "exact", head: true }),
     admin.from("applications").select("id", { count: "exact", head: true }),
-    // Paginé : une requête simple s'arrête aux 1000 lignes du Max Rows, et
-    // site_visits les dépasse (les préchargements de liens y étaient même
-    // comptés jusqu'au 08/10) -- les visiteurs de la période étaient
-    // calculés sur un échantillon tronqué.
-    readVisitsSince<{ visitor_id: string; created_at: string }>(admin, "visitor_id, created_at", visitsSince, 60_000),
     // Agrégation côté base (voir migration 20260915000001) plutôt qu'un
     // SELECT brut sur user_events : avec 7 étapes x 2 événements, cette
     // requête dépasse le Max Rows (1000) dès quelques centaines
     // d'utilisateurs ayant traversé l'onboarding -- même piège que la LTV
     // avant sum_total_paid_cents, ici probablement déjà actif vu le volume
     // d'utilisateurs actuel.
-    admin.rpc("onboarding_funnel_stats"),
+    getOnboardingFunnelStats().catch((err) => {
+      console.error("AdminDashboardPage: onboarding funnel query failed", err);
+      return [];
+    }),
     // Reviews : borné par prudence (une table qui devient un jour très
     // grande ne doit jamais tronquer silencieusement avgRating) même si le
     // volume actuel est très en dessous de 1000.
     admin.from("reviews").select("*").order("created_at", { ascending: false }).limit(5000),
-    // Attribution pub (voir migration 20260927000000_utm_tracking.sql) :
-    // bornée à aujourd'hui, mais paginée quand même (même piège Max Rows).
-    readVisitsSince<{ visitor_id: string; utm_source: string | null; created_at: string }>(
-      admin,
-      "visitor_id, utm_source, created_at",
-      todayStart,
-      20_000,
-    ),
     admin.from("profiles").select("utm_source").gte("created_at", todayStart.toISOString()),
   ]);
 
@@ -269,10 +258,7 @@ export default async function AdminDashboardPage({
   if (periodSignupsError) console.error("AdminDashboardPage: period signups query failed", periodSignupsError);
   if (recentProfilesError) console.error("AdminDashboardPage: recent profiles query failed", recentProfilesError);
   if (pricingError) console.error("AdminDashboardPage: ARR pricing query failed", pricingError);
-  if (visitsError) console.error("AdminDashboardPage: visits query failed", visitsError);
-  if (funnelStatsError) console.error("AdminDashboardPage: onboarding funnel query failed", funnelStatsError);
   if (reviewsError) console.error("AdminDashboardPage: reviews query failed", reviewsError);
-  if (visitsTodayError) console.error("AdminDashboardPage: visits today query failed", visitsTodayError);
   if (signupsTodayRowsError) console.error("AdminDashboardPage: signups today query failed", signupsTodayRowsError);
 
   const paidPremium = paidPremiumCount ?? 0;
@@ -304,48 +290,29 @@ export default async function AdminDashboardPage({
     period,
   );
 
-  const weekdayAverages = computeWeekdayAverages(visits ?? []);
+  const [weekdayAverages, visitorsBySourceRows] = await Promise.all([weekdayAveragesPromise, visitorsBySourcePromise]);
 
   // Répartition par source aujourd'hui : seul moyen de répondre à "j'ai eu
   // 106 clics TikTok mais 6 inscrits" avec des vraies données plutôt qu'une
   // supposition -- visiteurs distincts (une même personne qui recharge la
   // page ne doit pas compter deux fois) vs inscriptions, groupés par
   // utm_source (voir migration 20260927000000_utm_tracking.sql).
-  const UNKNOWN_SOURCE = "direct / inconnu";
-  const visitorsBySource = new Map<string, Set<string>>();
-  for (const v of visitsToday ?? []) {
-    const source = v.utm_source || UNKNOWN_SOURCE;
-    if (!visitorsBySource.has(source)) visitorsBySource.set(source, new Set());
-    visitorsBySource.get(source)!.add(v.visitor_id);
-  }
+  const visitorsBySource = new Map(visitorsBySourceRows);
   const signupsBySource = new Map<string, number>();
   for (const p of signupsTodayRows ?? []) {
     const source = p.utm_source || UNKNOWN_SOURCE;
     signupsBySource.set(source, (signupsBySource.get(source) ?? 0) + 1);
   }
   const acquisitionSources = [...new Set([...visitorsBySource.keys(), ...signupsBySource.keys()])].sort(
-    (a, b) => (visitorsBySource.get(b)?.size ?? 0) - (visitorsBySource.get(a)?.size ?? 0),
+    (a, b) => (visitorsBySource.get(b) ?? 0) - (visitorsBySource.get(a) ?? 0),
   );
 
   // Revenu par source : la question n'est pas "combien de visites" mais
   // "combien rapporte chaque canal" (audit SEO du 07/10, section KPI). Cohorte
   // = inscrits des 30 derniers jours, revenu = ce qu'ils ont payé depuis
   // (total_paid_cents). Paginé : "profiles" dépasse le Max Rows (1000).
-  const cohortSince = new Date();
-  cohortSince.setDate(cohortSince.getDate() - 30);
-  let cohort: { utm_source: string | null; total_paid_cents: number }[] = [];
-  try {
-    cohort = await fetchAllRows((from, to) =>
-      admin
-        .from("profiles")
-        .select("utm_source, total_paid_cents")
-        .gte("created_at", cohortSince.toISOString())
-        .order("created_at")
-        .range(from, to),
-    );
-  } catch (err) {
-    console.error("AdminDashboardPage: revenue by source query failed", err);
-  }
+  // Lancée avec les autres requêtes (cohortPromise, plus haut).
+  const cohort = await cohortPromise;
   const revenueBySource = new Map<string, { signups: number; payers: number; cents: number }>();
   for (const p of cohort) {
     const source = p.utm_source || UNKNOWN_SOURCE;
@@ -447,7 +414,7 @@ export default async function AdminDashboardPage({
 
       <SectionCard
         title="Acquisition — aujourd'hui"
-        subtitle="Visiteurs distincts et inscriptions du jour, par source. Liens ?utm_source=... (pubs, partages) + détection automatique du site d'origine : google / bing = référencement, chatgpt, perplexity, gemini, meta-ai, grok, deepseek, mistral = IA ; tiktok / instagram = réseaux. Inscriptions Google incluses depuis le 08/10. « direct / inconnu » = lien tapé ou appli sans référent."
+        subtitle="Visiteurs distincts et inscriptions du jour, par source. Liens ?utm_source=... (pubs, partages) + détection automatique du site d'origine : google / bing = référencement, chatgpt, perplexity, gemini, meta-ai, grok, deepseek, mistral = IA ; tiktok / instagram = réseaux. Inscriptions Google incluses depuis le 08/10. « direct / inconnu » = lien tapé ou appli sans référent. Visiteurs mis à jour toutes les 2 min, inscriptions en direct."
       >
         {acquisitionSources.length === 0 ? (
           <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>
@@ -466,7 +433,7 @@ export default async function AdminDashboardPage({
               {acquisitionSources.map((source) => (
                 <tr key={source} style={{ borderTop: "1px solid var(--color-divider)" }}>
                   <td style={{ padding: "6px 0", fontWeight: source === UNKNOWN_SOURCE ? 400 : 700 }}>{source}</td>
-                  <td style={{ padding: "6px 0" }}>{visitorsBySource.get(source)?.size ?? 0}</td>
+                  <td style={{ padding: "6px 0" }}>{visitorsBySource.get(source) ?? 0}</td>
                   <td style={{ padding: "6px 0" }}>{signupsBySource.get(source) ?? 0}</td>
                 </tr>
               ))}
@@ -513,14 +480,14 @@ export default async function AdminDashboardPage({
 
       <SectionCard
         title="Jours avec le plus de monde"
-        subtitle="Visiteurs distincts par jour de semaine, sur la période sélectionnée."
+        subtitle="Visiteurs distincts par jour de semaine, sur la période sélectionnée. Recalculé toutes les 15 min."
       >
         <WeekdayBarChart averages={weekdayAverages} />
       </SectionCard>
 
       <SectionCard
         title="Funnel onboarding"
-        subtitle="Vus / terminés par étape, tous comptes connectés confondus."
+        subtitle="Vus / terminés par étape, tous comptes connectés confondus. Recalculé toutes les 10 min."
       >
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
