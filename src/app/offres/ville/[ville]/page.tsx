@@ -6,6 +6,7 @@ import { PublicOffersGrid } from "@/components/offers/PublicOffersGrid";
 import { SITE_URL } from "@/lib/site";
 import { pagedPath, pagedTitle, parsePageParam } from "@/lib/seo/pagination";
 import { cityPhrase, getProgrammaticIndex } from "@/lib/seo/programmaticIndex";
+import { plural } from "@/lib/seo/programmaticPage";
 
 export async function generateMetadata({
   params,
@@ -22,7 +23,7 @@ export async function generateMetadata({
   const url = `${SITE_URL}${pagedPath(`/offres/ville/${segment.slug}`, page)}`;
   return {
     title: pagedTitle(`Offres d'alternance et de stage à ${segment.label}`, page),
-    description: `${segment.count} offre(s) d'alternance et de stage à ${segment.label} actuellement sur Stageio. Parcours-les sans créer de compte.${page > 1 ? ` Page ${page}.` : ""}`,
+    description: `${plural(segment.count, "offre")} d'alternance et de stage à ${segment.label} actuellement sur Stageio. Parcours-les sans créer de compte.${page > 1 ? ` Page ${page}.` : ""}`,
     alternates: { canonical: url },
     // Simple liste qui vise les mêmes recherches que /alternance/[ville] et
     // /stage/[ville] (chiffres, entreprises, métiers, FAQ) : on laisse ces
@@ -65,7 +66,7 @@ export default async function CityOffersPage({
         Offres d&apos;alternance et de stage à {segment.label}
       </h1>
       <p style={{ fontSize: 14, margin: "8px 0 0" }}>
-        {count} offre(s) active(s) à {segment.label}. Crée un compte pour matcher automatiquement
+        {plural(count, "offre active", "offres actives")} à {segment.label}. Crée un compte pour matcher automatiquement
         les tiennes.
       </p>
       {detailed.length > 0 && (

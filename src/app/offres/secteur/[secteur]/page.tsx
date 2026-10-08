@@ -5,6 +5,7 @@ import { getSectorSegment, fetchOffersForSector } from "@/lib/offers/segments";
 import { PublicOffersGrid } from "@/components/offers/PublicOffersGrid";
 import { SITE_URL } from "@/lib/site";
 import { pagedPath, pagedTitle, parsePageParam } from "@/lib/seo/pagination";
+import { plural } from "@/lib/seo/programmaticPage";
 
 export async function generateMetadata({
   params,
@@ -21,7 +22,7 @@ export async function generateMetadata({
   const url = `${SITE_URL}${pagedPath(`/offres/secteur/${segment.slug}`, page)}`;
   return {
     title: pagedTitle(`Offres d'alternance et de stage en ${segment.label}`, page),
-    description: `${segment.count} offre(s) d'alternance et de stage en ${segment.label} actuellement sur Stageio. Parcours-les sans créer de compte.${page > 1 ? ` Page ${page}.` : ""}`,
+    description: `${plural(segment.count, "offre")} d'alternance et de stage en ${segment.label} actuellement sur Stageio. Parcours-les sans créer de compte.${page > 1 ? ` Page ${page}.` : ""}`,
     alternates: { canonical: url },
   };
 }
@@ -51,7 +52,7 @@ export default async function SectorOffersPage({
         Offres d&apos;alternance et de stage en {segment.label}
       </h1>
       <p style={{ fontSize: 14, margin: "8px 0 0" }}>
-        {count} offre(s) active(s) en {segment.label}. Crée un compte pour matcher automatiquement
+        {plural(count, "offre active", "offres actives")} en {segment.label}. Crée un compte pour matcher automatiquement
         les tiennes.
       </p>
 

@@ -7,6 +7,7 @@ import { OffersSegmentNav } from "@/components/offers/OffersSegmentNav";
 import { SegmentChips } from "@/components/offers/SegmentChips";
 import { SITE_URL } from "@/lib/site";
 import { pagedPath, pagedTitle, parsePageParam } from "@/lib/seo/pagination";
+import { plural } from "@/lib/seo/programmaticPage";
 
 export async function generateMetadata({
   searchParams,
@@ -48,7 +49,7 @@ export default async function PublicOffersIndex({
     <div className="mx-auto max-w-4xl px-5 py-10 sm:px-9">
       <h1 style={{ fontSize: 28, margin: 0 }}>Offres d&apos;alternance et de stage</h1>
       <p style={{ fontSize: 14, margin: "8px 0 0" }}>
-        {count} offre(s) active(s). Crée un compte pour matcher automatiquement les tiennes.
+        {plural(count, "offre active", "offres actives")}. Crée un compte pour matcher automatiquement les tiennes.
       </p>
 
       <OffersSegmentNav />
