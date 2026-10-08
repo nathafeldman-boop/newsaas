@@ -1,6 +1,7 @@
 import { unstable_cache } from "next/cache";
+import { createCatalogClient } from "@/lib/supabase/catalog";
 import { compactGroup, expandGroup, fitCacheBudget, idEncoder, unpackIdTable, type Compacted } from "@/lib/seo/compactIds";
-import { byPublishedDescThenId, createPublicClient, fetchAllRowsByIdCursor } from "@/lib/supabase/public";
+import { byPublishedDescThenId, fetchAllRowsByIdCursor } from "@/lib/supabase/public";
 import { NOT_A_CITY, normalizeCityKey, slugify, titleCase } from "@/lib/offers/segments";
 import { PUBLIC_OFFERS_PAGE_SIZE } from "@/lib/offers/fetchPublicOffers";
 import { classifyMetier } from "@/lib/seo/metiers";
@@ -178,7 +179,7 @@ export function buildCompanyIndex(rows: Row[], now = Date.now()): CompanyIndex {
 }
 
 async function computeCompanyIndex(): Promise<CompanyIndex> {
-  const supabase = createPublicClient();
+  const supabase = createCatalogClient();
   const rows = await fetchAllRowsByIdCursor<Row>((afterId, limit) => {
     let query = supabase
       .from("offers")

@@ -1,4 +1,5 @@
 import { unstable_cache } from "next/cache";
+import { createCatalogClient } from "@/lib/supabase/catalog";
 import { createPublicClient, fetchAllRowsByIdCursor } from "@/lib/supabase/public";
 import type { PublicOfferRow } from "@/lib/offers/fetchPublicOffers";
 import { PUBLIC_OFFERS_PAGE_SIZE, PUBLIC_OFFER_COLUMNS, isPageOutOfRange } from "@/lib/offers/fetchPublicOffers";
@@ -36,7 +37,7 @@ export type Segment = { slug: string; label: string; count: number };
 export type CitySegment = Segment & { locations: string[] };
 
 async function computeSectorSegments(): Promise<Segment[]> {
-  const supabase = createPublicClient();
+  const supabase = createCatalogClient();
   const rows = await fetchAllRowsByIdCursor<{ id: string; sector: string | null }>((afterId, limit) => {
     let query = supabase.from("offers").select("id, sector").eq("is_active", true).not("sector", "is", null);
     if (afterId) query = query.gt("id", afterId);
@@ -201,7 +202,7 @@ export function preferCityNamedInTitle(location: string, title: string): string 
 }
 
 async function computeCitySegments(): Promise<CitySegment[]> {
-  const supabase = createPublicClient();
+  const supabase = createCatalogClient();
   const rows = await fetchAllRowsByIdCursor<{ id: string; location: string | null }>((afterId, limit) => {
     let query = supabase.from("offers").select("id, location").eq("is_active", true);
     if (afterId) query = query.gt("id", afterId);

@@ -1,4 +1,5 @@
-import { createPublicClient, fetchAllRows, fetchAllRowsByIdCursor } from "@/lib/supabase/public";
+import { createCatalogClient } from "@/lib/supabase/catalog";
+import { fetchAllRows, fetchAllRowsByIdCursor } from "@/lib/supabase/public";
 import { offerPath } from "@/lib/offers/publicUrl";
 import { SITEMAP_MAX_URLS, type SitemapEntry } from "@/lib/seo/sitemapXml";
 import type { ContractType, Offer } from "@/types/database";
@@ -19,7 +20,7 @@ function toEntry(offer: Row): OfferSitemapEntry {
 // plafond PostgREST) : l'ancien sitemap demandait .limit(45000) en une
 // requête et ne recevait en réalité que 1000 offres sur ~5 000.
 export async function fetchOfferSitemapEntries(type: ContractType): Promise<OfferSitemapEntry[]> {
-  const supabase = createPublicClient();
+  const supabase = createCatalogClient();
   const rows = await fetchAllRowsByIdCursor<Row>((afterId, limit) => {
     let query = supabase
       .from("offers")
@@ -40,7 +41,7 @@ export const RECENT_OFFERS_HOURS = 72;
 
 export async function fetchRecentOfferSitemapEntries(): Promise<OfferSitemapEntry[]> {
   const since = new Date(Date.now() - RECENT_OFFERS_HOURS * 3600 * 1000).toISOString();
-  const supabase = createPublicClient();
+  const supabase = createCatalogClient();
   const rows = await fetchAllRows<Row>(
     (from, to) =>
       supabase
@@ -61,7 +62,7 @@ export async function fetchRecentOfferSitemapEntries(): Promise<OfferSitemapEntr
 // <lastmod> des sitemaps d'offres dans l'index. null si inconnue.
 export async function latestOfferCreatedAt(type?: ContractType): Promise<string | null> {
   try {
-    let query = createPublicClient()
+    let query = createCatalogClient()
       .from("offers")
       .select("created_at")
       .eq("is_active", true)

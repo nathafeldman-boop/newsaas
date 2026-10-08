@@ -1,6 +1,7 @@
 import { unstable_cache } from "next/cache";
+import { createCatalogClient } from "@/lib/supabase/catalog";
 import { compactGroup, expandGroup, fitCacheBudget, idEncoder, unpackIdTable, type Compacted } from "@/lib/seo/compactIds";
-import { byPublishedDescThenId, createPublicClient, fetchAllRowsByIdCursor } from "@/lib/supabase/public";
+import { byPublishedDescThenId, fetchAllRowsByIdCursor } from "@/lib/supabase/public";
 import { NOT_A_CITY, normalizeCityKey, preferCityNamedInTitle, slugify, titleCase } from "@/lib/offers/segments";
 import { PUBLIC_OFFERS_PAGE_SIZE } from "@/lib/offers/fetchPublicOffers";
 import { classifyFormations, classifyMetier } from "@/lib/seo/metiers";
@@ -169,7 +170,7 @@ function finalize(acc: Accumulator): SegmentStats {
 }
 
 async function computeIndex(type: ContractType): Promise<ProgrammaticIndex> {
-  const supabase = createPublicClient();
+  const supabase = createCatalogClient();
   const rows = await fetchAllRowsByIdCursor<IndexRow>((afterId, limit) => {
     let query = supabase
       .from("offers")
