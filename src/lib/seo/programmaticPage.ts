@@ -46,6 +46,8 @@ export type ProgrammaticModel = {
   companies: SegmentLink[];
   metier: Metier | null;
   city: CityEntry | null;
+  // Date du dernier recalcul de l'index (ISO), affichée sous le titre.
+  updatedAt: string;
 };
 
 export const TYPE_LABEL: Record<ContractType, string> = { alternance: "Alternance", stage: "Stage" };
@@ -205,7 +207,7 @@ export function buildProgrammaticModel(
   const domain = metier ? ` ${metier.domain}` : "";
   const h1 = `${typeLabel}${metier ? ` ${metier.label}` : ""}${where}`;
   const offersPhrase = `${OFFERS_OF[type]}${domain}${where}`;
-  const today = new Date(index.generatedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  const today = new Date(index.generatedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Paris" });
 
   const paragraphs: string[] = [];
   paragraphs.push(
@@ -317,6 +319,7 @@ export function buildProgrammaticModel(
     companies: [],
     metier,
     city,
+    updatedAt: index.generatedAt,
   };
 }
 

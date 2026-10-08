@@ -153,6 +153,12 @@ export async function ProgrammaticPageView({ model, pageParam }: { model: Progra
       </nav>
 
       <h1 style={{ fontSize: 30, margin: "12px 0 0" }}>{model.h1}</h1>
+      <p style={{ fontSize: 13, margin: "6px 0 0", color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
+        Mis à jour le{" "}
+        <time dateTime={model.updatedAt}>
+          {new Date(model.updatedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Paris" })}
+        </time>
+      </p>
       <p style={{ fontSize: 15, margin: "10px 0 0" }}>{model.paragraphs[0]}</p>
 
       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">

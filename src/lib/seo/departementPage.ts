@@ -181,6 +181,7 @@ export function buildDepartementModel(
     companies: [],
     metier,
     city: null,
+    updatedAt: index.generatedAt,
   };
 }
 

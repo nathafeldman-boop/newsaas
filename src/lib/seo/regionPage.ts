@@ -188,6 +188,7 @@ export function buildRegionModel(
     companies: [],
     metier,
     city: null,
+    updatedAt: index.generatedAt,
   };
 }
 
