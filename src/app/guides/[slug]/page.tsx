@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { signupHref } from "@/lib/signup/intent";
 import { ShareButtons } from "@/components/share/ShareButtons";
 import type { Metadata } from "next";
 import { getGuide, GUIDES } from "@/lib/guides/guidesData";
@@ -31,7 +32,11 @@ function GuideSignupNudge({ slug }: { slug: string }) {
         chaque jour. Crée ton profil gratuit : tu swipes celles qui te correspondent, triées selon ta ville et ton
         métier.
       </p>
-      <Link href="/inscription" className="btn btn-primary" style={{ alignSelf: "flex-start", marginTop: 8 }}>
+      <Link
+        href={signupHref({ type: stage && !alternance ? "stage" : alternance && !stage ? "alternance" : null })}
+        className="btn btn-primary"
+        style={{ alignSelf: "flex-start", marginTop: 8 }}
+      >
         Créer mon profil gratuit
       </Link>
     </aside>

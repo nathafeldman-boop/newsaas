@@ -4205,7 +4205,7 @@ export const MORE_GUIDES: Guide[] = [
   },
   {
     slug: "rentree-decalee-alternance",
-    title: "Alternance en rentrée décalée (janvier à mars) : comment faire",
+    title: "Alternance en rentrée décalée 2027 (janvier à mars) : comment faire",
     metaDescription:
       "Pas d'alternance en septembre ? Certaines formations démarrent en janvier, février ou mars. Quelles formations, comment s'inscrire, comment trouver l'entreprise à temps : le guide.",
     publishedAt: "2026-10-07",
