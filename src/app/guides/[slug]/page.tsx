@@ -14,6 +14,26 @@ const SCHOOL_GUIDES = new Set(["stage-de-3e", "stage-de-seconde"]);
 
 // Encart d'inscription glissé après la 2e section : la personne a déjà lu
 // de quoi juger le guide, et c'est souvent là qu'elle décroche.
+// Les 12 plus grandes villes, qui ont toutes des offres d'alternance en
+// permanence : chaque guide transmet du poids aux pages ville (les requêtes
+// « alternance paris », « alternance lyon »…), et le lecteur passe de la
+// méthode aux offres en un clic. Liste fixe : les guides sont générés au
+// build, sans lecture de la base.
+const GUIDE_CITY_LINKS = [
+  { slug: "paris", label: "Paris" },
+  { slug: "lyon", label: "Lyon" },
+  { slug: "marseille", label: "Marseille" },
+  { slug: "toulouse", label: "Toulouse" },
+  { slug: "bordeaux", label: "Bordeaux" },
+  { slug: "lille", label: "Lille" },
+  { slug: "nantes", label: "Nantes" },
+  { slug: "strasbourg", label: "Strasbourg" },
+  { slug: "montpellier", label: "Montpellier" },
+  { slug: "rennes", label: "Rennes" },
+  { slug: "nice", label: "Nice" },
+  { slug: "grenoble", label: "Grenoble" },
+];
+
 function GuideSignupNudge({ slug }: { slug: string }) {
   const stage = /stage|convention|gratification|rapport|soutenance|attestation/.test(slug);
   const alternance = /alternance|alternant|apprenti|contrat|cfa|bts|bachelor/.test(slug);
@@ -276,6 +296,15 @@ export default async function GuidePage({
             Baromètre 2026
           </Link>
         </div>
+        <p style={{ fontSize: 14, margin: "14px 0 0", lineHeight: 1.8 }}>
+          Offres d&apos;alternance à{" "}
+          {GUIDE_CITY_LINKS.map((city, i) => (
+            <span key={city.slug}>
+              {i > 0 ? " · " : ""}
+              <Link href={`/alternance/${city.slug}`}>{city.label}</Link>
+            </span>
+          ))}
+        </p>
       </nav>
 
       <div className="card elev-sm mt-6" style={{ padding: "var(--space-6)", textAlign: "center" }}>
