@@ -30,8 +30,10 @@ const AGES = Object.keys(AGE_LABEL) as AgeBracket[];
 // Valeurs par défaut = le cas le plus recherché (apprenti 18-20 ans, 1re
 // année, contrat récent) : le résultat est donc déjà présent dans le HTML
 // rendu côté serveur, lisible par Google sans exécuter de JavaScript.
-export function SalarySimulator() {
-  const [contract, setContract] = useState<Contract>("apprentissage");
+// `initialContract` : « stage » dans le guide de la gratification, pour que
+// le montant affiché d'emblée soit celui que le lecteur cherche.
+export function SalarySimulator({ initialContract = "apprentissage" }: { initialContract?: Contract } = {}) {
+  const [contract, setContract] = useState<Contract>(initialContract);
   const [age, setAge] = useState<AgeBracket>("18to20");
   const [year, setYear] = useState<ContractYear>(1);
   const [recentContract, setRecentContract] = useState(true);

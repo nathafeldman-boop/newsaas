@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { signupHref } from "@/lib/signup/intent";
+import { SalarySimulator } from "@/components/tools/SalarySimulator";
 import { ShareButtons } from "@/components/share/ShareButtons";
 import type { Metadata } from "next";
 import { getGuide, GUIDES } from "@/lib/guides/guidesData";
@@ -144,6 +145,15 @@ export default async function GuidePage({
             {p}
           </p>
         ))}
+
+        {/* « calcul gratification stage » : le calcul tout de suite, au lieu
+            d'un renvoi vers la page outil. */}
+        {guide.slug === "gratification-de-stage" && (
+          <section style={{ marginTop: 20 }}>
+            <h2 style={{ fontSize: 18, margin: "0 0 10px" }}>Calcule ta gratification</h2>
+            <SalarySimulator initialContract="stage" />
+          </section>
+        )}
 
         {guide.sections.map((section, sectionIndex) => (
           <section key={section.heading} style={{ marginTop: 28 }}>
