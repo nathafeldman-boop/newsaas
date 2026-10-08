@@ -99,6 +99,19 @@ function SectionCard({ title, subtitle, children }: { title: string; subtitle?: 
   );
 }
 
+// fetchAllRows lève une erreur ; ici on garde la forme { data, error } des
+// autres requêtes du tableau de bord, qui s'affiche même si une requête échoue.
+async function allRowsOrError<T>(
+  fetchPage: Parameters<typeof fetchAllRows<T>>[0],
+  maxRows: number,
+): Promise<{ data: T[] | null; error: Error | null }> {
+  try {
+    return { data: await fetchAllRows<T>(fetchPage, maxRows), error: null };
+  } catch (error) {
+    return { data: null, error: error instanceof Error ? error : new Error(String(error)) };
+  }
+}
+
 export default async function AdminDashboardPage({
   searchParams,
 }: {
@@ -204,7 +217,21 @@ export default async function AdminDashboardPage({
     admin.from("offers").select("id", { count: "exact", head: true }).eq("is_active", true),
     admin.from("swipes").select("id", { count: "exact", head: true }),
     admin.from("applications").select("id", { count: "exact", head: true }),
-    admin.from("site_visits").select("visitor_id, created_at").gte("created_at", visitsSince.toISOString()),
+    // Paginé : une requête simple s'arrête aux 1000 lignes du Max Rows, et
+    // site_visits les dépasse (les préchargements de liens y étaient même
+    // comptés jusqu'au 08/10) -- les visiteurs de la période étaient
+    // calculés sur un échantillon tronqué.
+    allRowsOrError<{ visitor_id: string; created_at: string }>(
+      (from, to) =>
+        admin
+          .from("site_visits")
+          .select("visitor_id, created_at")
+          .gte("created_at", visitsSince.toISOString())
+          .order("created_at")
+          .order("id")
+          .range(from, to),
+      60_000,
+    ),
     // Agrégation côté base (voir migration 20260915000001) plutôt qu'un
     // SELECT brut sur user_events : avec 7 étapes x 2 événements, cette
     // requête dépasse le Max Rows (1000) dès quelques centaines
@@ -217,9 +244,18 @@ export default async function AdminDashboardPage({
     // volume actuel est très en dessous de 1000.
     admin.from("reviews").select("*").order("created_at", { ascending: false }).limit(5000),
     // Attribution pub (voir migration 20260927000000_utm_tracking.sql) :
-    // bornées à aujourd'hui, donc jamais assez de lignes pour retomber dans
-    // le piège Max Rows 1000 décrit plus haut.
-    admin.from("site_visits").select("visitor_id, utm_source").gte("created_at", todayStart.toISOString()),
+    // bornée à aujourd'hui, mais paginée quand même (même piège Max Rows).
+    allRowsOrError<{ visitor_id: string; utm_source: string | null }>(
+      (from, to) =>
+        admin
+          .from("site_visits")
+          .select("visitor_id, utm_source")
+          .gte("created_at", todayStart.toISOString())
+          .order("created_at")
+          .order("id")
+          .range(from, to),
+      20_000,
+    ),
     admin.from("profiles").select("utm_source").gte("created_at", todayStart.toISOString()),
   ]);
 
