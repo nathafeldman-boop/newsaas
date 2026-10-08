@@ -2,7 +2,7 @@ import Link from "next/link";
 import { submitIndexNowAction } from "@/app/admin/seo-actions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchAllRows } from "@/lib/supabase/public";
-import { getOnboardingFunnelStats, getTodayVisitorsBySource, getWeekdayAverages } from "@/lib/admin/dashboardStats";
+import { getOnboardingFunnelStats, getTodayVisitorsBySource, getWeekdayAverages, withTimeout } from "@/lib/admin/dashboardStats";
 import { startOfTodayParis } from "@/lib/date";
 import { STEP_IDS, STEP_LABELS, type StepId } from "@/lib/onboarding/steps";
 import { LineAreaChart } from "@/components/admin/charts/LineAreaChart";
@@ -144,18 +144,38 @@ export default async function AdminDashboardPage({
   const ANNUALIZATION_BY_INTERVAL: Record<string, number> = { day: 365, week: 52, month: 12, year: 1 };
   const DEFAULT_MONTHLY_PRICE_CENTS = 799;
 
-  // Visites (graphique par jour de semaine, sources du jour) : en cache et
-  // lues en parallèle, voir lib/admin/dashboardStats.ts. Lancées avant le reste
-  // pour que tout parte en même temps ; une erreur n'affecte que ces blocs.
+  // Statistiques lourdes (graphique par jour de semaine, visiteurs du jour,
+  // entonnoir) : en cache, bornées, et jamais attendues plus de
+  // HEAVY_STAT_BUDGET_MS (voir lib/admin/dashboardStats.ts). null = pas
+  // disponible (erreur ou calcul trop long) : le bloc l'indique, le reste du
+  // tableau de bord s'affiche normalement. Lancées avant le reste pour que
+  // tout parte en même temps.
+  const HEAVY_STAT_BUDGET_MS = 8000;
   const UNKNOWN_SOURCE = "direct / inconnu";
-  const weekdayAveragesPromise = getWeekdayAverages(period).catch((err) => {
-    console.error("AdminDashboardPage: visits query failed", err);
-    return [0, 0, 0, 0, 0, 0, 0];
-  });
-  const visitorsBySourcePromise = getTodayVisitorsBySource(todayStart.toISOString(), UNKNOWN_SOURCE).catch((err) => {
-    console.error("AdminDashboardPage: visits today query failed", err);
-    return [] as [string, number][];
-  });
+  const weekdayAveragesPromise = withTimeout(
+    getWeekdayAverages(period).catch((err) => {
+      console.error("AdminDashboardPage: visits query failed", err);
+      return null;
+    }),
+    HEAVY_STAT_BUDGET_MS,
+    null,
+  );
+  const visitorsBySourcePromise = withTimeout(
+    getTodayVisitorsBySource(todayStart.toISOString(), UNKNOWN_SOURCE).catch((err) => {
+      console.error("AdminDashboardPage: visits today query failed", err);
+      return null;
+    }),
+    HEAVY_STAT_BUDGET_MS,
+    null,
+  );
+  const funnelStatsPromise = withTimeout(
+    getOnboardingFunnelStats().catch((err) => {
+      console.error("AdminDashboardPage: onboarding funnel query failed", err);
+      return null;
+    }),
+    HEAVY_STAT_BUDGET_MS,
+    null,
+  );
 
   // Revenu par source (voir plus bas) : cohorte des inscrits des 30 derniers
   // jours, paginée ("profiles" dépasse le Max Rows de 1000).
@@ -193,7 +213,7 @@ export default async function AdminDashboardPage({
     { count: activeOffers },
     { count: swipesTotal },
     { count: applicationsTotal },
-    funnelStats,
+    { value: funnelStats },
     { data: reviewRows, error: reviewsError },
     { data: signupsTodayRows, error: signupsTodayRowsError },
   ] = await Promise.all([
@@ -238,10 +258,7 @@ export default async function AdminDashboardPage({
     // d'utilisateurs ayant traversé l'onboarding -- même piège que la LTV
     // avant sum_total_paid_cents, ici probablement déjà actif vu le volume
     // d'utilisateurs actuel.
-    getOnboardingFunnelStats().catch((err) => {
-      console.error("AdminDashboardPage: onboarding funnel query failed", err);
-      return [];
-    }),
+    funnelStatsPromise,
     // Reviews : borné par prudence (une table qui devient un jour très
     // grande ne doit jamais tronquer silencieusement avgRating) même si le
     // volume actuel est très en dessous de 1000.
@@ -290,14 +307,14 @@ export default async function AdminDashboardPage({
     period,
   );
 
-  const [weekdayAverages, visitorsBySourceRows] = await Promise.all([weekdayAveragesPromise, visitorsBySourcePromise]);
+  const [{ value: weekdayAverages }, { value: visitorsBySourceRows }] = await Promise.all([weekdayAveragesPromise, visitorsBySourcePromise]);
 
   // Répartition par source aujourd'hui : seul moyen de répondre à "j'ai eu
   // 106 clics TikTok mais 6 inscrits" avec des vraies données plutôt qu'une
   // supposition -- visiteurs distincts (une même personne qui recharge la
   // page ne doit pas compter deux fois) vs inscriptions, groupés par
   // utm_source (voir migration 20260927000000_utm_tracking.sql).
-  const visitorsBySource = new Map(visitorsBySourceRows);
+  const visitorsBySource = new Map(visitorsBySourceRows ?? []);
   const signupsBySource = new Map<string, number>();
   for (const p of signupsTodayRows ?? []) {
     const source = p.utm_source || UNKNOWN_SOURCE;
@@ -414,8 +431,13 @@ export default async function AdminDashboardPage({
 
       <SectionCard
         title="Acquisition — aujourd'hui"
-        subtitle="Visiteurs distincts et inscriptions du jour, par source. Liens ?utm_source=... (pubs, partages) + détection automatique du site d'origine : google / bing = référencement, chatgpt, perplexity, gemini, meta-ai, grok, deepseek, mistral = IA ; tiktok / instagram = réseaux. Inscriptions Google incluses depuis le 08/10. « direct / inconnu » = lien tapé ou appli sans référent. Visiteurs mis à jour toutes les 2 min, inscriptions en direct."
+        subtitle="Visiteurs distincts et inscriptions du jour, par source. Liens ?utm_source=... (pubs, partages) + détection automatique du site d'origine : google / bing = référencement, chatgpt, perplexity, gemini, meta-ai, grok, deepseek, mistral = IA ; tiktok / instagram = réseaux. Inscriptions Google incluses depuis le 08/10. « direct / inconnu » = lien tapé ou appli sans référent. Visiteurs mis à jour toutes les 2 min (comptés depuis le 08/10 14 h 15 : avant, chaque préchargement de lien comptait comme une visite), inscriptions en direct."
       >
+        {visitorsBySourceRows === null && (
+          <p style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "0 0 8px" }}>
+            Visiteurs du jour : calcul en cours, recharge dans une minute (inscriptions à jour).
+          </p>
+        )}
         {acquisitionSources.length === 0 ? (
           <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>
             Aucune visite aujourd&apos;hui.
@@ -480,15 +502,26 @@ export default async function AdminDashboardPage({
 
       <SectionCard
         title="Jours avec le plus de monde"
-        subtitle="Visiteurs distincts par jour de semaine, sur la période sélectionnée. Recalculé toutes les 15 min."
+        subtitle="Visiteurs distincts par jour de semaine, sur la période sélectionnée, depuis le 08/10 14 h 15 (avant, chaque préchargement de lien comptait comme une visite). Recalculé toutes les 15 min."
       >
-        <WeekdayBarChart averages={weekdayAverages} />
+        {weekdayAverages ? (
+          <WeekdayBarChart averages={weekdayAverages} />
+        ) : (
+          <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>
+            Calcul en cours, recharge dans une minute.
+          </p>
+        )}
       </SectionCard>
 
       <SectionCard
         title="Funnel onboarding"
         subtitle="Vus / terminés par étape, tous comptes connectés confondus. Recalculé toutes les 10 min."
       >
+        {funnelStats === null && (
+          <p style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "0 0 8px" }}>
+            Calcul en cours, recharge dans une minute.
+          </p>
+        )}
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
