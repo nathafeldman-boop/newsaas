@@ -307,6 +307,18 @@ export async function ProgrammaticHub({ type }: { type: ContractType }) {
         <strong>{index.total.toLocaleString("fr-FR")}</strong> {text.intro}. Choisis ton métier ou ta ville, ou{" "}
         <Link href={text.listPath}>parcours toutes les offres</Link>.
       </p>
+      {/* Seul appel à l'inscription des hubs, hors en-tête : ces deux pages
+          visent « alternance » et « stage », les plus grosses requêtes. */}
+      <div className="card mt-6" style={{ padding: "var(--space-4) var(--space-5)" }}>
+        <p style={{ fontSize: 14.5, margin: "0 0 12px" }}>
+          <strong>Pas envie de fouiller {type === "alternance" ? "métier par métier" : "page par page"} ?</strong> Crée
+          ton profil gratuit en 1 minute : Stageio trie les {index.total.toLocaleString("fr-FR")} offres selon ta ville et
+          ton métier, et les nouvelles arrivent dans ton fil chaque jour.
+        </p>
+        <Link href={signupHref({ type })} className="btn btn-primary">
+          Créer mon profil gratuit
+        </Link>
+      </div>
       <LinkChips title="Par métier" links={metiers} />
       <LinkChips title="Par ville" links={cities} />
       <LinkChips title="Par diplôme" links={formations} />
@@ -322,6 +334,15 @@ export async function ProgrammaticHub({ type }: { type: ContractType }) {
         {" · "}
         <Link href="/guides">Guides</Link>
       </p>
+      <div className="card elev-sm mt-8" style={{ padding: "var(--space-6)", textAlign: "center" }}>
+        <p style={{ fontSize: 15, margin: "0 0 12px" }}>
+          Les nouvelles {type === "alternance" ? "offres d'alternance" : "offres de stage"} de ta ville et de ton métier,
+          dans ton fil dès leur publication.
+        </p>
+        <Link href={signupHref({ type })} className="btn btn-primary">
+          Créer mon compte gratuitement
+        </Link>
+      </div>
     </div>
   );
 }
