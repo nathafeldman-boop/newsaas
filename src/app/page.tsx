@@ -281,7 +281,7 @@ async function getLatestOfferLinks(): Promise<DiscoveryLink[]> {
 // transmet du poids, et ce sont les questions que les étudiants tapent le plus.
 const POPULAR_GUIDES = [
   { href: "/guides/je-ne-trouve-pas-d-alternance", label: "Je ne trouve pas d'alternance" },
-  { href: "/guides/sites-pour-trouver-une-alternance", label: "Quel site pour trouver une alternance" },
+  { href: "/guides/sites-pour-trouver-une-alternance", label: "Quel site ou appli pour trouver une alternance" },
   { href: "/guides/la-bonne-alternance", label: "La Bonne Alternance : mode d'emploi" },
   { href: "/guides/parcoursup-alternance", label: "Parcoursup et alternance" },
   { href: "/guides/quand-chercher-son-alternance", label: "Quand chercher son alternance" },

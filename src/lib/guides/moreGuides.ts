@@ -3742,11 +3742,11 @@ export const MORE_GUIDES: Guide[] = [
   },
   {
     slug: "sites-pour-trouver-une-alternance",
-    title: "Quel site pour trouver une alternance ? Le comparatif honnête (2026)",
+    title: "Quel site ou quelle appli pour trouver une alternance ? Comparatif 2026",
     metaDescription:
-      "La Bonne Alternance, France Travail, Indeed, HelloWork, LinkedIn, Welcome to the Jungle, JobTeaser, Stageio : ce que chaque site fait de mieux pour trouver ton alternance.",
+      "La Bonne Alternance, France Travail, Indeed, HelloWork, LinkedIn, Welcome to the Jungle, JobTeaser, Stageio : ce que chaque site et chaque appli fait de mieux pour trouver ton alternance.",
     publishedAt: "2026-10-07",
-    updatedAt: "2026-10-07",
+    updatedAt: "2026-10-08",
     related: ["je-ne-trouve-pas-d-alternance", "la-bonne-alternance", "trouver-une-alternance", "candidature-spontanee-alternance"],
     intro: [
       "Il n'existe pas un seul bon site pour trouver une alternance : les offres sont éparpillées, et les meilleures opportunités ne sont pas toujours publiées. On est Stageio, donc on a un avis intéressé sur la question. Voici quand même, honnêtement, à quoi sert chaque site, et comment les combiner.",
@@ -3797,6 +3797,10 @@ export const MORE_GUIDES: Guide[] = [
       {
         q: "Quel est le meilleur site pour trouver une alternance ?",
         a: "Aucun ne suffit seul. Combine une source large d'offres (France Travail, Indeed ou Stageio), La Bonne Alternance pour les candidatures spontanées, LinkedIn pour le réseau, et les entreprises partenaires de ton école.",
+      },
+      {
+        q: "Existe-t-il une appli pour trouver une alternance ?",
+        a: "Oui. Stageio est une appli web : elle s'ouvre dans le navigateur de ton téléphone, sans rien télécharger, et s'ajoute à ton écran d'accueil comme une appli. Tu y fais défiler les offres d'alternance et de stage comme des cartes. Les grands sites d'emploi (Indeed, LinkedIn, HelloWork, Welcome to the Jungle) ont aussi leur appli.",
       },
       {
         q: "Existe-t-il un site officiel pour trouver une alternance ?",
