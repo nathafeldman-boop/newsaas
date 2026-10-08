@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
 import { PublicOffersGrid } from "@/components/offers/PublicOffersGrid";
 import { ShareButtons } from "@/components/share/ShareButtons";
@@ -22,6 +22,7 @@ import type { ContractType } from "@/types/database";
 import { METIER_GUIDES } from "@/lib/guides/contextGuides";
 import { HubEditorial } from "@/components/seo/HubEditorial";
 import { signupHref } from "@/lib/signup/intent";
+import { CITY_ARTICLE_ALIASES, slugify } from "@/lib/offers/segments";
 
 type RouteProps = {
   type: ContractType;
@@ -95,9 +96,25 @@ function pageGuides(type: ContractType, metier: string | undefined): { slug: str
 const statValue: React.CSSProperties = { fontSize: 24, fontWeight: 700, fontFamily: "var(--font-heading)", margin: 0 };
 const statLabel: React.CSSProperties = { fontSize: 12.5, margin: "2px 0 0" };
 
+// Ancienne URL d'une ville écrite sans son article (« /alternance/mans ») :
+// redirige vers la page de la vraie ville (« /alternance/le-mans »).
+function articleAliasPath(type: ContractType, slug: string, ville?: string): string | null {
+  const alias = (value: string) => (CITY_ARTICLE_ALIASES[value] ? slugify(CITY_ARTICLE_ALIASES[value]) : null);
+  if (ville) {
+    const target = alias(ville);
+    return target ? `/${type}/${slug}/${target}` : null;
+  }
+  const target = alias(slug);
+  return target ? `/${type}/${target}` : null;
+}
+
 export async function ProgrammaticPage({ type, slug, ville, pageParam }: RouteProps) {
   const model = await resolveProgrammaticPage(type, slug, ville);
-  if (!model) notFound();
+  if (!model) {
+    const aliasPath = articleAliasPath(type, slug, ville);
+    if (aliasPath) permanentRedirect(aliasPath);
+    notFound();
+  }
   return <ProgrammaticPageView model={model} pageParam={pageParam} />;
 }
 

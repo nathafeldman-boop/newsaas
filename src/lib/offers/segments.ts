@@ -87,15 +87,56 @@ export async function getSectorSegment(slug: string): Promise<Segment | null> {
 // administratif ou la région (jamais une 2e ville) -- les concaténer
 // produisait des "villes" inexistantes ("Annemasse Saint-Julien-En-Genevois").
 // Heuristique volontairement simple, pas une vraie géolocalisation.
+// Villes dont le nom commence par un article, que certaines sources écrivent
+// sans lui (« Mans » pour Le Mans, « Tampon » pour Le Tampon) : sans cette
+// table, une page « Alternance à Mans » doublonnait « Alternance au Mans ».
+// Clé = slug sans l'article. Aucune commune française ne porte ces noms
+// sans article, la correspondance est donc sans ambiguïté.
+export const CITY_ARTICLE_ALIASES: Record<string, string> = {
+  mans: "Le Mans",
+  havre: "Le Havre",
+  tampon: "Le Tampon",
+  creusot: "Le Creusot",
+  "puy-en-velay": "Le Puy-en-Velay",
+  "kremlin-bicetre": "Le Kremlin-Bicêtre",
+  "blanc-mesnil": "Le Blanc-Mesnil",
+  "plessis-robinson": "Le Plessis-Robinson",
+  "perreux-sur-marne": "Le Perreux-sur-Marne",
+  "chesnay-rocquencourt": "Le Chesnay-Rocquencourt",
+  gosier: "Le Gosier",
+  rochelle: "La Rochelle",
+  ciotat: "La Ciotat",
+  "seyne-sur-mer": "La Seyne-sur-Mer",
+  "roche-sur-yon": "La Roche-sur-Yon",
+  "garenne-colombes": "La Garenne-Colombes",
+  courneuve: "La Courneuve",
+  possession: "La Possession",
+  "teste-de-buch": "La Teste-de-Buch",
+  "baule-escoublac": "La Baule-Escoublac",
+  "sables-d-olonne": "Les Sables-d'Olonne",
+  ulis: "Les Ulis",
+  mureaux: "Les Mureaux",
+  lilas: "Les Lilas",
+  abymes: "Les Abymes",
+};
+
 export function normalizeCityKey(location: string): string {
   const withoutDepartment = location.replace(/^\s*(?:\d{2,3}|2[ab])\s*-\s*/i, "");
   const parts = withoutDepartment
     .split(/[,–—]/)
     .map((part) => part.trim())
     .filter(Boolean);
-  const city = parts.length > 1 && /arrondissement/i.test(parts[0]) ? parts[1] : (parts[0] ?? "");
+  // « 8e Arrondissement, Paris » -> la partie suivante ; « Lyon 3e
+  // Arrondissement, Rhône » -> la ville écrite avant l'arrondissement (la
+  // partie suivante est le département).
+  const namedArrondissement = parts[0]?.match(/^(\D+?)\s+\d{1,2}\s*(?:er|ème|eme|e)?\s*arrondissement\b/i);
+  const city = namedArrondissement
+    ? namedArrondissement[1]
+    : parts.length > 1 && /arrondissement/i.test(parts[0])
+      ? parts[1]
+      : (parts[0] ?? "");
 
-  return city
+  const key = city
     .replace(/^france$/i, "")
     .replace(/\(\s*[\dab]{2,5}\s*\)/gi, " ")
     .replace(/\b\d{4,5}\b/g, " ")
@@ -107,6 +148,7 @@ export function normalizeCityKey(location: string): string {
     .replace(/[\s-]+(canton|centre|(nord|sud)(-(est|ouest))?|est|ouest)$/i, "")
     .replace(/\s+/g, " ")
     .trim();
+  return CITY_ARTICLE_ALIASES[slugify(key)] ?? key;
 }
 
 // Lieux qui ne sont pas des villes : Adzuna renvoie parfois seulement
