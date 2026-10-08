@@ -26,6 +26,7 @@ import { signupHref } from "@/lib/signup/intent";
 import { CITY_ARTICLE_ALIASES, NOT_A_CITY, slugify } from "@/lib/offers/segments";
 import { getDepartementBySlug } from "@/lib/seo/departements";
 import { StickySignupBar } from "@/components/signup/StickySignupBar";
+import { INDEXABLE_ROBOTS } from "@/lib/seo/robots";
 
 type RouteProps = {
   type: ContractType;
@@ -48,7 +49,7 @@ export function modelMetadata(model: ProgrammaticModel | null, pageParam?: strin
     description: page > 1 ? `${model.description} Page ${page}.` : model.description,
     alternates: { canonical: url },
     // Sous 10 offres : page utile au visiteur, mais trop mince pour Google.
-    robots: model.indexable ? undefined : { index: false, follow: true },
+    robots: model.indexable ? INDEXABLE_ROBOTS : { index: false, follow: true },
     openGraph: { title: model.title, description: model.description, url, type: "website" },
   };
 }

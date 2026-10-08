@@ -11,6 +11,7 @@ import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { SITE_URL } from "@/lib/site";
 import { StickySignupBar } from "@/components/signup/StickySignupBar";
 import { signupHref } from "@/lib/signup/intent";
+import { INDEXABLE_ROBOTS } from "@/lib/seo/robots";
 
 export async function companyMetadata(slug: string, pageParam?: string): Promise<Metadata> {
   const model = await resolveCompanyPage(slug);
@@ -21,7 +22,7 @@ export async function companyMetadata(slug: string, pageParam?: string): Promise
     title: pagedTitle(model.title, page),
     description: page > 1 ? `${model.description} Page ${page}.` : model.description,
     alternates: { canonical: url },
-    robots: model.indexable ? undefined : { index: false, follow: true },
+    robots: model.indexable ? INDEXABLE_ROBOTS : { index: false, follow: true },
     openGraph: { title: model.title, description: model.description, url, type: "website" },
   };
 }

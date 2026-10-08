@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
+import { INDEXABLE_ROBOTS } from "@/lib/seo/robots";
 
 // Même famille pour titres et corps (Plus Jakarta Sans), mais deux
 // instances à poids fixe distinct plutôt qu'une police variable : ~50
@@ -30,6 +31,9 @@ export const metadata: Metadata = {
   },
   description:
     "Swipe les offres d'alternance et de stage qui te correspondent, postule en un geste.",
+  // Grands aperçus autorisés (voir lib/seo/robots.ts). Les pages en noindex
+  // définissent leur propre `robots`, qui remplace celui-ci en entier.
+  robots: INDEXABLE_ROBOTS,
   openGraph: {
     siteName: "Stageio",
     type: "website",
