@@ -201,13 +201,15 @@ export async function getCitySegment(slug: string): Promise<CitySegment | null> 
   return segments.find((s) => s.slug === slug) ?? null;
 }
 
-export async function fetchOffersForSector(sectorLabel: string, page: number) {
+// Pages secteur et ville : le nombre d'offres vient du segment en cache (calculé
+// avec la liste des secteurs / villes) plutôt que d'un count exact à chaque
+// page vue. Avec plusieurs dizaines de libellés de lieu par grande ville
+// (« 75 - PARIS 01 », « Paris 15e Arrondissement »…), le count exact a
+// dépassé le délai de la base (/offres/ville, 07 et 08/10).
+async function fetchSegmentPage(filter: (query: SegmentQuery) => SegmentQuery, knownCount: number, page: number) {
   const supabase = createPublicClient();
-  const { data, count, error } = await supabase
-    .from("offers")
-    .select(PUBLIC_OFFER_COLUMNS, { count: "exact" })
-    .eq("is_active", true)
-    .eq("sector", sectorLabel)
+  const base = supabase.from("offers").select(PUBLIC_OFFER_COLUMNS).eq("is_active", true);
+  const { data, error } = await filter(base)
     .order("published_at", { ascending: false })
     .order("id")
     .range((page - 1) * PUBLIC_OFFERS_PAGE_SIZE, page * PUBLIC_OFFERS_PAGE_SIZE - 1);
@@ -215,26 +217,18 @@ export async function fetchOffersForSector(sectorLabel: string, page: number) {
     if (isPageOutOfRange(error)) return { offers: [] as PublicOfferRow[], count: 0, totalPages: 0 };
     throw new Error(error.message);
   }
+  const totalPages = Math.max(1, Math.ceil(knownCount / PUBLIC_OFFERS_PAGE_SIZE));
+  // Page au-delà de la dernière (le compte en cache peut avoir du retard) : vide.
+  if ((data ?? []).length === 0 && page > 1) return { offers: [] as PublicOfferRow[], count: knownCount, totalPages: 0 };
+  return { offers: (data ?? []) as PublicOfferRow[], count: knownCount, totalPages };
+}
 
-  const totalPages = Math.max(1, Math.ceil((count ?? 0) / PUBLIC_OFFERS_PAGE_SIZE));
-  return { offers: (data ?? []) as PublicOfferRow[], count: count ?? 0, totalPages };
+type SegmentQuery = ReturnType<ReturnType<ReturnType<typeof createPublicClient>["from"]>["select"]>;
+
+export async function fetchOffersForSector(segment: Segment, page: number) {
+  return fetchSegmentPage((query) => query.eq("sector", segment.label), segment.count, page);
 }
 
 export async function fetchOffersForCity(segment: CitySegment, page: number) {
-  const supabase = createPublicClient();
-  const { data, count, error } = await supabase
-    .from("offers")
-    .select(PUBLIC_OFFER_COLUMNS, { count: "exact" })
-    .eq("is_active", true)
-    .in("location", segment.locations)
-    .order("published_at", { ascending: false })
-    .order("id")
-    .range((page - 1) * PUBLIC_OFFERS_PAGE_SIZE, page * PUBLIC_OFFERS_PAGE_SIZE - 1);
-  if (error) {
-    if (isPageOutOfRange(error)) return { offers: [] as PublicOfferRow[], count: 0, totalPages: 0 };
-    throw new Error(error.message);
-  }
-
-  const totalPages = Math.max(1, Math.ceil((count ?? 0) / PUBLIC_OFFERS_PAGE_SIZE));
-  return { offers: (data ?? []) as PublicOfferRow[], count: count ?? 0, totalPages };
+  return fetchSegmentPage((query) => query.in("location", segment.locations), segment.count, page);
 }

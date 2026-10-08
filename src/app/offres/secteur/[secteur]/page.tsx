@@ -40,7 +40,7 @@ export default async function SectorOffersPage({
 
   const { page: pageParam } = await searchParams;
   const page = parsePageParam(pageParam);
-  const { offers, count, totalPages } = await fetchOffersForSector(segment.label, page);
+  const { offers, count, totalPages } = await fetchOffersForSector(segment, page);
   if (page > totalPages) notFound();
 
   return (
