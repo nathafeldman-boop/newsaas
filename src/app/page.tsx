@@ -373,9 +373,12 @@ export default async function LandingPage() {
           borderBottom: "1px solid var(--color-divider)",
         }}
       >
+        {/* Mobile : logo + connexion + inscription seulement. Avant, la barre
+            défilait à l'horizontale et le bouton d'inscription sortait de
+            l'écran sur téléphone (là où arrive le trafic TikTok). */}
         <div
-          className="flex items-center gap-5"
-          style={{ maxWidth: 1240, margin: "0 auto", padding: "14px 24px", overflowX: "auto" }}
+          className="flex items-center gap-4 px-4 sm:gap-5 sm:px-6"
+          style={{ maxWidth: 1240, margin: "0 auto", paddingTop: 14, paddingBottom: 14 }}
         >
           <Link
             href="/"
@@ -385,20 +388,22 @@ export default async function LandingPage() {
             <span aria-hidden style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--color-accent)" }} />
             <span style={{ fontSize: 19, fontWeight: 800, letterSpacing: "-0.03em" }}>Stageio</span>
           </Link>
-          <a href="#comment" style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text)", whiteSpace: "nowrap" }}>
+          <a href="#comment" className="hidden md:inline" style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text)", whiteSpace: "nowrap" }}>
             Comment ça marche
           </a>
-          <a href="#fonctions" style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text)", whiteSpace: "nowrap" }}>
+          <a href="#fonctions" className="hidden md:inline" style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text)", whiteSpace: "nowrap" }}>
             Fonctionnalités
           </a>
-          <a href="#tarifs" style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text)", whiteSpace: "nowrap" }}>
+          <a href="#tarifs" className="hidden md:inline" style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text)", whiteSpace: "nowrap" }}>
             Tarifs
           </a>
           <Link href="/login" style={{ fontSize: 14, fontWeight: 700, color: "var(--color-text)", whiteSpace: "nowrap" }}>
-            Se connecter
+            <span className="sm:hidden">Connexion</span>
+            <span className="hidden sm:inline">Se connecter</span>
           </Link>
           <Link href="/inscription" className="btn btn-primary" style={{ whiteSpace: "nowrap" }}>
-            Créer mon compte →
+            <span className="sm:hidden">S&apos;inscrire</span>
+            <span className="hidden sm:inline">Créer mon compte →</span>
           </Link>
         </div>
       </nav>
