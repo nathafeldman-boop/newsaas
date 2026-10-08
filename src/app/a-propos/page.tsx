@@ -176,10 +176,26 @@ export default async function AboutPage() {
         <Link href="/guides/sites-pour-trouver-une-alternance">comparatif des sites pour trouver une alternance</Link>.
       </p>
 
-      <h2 style={section}>Contact</h2>
+      <h2 style={section}>Presse et contact</h2>
       <p style={{ fontSize: 15, margin: 0 }}>
         Une question, un partenariat, un article ? Écris à <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
       </p>
+      <ul style={{ fontSize: 15, lineHeight: 1.7, margin: "8px 0 0", paddingLeft: 20, listStyle: "disc" }}>
+        <li>
+          Les chiffres du <Link href="/barometre-alternance-stage">baromètre</Link> sont recalculés chaque jour et
+          réutilisables librement avec un lien vers stageio.fr :{" "}
+          <a href="/barometre-alternance-stage/donnees.csv" download>
+            données en CSV
+          </a>
+          .
+        </li>
+        <li>
+          <a href="/logo.png" download>
+            Logo Stageio
+          </a>{" "}
+          (PNG, 512 × 512 px).
+        </li>
+      </ul>
       {SOCIAL_PROFILES.length > 0 && (
         <p style={{ fontSize: 15, margin: "8px 0 0" }}>
           Suis Stageio :{" "}
