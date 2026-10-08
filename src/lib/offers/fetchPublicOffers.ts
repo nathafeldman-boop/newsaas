@@ -42,6 +42,10 @@ const cachedActiveCount = unstable_cache(
   { revalidate: 600 },
 );
 
+export function fetchActiveOfferCount(type: ContractType | "all"): Promise<number> {
+  return cachedActiveCount(type);
+}
+
 // Partagé entre /offres (toutes), /offres/alternance et /offres/stage --
 // mêmes données, filtre `type` optionnel en plus. Une erreur Supabase
 // remonte (500, que Google réessaie) au lieu d'afficher une liste vide en

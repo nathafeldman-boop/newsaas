@@ -3372,9 +3372,9 @@ export const MORE_GUIDES: Guide[] = [
   },
   {
     slug: "stage-de-3e",
-    title: "Stage de 3e : trouver son stage d'observation (et le réussir)",
+    title: "Stage de 3ème : trouver son stage d'observation (et le réussir)",
     metaDescription:
-      "Le stage de 3e dure 5 jours et il est obligatoire. Où le trouver, comment demander (modèle de message), horaires autorisés, convention, rapport de stage : tout ce qu'il faut savoir.",
+      "Le stage de 3ème (3e) dure 5 jours et il est obligatoire. Où le trouver, comment demander (modèle de message), horaires autorisés, convention, rapport de stage : tout ce qu'il faut savoir.",
     publishedAt: "2026-10-07",
     updatedAt: "2026-10-07",
     related: ["stage-de-seconde", "mail-candidature-stage-alternance", "premier-jour-en-entreprise"],
