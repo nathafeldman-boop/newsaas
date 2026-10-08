@@ -26,8 +26,21 @@ export function slugify(text: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+// Typographie des noms de communes : articles et prépositions en minuscules
+// à l'intérieur d'un nom composé (« Aix-en-Provence », « Villeneuve-d'Ascq »,
+// « Saint-Cyr-l'Ecole »), majuscule pour le premier mot (« Le Mans »), et
+// article initial suivi d'une espace, jamais d'un tiret (« La Madeleine »).
+// Ces libellés finissent dans les titres des pages ville, donc dans Google.
+const LOWERCASE_PARTICLES = new Set(["en", "sur", "sous", "lès", "lez", "les", "le", "la", "de", "des", "du", "d", "l", "aux", "au", "et"]);
+
 export function titleCase(text: string): string {
-  return text.replace(/\p{L}+/gu, (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
+  return text
+    .replace(/\p{L}+/gu, (word: string, offset: number, whole: string) => {
+      const lower = word.toLowerCase();
+      if (offset > 0 && whole[offset - 1] === "-" && LOWERCASE_PARTICLES.has(lower)) return lower;
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
+    })
+    .replace(/^(L[ae]s?)-(?=\p{L})/u, "$1 ");
 }
 
 export type Segment = { slug: string; label: string; count: number };
