@@ -323,11 +323,11 @@ export const MORE_GUIDES: Guide[] = [
   },
   {
     slug: "rapport-de-stage",
-    title: "Rapport de stage : plan type, contenu de chaque partie et erreurs à éviter",
+    title: "Rapport de stage : plan type, page de garde, remerciements (exemples) et erreurs à éviter",
     metaDescription:
-      "Le plan d'un rapport de stage partie par partie (introduction, entreprise, missions, bilan), la longueur habituelle et les erreurs qui coûtent des points.",
+      "Le plan d'un rapport de stage partie par partie, ce que doit contenir la page de garde, un exemple de remerciements, la longueur habituelle et les erreurs qui coûtent des points.",
     publishedAt: "2026-10-06",
-    updatedAt: "2026-10-06",
+    updatedAt: "2026-10-08",
     related: ["soutenance-de-stage", "convention-de-stage"],
     intro: [
       "Le rapport de stage sert à montrer ce que tu as fait, mais surtout ce que tu as compris et appris. Voici le plan qu'attendent la plupart des écoles et ce qu'il faut mettre dans chaque partie.",
@@ -351,6 +351,25 @@ export const MORE_GUIDES: Guide[] = [
           "Analyse et bilan : compétences acquises, difficultés, regard critique.",
           "Conclusion.",
           "Annexes : documents utiles, numérotés et cités dans le texte.",
+        ],
+      },
+      {
+        heading: "La page de garde",
+        list: [
+          "Le titre : « Rapport de stage », et l'intitulé de ton stage ou ta problématique si ton école en demande une.",
+          "Ton prénom et ton nom, ta formation (par exemple BTS NDRC 2e année) et ton établissement, avec son logo si l'école le demande.",
+          "L'entreprise d'accueil, avec son logo si elle est d'accord, et la ville.",
+          "Les dates du stage.",
+          "Le nom de ton tuteur en entreprise et de ton enseignant référent.",
+          "L'année universitaire.",
+        ],
+        paragraphs: ["Une page sobre et lisible vaut mieux qu'une page chargée : c'est la première impression du correcteur."],
+      },
+      {
+        heading: "Les remerciements : un exemple",
+        paragraphs: [
+          "Une demi-page suffit. Remercie d'abord ton tuteur, puis l'équipe, puis ton école. Nomme les personnes et dis précisément ce qu'elles t'ont apporté, c'est ce qui rend les remerciements sincères. Par exemple :",
+          "« Je remercie [prénom nom], [fonction], mon tuteur, pour sa disponibilité et la confiance qu'il m'a accordée en me confiant [mission]. Merci à toute l'équipe [nom du service] pour son accueil et ses conseils au quotidien, en particulier à [prénom] qui m'a formé(e) à [outil ou tâche]. Je remercie enfin [prénom nom], mon enseignant(e) référent(e), pour son suivi tout au long du stage. »",
         ],
       },
       {
@@ -395,6 +414,10 @@ export const MORE_GUIDES: Guide[] = [
       },
     ],
     faq: [
+      {
+        q: "Que mettre sur la page de garde d'un rapport de stage ?",
+        a: "Le titre (« Rapport de stage » et ton sujet), ton nom, ta formation et ton établissement, l'entreprise et sa ville, les dates du stage, ton tuteur et ton enseignant référent, et l'année universitaire.",
+      },
       {
         q: "Combien de pages pour un rapport de stage ?",
         a: "Cela dépend de ton école : souvent une vingtaine de pages hors annexes en licence, davantage en fin d'études. La consigne de l'école fait foi.",
