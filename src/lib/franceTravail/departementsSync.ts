@@ -23,12 +23,17 @@ import { DEPARTEMENTS } from "@/lib/seo/departements";
 export const SLICES = 8;
 
 const ALTERNANCE_BY_NATURE = { natureContrat: "E2,FS" };
+// Département au plafond de l'API (1 150 résultats) avec E2 + FS : chaque
+// nature séparément a son propre plafond, puis les mots-clés.
+const ALTERNANCE_BY_NATURE_SPLIT = [{ natureContrat: "E2" }, { natureContrat: "FS" }];
 const ALTERNANCE_KEYWORDS = ["alternance", "apprentissage"];
 const STAGE_KEYWORDS = ["stage"];
 const CONCURRENCY = 4;
-// Marge avant le maxDuration de 60 s : les streams en cours s'arrêtent
-// proprement à la page suivante.
-const TIME_BUDGET_MS = 45_000;
+// Marge avant le maxDuration de 300 s de la route : les streams en cours
+// s'arrêtent proprement à la page suivante. (45 s jusqu'au 08/10 : la
+// première tranche par nature de contrat, 6 487 offres d'alternance, a pris
+// tout le temps et les 13 recherches de stages n'ont pas tourné.)
+const TIME_BUDGET_MS = 240_000;
 
 async function runPool<T, R>(items: T[], concurrency: number, worker: (item: T) => Promise<R>): Promise<R[]> {
   const results: R[] = [];
@@ -66,28 +71,35 @@ export async function handleDepartementsSync(request: NextRequest, slice: number
   const admin = createAdminClient();
   const deadline = startedAt + TIME_BUDGET_MS;
 
-  // Trois passes, la plus utile d'abord : si le temps manque, ce sont les
-  // recherches secondaires qui sautent.
+  // Passes de la plus utile à la moins utile : si le temps manque, ce sont
+  // les recherches secondaires qui sautent.
   // 1. Alternance par nature de contrat, dans tous les départements.
   const natureResults = await runPool(departements, CONCURRENCY, async (departement) => ({
     departement,
     result: await runFranceTravailStream(admin, syncStartedAt, ALTERNANCE_BY_NATURE, { departement, deadline, expectAlternance: true }),
   }));
-  // 2. Mots-clés d'alternance, seulement là où le filtre n'a pas marché ou a
-  // atteint le plafond de l'API.
-  const fallbackDepartements = natureResults
-    .filter(({ result }) => result.ineffective || result.capped)
-    .map(({ departement }) => departement);
-  const keywordTasks = [
-    ...ALTERNANCE_KEYWORDS.flatMap((what) => fallbackDepartements.map((departement) => ({ what, departement }))),
-    // 3. Stages, partout.
-    ...STAGE_KEYWORDS.flatMap((what) => departements.map((departement) => ({ what, departement }))),
-  ];
-  const keywordResults: StreamResult[] = await runPool(keywordTasks, CONCURRENCY, ({ what, departement }) =>
-    runFranceTravailStream(admin, syncStartedAt, what, { departement, deadline }),
+  // 2. Stages, partout (notre point faible : ~3 000 offres contre ~10 500).
+  const stageResults: StreamResult[] = await runPool(
+    STAGE_KEYWORDS.flatMap((what) => departements.map((departement) => ({ what, departement }))),
+    CONCURRENCY,
+    ({ what, departement }) => runFranceTravailStream(admin, syncStartedAt, what, { departement, deadline }),
   );
-  const results = [...natureResults.map(({ result }) => result), ...keywordResults];
-  const plannedStreams = departements.length + keywordTasks.length;
+  // 3. Compléments d'alternance : là où le filtre a atteint le plafond de
+  // l'API, chaque nature séparément puis les mots-clés ; là où il n'a pas
+  // marché, les mots-clés.
+  const cappedDepartements = natureResults.filter(({ result }) => result.capped).map(({ departement }) => departement);
+  const ineffectiveDepartements = natureResults.filter(({ result }) => result.ineffective).map(({ departement }) => departement);
+  const fallbackTasks = [
+    ...ALTERNANCE_BY_NATURE_SPLIT.flatMap((what) => cappedDepartements.map((departement) => ({ what, departement, expectAlternance: true }))),
+    ...ALTERNANCE_KEYWORDS.flatMap((what) =>
+      [...cappedDepartements, ...ineffectiveDepartements].map((departement) => ({ what, departement, expectAlternance: false })),
+    ),
+  ];
+  const fallbackResults: StreamResult[] = await runPool(fallbackTasks, CONCURRENCY, ({ what, departement, expectAlternance }) =>
+    runFranceTravailStream(admin, syncStartedAt, what, { departement, deadline, expectAlternance }),
+  );
+  const plannedStreams = departements.length * (1 + STAGE_KEYWORDS.length) + fallbackTasks.length;
+  const results = [...natureResults.map(({ result }) => result), ...stageResults, ...fallbackResults];
 
   const summary = {
     slice,
@@ -99,7 +111,9 @@ export async function handleDepartementsSync(request: NextRequest, slice: number
     // repassés aux mots-clés (filtre inefficace ou plafond atteint).
     natureMapped: natureResults.reduce((sum, { result }) => sum + result.mapped, 0),
     natureIneffective: natureResults.filter(({ result }) => result.ineffective).length,
-    natureCapped: natureResults.filter(({ result }) => result.capped).length,
+    natureCapped: cappedDepartements.length,
+    stageMapped: stageResults.reduce((sum, r) => sum + r.mapped, 0),
+    fallbackMapped: fallbackResults.reduce((sum, r) => sum + r.mapped, 0),
     // Recherches pas terminées faute de temps : à surveiller (réduire la
     // tranche si ce nombre reste élevé).
     truncated: results.filter((r) => r.truncated).length + (plannedStreams - results.length),
