@@ -1,7 +1,7 @@
 import { type NextFetchEvent, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 import { logVisit } from "@/lib/analytics/logVisit";
-import { sourceFromReferrer } from "@/lib/analytics/referrerSource";
+import { normalizeUtmSource, sourceFromReferrer } from "@/lib/analytics/referrerSource";
 import { logAffiliateClick } from "@/lib/affiliates/logAffiliateClick";
 
 const VISITOR_COOKIE = "sid";
@@ -50,13 +50,15 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
   // convertissent réellement (voir Nathan, 27/09 : 106 clics TikTok
   // rapportés vs 6 inscriptions, sans donnée pour départager clics
   // non-qualifiés / abandon avant inscription / bug technique).
-  const utmSourceParam = request.nextUrl.searchParams.get("utm_source");
+  const rawUtmSource = request.nextUrl.searchParams.get("utm_source");
+  const utmParam = rawUtmSource ? normalizeUtmSource(rawUtmSource) : null;
+  const utmSourceParam = utmParam?.source ?? null;
   // Pas d'utm_source : on déduit la source du site d'origine (Google, Bing,
   // ChatGPT, TikTok...), pour que le trafic du référencement apparaisse enfin
   // dans le tableau "par source" du dashboard (voir referrerSource.ts).
   const organic = utmSourceParam ? null : sourceFromReferrer(request.headers.get("referer"));
   const utmSource = utmSourceParam ?? organic?.source ?? null;
-  const utmMedium = request.nextUrl.searchParams.get("utm_medium") ?? organic?.medium ?? null;
+  const utmMedium = request.nextUrl.searchParams.get("utm_medium") ?? utmParam?.medium ?? organic?.medium ?? null;
   const utmCampaign = request.nextUrl.searchParams.get("utm_campaign");
   // Un vrai paramètre utm (pub, lien partagé) écrase toujours le cookie ;
   // une source déduite du referer ne le pose que s'il n'y en a pas déjà un

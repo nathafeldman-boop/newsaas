@@ -410,7 +410,7 @@ export default async function AdminDashboardPage({
 
       <SectionCard
         title="Acquisition — aujourd'hui"
-        subtitle="Visiteurs distincts et inscriptions du jour, par source. Liens ?utm_source=... (pubs, partages) + détection automatique du site d'origine : google / bing = référencement, chatgpt / perplexity = IA, tiktok / instagram = réseaux. « direct / inconnu » = lien tapé ou appli sans référent."
+        subtitle="Visiteurs distincts et inscriptions du jour, par source. Liens ?utm_source=... (pubs, partages) + détection automatique du site d'origine : google / bing = référencement, chatgpt, perplexity, gemini, meta-ai, grok, deepseek, mistral = IA ; tiktok / instagram = réseaux. Inscriptions Google incluses depuis le 08/10. « direct / inconnu » = lien tapé ou appli sans référent."
       >
         {acquisitionSources.length === 0 ? (
           <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>

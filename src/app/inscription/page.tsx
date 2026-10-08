@@ -6,6 +6,7 @@ import type { Metadata } from "next";
 import { SITE_URL } from "@/lib/site";
 import { fetchActiveOfferCount } from "@/lib/offers/fetchPublicOffers";
 import { resolveSignupIntent, signupHeadline } from "@/lib/signup/intent";
+import { normalizeUtmSource } from "@/lib/analytics/referrerSource";
 import { RememberSignupCity } from "@/components/signup/RememberSignupCity";
 
 export const metadata: Metadata = {
@@ -31,7 +32,8 @@ export default async function InscriptionPage({
   const cookieStore = await cookies();
   const affiliateCode = aff ?? cookieStore.get("aff_code")?.value ?? null;
   // Même logique pour l'attribution publicitaire (utm_source) : voir proxy.ts.
-  const utmSource = utmSourceParam ?? cookieStore.get("utm_source")?.value ?? null;
+  const utmSource =
+    (utmSourceParam ? normalizeUtmSource(utmSourceParam).source : null) ?? cookieStore.get("utm_source")?.value ?? null;
   // Réassurance : le vrai nombre d'offres (compte en cache 10 min), arrondi à
   // la centaine inférieure. Sans compte disponible, la ligne disparaît.
   const offerCount = await fetchActiveOfferCount("all").catch(() => 0);

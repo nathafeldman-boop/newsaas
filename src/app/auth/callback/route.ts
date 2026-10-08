@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { attachReferralIfNeeded } from "@/lib/referrals/attachReferral";
 import { attachAffiliateIfNeeded } from "@/lib/affiliates/attachAffiliate";
+import { attachUtmSourceIfNeeded } from "@/lib/analytics/attachUtmSource";
 import { notifyReferrerOfNewSignup } from "@/lib/resend/notifyReferrer";
 import { safeRedirectPath } from "@/lib/auth/safeRedirect";
 
@@ -31,6 +32,10 @@ export async function GET(request: NextRequest) {
           }
           if (aff) {
             await attachAffiliateIfNeeded(data.user.id, aff);
+          }
+          const utmSource = request.cookies.get("utm_source")?.value;
+          if (utmSource) {
+            await attachUtmSourceIfNeeded(data.user.id, utmSource);
           }
           await notifyReferrerOfNewSignup(data.user.id);
         } catch {

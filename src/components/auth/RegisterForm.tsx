@@ -21,7 +21,9 @@ export function RegisterForm({
   // pour le cas où le lien affilié amène sur la home avant l'inscription.
   const affiliateCode = searchParams.get("aff") ?? initialAffiliateCode ?? null;
   // Même logique pour l'attribution publicitaire (voir proxy.ts + page.tsx).
-  const utmSource = searchParams.get("utm_source") ?? initialUtmSource ?? null;
+  // Valeur résolue côté serveur d'abord : elle est déjà normalisée
+  // (« chatgpt.com » -> « chatgpt », voir normalizeUtmSource).
+  const utmSource = initialUtmSource ?? searchParams.get("utm_source") ?? null;
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
