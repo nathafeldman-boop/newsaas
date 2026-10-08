@@ -318,6 +318,7 @@ export const GUIDE_CATEGORIES: { title: string; slugs: string[] }[] = [
       "aides-embauche-apprenti",
       "choisir-son-ecole-en-alternance",
       "parcoursup-alternance",
+      "alternance-a-distance",
       "bts-bachelor-master-alternance",
       "stage-de-fin-d-etudes",
       "stage-a-l-etranger",

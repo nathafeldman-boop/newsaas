@@ -3988,6 +3988,83 @@ export const MORE_GUIDES: Guide[] = [
     ],
   },
   {
+    slug: "alternance-a-distance",
+    title: "Alternance à distance : comment ça marche et comment repérer une école sérieuse",
+    metaDescription:
+      "La formation en alternance peut se faire en ligne, mais il te faut toujours une entreprise. Ce que dit la loi, pour qui c'est adapté, les annonces publiées par des écoles, et 4 vérifications avant de t'inscrire.",
+    publishedAt: "2026-10-08",
+    updatedAt: "2026-10-08",
+    related: ["choisir-son-ecole-en-alternance", "alternance-sans-entreprise", "sites-pour-trouver-une-alternance", "contrat-apprentissage-ou-contrat-pro"],
+    intro: [
+      "Les écoles en ligne proposent de plus en plus de formations en alternance « à distance », et beaucoup publient des annonces sur les sites d'emploi pour recruter leurs étudiants. C'est souvent une vraie option, parfois un piège. Voici ce que dit la loi, à qui ça convient, et comment vérifier une école avant de signer quoi que ce soit.",
+    ],
+    sections: [
+      {
+        heading: "C'est légal et reconnu",
+        list: [
+          "En apprentissage, la partie formation peut se faire « en tout ou partie à distance » (article L6211-2 du Code du travail). Elle représente au moins 25 % de la durée du contrat, sauf règles particulières du diplôme.",
+          "Le diplôme est le même qu'en présentiel s'il est enregistré au RNCP : un BTS, un bachelor ou un titre professionnel préparé en ligne a la même valeur.",
+          "Tu restes salarié d'une entreprise, avec un contrat signé, un salaire au moins égal au minimum légal et les mêmes droits qu'un autre apprenti.",
+        ],
+      },
+      {
+        heading: "Ce qui ne change pas : il te faut une entreprise",
+        paragraphs: [
+          "À distance, seuls les cours sont en ligne. Sans employeur, pas d'alternance. Une école peut t'aider à trouver une entreprise, mais elle n'est pas ton employeur (sauf si tu travailles pour elle). Et en apprentissage, la formation est gratuite pour toi : l'article L6211-1 du Code du travail interdit de te faire payer, ni toi ni tes parents.",
+        ],
+      },
+      {
+        heading: "Pour qui c'est adapté",
+        list: [
+          "Pour toi si tu es autonome, organisé, et que tu vis loin des villes où se trouvent les écoles de ton secteur.",
+          "Pour toi si ton entreprise préfère t'avoir plus souvent : sans trajet vers l'école, les jours de cours sont plus faciles à caser.",
+          "Moins pour toi si tu as besoin d'un cadre, d'une classe et de profs que tu vois en vrai : seul derrière son écran, on décroche plus facilement.",
+          "Le réseau compte : une école à distance a souvent moins d'entreprises partenaires près de chez toi.",
+        ],
+      },
+      {
+        heading: "Les annonces publiées par des écoles",
+        paragraphs: [
+          "Sur les sites d'emploi, Stageio compris, une partie des annonces « alternance » est publiée par des écoles qui cherchent des étudiants pour leurs formations, souvent en ligne. Ce n'est pas une arnaque en soi : certaines t'aident vraiment à trouver une entreprise. Mais l'annonce ne te donne pas un poste. Demande toujours quelle entreprise t'embaucherait, et ne signe rien qui t'engage à payer.",
+        ],
+      },
+      {
+        heading: "4 vérifications avant de t'inscrire",
+        list: [
+          "Le diplôme est-il enregistré au RNCP ? Cherche son intitulé exact sur le site de France compétences.",
+          "L'école est-elle certifiée Qualiopi pour les actions de formation par apprentissage ? C'est obligatoire pour être financée par de l'argent public.",
+          "Quels sont ses résultats ? Chaque CFA doit publier chaque année ses taux de réussite aux examens, d'insertion, d'interruption et de rupture de contrat (article L6111-8 du Code du travail). Demande-les, et compare sur le site InserJeunes.",
+          "Te demande-t-on de l'argent ? En apprentissage, c'est non : frais d'inscription ou de scolarité demandés à l'apprenti, c'est un signal d'alarme.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Peut-on faire toute son alternance à distance ?",
+        a: "La formation, oui : elle peut être entièrement en ligne. Le travail en entreprise, non : tu es salarié et tu travailles selon l'organisation de ton employeur, au bureau ou en télétravail s'il l'accepte.",
+      },
+      {
+        q: "Une alternance à distance est-elle payante ?",
+        a: "En apprentissage, non : la formation est gratuite pour l'apprenti et sa famille (article L6211-1 du Code du travail). Elle est financée principalement par l'opérateur de compétences (OPCO) de l'entreprise.",
+      },
+      {
+        q: "Comment savoir si une école en ligne est reconnue ?",
+        a: "Vérifie que le diplôme est enregistré au RNCP (site de France compétences) et que l'école est certifiée Qualiopi pour l'apprentissage. Demande aussi ses taux de réussite et d'insertion, qu'elle doit publier chaque année.",
+      },
+      {
+        q: "L'école m'a trouvé une entreprise, c'est normal ?",
+        a: "Oui, c'est même une bonne école qui le fait. Vérifie simplement que tu signes un vrai contrat d'apprentissage avec cette entreprise, avec un salaire, et que rien ne t'est facturé.",
+      },
+    ],
+    sources: [
+      { label: "Code du travail, article L6211-2 (formation à distance)", url: "https://code.travail.gouv.fr/code-du-travail/l6211-2" },
+      { label: "Code du travail, article L6211-1 (gratuité pour l'apprenti)", url: "https://code.travail.gouv.fr/code-du-travail/l6211-1" },
+      { label: "Code du travail, article L6111-8 (résultats publiés par les CFA)", url: "https://code.travail.gouv.fr/code-du-travail/l6111-8" },
+      { label: "Ministère du Travail : certification Qualiopi", url: "https://travail-emploi.gouv.fr/sites/travail-emploi/files/files-spip/pdf/cp_-_certification_qualiopi.pdf" },
+      { label: "France compétences (RNCP)", url: "https://www.francecompetences.fr/" },
+    ],
+  },
+  {
     slug: "maitre-d-apprentissage",
     title: "Maître d'apprentissage : son rôle, les conditions, ce que tu peux attendre de lui",
     metaDescription:
