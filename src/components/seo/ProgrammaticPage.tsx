@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { PublicOffersGrid } from "@/components/offers/PublicOffersGrid";
 import { ShareButtons } from "@/components/share/ShareButtons";
 import {
+  departementPath,
   fetchOffersByIds,
   getHubModel,
   listedPages,
@@ -22,7 +23,8 @@ import type { ContractType } from "@/types/database";
 import { METIER_GUIDES } from "@/lib/guides/contextGuides";
 import { HubEditorial } from "@/components/seo/HubEditorial";
 import { signupHref } from "@/lib/signup/intent";
-import { CITY_ARTICLE_ALIASES, slugify } from "@/lib/offers/segments";
+import { CITY_ARTICLE_ALIASES, NOT_A_CITY, slugify } from "@/lib/offers/segments";
+import { getDepartementBySlug } from "@/lib/seo/departements";
 
 type RouteProps = {
   type: ContractType;
@@ -96,16 +98,17 @@ function pageGuides(type: ContractType, metier: string | undefined): { slug: str
 const statValue: React.CSSProperties = { fontSize: 24, fontWeight: 700, fontFamily: "var(--font-heading)", margin: 0 };
 const statLabel: React.CSSProperties = { fontSize: 12.5, margin: "2px 0 0" };
 
-// Ancienne URL d'une ville écrite sans son article (« /alternance/mans ») :
-// redirige vers la page de la vraie ville (« /alternance/le-mans »).
+// Anciennes URL de lieux corrigés depuis : ville écrite sans son article
+// (« /alternance/mans » -> « /alternance/le-mans »), quartier rattaché à sa
+// ville (« rangueuil » -> Toulouse), département d'outre-mer pris pour une
+// ville (« /alternance/la-reunion » -> la page du département).
 function articleAliasPath(type: ContractType, slug: string, ville?: string): string | null {
-  const alias = (value: string) => (CITY_ARTICLE_ALIASES[value] ? slugify(CITY_ARTICLE_ALIASES[value]) : null);
-  if (ville) {
-    const target = alias(ville);
-    return target ? `/${type}/${slug}/${target}` : null;
-  }
-  const target = alias(slug);
-  return target ? `/${type}/${target}` : null;
+  const place = ville ?? slug;
+  const metier = ville ? slug : null;
+  const alias = CITY_ARTICLE_ALIASES[place];
+  if (alias) return metier ? `/${type}/${metier}/${slugify(alias)}` : `/${type}/${slugify(alias)}`;
+  if (NOT_A_CITY.has(place) && getDepartementBySlug(place)) return departementPath(type, place, metier);
+  return null;
 }
 
 export async function ProgrammaticPage({ type, slug, ville, pageParam }: RouteProps) {

@@ -118,6 +118,11 @@ export const CITY_ARTICLE_ALIASES: Record<string, string> = {
   mureaux: "Les Mureaux",
   lilas: "Les Lilas",
   abymes: "Les Abymes",
+  // Quartiers donnés comme lieu par Adzuna (pages « Alternance à
+  // Rangueuil » vues dans le sitemap le 08/10) : rattachés à leur ville.
+  rangueil: "Toulouse",
+  rangueuil: "Toulouse",
+  "pont-rousseau": "Rezé",
 };
 
 export function normalizeCityKey(location: string): string {
@@ -172,6 +177,8 @@ export const NOT_A_CITY = new Set(
     "tarn", "tarn-et-garonne", "var", "vaucluse", "vendee", "haute-vienne", "vosges", "yonne",
     "territoire-de-belfort", "essonne", "hauts-de-seine", "seine-saint-denis", "val-de-marne", "val-d-oise",
     "corse-du", "teletravail", "remote", "a-distance", "international", "etranger", "france-entiere", "toute-la-france",
+    // Départements et régions d'outre-mer (« La Réunion » n'est pas une ville).
+    "la-reunion", "reunion", "guadeloupe", "martinique", "guyane", "mayotte",
   ],
 );
 
