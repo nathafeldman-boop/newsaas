@@ -563,6 +563,22 @@ async function ExpiredOffer({ offer }: { offer: Offer }) {
         </p>
       </div>
 
+      {/* Les fiches expirées gardent du trafic Google (les plus cliquées l'étaient
+          déjà le 07/10) : le visiteur a raté celle-ci, on lui propose de ne pas
+          rater les suivantes. */}
+      <div
+        className="card mt-4"
+        style={{ padding: "var(--space-4) var(--space-5)", background: "var(--color-accent-100)", color: "var(--color-accent-800)" }}
+      >
+        <p style={{ fontSize: 14.5, margin: 0 }}>
+          <strong>Ne rate pas la prochaine.</strong> Crée ton profil gratuit en 1 minute : les nouvelles offres
+          {links.market ? ` «\u00a0${links.market.label}\u00a0»` : ""} arrivent dans ton fil dès leur publication.
+        </p>
+        <Link href="/inscription" className="btn btn-primary" style={{ alignSelf: "flex-start", marginTop: 8 }}>
+          Créer mon profil gratuit
+        </Link>
+      </div>
+
       {links.similar.length > 0 && (
         <section className="mt-8">
           <h2 style={{ fontSize: 18, margin: "0 0 12px" }}>Offres similaires encore ouvertes</h2>
