@@ -183,7 +183,7 @@ export async function generateMetadata({
     // ce sont les pages métier × ville, à contenu propre, qui portent le SEO.
     ...(offer.source === "adzuna" ? { robots: { index: false, follow: true } } : {}),
     openGraph: {
-      title: `${offer.title} chez ${offer.company}`,
+      title: UNNAMED_EMPLOYER.test(offer.company) ? offer.title : `${offer.title} chez ${offer.company}`,
       description,
       url,
       type: "website",
@@ -457,7 +457,7 @@ export default async function PublicOfferPage({
         <ShareButtons
           title="Cette offre peut intéresser un pote ?"
           url={`${SITE_URL}${offerPath(offer)}`}
-          text={`${offer.title} chez ${offer.company} (${titleCase(normalizeCityKey(offer.location)) || offer.location}), regarde :`}
+          text={`${offer.title}${UNNAMED_EMPLOYER.test(offer.company) ? "" : ` chez ${offer.company}`} (${titleCase(normalizeCityKey(offer.location)) || offer.location}), regarde :`}
         />
       </div>
 
