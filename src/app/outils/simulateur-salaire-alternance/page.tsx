@@ -18,15 +18,21 @@ import {
 } from "@/lib/salary/legalRates";
 import { SITE_URL } from "@/lib/site";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
+import { getProgrammaticIndex, type ProgrammaticIndex } from "@/lib/seo/programmaticIndex";
+import { getMetier, isFormation } from "@/lib/seo/metiers";
+
+// Dynamique pour les salaires réellement indiqués dans les offres (index
+// programmatique en cache, comme le baromètre).
+export const dynamic = "force-dynamic";
 
 const PATH = "/outils/simulateur-salaire-alternance";
 
 export const metadata: Metadata = {
-  title: "Simulateur de salaire en alternance 2026 (apprenti, contrat pro, stage)",
-  description: `Calcule ton salaire minimum en alternance en 2026 : brut et net estimé selon ton âge et ton année de contrat (SMIC ${formatEuros(SMIC_MONTHLY_GROSS)}). Apprentissage, contrat pro et gratification de stage.`,
+  title: "Salaire alternance 2026 : grille apprenti et simulateur",
+  description: `Salaire en alternance en 2026 : la grille apprenti selon ton âge et ton année (de ${formatEuros(round2(SMIC_MONTHLY_GROSS * 0.27), 0)} à ${formatEuros(SMIC_MONTHLY_GROSS, 0)} brut), le contrat pro, le net, et ce que paient vraiment les offres en BTS, licence ou master.`,
   alternates: { canonical: `${SITE_URL}${PATH}` },
   openGraph: {
-    title: "Simulateur de salaire en alternance 2026",
+    title: "Salaire en alternance 2026 : la grille et le simulateur",
     description: "Combien tu seras payé en apprentissage, en contrat pro ou en stage ? Le calcul en 10 secondes.",
     url: `${SITE_URL}${PATH}`,
     type: "website",
@@ -36,6 +42,41 @@ export const metadata: Metadata = {
 const amount = (rate: number) => formatEuros(round2(SMIC_MONTHLY_GROSS * rate));
 const AGES = Object.keys(APPRENTICE_RATES) as AgeBracket[];
 const fullTimeInternship = internshipGratification(35);
+
+type LevelRow = { slug: string; label: string; count: number; median: number; n: number };
+
+// Niveaux de diplôme dans l'ordre, du CAP au master : médiane des salaires
+// indiqués dans les offres d'alternance en cours (5 offres renseignées au
+// moins, sinon la ligne est omise).
+const LEVELS = ["cap", "bac-pro", "titre-pro", "bts", "but", "licence-pro", "bachelor", "master"];
+
+function levelRows(index: ProgrammaticIndex, slugs: string[]): LevelRow[] {
+  return slugs.flatMap((slug) => {
+    const entry = index.metiers[slug];
+    if (!entry || entry.salaryMedian === null) return [];
+    return [{ slug, label: getMetier(slug)?.label ?? slug, count: entry.count, median: entry.salaryMedian, n: entry.salaryN }];
+  });
+}
+
+function topPaidMetiers(index: ProgrammaticIndex, n = 8): LevelRow[] {
+  const slugs = Object.values(index.metiers)
+    .filter((m) => m.salaryMedian !== null && !isFormation(m.slug))
+    .sort((a, b) => (b.salaryMedian ?? 0) - (a.salaryMedian ?? 0))
+    .slice(0, n)
+    .map((m) => m.slug);
+  return levelRows(index, slugs);
+}
+
+const upperFirst = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+
+function diplomaAnswer(levels: LevelRow[]): string {
+  const legal =
+    "En apprentissage, non : le minimum légal dépend seulement de ton âge et de ton année de contrat, que tu prépares un CAP ou un master. En contrat pro, avoir au moins un bac pro fait passer au taux supérieur.";
+  const low = levels.find((l) => l.slug === "bts") ?? levels[0];
+  const high = levels.find((l) => l.slug === "master") ?? levels[levels.length - 1];
+  if (!low || !high || low.slug === high.slug || high.median <= low.median) return legal;
+  return `${legal} Dans les faits, les offres des diplômes plus élevés proposent souvent plus : sur Stageio, le salaire médian indiqué est de ${formatEuros(low.median, 0)} brut par mois pour une alternance en ${low.label} et de ${formatEuros(high.median, 0)} en ${high.label}.`;
+}
 
 const FAQ = [
   {
@@ -64,15 +105,17 @@ const FAQ = [
   },
 ];
 
-const faqJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: FAQ.map((item) => ({
-    "@type": "Question",
-    name: item.q,
-    acceptedAnswer: { "@type": "Answer", text: item.a },
-  })),
-};
+function faqJsonLd(faq: { q: string; a: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faq.map((item) => ({
+      "@type": "Question",
+      name: item.q,
+      acceptedAnswer: { "@type": "Answer", text: item.a },
+    })),
+  };
+}
 
 const breadcrumbJsonLd = {
   "@context": "https://schema.org",
@@ -98,17 +141,22 @@ const appJsonLd = {
 const sectionTitle: React.CSSProperties = { fontSize: 20, margin: "40px 0 12px" };
 const cell: React.CSSProperties = { padding: "8px 10px", borderBottom: "1px solid var(--color-divider)", textAlign: "left" };
 
-export default function SalarySimulatorPage() {
+export default async function SalarySimulatorPage() {
+  const index = await getProgrammaticIndex("alternance");
+  const levels = levelRows(index, LEVELS);
+  const metiers = topPaidMetiers(index);
+  const faq = [...FAQ.slice(0, 4), { q: "Le salaire en alternance dépend-il du diplôme (BTS, licence, master) ?", a: diplomaAnswer(levels) }, ...FAQ.slice(4)];
+  const date = new Date(index.generatedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
   return (
     <div className="mx-auto max-w-3xl px-5 py-10 sm:px-9">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(faqJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(faqJsonLd(faq)) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(appJsonLd) }} />
 
       <nav aria-label="Fil d'Ariane" style={{ fontSize: 13 }}>
         <Link href="/">Accueil</Link> › <Link href="/outils">Outils</Link> › Simulateur de salaire
       </nav>
-      <h1 style={{ fontSize: 30, margin: "12px 0 0" }}>Simulateur de salaire en alternance 2026</h1>
+      <h1 style={{ fontSize: 30, margin: "12px 0 0" }}>Salaire en alternance 2026 : grille et simulateur</h1>
       <p style={{ fontSize: 15, margin: "12px 0 0" }}>
         <strong>
           En 2026, un apprenti touche entre {amount(0.27)} et {amount(1)} brut par mois
@@ -201,6 +249,59 @@ export default function SalarySimulatorPage() {
         </table>
       </div>
 
+      {levels.length > 0 && (
+        <>
+          <h2 style={sectionTitle}>Ce que paient vraiment les offres d&apos;alternance</h2>
+          <p style={{ fontSize: 14, margin: "0 0 12px" }}>
+            Le barème légal est un plancher. Voici le salaire brut mensuel médian indiqué par les employeurs dans
+            les offres d&apos;alternance en cours sur Stageio (offres France Travail avec un salaire renseigné, au
+            moins 5 par ligne), au {date} :
+          </p>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+              <thead>
+                <tr>
+                  <th style={cell}>Diplôme préparé</th>
+                  <th style={cell}>Salaire médian indiqué</th>
+                  <th style={cell}>Offres en cours</th>
+                </tr>
+              </thead>
+              <tbody>
+                {levels.map((level) => (
+                  <tr key={level.slug}>
+                    <td style={cell}>
+                      <Link href={`/alternance/${level.slug}`}>Alternance en {level.label}</Link>
+                    </td>
+                    <td style={cell}>{formatEuros(level.median, 0)}</td>
+                    <td style={cell}>
+                      {level.count.toLocaleString("fr-FR")} (dont {level.n} avec salaire)
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {metiers.length > 0 && (
+            <p style={{ fontSize: 14, margin: "12px 0 0" }}>
+              Les métiers où les salaires indiqués sont les plus hauts :{" "}
+              {metiers.map((m, i) => (
+                <span key={m.slug}>
+                  {i > 0 && ", "}
+                  <Link href={`/alternance/${m.slug}`}>{upperFirst(m.label)}</Link> ({formatEuros(m.median, 0)})
+                </span>
+              ))}
+              . Classement complet dans le{" "}
+              <Link href="/barometre-alternance-stage">baromètre de l&apos;alternance</Link>.
+            </p>
+          )}
+          <p style={{ fontSize: 13, margin: "10px 0 0" }}>
+            Beaucoup d&apos;offres indiquent simplement le minimum légal, qui dépend de l&apos;âge : un niveau qui
+            recrute des candidats plus âgés affiche donc une médiane plus haute. Ton salaire réel dépend de ton âge,
+            de ton année de contrat et de ta convention collective.
+          </p>
+        </>
+      )}
+
       <h2 style={sectionTitle}>Gratification de stage en 2026</h2>
       <p style={{ fontSize: 14, margin: 0 }}>
         Un stagiaire n&apos;est pas salarié : il touche une gratification, obligatoire seulement si le stage dure
@@ -233,7 +334,7 @@ export default function SalarySimulatorPage() {
       </p>
 
       <h2 style={sectionTitle}>Questions fréquentes</h2>
-      {FAQ.map((item) => (
+      {faq.map((item) => (
         <div key={item.q} style={{ marginBottom: 16 }}>
           <h3 style={{ fontSize: 16, margin: "0 0 4px" }}>{item.q}</h3>
           <p style={{ fontSize: 14, margin: 0 }}>{item.a}</p>
