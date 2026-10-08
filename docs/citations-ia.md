@@ -14,6 +14,8 @@ Bonne nouvelle trouvée en cherchant : **il n'existe aucun comparatif récent de
 
 Ne jamais ajouter de chiffre d'utilisateurs, de taux de réussite ou d'avis qu'on ne peut pas prouver.
 
+Pour un journaliste ou un blogueur : https://www.stageio.fr/a-propos (fiche, chiffres du jour, logo PNG, données du baromètre en CSV, contact).
+
 ## Les cibles (URL réelles)
 
 ### A. Comparatifs « sites pour trouver une alternance / un stage »
