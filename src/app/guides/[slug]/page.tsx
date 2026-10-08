@@ -148,7 +148,7 @@ export default async function GuidePage({
   const faqLd = faqJsonLd(guide);
 
   return (
-    <div className="mx-auto max-w-2xl px-5 py-10 sm:px-9">
+    <div className="mx-auto w-full min-w-0 max-w-2xl px-5 py-10 sm:px-9">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(articleJsonLd(guide)) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbJsonLd(guide)) }} />
       {faqLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(faqLd) }} />}
