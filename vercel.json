@@ -101,6 +101,10 @@
       "schedule": "30 5 * * *"
     },
     {
+      "path": "/api/cron/indexnow/apres-midi",
+      "schedule": "40 16 * * *"
+    },
+    {
       "path": "/api/cron/google-indexing",
       "schedule": "50 5 * * *"
     }
