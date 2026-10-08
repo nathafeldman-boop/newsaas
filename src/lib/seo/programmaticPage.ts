@@ -225,7 +225,8 @@ export function buildProgrammaticModel(
   // Diplômes : le paragraphe vaut pour chaque ville. Métiers : seulement sur
   // la page nationale, pour ne pas répéter le même texte sur des centaines
   // de pages métier × ville.
-  if (metier?.about && (!city || isFormation(metier.slug))) paragraphs.push(metier.about);
+  // Le paragraphe du métier (missions, diplômes) est dans la FAQ plus bas,
+  // une seule fois sur la page.
   if (stats.topCompanies.length > 0) {
     paragraphs.push(`Les entreprises qui recrutent le plus : ${listCompanies(stats, 4)}.`);
   }
@@ -292,6 +293,16 @@ export function buildProgrammaticModel(
       ? [{ q: `Quelles entreprises publient des ${offersPhrase} ?`, a: `En ce moment : ${listCompanies(stats, 5)}.` }]
       : []),
     { q: `Quel salaire pour ${type === "alternance" ? "une alternance" : "un stage"}${domain}${where} ?`, a: salaryAnswer(type, stats) },
+    // Le paragraphe du métier ou du diplôme (missions, formations) aussi en
+    // FAQ : c'est la forme que reprennent les extraits de Google et les IA.
+    ...(metier?.about && (!city || isFormation(metier.slug))
+      ? [{
+          q: isFormation(metier.slug)
+            ? `C'est quoi, ${type === "alternance" ? "une alternance" : "un stage"} ${metier.domain} ?`
+            : `Quelles missions et quels diplômes pour ${type === "alternance" ? "une alternance" : "un stage"} ${metier.domain} ?`,
+          a: metier.about,
+        }]
+      : []),
     ...(nearby && nearby.links.length > 0
       ? [{ q: `Où trouver d'autres ${OFFERS_OF[type]}${domain} près de ${city!.label} ?`, a: `${nearby.links.slice(0, 5).map((l) => `${l.label} (${plural(l.count, "offre")})`).join(", ")}.` }]
       : []),
