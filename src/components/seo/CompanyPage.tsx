@@ -134,7 +134,7 @@ export async function CompanyPage({ slug, pageParam }: { slug: string; pageParam
 export async function companiesHubMetadata(): Promise<Metadata> {
   const { total } = await getCompaniesHub();
   return {
-    title: `Entreprises qui recrutent en alternance et en stage : ${total.toLocaleString("fr-FR")} entreprises`,
+    title: `Entreprises qui recrutent en alternance et en stage en ${new Date().getFullYear()} : ${total.toLocaleString("fr-FR")} entreprises`,
     description: `Les ${total.toLocaleString("fr-FR")} entreprises qui publient des offres d'alternance et de stage en ce moment, avec le nombre d'offres, les villes et les métiers. Mis à jour chaque jour.`,
     alternates: { canonical: `${SITE_URL}/entreprises` },
   };

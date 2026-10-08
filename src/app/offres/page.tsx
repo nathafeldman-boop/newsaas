@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { fetchPublicOffers } from "@/lib/offers/fetchPublicOffers";
+import { fetchActiveOfferCount, fetchPublicOffers } from "@/lib/offers/fetchPublicOffers";
 import { getSectorSegments, getCitySegments } from "@/lib/offers/segments";
 import { PublicOffersGrid } from "@/components/offers/PublicOffersGrid";
 import { OffersSegmentNav } from "@/components/offers/OffersSegmentNav";
@@ -15,9 +15,16 @@ export async function generateMetadata({
   searchParams: Promise<{ page?: string }>;
 }): Promise<Metadata> {
   const page = parsePageParam((await searchParams).page);
+  // Nombre réel d'offres (compte en cache 10 min) dans le titre, comme
+  // /offres/alternance et /offres/stage ; sans compte, titre générique.
+  const count = await fetchActiveOfferCount("all").catch(() => 0);
+  const year = new Date().getFullYear();
+  const title = count > 0
+    ? `Offres d'alternance et de stage ${year} : ${count.toLocaleString("fr-FR")} offres à pourvoir`
+    : "Toutes les offres d'alternance et de stage";
   return {
-    title: pagedTitle("Toutes les offres d'alternance et de stage", page),
-    description: `Parcours les offres d'alternance et de stage disponibles sur Stageio, sans créer de compte.${page > 1 ? ` Page ${page}.` : ""}`,
+    title: pagedTitle(title, page),
+    description: `${count > 0 ? `${count.toLocaleString("fr-FR")} offres d'alternance et de stage en ligne, mises à jour chaque jour. ` : ""}Parcours-les sans créer de compte, par métier, par ville ou par secteur.${page > 1 ? ` Page ${page}.` : ""}`,
     alternates: { canonical: `${SITE_URL}${pagedPath("/offres", page)}` },
   };
 }
