@@ -60,6 +60,8 @@ Demander l'ajout de Stageio dans la liste. Le nom de l'auteur est en haut de l'a
 
 Ces services font des séances « recherche d'alternance » (exemple : l'université de Reims en février 2026) et publient des pages ressources. On ne leur vend rien : on leur propose les outils gratuits, sans compte et sans collecte de données, pour leurs étudiants. C'est le lien le plus crédible pour Google.
 
+Le widget (https://www.stageio.fr/outils/widget-offres) est l'argument le plus concret pour eux et pour les BDE : les offres d'alternance de leur ville sur leur propre page, à jour chaque jour, sans rien à maintenir. Chaque intégration ajoute un lien visible « proposées par Stageio » (marque, pas de mots-clés : conforme aux règles de Google sur les liens de widgets).
+
 ## Les messages
 
 ### 1. Ajout dans un comparatif
@@ -102,6 +104,7 @@ Ces services font des séances « recherche d'alternance » (exemple : l'univers
 > - CV en PDF : https://www.stageio.fr/outils/cv-alternance
 > - lettre de motivation : https://www.stageio.fr/outils/lettre-de-motivation-alternance
 > - les offres d'alternance par métier et par ville : https://www.stageio.fr/alternance
+> - un widget gratuit pour afficher les offres de votre ville (et d'un métier) directement sur votre site, mis à jour chaque jour : https://www.stageio.fr/outils/widget-offres
 >
 > Si ça peut servir dans vos ressources ou vos séances « recherche d'alternance », vous pouvez les partager librement.
 >
