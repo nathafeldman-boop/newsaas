@@ -282,6 +282,8 @@ async function getLatestOfferLinks(): Promise<DiscoveryLink[]> {
 const POPULAR_GUIDES = [
   { href: "/guides/je-ne-trouve-pas-d-alternance", label: "Je ne trouve pas d'alternance" },
   { href: "/guides/sites-pour-trouver-une-alternance", label: "Quel site pour trouver une alternance" },
+  { href: "/guides/la-bonne-alternance", label: "La Bonne Alternance : mode d'emploi" },
+  { href: "/guides/parcoursup-alternance", label: "Parcoursup et alternance" },
   { href: "/guides/quand-chercher-son-alternance", label: "Quand chercher son alternance" },
   { href: "/guides/gratification-de-stage", label: "Gratification de stage 2026" },
   { href: "/guides/cv-alternance", label: "CV d'alternance" },
@@ -1578,7 +1580,7 @@ export default async function LandingPage() {
               {" · "}
               <Link href="/barometre-alternance-stage">Baromètre 2026</Link>
               {" · "}
-              <Link href="/outils/simulateur-salaire-alternance">Simulateur de salaire</Link>
+              <Link href="/outils/simulateur-salaire-alternance">Salaire en alternance 2026</Link>
               {" · "}
               <Link href="/outils/lettre-de-motivation-alternance">Lettre de motivation (générateur)</Link>
               {" · "}
@@ -1691,7 +1693,7 @@ export default async function LandingPage() {
             { href: "/barometre-alternance-stage", label: "Baromètre 2026" },
             { href: "/guides", label: "Guides" },
             { href: "/outils", label: "Outils gratuits" },
-            { href: "/outils/simulateur-salaire-alternance", label: "Simulateur de salaire" },
+            { href: "/outils/simulateur-salaire-alternance", label: "Salaire en alternance 2026" },
             { href: "/outils/lettre-de-motivation-alternance", label: "Lettre de motivation alternance" },
             { href: "/outils/lettre-de-motivation-stage", label: "Lettre de motivation stage" },
             { href: "/outils/cv-alternance", label: "CV alternance" },

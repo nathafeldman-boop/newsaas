@@ -249,7 +249,7 @@ export default async function GuidePage({
             Offres de stage par métier et ville
           </Link>
           <Link href="/outils/simulateur-salaire-alternance" className="tag tag-neutral">
-            Simulateur de salaire
+            Salaire en alternance 2026
           </Link>
           <Link href={`/outils/lettre-de-motivation-${/stage/.test(guide.slug) ? "stage" : "alternance"}`} className="tag tag-neutral">
             Générateur de lettre de motivation
