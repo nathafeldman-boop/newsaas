@@ -10,7 +10,7 @@ const PATH = "/outils";
 const TOOLS = [
   {
     href: "/outils/simulateur-salaire-alternance",
-    title: "Simulateur de salaire en alternance",
+    title: "Salaire en alternance 2026 : grille et simulateur",
     text: "Ton salaire minimum d'apprenti, en contrat pro ou ta gratification de stage, brut et net, selon ton âge et ton année.",
   },
   {
