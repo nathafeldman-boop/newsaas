@@ -61,48 +61,12 @@
       "schedule": "10 3 * * *"
     },
     {
-      "path": "/api/cron/sync-france-travail-departements/0",
-      "schedule": "10 8 * * *"
-    },
-    {
-      "path": "/api/cron/sync-france-travail-departements/1",
-      "schedule": "10 9 * * *"
-    },
-    {
-      "path": "/api/cron/sync-france-travail-departements/2",
-      "schedule": "10 10 * * *"
-    },
-    {
-      "path": "/api/cron/sync-france-travail-departements/3",
-      "schedule": "10 11 * * *"
-    },
-    {
-      "path": "/api/cron/sync-france-travail-departements/4",
-      "schedule": "10 12 * * *"
-    },
-    {
-      "path": "/api/cron/sync-france-travail-departements/5",
-      "schedule": "10 13 * * *"
-    },
-    {
-      "path": "/api/cron/sync-france-travail-departements/6",
-      "schedule": "10 14 * * *"
-    },
-    {
-      "path": "/api/cron/sync-france-travail-departements/7",
-      "schedule": "10 15 * * *"
-    },
-    {
       "path": "/api/cron/sync-france-travail",
       "schedule": "30 4 * * *"
     },
     {
       "path": "/api/cron/indexnow",
       "schedule": "30 5 * * *"
-    },
-    {
-      "path": "/api/cron/indexnow/apres-midi",
-      "schedule": "40 16 * * *"
     },
     {
       "path": "/api/cron/google-indexing",
