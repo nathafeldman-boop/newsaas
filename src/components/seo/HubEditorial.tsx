@@ -32,6 +32,14 @@ const ALTERNANCE_FAQ: Faq[] = [
     a: `En apprentissage, entre ${amount(0.27)} et ${amount(1)} brut par mois en 2026 selon ton âge et ton année de contrat, presque sans cotisations. En contrat pro, de ${formatPercent(PRO_RATES.under21.belowBacPro)} à ${formatPercent(PRO_RATES["21to25"].bacProOrMore)} du SMIC avant 26 ans, et au moins le SMIC après.`,
   },
   {
+    q: "Un alternant est-il payé pendant les cours ?",
+    a: "Oui. Le temps passé en formation compte comme du temps de travail : ton salaire est versé chaque mois, y compris pendant les périodes à l'école.",
+  },
+  {
+    q: "Qui paie l'école en alternance ?",
+    a: "En apprentissage, la formation est gratuite pour toi et ta famille : elle est financée par l'opérateur de compétences (OPCO) de l'entreprise, le CFA ne peut pas te demander de frais de scolarité. En contrat de professionnalisation, elle est prise en charge par l'employeur et son OPCO.",
+  },
+  {
     q: "Comment trouver une alternance ?",
     a: "Regarde chaque jour les nouvelles offres de ton métier et de ta ville, et postule vite. En parallèle, envoie des candidatures spontanées aux entreprises qui embauchent des alternants sans publier d'offre, demande à ton école ses entreprises partenaires et relance au bout de 7 à 10 jours.",
   },
@@ -49,6 +57,10 @@ const STAGE_FAQ: Faq[] = [
   {
     q: "Peut-on faire un stage sans convention ?",
     a: "Non. Un stage se fait toujours avec une convention signée par toi, ton établissement et l'entreprise. Sans convention, ce n'est pas un stage.",
+  },
+  {
+    q: "Peut-on faire un stage sans être étudiant ?",
+    a: "Non : un stage se fait toujours dans le cadre d'une formation, avec une convention signée par ton établissement. Si tu n'es plus étudiant, regarde l'alternance, ou l'immersion professionnelle (PMSMP) proposée par France Travail.",
   },
   {
     q: "Comment trouver un stage ?",
