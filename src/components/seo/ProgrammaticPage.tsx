@@ -324,7 +324,7 @@ export async function ProgrammaticHub({ type }: { type: ContractType }) {
   const { index, metiers, cities, formations } = await getHubModel(type);
   const text = HUB_TEXT[type];
   return (
-    <div className="mx-auto max-w-4xl px-5 py-10 sm:px-9">
+    <div className="mx-auto w-full min-w-0 max-w-4xl px-5 py-10 sm:px-9">
       <nav aria-label="Fil d'Ariane" style={{ fontSize: 13 }}>
         <Link href="/">Accueil</Link>
       </nav>
