@@ -1,6 +1,6 @@
 import { createPublicClient } from "@/lib/supabase/public";
 import { PUBLIC_OFFER_COLUMNS, PUBLIC_OFFERS_PAGE_SIZE, type PublicOfferRow } from "@/lib/offers/fetchPublicOffers";
-import { FORMATIONS, getMetier, isFormation, LISTED_METIERS, type Metier } from "@/lib/seo/metiers";
+import { FORMATIONS, getMetier, isFormation, LISTED_METIERS, SPECIALITES, type Metier } from "@/lib/seo/metiers";
 import { CITY_COORDINATES, distanceKm } from "@/lib/seo/cityCoordinates";
 import {
   INDEXABLE_MIN_OFFERS,
@@ -43,6 +43,10 @@ export type ProgrammaticModel = {
   formations?: SegmentLink[];
   // Régions qui ont une page pour ce métier (pages métier France entière).
   regions?: SegmentLink[];
+  // Pages famille : spécialités qui ont une page au même niveau (France
+  // entière ou même ville). Pages spécialité : la famille, en lien « plus large ».
+  specialites?: SegmentLink[];
+  family?: SegmentLink | null;
   companies: SegmentLink[];
   metier: Metier | null;
   city: CityEntry | null;
@@ -333,10 +337,37 @@ export function buildProgrammaticModel(
     parentArea: parentArea(index, metier, city),
     formations: city && !metier ? formationsInCity(index, city.slug) : undefined,
     regions: metier && !city ? regionsForMetier(index, metier) : undefined,
+    specialites: metier ? specialitesOf(index, metier, city) : undefined,
+    family: metier ? familyOf(index, metier, city) : null,
     companies: [],
     metier,
     city,
     updatedAt: index.generatedAt,
+  };
+}
+
+function specialitesOf(index: ProgrammaticIndex, metier: Metier, city: CityEntry | null): SegmentLink[] {
+  const where = city ? ` ${cityPhrase(city.label)}` : "";
+  return SPECIALITES.filter((s) => s.family === metier.slug)
+    .map((s) => ({ s, stats: city ? index.combos[`${s.slug}/${city.slug}`] : index.metiers[s.slug] }))
+    .filter((x) => x.stats)
+    .sort((a, b) => b.stats!.count - a.stats!.count)
+    .map((x) => ({
+      href: segmentPath(index.type, x.s.slug, city?.slug ?? null),
+      label: `${TYPE_LABEL[index.type]} ${x.s.label}${where}`,
+      count: x.stats!.count,
+    }));
+}
+
+function familyOf(index: ProgrammaticIndex, metier: Metier, city: CityEntry | null): SegmentLink | null {
+  const family = metier.family ? getMetier(metier.family) : undefined;
+  if (!family) return null;
+  const stats = city ? index.combos[`${family.slug}/${city.slug}`] : index.metiers[family.slug];
+  if (!stats) return null;
+  return {
+    href: segmentPath(index.type, family.slug, city?.slug ?? null),
+    label: `${TYPE_LABEL[index.type]} ${family.label}${city ? ` ${cityPhrase(city.label)}` : ""}`,
+    count: stats.count,
   };
 }
 

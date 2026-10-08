@@ -22,6 +22,8 @@ export type Metier = {
   // Règle testée sur l'intitulé sans accents mais avec ses majuscules :
   // "CAP" (le diplôme) et pas "Cap sur l'avenir".
   caseSensitive?: boolean;
+  // Spécialités : famille dont elles précisent une partie (« sante »).
+  family?: string;
 };
 
 export const METIERS: Metier[] = [
@@ -359,6 +361,7 @@ export function classifyFormations(title: string): Metier[] {
 export const SPECIALITES: Metier[] = [
   {
     slug: "preparateur-pharmacie",
+    family: "sante",
     label: "pr\u00e9parateur en pharmacie",
     domain: "en pharmacie",
     pattern: /preparat[^,;]{0,20}pharmac|\bdeust\b[^,;]{0,30}pharmac|(apprenti|alternan|contrat (de )?pro)[^,;]{0,20}\bpharmacie\b/,
@@ -366,6 +369,7 @@ export const SPECIALITES: Metier[] = [
   },
   {
     slug: "assistant-dentaire",
+    family: "sante",
     label: "assistant dentaire",
     domain: "en cabinet dentaire",
     pattern: /assistan[^,;]{0,8}dentaire|aide dentaire|secretaire[^,;]{0,6}dentaire/,
@@ -373,6 +377,7 @@ export const SPECIALITES: Metier[] = [
   },
   {
     slug: "secretaire-medical",
+    family: "sante",
     label: "secr\u00e9taire m\u00e9dical",
     domain: "en secr\u00e9tariat m\u00e9dical",
     pattern: /secretaire[^,;]{0,6}medic|secretariat medical|medico.?administrati/,
@@ -380,6 +385,7 @@ export const SPECIALITES: Metier[] = [
   },
   {
     slug: "gestionnaire-de-paie",
+    family: "rh",
     label: "gestionnaire de paie",
     domain: "en paie",
     pattern: /\bpaie\b|payroll/,

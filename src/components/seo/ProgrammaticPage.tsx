@@ -262,7 +262,15 @@ export async function ProgrammaticPageView({ model, pageParam }: { model: Progra
       {model.regions && model.regions.length > 0 && (
         <LinkChips title={`${model.h1} : par région`} links={model.regions} />
       )}
+      {model.specialites && model.specialites.length > 0 && (
+        <LinkChips title={`${model.h1} : par spécialité`} links={model.specialites} />
+      )}
       <LinkChips title="Les entreprises qui recrutent" links={model.companies} />
+      {model.family && (
+        <p style={{ fontSize: 14, marginTop: 16 }}>
+          Plus large : <Link href={model.family.href}>{model.family.label}</Link> ({model.family.count} offres)
+        </p>
+      )}
       {model.parentArea && (
         <p style={{ fontSize: 14, marginTop: 16 }}>
           Plus large : <Link href={model.parentArea.href}>{model.parentArea.label}</Link> ({model.parentArea.count} offres)
