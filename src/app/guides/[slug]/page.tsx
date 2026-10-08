@@ -151,7 +151,7 @@ export default async function GuidePage({
             ))}
 
             {section.list && (
-              <ul style={{ fontSize: 14, lineHeight: 1.6, margin: "0 0 10px", paddingLeft: 20 }}>
+              <ul style={{ fontSize: 14, lineHeight: 1.6, margin: "0 0 10px", paddingLeft: 20, listStyle: "disc" }}>
                 {section.list.map((item, i) => (
                   <li key={i} style={{ marginBottom: 6 }}>
                     {item}

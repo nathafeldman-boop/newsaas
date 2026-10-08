@@ -114,7 +114,7 @@ export default async function AboutPage() {
       </p>
 
       <h2 style={section}>Stageio en chiffres, aujourd&apos;hui</h2>
-      <ul style={{ fontSize: 15, lineHeight: 1.7, margin: 0, paddingLeft: 20 }}>
+      <ul style={{ fontSize: 15, lineHeight: 1.7, margin: 0, paddingLeft: 20, listStyle: "disc" }}>
         <li>
           <strong>{n(stats.alternance)}</strong> offres d&apos;alternance et <strong>{n(stats.stage)}</strong> offres de
           stage en ligne, dont {n(stats.recent7d)} publiées ces 7 derniers jours.
@@ -154,7 +154,7 @@ export default async function AboutPage() {
       </p>
 
       <h2 style={section}>Ce que Stageio publie en accès libre</h2>
-      <ul style={{ fontSize: 15, lineHeight: 1.7, margin: 0, paddingLeft: 20 }}>
+      <ul style={{ fontSize: 15, lineHeight: 1.7, margin: 0, paddingLeft: 20, listStyle: "disc" }}>
         <li><Link href="/alternance">Les offres d&apos;alternance par métier, ville, département et région</Link></li>
         <li><Link href="/stage">Les offres de stage par métier et par ville</Link></li>
         <li><Link href="/barometre-alternance-stage">Le baromètre de l&apos;alternance et des stages</Link> (métiers et villes qui recrutent, salaires)</li>

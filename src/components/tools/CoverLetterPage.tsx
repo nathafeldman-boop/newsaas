@@ -306,7 +306,7 @@ export function CoverLetterPage({ contract }: { contract: LetterContract }) {
         <p style={{ fontSize: 12, margin: "8px 0 0" }}>Exemples fictifs : personnes, parcours et entreprises inventés.</p>
 
         <h2 style={sectionTitle}>Les erreurs à éviter</h2>
-        <ul style={{ fontSize: 15, lineHeight: 1.7, margin: 0, paddingLeft: 20 }}>
+        <ul style={{ fontSize: 15, lineHeight: 1.7, margin: 0, paddingLeft: 20, listStyle: "disc" }}>
           {page.mistakes.map((item) => (
             <li key={item}>{item}</li>
           ))}

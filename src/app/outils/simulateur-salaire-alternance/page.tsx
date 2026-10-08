@@ -313,7 +313,7 @@ export default async function SalarySimulatorPage() {
       </p>
 
       <h2 style={sectionTitle}>Brut ou net : ce que tu touches vraiment</h2>
-      <ul style={{ fontSize: 14, margin: 0, paddingLeft: 20 }}>
+      <ul style={{ fontSize: 14, margin: 0, paddingLeft: 20, listStyle: "disc" }}>
         <li>
           <strong>Apprenti, contrat signé depuis le 1er mars 2025</strong> : 0 cotisation jusqu&apos;à{" "}
           {amount(0.5)} (50 % du SMIC), puis environ 21 % sur la seule partie qui dépasse.
@@ -362,7 +362,7 @@ export default async function SalarySimulatorPage() {
       </div>
 
       <h2 style={{ ...sectionTitle, fontSize: 15 }}>Sources</h2>
-      <ul style={{ fontSize: 13, margin: 0, paddingLeft: 20 }}>
+      <ul style={{ fontSize: 13, margin: 0, paddingLeft: 20, listStyle: "disc" }}>
         <li>
           <a href="https://www.info.gouv.fr/public/index.php/actualite/le-smic-revalorise-le-1er-juin-2026" rel="noopener">
             Revalorisation du SMIC au 1er juin 2026 (info.gouv.fr)

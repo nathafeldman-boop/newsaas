@@ -70,7 +70,7 @@ export default function CGUPage() {
 
       <Section title="Comportements interdits">
         <p>Il est interdit d&apos;utiliser le Service pour :</p>
-        <ul style={{ margin: "8px 0 0", paddingLeft: 20 }}>
+        <ul style={{ margin: "8px 0 0", paddingLeft: 20, listStyle: "disc" }}>
           <li>publier ou transmettre un contenu illicite, trompeur ou frauduleux (ex : faux profil, fausse offre) ;</li>
           <li>tenter de contourner les limites techniques du Service (quotas, sécurité, authentification) ;</li>
           <li>extraire ou réutiliser massivement les offres ou données affichées à des fins commerciales.</li>

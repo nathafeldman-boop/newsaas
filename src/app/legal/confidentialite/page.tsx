@@ -40,7 +40,7 @@ export default function ConfidentialitePage() {
           Cette fonctionnalité est facultative et désactivée par défaut.
           Si tu la connectes depuis ton profil :
         </p>
-        <ul style={{ margin: "8px 0 0", paddingLeft: 20 }}>
+        <ul style={{ margin: "8px 0 0", paddingLeft: 20, listStyle: "disc" }}>
           <li>
             On analyse les emails récents de ta boîte de réception
             principale pour détecter, par intelligence artificielle, les
@@ -86,7 +86,7 @@ export default function ConfidentialitePage() {
 
       <Section title="Sous-traitants">
         <p>Nous faisons appel aux prestataires suivants pour faire fonctionner Stageio :</p>
-        <ul style={{ margin: "8px 0 0", paddingLeft: 20 }}>
+        <ul style={{ margin: "8px 0 0", paddingLeft: 20, listStyle: "disc" }}>
           <li><strong>Supabase</strong> — hébergement de la base de données, authentification, stockage des CV.</li>
           <li><strong>Vercel</strong> — hébergement de l&apos;application.</li>
           <li><strong>Mistral AI</strong> — extraction et classification de texte (offres, CV, emails).</li>
@@ -112,7 +112,7 @@ export default function ConfidentialitePage() {
           Conformément au RGPD, tu disposes des droits suivants sur tes
           données :
         </p>
-        <ul style={{ margin: "8px 0 0", paddingLeft: 20 }}>
+        <ul style={{ margin: "8px 0 0", paddingLeft: 20, listStyle: "disc" }}>
           <li>
             <strong>Droit à l&apos;effacement</strong> : supprime ton compte
             et l&apos;ensemble de tes données en un clic, à tout moment,

@@ -292,7 +292,7 @@ function MarketBlock({ market, contractType }: { market: OfferMarket; contractTy
   return (
     <section className="mt-8">
       <h2 style={{ fontSize: 18, margin: "0 0 10px" }}>{market.label} : les chiffres</h2>
-      <ul style={{ fontSize: 14.5, lineHeight: 1.7, margin: 0, paddingLeft: 20 }}>
+      <ul style={{ fontSize: 14.5, lineHeight: 1.7, margin: 0, paddingLeft: 20, listStyle: "disc" }}>
         <li>
           <Link href={market.href}>
             {n(market.count)} {offersOf}

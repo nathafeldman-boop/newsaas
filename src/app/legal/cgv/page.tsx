@@ -25,7 +25,7 @@ export default function CGVPage() {
           &laquo;&nbsp;Prix&nbsp;&raquo; ci-dessous) donne accès, tant
           qu&apos;il est actif, à :
         </p>
-        <ul style={{ margin: "8px 0 0", paddingLeft: 20 }}>
+        <ul style={{ margin: "8px 0 0", paddingLeft: 20, listStyle: "disc" }}>
           <li>la possibilité de liker une offre (la mettre en favori) et d&apos;y candidater ;</li>
           <li>la génération de lettres de motivation par intelligence artificielle ;</li>
           <li>l&apos;audit de CV noté sur 100.</li>
@@ -34,7 +34,7 @@ export default function CGVPage() {
 
       <Section title="Prix">
         <p>L&apos;accès Premium est proposé selon deux formules, au choix :</p>
-        <ul style={{ margin: "8px 0 0", paddingLeft: 20 }}>
+        <ul style={{ margin: "8px 0 0", paddingLeft: 20, listStyle: "disc" }}>
           <li><strong>7,99&nbsp;€ / mois</strong>, renouvelable automatiquement chaque mois ;</li>
           <li><strong>39,99&nbsp;€</strong>, en un paiement unique, donnant un accès Premium à vie (sans renouvellement, sans limite de durée).</li>
         </ul>
