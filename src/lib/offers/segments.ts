@@ -1,6 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { createCatalogClient } from "@/lib/supabase/catalog";
-import { createPublicClient, fetchAllRowsByIdCursor } from "@/lib/supabase/public";
+import { fetchAllRowsByIdCursor } from "@/lib/supabase/public";
 import type { PublicOfferRow } from "@/lib/offers/fetchPublicOffers";
 import { PUBLIC_OFFERS_PAGE_SIZE, PUBLIC_OFFER_COLUMNS, isPageOutOfRange } from "@/lib/offers/fetchPublicOffers";
 
@@ -267,8 +267,13 @@ export async function getCitySegment(slug: string): Promise<CitySegment | null> 
 // page vue. Avec plusieurs dizaines de libellés de lieu par grande ville
 // (« 75 - PARIS 01 », « Paris 15e Arrondissement »…), le count exact a
 // dépassé le délai de la base (/offres/ville, 07 et 08/10).
+// Lecture faite seulement pour remplir le cache d'une heure (cachedSegmentPage)
+// : rôle service (délai plus long) comme les autres lectures en cache. Avec
+// le rôle anon, la requête échouait sur des petites villes (Suresnes, Rouen,
+// Pont-à-Mousson, 09/10 au matin) et, une erreur n'étant pas mise en cache,
+// était relancée à chaque visite.
 async function fetchSegmentPage(filter: (query: SegmentQuery) => SegmentQuery, knownCount: number, page: number) {
-  const supabase = createPublicClient();
+  const supabase = createCatalogClient();
   const base = supabase.from("offers").select(PUBLIC_OFFER_COLUMNS).eq("is_active", true);
   const { data, error } = await filter(base)
     .order("published_at", { ascending: false })
@@ -284,7 +289,7 @@ async function fetchSegmentPage(filter: (query: SegmentQuery) => SegmentQuery, k
   return { offers: (data ?? []) as PublicOfferRow[], count: knownCount, totalPages };
 }
 
-type SegmentQuery = ReturnType<ReturnType<ReturnType<typeof createPublicClient>["from"]>["select"]>;
+type SegmentQuery = ReturnType<ReturnType<ReturnType<typeof createCatalogClient>["from"]>["select"]>;
 
 // En cache 1 h par page (comme les segments eux-mêmes) : la base n'est
 // interrogée qu'une fois par heure et par page au lieu de chaque visite.

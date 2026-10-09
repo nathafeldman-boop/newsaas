@@ -1,6 +1,5 @@
 import { unstable_cache } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createPublicClient } from "@/lib/supabase/public";
 import type { ContractType } from "@/types/database";
 
 export const PUBLIC_OFFERS_PAGE_SIZE = 24;
@@ -55,27 +54,38 @@ export function fetchActiveOfferCount(type: ContractType | "all"): Promise<numbe
 // mêmes données, filtre `type` optionnel en plus. Une erreur Supabase
 // remonte (500, que Google réessaie) au lieu d'afficher une liste vide en
 // 200, qui ressemblerait à une page sans contenu (soft 404).
+// Chaque page de liste est en cache 10 minutes et lue par le rôle service :
+// les robots parcourent ?page=2..150, et la requête à chaque visite (rôle
+// anon, délai court) dépassait le délai sur /offres/stage (09/10).
+const cachedOffersPage = unstable_cache(
+  async (type: ContractType | "all", page: number) => {
+    let query = createAdminClient()
+      .from("offers")
+      .select(PUBLIC_OFFER_COLUMNS)
+      .eq("is_active", true)
+      .order("published_at", { ascending: false })
+      .order("id")
+      .range((page - 1) * PUBLIC_OFFERS_PAGE_SIZE, page * PUBLIC_OFFERS_PAGE_SIZE - 1);
+    if (type !== "all") query = query.eq("contract_type", type);
+    const { data, error } = await query;
+    if (error) {
+      if (isPageOutOfRange(error)) return null;
+      throw new Error(error.message);
+    }
+    return (data ?? []) as PublicOfferRow[];
+  },
+  ["public-offers-page-v1"],
+  { revalidate: 600 },
+);
+
 export async function fetchPublicOffers(type: ContractType | undefined, page: number) {
-  const supabase = createPublicClient();
-  let query = supabase
-    .from("offers")
-    .select(PUBLIC_OFFER_COLUMNS)
-    .eq("is_active", true)
-    .order("published_at", { ascending: false })
-    .order("id")
-    .range((page - 1) * PUBLIC_OFFERS_PAGE_SIZE, page * PUBLIC_OFFERS_PAGE_SIZE - 1);
-
-  if (type) query = query.eq("contract_type", type);
-
-  const [{ data, error }, count] = await Promise.all([query, cachedActiveCount(type ?? "all")]);
-  if (error) {
-    if (isPageOutOfRange(error)) return { offers: [] as PublicOfferRow[], count: 0, totalPages: 0 };
-    throw new Error(error.message);
-  }
+  const [rows, count] = await Promise.all([cachedOffersPage(type ?? "all", page), cachedActiveCount(type ?? "all")]);
+  if (rows === null) return { offers: [] as PublicOfferRow[], count: 0, totalPages: 0 };
+  const data = rows;
   const totalPages = Math.max(1, Math.ceil(count / PUBLIC_OFFERS_PAGE_SIZE));
   // Page au-delà de la dernière (le compte en cache peut avoir 10 minutes de
   // retard) : vide, comme le PGRST103 ci-dessus.
-  if ((data ?? []).length === 0 && page > 1) return { offers: [] as PublicOfferRow[], count, totalPages: 0 };
+  if (data.length === 0 && page > 1) return { offers: [] as PublicOfferRow[], count, totalPages: 0 };
 
-  return { offers: (data ?? []) as PublicOfferRow[], count, totalPages };
+  return { offers: data, count, totalPages };
 }
