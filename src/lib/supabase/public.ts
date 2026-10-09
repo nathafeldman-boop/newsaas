@@ -1,4 +1,5 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { fetchWithTimeout } from "@/lib/supabase/fetchWithTimeout";
 import type { Database } from "@/types/database";
 
 // Client anonyme SANS cookies, pour les lectures publiques du catalogue
@@ -11,7 +12,7 @@ export function createPublicClient() {
   return createSupabaseClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } },
+    { auth: { autoRefreshToken: false, persistSession: false }, global: { fetch: fetchWithTimeout(10_000) } },
   );
 }
 

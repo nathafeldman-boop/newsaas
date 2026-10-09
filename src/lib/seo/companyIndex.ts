@@ -204,13 +204,35 @@ async function computeCompactCompanyIndex(): Promise<CompactCompanyIndex> {
 
 const cachedCompanyIndex = unstable_cache(computeCompactCompanyIndex, ["company-index-v9"], { revalidate: 3600 });
 
+// Réutilisé quelques minutes par instance sans relire le cache de données
+// (même raison que l'index des pages métier / ville, voir programmaticIndex.ts).
+const INSTANCE_REUSE_MS = 5 * 60 * 1000;
 let expanded: CompanyIndex | null = null;
+let checkedAt = 0;
+let loading: Promise<CompanyIndex> | null = null;
 
-export async function getCompanyIndex(): Promise<CompanyIndex> {
-  const compact = await cachedCompanyIndex();
-  if (expanded && expanded.generatedAt === compact.generatedAt) return expanded;
-  expanded = { generatedAt: compact.generatedAt, companies: expandGroup(compact.companies, unpackIdTable(compact.idTable)), aliases: compact.aliases ?? {} };
-  return expanded;
+async function loadCompanyIndex(): Promise<CompanyIndex> {
+  try {
+    const compact = await cachedCompanyIndex();
+    checkedAt = Date.now();
+    if (expanded && expanded.generatedAt === compact.generatedAt) return expanded;
+    expanded = { generatedAt: compact.generatedAt, companies: expandGroup(compact.companies, unpackIdTable(compact.idTable)), aliases: compact.aliases ?? {} };
+    return expanded;
+  } catch (err) {
+    if (expanded) {
+      console.error("company index: reading failed, keeping the copy in memory", err);
+      return expanded;
+    }
+    throw err;
+  }
+}
+
+export function getCompanyIndex(): Promise<CompanyIndex> {
+  if (expanded && Date.now() - checkedAt < INSTANCE_REUSE_MS) return Promise.resolve(expanded);
+  loading ??= loadCompanyIndex().finally(() => {
+    loading = null;
+  });
+  return loading;
 }
 
 export function companySlug(company: string): string {

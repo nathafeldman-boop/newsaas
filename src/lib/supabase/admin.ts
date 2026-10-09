@@ -1,4 +1,5 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { fetchWithTimeout } from "@/lib/supabase/fetchWithTimeout";
 import type { Database } from "@/types/database";
 
 // Client "service role" : bypass RLS. Ne JAMAIS importer depuis du code
@@ -13,7 +14,10 @@ export function createAdminClient() {
     );
   }
 
+  // Délai du rôle service côté base : environ 8 s ; 20 s laissent la marge
+  // d'une file d'attente sans bloquer une fonction pendant des minutes.
   return createSupabaseClient<Database>(url, serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
+    global: { fetch: fetchWithTimeout(20_000) },
   });
 }

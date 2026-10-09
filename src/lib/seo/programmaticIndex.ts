@@ -420,17 +420,46 @@ const cachedShard = unstable_cache(
   { revalidate: 3600 },
 );
 
-// Décompacté une fois par version des morceaux, pas à chaque appel.
-const expanded = new Map<ContractType, { key: string; index: ProgrammaticIndex }>();
+// Décompacté une fois par version des morceaux, pas à chaque appel, et
+// réutilisé tel quel quelques minutes par instance : relire les 8 morceaux
+// (jusqu'à 2 Mo de JSON chacun) depuis le cache de données à chaque page,
+// métadonnée et image OG coûtait l'essentiel du CPU des fonctions quand les
+// robots parcourent des milliers de pages (projet mis en pause pour
+// dépassement du quota Hobby, 09/10). Une instance qui a déjà un index le
+// garde aussi si la relecture échoue (base saturée).
+const INSTANCE_REUSE_MS = 5 * 60 * 1000;
+const expanded = new Map<ContractType, { key: string; index: ProgrammaticIndex; checkedAt: number }>();
+const loading = new Map<ContractType, Promise<ProgrammaticIndex>>();
 
-export async function getProgrammaticIndex(type: ContractType): Promise<ProgrammaticIndex> {
-  const shards = await Promise.all(SHARDS.map((shard) => cachedShard(type, shard.name)));
-  const key = shards.map((shard) => shard.generatedAt).join("|");
+async function loadIndex(type: ContractType): Promise<ProgrammaticIndex> {
   const hit = expanded.get(type);
-  if (hit && hit.key === key) return hit.index;
-  const index = expandShards(shards);
-  expanded.set(type, { key, index });
-  return index;
+  try {
+    const shards = await Promise.all(SHARDS.map((shard) => cachedShard(type, shard.name)));
+    const key = shards.map((shard) => shard.generatedAt).join("|");
+    if (hit && hit.key === key) {
+      hit.checkedAt = Date.now();
+      return hit.index;
+    }
+    const index = expandShards(shards);
+    expanded.set(type, { key, index, checkedAt: Date.now() });
+    return index;
+  } catch (err) {
+    if (hit) {
+      console.error(`programmatic index ${type}: reading failed, keeping the copy in memory`, err);
+      return hit.index;
+    }
+    throw err;
+  }
+}
+
+export function getProgrammaticIndex(type: ContractType): Promise<ProgrammaticIndex> {
+  const hit = expanded.get(type);
+  if (hit && Date.now() - hit.checkedAt < INSTANCE_REUSE_MS) return Promise.resolve(hit.index);
+  const pending = loading.get(type);
+  if (pending) return pending;
+  const promise = loadIndex(type).finally(() => loading.delete(type));
+  loading.set(type, promise);
+  return promise;
 }
 
 export function cityPhrase(label: string): string {

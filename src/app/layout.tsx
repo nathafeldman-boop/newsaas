@@ -23,6 +23,11 @@ const jakartaBody = Plus_Jakarta_Sans({
   subsets: ["latin"],
 });
 
+// Durée maximale d'une page (les pages qui en demandent plus, comme
+// l'espace CV, le précisent elles-mêmes). Le 09/10, des pages bloquées par
+// une base saturée ont tourné 300 s chacune et épuisé le quota Vercel.
+export const maxDuration = 30;
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
