@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { fetchWithTimeout } from "@/lib/supabase/fetchWithTimeout";
 import type { Database } from "@/types/database";
 
 // Client Supabase pour Server Components / Route Handlers / Server Actions.
@@ -11,6 +12,8 @@ export async function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      // Même délai que les autres clients serveur (voir fetchWithTimeout.ts).
+      global: { fetch: fetchWithTimeout(10_000) },
       cookies: {
         getAll() {
           return cookieStore.getAll();

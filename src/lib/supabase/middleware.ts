@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { fetchWithTimeout } from "@/lib/supabase/fetchWithTimeout";
 import type { Database } from "@/types/database";
 
 // Seules ces routes exigent un compte : un visiteur anonyme y est renvoyé
@@ -46,6 +47,12 @@ export async function updateSession(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      // Sans délai, une base Supabase qui ne répond plus bloquait CHAQUE
+      // page d'un visiteur connecté (vérification de session), y compris
+      // les guides, jusqu'à l'abandon de la connexion (09/10). Au-delà de
+      // 5 s, la session est considérée absente : page publique affichée,
+      // page de compte renvoyée vers /login.
+      global: { fetch: fetchWithTimeout(5_000) },
       cookies: {
         getAll() {
           return request.cookies.getAll();
