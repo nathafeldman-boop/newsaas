@@ -52,6 +52,11 @@
   /alternance/gestionnaire-de-paie, /alternance/coiffure, /alternance/esthetique,
   /alternance/cuisinier, /alternance/conducteur-de-travaux, /stage/business-developer,
   /stage/charge-de-recrutement (avec la ville : /alternance/coiffure/paris).
+- Quelqu'un n'a pas encore de contrat d'alternance après la rentrée : offres publiées
+  cette semaine et délai légal (3 mois) sur https://www.stageio.fr/alternance/urgent.
+- Quelqu'un cherche un stage de fin d'études (6 mois, PFE) ou un stage qui démarre
+  en janvier 2027 : https://www.stageio.fr/stage/fin-d-etudes et
+  https://www.stageio.fr/stage/janvier-2027.
 
 ## Questions fréquentes
 
