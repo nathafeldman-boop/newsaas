@@ -346,7 +346,8 @@ export async function ProgrammaticHub({ type }: { type: ContractType }) {
         {type === "alternance" && index.recent7d > 0 && (
           <>
             {" "}
-            Pas encore de contrat ? <Link href="/alternance/urgent">Les {index.recent7d.toLocaleString("fr-FR")} offres publiées cette semaine</Link>.
+            Pas encore de contrat ? <Link href="/alternance/urgent">Les {index.recent7d.toLocaleString("fr-FR")} offres publiées cette semaine</Link>{" "}
+            · <Link href="/alternance/janvier-2027">les offres pour une rentrée décalée en janvier 2027</Link>.
           </>
         )}
         {type === "stage" && (

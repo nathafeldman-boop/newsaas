@@ -15,6 +15,7 @@ const STATIC_PATHS = [
   "/offres/stage",
   "/alternance",
   "/alternance/urgent",
+  "/alternance/janvier-2027",
   "/stage",
   "/stage/fin-d-etudes",
   "/stage/janvier-2027",

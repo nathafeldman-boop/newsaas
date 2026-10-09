@@ -35,6 +35,14 @@ const GUIDE_CITY_LINKS = [
   { slug: "grenoble", label: "Grenoble" },
 ];
 
+// Page d'offres la plus proche du sujet du guide, en tête des liens.
+const GUIDE_OFFER_PAGES: Record<string, { href: string; label: string }> = {
+  "rentree-decalee-alternance": { href: "/alternance/janvier-2027", label: "Offres d'alternance pour janvier 2027" },
+  "je-ne-trouve-pas-d-alternance": { href: "/alternance/urgent", label: "Offres d'alternance de la semaine" },
+  "alternance-sans-entreprise": { href: "/alternance/urgent", label: "Offres d'alternance de la semaine" },
+  "stage-de-fin-d-etudes": { href: "/stage/fin-d-etudes", label: "Offres de stage de fin d'études" },
+};
+
 function guideSignupType(slug: string): "stage" | "alternance" | null {
   const stage = /stage|convention|gratification|rapport|soutenance|attestation/.test(slug);
   const alternance = /alternance|alternant|apprenti|contrat|cfa|bts|bachelor/.test(slug);
@@ -291,6 +299,11 @@ export default async function GuidePage({
             ))}
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
+          {GUIDE_OFFER_PAGES[guide.slug] && (
+            <Link href={GUIDE_OFFER_PAGES[guide.slug].href} className="tag tag-neutral">
+              {GUIDE_OFFER_PAGES[guide.slug].label}
+            </Link>
+          )}
           <Link href="/alternance" className="tag tag-neutral">
             Offres d&apos;alternance par métier et ville
           </Link>

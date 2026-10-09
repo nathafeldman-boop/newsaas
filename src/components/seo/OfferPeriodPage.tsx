@@ -6,7 +6,7 @@ import { LinkChips } from "@/components/seo/ProgrammaticPage";
 import { StickySignupBar } from "@/components/signup/StickySignupBar";
 import { PUBLIC_OFFERS_PAGE_SIZE } from "@/lib/offers/fetchPublicOffers";
 import { normalizeCityKey, slugify } from "@/lib/offers/segments";
-import { getStagePeriodOffers, STAGE_PERIODS, type StagePeriodSlug } from "@/lib/offers/stagePeriods";
+import { getPeriodOffers, OFFER_PERIODS, type PeriodKey } from "@/lib/offers/offerPeriods";
 import { STAGE_HOURLY_MIN, STAGE_MANDATORY_AFTER, formatEuros, internshipGratification } from "@/lib/salary/legalRates";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { pagedPath, pagedTitle } from "@/lib/seo/pagination";
@@ -16,10 +16,10 @@ import { INDEXABLE_ROBOTS } from "@/lib/seo/robots";
 import { signupHref } from "@/lib/signup/intent";
 import { SITE_URL } from "@/lib/site";
 
-// Pages « stage de fin d'études » et « stage janvier 2027 » : offres de stage
-// repérées par leur intitulé (voir lib/offers/stagePeriods.ts), villes et
-// entreprises, repères légaux vérifiés et guides. Sous INDEXABLE_MIN offres,
-// la page reste visible mais en noindex.
+// Pages par période (« stage de fin d'études », « stage janvier 2027 »,
+// « alternance janvier 2027 ») : offres repérées par leur intitulé (voir
+// lib/offers/offerPeriods.ts), villes et entreprises, repères légaux vérifiés
+// et guides. Sous INDEXABLE_MIN offres, la page reste visible mais en noindex.
 const INDEXABLE_MIN = 10;
 const UNNAMED = /entreprise non communiqu/i;
 
@@ -33,10 +33,13 @@ type Copy = {
   intro: (n: number) => string;
   facts: React.ReactNode[];
   faq: { q: string; a: string }[];
+  sources: { label: string; url: string }[];
 };
 
-const COPY: Record<StagePeriodSlug, Copy> = {
-  "fin-d-etudes": {
+const STAGE_SOURCES = [{ label: "gratification minimale de stage (service-public.gouv.fr)", url: "https://entreprendre.service-public.gouv.fr/vosdroits/F32131" }];
+
+const COPY: Record<PeriodKey, Copy> = {
+  "stage/fin-d-etudes": {
     h1: "Stage de fin d'études : les offres de stage de 6 mois (PFE, M2, 3A)",
     title: (n) => `Stage de fin d'études 2027 : ${plural(n, "offre")} de stage de 6 mois et PFE`,
     description: (n, c) =>
@@ -72,8 +75,9 @@ const COPY: Record<StagePeriodSlug, Copy> = {
         a: "Non, pas dans la même entreprise : 6 mois au maximum par année d'enseignement, soit 924 heures de présence.",
       },
     ],
+    sources: STAGE_SOURCES,
   },
-  "janvier-2027": {
+  "stage/janvier-2027": {
     h1: "Stage janvier 2027 : les offres qui démarrent en début d'année",
     title: (n) => `Stage janvier 2027 : ${plural(n, "offre")} de stage pour janvier et février`,
     description: (n, c) =>
@@ -108,11 +112,73 @@ const COPY: Record<StagePeriodSlug, Copy> = {
         a: "Oui, comme pour tout stage : une convention signée par toi, l'entreprise et ton établissement, avant le début du stage.",
       },
     ],
+    sources: STAGE_SOURCES,
+  },
+  "alternance/janvier-2027": {
+    h1: "Alternance janvier 2027 : les offres pour une rentrée décalée",
+    title: (n) => `Alternance janvier 2027 : ${plural(n, "offre")} pour une rentrée décalée`,
+    description: (n, c) =>
+      `${plural(n, "offre")} d'alternance qui démarrent en janvier ou février 2027 ou visent une rentrée décalée, chez ${plural(c, "entreprise")}. Mises à jour chaque jour, avec les délais pour signer ton contrat.`,
+    intro: (n) =>
+      `Pas d'entreprise pour septembre, ou une école qui fait sa rentrée en janvier ? Voici ${plural(n, "offre")} d'alternance dont l'intitulé annonce un démarrage en janvier ou février 2027, ou une rentrée décalée. La plupart des offres ne donnent pas de date dans leur titre : regarde aussi les offres publiées cette semaine et celles de ta ville.`,
+    facts: [
+      <>
+        La rentrée décalée (janvier à mars) existe surtout en école de commerce, et dans quelques BTS (MCO, NDRC, GPME), avec
+        moins de places qu&apos;en septembre : <Link href="/guides/rentree-decalee-alternance">comment t&apos;inscrire</Link>.
+      </>,
+      <>
+        Le contrat d&apos;apprentissage peut commencer jusqu&apos;à 3 mois après le début de ta formation : pour une rentrée en
+        janvier, tu as jusqu&apos;en avril au plus tard pour démarrer.
+      </>,
+      <>
+        Ton CFA peut t&apos;accepter sans employeur pendant 3 mois au maximum, le temps de trouver :{" "}
+        <Link href="/guides/alternance-sans-entreprise">commencer sans entreprise</Link>.
+      </>,
+      <>
+        Même salaire minimum qu&apos;en septembre, selon ton âge et ton année de contrat :{" "}
+        <Link href="/outils/simulateur-salaire-alternance">simulateur de salaire</Link>.
+      </>,
+      <>
+        Tu veux commencer tout de suite ? Les <Link href="/alternance/urgent">offres d&apos;alternance publiées cette semaine</Link>.
+      </>,
+    ],
+    faq: [
+      {
+        q: "Peut-on commencer une alternance en janvier ?",
+        a: "Oui. Certaines formations ont une rentrée décalée en janvier, février ou mars, surtout en école de commerce et dans quelques BTS. Il y a moins de places qu'en septembre : contacte les écoles dès l'automne.",
+      },
+      {
+        q: "Quand signer le contrat pour une rentrée en janvier ?",
+        a: "Le plus tôt possible, mais le contrat d'apprentissage peut démarrer jusqu'à 3 mois après le début de ta formation. Ton école peut avoir sa propre date limite : demande-la à l'inscription.",
+      },
+      {
+        q: "Le salaire est-il le même en rentrée décalée ?",
+        a: "Oui. Le salaire minimum d'un apprenti dépend de ton âge et de ton année de contrat, pas de la date de rentrée.",
+      },
+    ],
+    sources: [
+      { label: "Contrat d'apprentissage (service-public.gouv.fr)", url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F2918" },
+      { label: "Code du travail, article L6222-12-1", url: "https://code.travail.gouv.fr/code-du-travail/l6222-12-1" },
+    ],
   },
 };
 
-async function loadModel(slug: StagePeriodSlug) {
-  const [offers, index] = await Promise.all([getStagePeriodOffers(slug), getProgrammaticIndex("stage")]);
+const APPLY_GUIDES: Record<"alternance" | "stage", { slug: string; label: string }[]> = {
+  alternance: [
+    { slug: "lettre-de-motivation-alternance", label: "lettre de motivation d'alternance" },
+    { slug: "cv-alternance", label: "CV d'alternance" },
+    { slug: "entretien-alternance", label: "entretien d'alternance" },
+  ],
+  stage: [
+    { slug: "lettre-de-motivation-stage", label: "lettre de motivation de stage" },
+    { slug: "cv-stage", label: "CV de stage" },
+    { slug: "entretien-de-stage", label: "entretien de stage" },
+  ],
+};
+
+async function loadModel(key: PeriodKey) {
+  const { type } = OFFER_PERIODS[key];
+  const [offers, index] = await Promise.all([getPeriodOffers(key), getProgrammaticIndex(type)]);
   const cityCounts = new Map<string, number>();
   for (const offer of offers) {
     const citySlug = slugify(normalizeCityKey(offer.location));
@@ -121,7 +187,7 @@ async function loadModel(slug: StagePeriodSlug) {
   const cities = [...cityCounts.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, 12)
-    .map(([citySlug, count]) => ({ href: `/stage/${citySlug}`, label: index.cities[citySlug].label, count }));
+    .map(([citySlug, count]) => ({ href: `/${type}/${citySlug}`, label: index.cities[citySlug].label, count }));
   // Regroupées sans tenir compte de la casse (« Airbus » et « AIRBUS ») :
   // libellé le plus fréquent affiché.
   const companyCounts = new Map<string, { count: number; labels: Map<string, number> }>();
@@ -139,10 +205,10 @@ async function loadModel(slug: StagePeriodSlug) {
   return { offers, cities, companies, generatedAt: index.generatedAt };
 }
 
-export async function stagePeriodMetadata(slug: StagePeriodSlug, page: number): Promise<Metadata> {
-  const { offers, companies } = await loadModel(slug);
-  const copy = COPY[slug];
-  const path = `/stage/${slug}`;
+export async function offerPeriodMetadata(key: PeriodKey, page: number): Promise<Metadata> {
+  const { offers, companies } = await loadModel(key);
+  const copy = COPY[key];
+  const path = `/${key}`;
   const title = pagedTitle(copy.title(offers.length), page);
   const description = copy.description(offers.length, companies.length);
   return {
@@ -154,22 +220,24 @@ export async function stagePeriodMetadata(slug: StagePeriodSlug, page: number): 
   };
 }
 
-export async function StagePeriodPage({ slug, page }: { slug: StagePeriodSlug; page: number }) {
-  const { offers, cities, companies, generatedAt } = await loadModel(slug);
-  const copy = COPY[slug];
-  const path = `/stage/${slug}`;
+export async function OfferPeriodPage({ periodKey, page }: { periodKey: PeriodKey; page: number }) {
+  const { offers, cities, companies, generatedAt } = await loadModel(periodKey);
+  const copy = COPY[periodKey];
+  const { type, name } = OFFER_PERIODS[periodKey];
+  const typeLabel = type === "alternance" ? "Alternance" : "Stage";
+  const path = `/${periodKey}`;
   const totalPages = Math.max(1, Math.ceil(offers.length / PUBLIC_OFFERS_PAGE_SIZE));
   if (page > totalPages) notFound();
   const pageOffers = offers.slice((page - 1) * PUBLIC_OFFERS_PAGE_SIZE, page * PUBLIC_OFFERS_PAGE_SIZE);
-  const signupLink = signupHref({ type: "stage" });
+  const signupLink = signupHref({ type });
 
   const breadcrumbJsonLd = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "Accueil", item: SITE_URL },
-      { "@type": "ListItem", position: 2, name: "Stage", item: `${SITE_URL}/stage` },
-      { "@type": "ListItem", position: 3, name: STAGE_PERIODS[slug].name, item: `${SITE_URL}${path}` },
+      { "@type": "ListItem", position: 2, name: typeLabel, item: `${SITE_URL}/${type}` },
+      { "@type": "ListItem", position: 3, name, item: `${SITE_URL}${path}` },
     ],
   };
   const faqJsonLd = {
@@ -184,7 +252,7 @@ export async function StagePeriodPage({ slug, page }: { slug: StagePeriodSlug; p
       {page === 1 && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(faqJsonLd) }} />}
 
       <nav aria-label="Fil d'Ariane" style={{ fontSize: 13, marginBottom: 12 }}>
-        <Link href="/">Accueil</Link> › <Link href="/stage">Stage</Link> › {STAGE_PERIODS[slug].name}
+        <Link href="/">Accueil</Link> › <Link href={`/${type}`}>{typeLabel}</Link> › {name}
       </nav>
       <h1 style={{ fontSize: 28, margin: 0 }}>{copy.h1}</h1>
       <p style={{ fontSize: 13, margin: "6px 0 0", opacity: 0.7 }}>
@@ -209,14 +277,15 @@ export async function StagePeriodPage({ slug, page }: { slug: StagePeriodSlug; p
           )}
           <div className="card mt-6" style={{ padding: "var(--space-4)", background: "var(--color-accent-100)", color: "var(--color-accent-800)" }}>
             <p style={{ fontSize: 14, margin: 0 }}>
-              <strong>Ne rate pas les prochaines.</strong> Crée ton profil gratuit : les nouvelles offres de stage de ta ville et
-              de ton domaine arrivent dans ton fil dès leur publication.
+              <strong>Ne rate pas les prochaines.</strong> Crée ton profil gratuit : les nouvelles offres{" "}
+              {type === "alternance" ? "d'alternance" : "de stage"} de ta ville et de ton domaine arrivent dans ton fil dès leur
+              publication.
             </p>
             <Link href={signupLink} className="btn btn-primary" style={{ alignSelf: "flex-start", marginTop: 8 }}>
               Créer mon profil gratuit
             </Link>
           </div>
-          <LinkChips title="Où sont ces stages" links={cities} />
+          <LinkChips title={type === "alternance" ? "Où sont ces offres" : "Où sont ces stages"} links={cities} />
         </>
       )}
 
@@ -237,8 +306,13 @@ export async function StagePeriodPage({ slug, page }: { slug: StagePeriodSlug; p
               ))}
             </ul>
             <p style={{ fontSize: 14, marginTop: 12 }}>
-              Pour postuler : <Link href="/guides/lettre-de-motivation-stage">lettre de motivation de stage</Link> ·{" "}
-              <Link href="/guides/cv-stage">CV de stage</Link> · <Link href="/guides/entretien-de-stage">entretien de stage</Link>
+              Pour postuler :{" "}
+              {APPLY_GUIDES[type].map((guide, i) => (
+                <span key={guide.slug}>
+                  {i > 0 && " · "}
+                  <Link href={`/guides/${guide.slug}`}>{guide.label}</Link>
+                </span>
+              ))}
             </p>
           </section>
 
@@ -251,10 +325,15 @@ export async function StagePeriodPage({ slug, page }: { slug: StagePeriodSlug; p
               </div>
             ))}
             <p style={{ fontSize: 13, opacity: 0.75 }}>
-              Source :{" "}
-              <a href="https://entreprendre.service-public.gouv.fr/vosdroits/F32131" rel="noopener">
-                gratification minimale de stage (service-public.gouv.fr)
-              </a>
+              {copy.sources.length > 1 ? "Sources" : "Source"} :{" "}
+              {copy.sources.map((source, i) => (
+                <span key={source.url}>
+                  {i > 0 && " ; "}
+                  <a href={source.url} rel="noopener">
+                    {source.label}
+                  </a>
+                </span>
+              ))}
               .
             </p>
           </section>

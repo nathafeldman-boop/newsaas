@@ -1,15 +1,15 @@
-import { StagePeriodPage, stagePeriodMetadata } from "@/components/seo/StagePeriodPage";
+import { OfferPeriodPage, offerPeriodMetadata } from "@/components/seo/OfferPeriodPage";
 import { parsePageParam } from "@/lib/seo/pagination";
 
-// Voir components/seo/StagePeriodPage.tsx. Données en cache 1 h.
+// Voir components/seo/OfferPeriodPage.tsx. Données en cache 1 h.
 export const dynamic = "force-dynamic";
 
 type Props = { searchParams: Promise<{ page?: string }> };
 
 export async function generateMetadata({ searchParams }: Props) {
-  return stagePeriodMetadata("janvier-2027", parsePageParam((await searchParams).page));
+  return offerPeriodMetadata("stage/janvier-2027", parsePageParam((await searchParams).page));
 }
 
 export default async function Page({ searchParams }: Props) {
-  return <StagePeriodPage slug="janvier-2027" page={parsePageParam((await searchParams).page)} />;
+  return <OfferPeriodPage periodKey="stage/janvier-2027" page={parsePageParam((await searchParams).page)} />;
 }

@@ -7,9 +7,9 @@ export const dynamic = "force-dynamic";
 type Props = { searchParams: Promise<{ page?: string }> };
 
 export async function generateMetadata({ searchParams }: Props) {
-  return offerPeriodMetadata("stage/fin-d-etudes", parsePageParam((await searchParams).page));
+  return offerPeriodMetadata("alternance/janvier-2027", parsePageParam((await searchParams).page));
 }
 
 export default async function Page({ searchParams }: Props) {
-  return <OfferPeriodPage periodKey="stage/fin-d-etudes" page={parsePageParam((await searchParams).page)} />;
+  return <OfferPeriodPage periodKey="alternance/janvier-2027" page={parsePageParam((await searchParams).page)} />;
 }
