@@ -4,9 +4,9 @@ import { UrgentOffersPage, urgentOffersMetadata } from "@/components/seo/UrgentO
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata() {
-  return urgentOffersMetadata("alternance");
+  return urgentOffersMetadata("stage");
 }
 
 export default async function Page() {
-  return <UrgentOffersPage type="alternance" />;
+  return <UrgentOffersPage type="stage" />;
 }

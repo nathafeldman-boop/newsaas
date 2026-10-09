@@ -41,6 +41,8 @@ const GUIDE_OFFER_PAGES: Record<string, { href: string; label: string }> = {
   "je-ne-trouve-pas-d-alternance": { href: "/alternance/urgent", label: "Offres d'alternance de la semaine" },
   "alternance-sans-entreprise": { href: "/alternance/urgent", label: "Offres d'alternance de la semaine" },
   "stage-de-fin-d-etudes": { href: "/stage/fin-d-etudes", label: "Offres de stage de fin d'études" },
+  "trouver-un-stage": { href: "/stage/urgent", label: "Offres de stage de la semaine" },
+  "mail-candidature-stage-alternance": { href: "/stage/urgent", label: "Offres de stage de la semaine" },
 };
 
 function guideSignupType(slug: string): "stage" | "alternance" | null {
