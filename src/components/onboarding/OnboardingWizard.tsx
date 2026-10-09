@@ -217,6 +217,15 @@ function TileOption({
 // accessible en écriture à l'utilisateur pour ses propres lignes via RLS).
 // /onboarding exige déjà une session (voir proxy.ts) : pas de bruit robot à
 // filtrer côté client, contrairement au tracking de visites site entier.
+// Résout à null si la promesse ne répond pas à temps (réseau mobile, base
+// lente) : l'onboarding ne reste jamais bloqué sur un chargement.
+function withDeadline<T>(promise: PromiseLike<T>, ms: number): Promise<T | null> {
+  return Promise.race([
+    Promise.resolve(promise),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), ms)),
+  ]);
+}
+
 async function logOnboardingEvent(
   userId: string,
   type: "onboarding_step_viewed" | "onboarding_step_completed",
@@ -255,7 +264,10 @@ export function OnboardingWizard({
   // Jamais une formule fictive (cf. CLAUDE.md, jamais de stat inventée) :
   // vrai décompte des offres actives dans les secteurs choisis, requêté
   // juste après l'enregistrement du profil.
-  const [foundCount, setFoundCount] = useState(0);
+  const [foundCount, setFoundCount] = useState<number | null>(0);
+  // CV choisi mais pas envoyé (réseau, fichier refusé) : le profil est
+  // quand même enregistré, on le signale sur l'écran final.
+  const [cvFailed, setCvFailed] = useState(false);
 
   const [skills, setSkills] = useState<string[]>(initialProfile?.skills ?? []);
   const [sectors, setSectors] = useState<string[]>(initialProfile?.sectors ?? []);
@@ -410,25 +422,31 @@ export function OnboardingWizard({
   }
 
   async function persistProfile(): Promise<
-    { ok: true; foundCount: number } | { ok: false; error: string }
+    { ok: true; foundCount: number | null; cvFailed: boolean } | { ok: false; error: string }
   > {
     const supabase = createClient();
 
     let cvPath = initialProfile?.cv_path ?? null;
     let cvUploadedAt = initialProfile?.cv_uploaded_at ?? null;
 
+    // Le CV est facultatif : un envoi qui échoue (réseau mobile, fichier
+    // refusé) ne bloque plus l'enregistrement du profil. Avant, l'écran
+    // final restait sur « Un problème est survenu » et « Réessayer » refaisait
+    // le même envoi : 24 % des personnes arrivées au récap n'avaient jamais
+    // de profil enregistré (dashboard, 10/10). Le CV s'ajoute ensuite depuis
+    // /profil.
+    let cvFailed = false;
     if (cvFile) {
       const ext = cvFile.name.split(".").pop();
       const path = `${userId}/cv-${Date.now()}.${ext}`;
-      const { error: uploadError } = await supabase.storage
-        .from("cvs")
-        .upload(path, cvFile, { upsert: true });
-
-      if (uploadError) {
-        return { ok: false, error: "Le CV n'a pas pu être envoyé : " + uploadError.message };
+      const upload = await withDeadline(supabase.storage.from("cvs").upload(path, cvFile, { upsert: true }), 25_000);
+      if (!upload || upload.error) {
+        console.error("onboarding: CV upload failed", upload?.error ?? "timeout");
+        cvFailed = true;
+      } else {
+        cvPath = path;
+        cvUploadedAt = new Date().toISOString();
       }
-      cvPath = path;
-      cvUploadedAt = new Date().toISOString();
     }
 
     const availabilityOption = AVAILABILITY_OPTIONS.find((o) => o.label === availabilityLabel);
@@ -469,17 +487,18 @@ export function OnboardingWizard({
       await markReferralGrantedAction(userId);
     }
 
-    let count = 0;
+    // Décompte affiché sur l'écran final : borné à 6 s. Au-delà (base lente),
+    // on n'affiche pas de chiffre plutôt qu'un faux « 0 offre ».
+    let count: number | null = 0;
     if (sectors.length > 0) {
-      const { count: activeCount } = await supabase
-        .from("offers")
-        .select("id", { count: "exact", head: true })
-        .eq("is_active", true)
-        .in("sector", sectors);
-      count = activeCount ?? 0;
+      const counted = await withDeadline(
+        supabase.from("offers").select("id", { count: "exact", head: true }).eq("is_active", true).in("sector", sectors),
+        6_000,
+      );
+      count = counted && !counted.error ? (counted.count ?? null) : null;
     }
 
-    return { ok: true, foundCount: count };
+    return { ok: true, foundCount: count, cvFailed };
   }
 
   async function runOutroSequence() {
@@ -493,11 +512,14 @@ export function OnboardingWizard({
     // Durée mini pour laisser l'animation le temps de se voir (le vrai
     // enregistrement est souvent plus rapide que ça) -- même principe que le
     // prototype de design (~2.5s), pas une vraie latence réseau.
-    const [result] = await Promise.all([
-      persistProfile(),
+    // Au-delà de 45 s (base qui ne répond plus), écran d'erreur avec
+    // « Réessayer » plutôt qu'un chargement sans fin.
+    const [saved] = await Promise.all([
+      withDeadline(persistProfile(), 45_000),
       new Promise((resolve) => setTimeout(resolve, 1800)),
     ]);
     clearInterval(messageInterval);
+    const result = saved ?? { ok: false as const, error: "La connexion est très lente. Vérifie ton réseau et réessaie." };
 
     if (!result.ok) {
       setError(result.error);
@@ -505,6 +527,7 @@ export function OnboardingWizard({
       return;
     }
     setFoundCount(result.foundCount);
+    setCvFailed(result.cvFailed);
     setOutroPhase("done");
   }
 
@@ -1284,12 +1307,25 @@ export function OnboardingWizard({
                       color: "color-mix(in srgb, var(--color-text) 65%, transparent)",
                     }}
                   >
-                    <strong style={{ color: "var(--color-text)" }}>
-                      {foundCount} offre{foundCount > 1 ? "s" : ""}
-                    </strong>{" "}
-                    {foundCount > 1 ? "matchent" : "matche"} déjà{" "}
-                    <Highlight delay={0.35}>ton profil</Highlight>.
+                    {foundCount === null ? (
+                      <>
+                        Tes offres sont prêtes, triées selon <Highlight delay={0.35}>ton profil</Highlight>.
+                      </>
+                    ) : (
+                      <>
+                        <strong style={{ color: "var(--color-text)" }}>
+                          {foundCount} offre{foundCount > 1 ? "s" : ""}
+                        </strong>{" "}
+                        {foundCount > 1 ? "matchent" : "matche"} déjà{" "}
+                        <Highlight delay={0.35}>ton profil</Highlight>.
+                      </>
+                    )}
                   </p>
+                  {cvFailed && (
+                    <p style={{ fontSize: 13, marginTop: 8, color: "color-mix(in srgb, var(--color-text) 65%, transparent)" }}>
+                      Ton CV n&apos;a pas pu être envoyé : tu pourras l&apos;ajouter depuis ton profil.
+                    </p>
+                  )}
                 </div>
 
                 <div
