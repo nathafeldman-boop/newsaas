@@ -343,6 +343,12 @@ export async function ProgrammaticHub({ type }: { type: ContractType }) {
       <p style={{ fontSize: 15, margin: "10px 0 0" }}>
         <strong>{index.total.toLocaleString("fr-FR")}</strong> {text.intro}. Choisis ton métier ou ta ville, ou{" "}
         <Link href={text.listPath}>parcours toutes les offres</Link>.
+        {type === "alternance" && index.recent7d > 0 && (
+          <>
+            {" "}
+            Pas encore de contrat ? <Link href="/alternance/urgent">Les {index.recent7d.toLocaleString("fr-FR")} offres publiées cette semaine</Link>.
+          </>
+        )}
       </p>
       {/* Seul appel à l'inscription des hubs, hors en-tête : ces deux pages
           visent « alternance » et « stage », les plus grosses requêtes. */}
