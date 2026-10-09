@@ -79,20 +79,48 @@ export async function readVisits<T extends { created_at: string }>(columns: stri
 // "tout" est borné à 180 jours, comme le reste du tableau de bord.
 const ALL_TIME_DAYS = 180;
 
+// Un seul calcul à la fois par instance (et par arguments), et plus aucun
+// nouvel essai pendant COOLDOWN_MS après un échec : une erreur n'étant pas
+// mise en cache, chaque rechargement de /admin relançait sinon les mêmes
+// lectures lourdes sur une base déjà lente, et l'enfonçait davantage
+// (09/10, 10 h 30 UTC : 31 erreurs en 5 minutes, site entier ralenti).
+// Pendant la pause, le cache sert la dernière valeur connue, ou le tableau
+// de bord affiche « calcul en cours ».
+const COOLDOWN_MS = 5 * 60 * 1000;
+
+function guarded<A extends unknown[], R>(name: string, compute: (...args: A) => Promise<R>): (...args: A) => Promise<R> {
+  let failedAt = 0;
+  const inFlight = new Map<string, Promise<R>>();
+  return (...args: A) => {
+    if (Date.now() - failedAt < COOLDOWN_MS) return Promise.reject(new Error(`${name}: en pause après un échec récent`));
+    const key = JSON.stringify(args);
+    const pending = inFlight.get(key);
+    if (pending) return pending;
+    const promise = compute(...args)
+      .catch((err) => {
+        failedAt = Date.now();
+        throw err;
+      })
+      .finally(() => inFlight.delete(key));
+    inFlight.set(key, promise);
+    return promise;
+  };
+}
+
 export const getWeekdayAverages = unstable_cache(
-  async (period: Period): Promise<number[]> => {
+  guarded("weekday averages", async (period: Period): Promise<number[]> => {
     const until = new Date();
     const since = periodStart(period) ?? new Date(until.getTime() - ALL_TIME_DAYS * DAY_MS);
     const visits = await readVisits<{ visitor_id: string; created_at: string }>("visitor_id, created_at", since, until, DAY_MS);
     return computeWeekdayAverages(visits);
-  },
+  }),
   ["admin-weekday-averages-v2"],
   { revalidate: 900 },
 );
 
 // Visiteurs distincts du jour par source (utm_source), du plus gros au plus petit.
 export const getTodayVisitorsBySource = unstable_cache(
-  async (todayStartIso: string, unknownLabel: string): Promise<[string, number][]> => {
+  guarded("today visitors by source", async (todayStartIso: string, unknownLabel: string): Promise<[string, number][]> => {
     const visits = await readVisits<{ visitor_id: string; utm_source: string | null; created_at: string }>(
       "visitor_id, utm_source, created_at",
       new Date(todayStartIso),
@@ -106,7 +134,7 @@ export const getTodayVisitorsBySource = unstable_cache(
       bySource.get(source)!.add(v.visitor_id);
     }
     return [...bySource.entries()].map(([source, visitors]): [string, number] => [source, visitors.size]).sort((a, b) => b[1] - a[1]);
-  },
+  }),
   ["admin-today-visitors-by-source-v2"],
   { revalidate: 120 },
 );
@@ -114,13 +142,13 @@ export const getTodayVisitorsBySource = unstable_cache(
 // Entonnoir d'onboarding : la fonction SQL filtre user_events sur event_type
 // sans index adapté (index proposé dans SEO_ROADMAP.md) et a déjà dépassé le
 // délai de la base. En cache 10 min ; une erreur n'est jamais mise en cache
-// (exception levée), le tableau de bord réessaie au chargement suivant.
+// (exception levée) : nouvel essai au plus tôt 5 min après (guarded).
 export const getOnboardingFunnelStats = unstable_cache(
-  async (): Promise<{ step: string | null; viewed_count: number; completed_count: number }[]> => {
+  guarded("onboarding funnel", async (): Promise<{ step: string | null; viewed_count: number; completed_count: number }[]> => {
     const { data, error } = await createAdminClient().rpc("onboarding_funnel_stats");
     if (error) throw new Error(error.message);
     return data ?? [];
-  },
+  }),
   ["admin-onboarding-funnel-v1"],
   { revalidate: 600 },
 );
