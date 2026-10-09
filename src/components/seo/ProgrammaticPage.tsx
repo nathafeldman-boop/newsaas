@@ -349,6 +349,13 @@ export async function ProgrammaticHub({ type }: { type: ContractType }) {
             Pas encore de contrat ? <Link href="/alternance/urgent">Les {index.recent7d.toLocaleString("fr-FR")} offres publiées cette semaine</Link>.
           </>
         )}
+        {type === "stage" && (
+          <>
+            {" "}
+            Tu vises un stage long ? <Link href="/stage/fin-d-etudes">Stages de fin d&apos;études (6 mois, PFE)</Link> ·{" "}
+            <Link href="/stage/janvier-2027">stages qui démarrent en janvier 2027</Link>.
+          </>
+        )}
       </p>
       {/* Seul appel à l'inscription des hubs, hors en-tête : ces deux pages
           visent « alternance » et « stage », les plus grosses requêtes. */}
