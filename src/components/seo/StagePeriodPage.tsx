@@ -122,11 +122,20 @@ async function loadModel(slug: StagePeriodSlug) {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 12)
     .map(([citySlug, count]) => ({ href: `/stage/${citySlug}`, label: index.cities[citySlug].label, count }));
-  const companyCounts = new Map<string, number>();
+  // Regroupées sans tenir compte de la casse (« Airbus » et « AIRBUS ») :
+  // libellé le plus fréquent affiché.
+  const companyCounts = new Map<string, { count: number; labels: Map<string, number> }>();
   for (const offer of offers) {
-    if (!UNNAMED.test(offer.company)) companyCounts.set(offer.company, (companyCounts.get(offer.company) ?? 0) + 1);
+    if (UNNAMED.test(offer.company)) continue;
+    const key = offer.company.trim().toLowerCase();
+    const entry = companyCounts.get(key) ?? { count: 0, labels: new Map<string, number>() };
+    entry.count += 1;
+    entry.labels.set(offer.company.trim(), (entry.labels.get(offer.company.trim()) ?? 0) + 1);
+    companyCounts.set(key, entry);
   }
-  const companies = [...companyCounts.entries()].sort((a, b) => b[1] - a[1]);
+  const companies = [...companyCounts.values()]
+    .map((entry): [string, number] => [[...entry.labels.entries()].sort((a, b) => b[1] - a[1])[0][0], entry.count])
+    .sort((a, b) => b[1] - a[1]);
   return { offers, cities, companies, generatedAt: index.generatedAt };
 }
 
