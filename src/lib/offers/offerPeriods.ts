@@ -59,6 +59,22 @@ export const OFFER_PERIODS: Record<PeriodKey, OfferPeriod> = {
 
 const byRecent = (a: PublicOfferRow, b: PublicOfferRow) => b.published_at.localeCompare(a.published_at) || a.id.localeCompare(b.id);
 
+// Plus récentes d'abord, mais une seule offre par entreprise et intitulé en
+// tête de liste : un organisme qui publie 25 fois la même annonce (une par
+// lieu) ne remplit pas la première page. Les autres suivent, rien n'est retiré.
+function diverseFirst(rows: PublicOfferRow[]): PublicOfferRow[] {
+  const sorted = [...rows].sort(byRecent);
+  const seen = new Set<string>();
+  const first: PublicOfferRow[] = [];
+  const rest: PublicOfferRow[] = [];
+  for (const row of sorted) {
+    const key = `${row.company.trim().toLowerCase()}|${normalizeTitle(row.title)}`;
+    (seen.has(key) ? rest : first).push(row);
+    seen.add(key);
+  }
+  return [...first, ...rest];
+}
+
 function periodsOf(type: ContractType): PeriodKey[] {
   return (Object.keys(OFFER_PERIODS) as PeriodKey[]).filter((key) => OFFER_PERIODS[key].type === type);
 }
@@ -130,10 +146,10 @@ const cachedPeriodOffers = unstable_cache(
       }
     }
     const result: Partial<Record<PeriodKey, PublicOfferRow[]>> = {};
-    for (const key of keys) result[key] = rows.filter((row) => matches(row).includes(key)).sort(byRecent);
+    for (const key of keys) result[key] = diverseFirst(rows.filter((row) => matches(row).includes(key)));
     return result;
   },
-  ["offer-period-offers-v2"],
+  ["offer-period-offers-v3"],
   { revalidate: 3600 },
 );
 
