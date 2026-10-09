@@ -5,8 +5,9 @@ import { createCatalogClient } from "@/lib/supabase/catalog";
 import { fetchAllRowsByIdCursor } from "@/lib/supabase/public";
 import type { ContractType } from "@/types/database";
 
-// Offres par période, repérées dans l'intitulé, et pour l'alternance aussi
-// dans la description (aucune date de début structurée dans les offres) :
+// Offres par période, repérées dans l'intitulé (aucune date de début
+// structurée dans les offres ; la recherche dans les descriptions, trop
+// lourde pour la base, a été retirée le 09/10) :
 // « stage de fin d'études » (PFE, 6 mois, M2, 3A), « stage janvier 2027 »,
 // « alternance janvier 2027 » (rentrée décalée). Recherches d'automne des
 // étudiants. Lecture en cache 1 h, rôle service, comme l'index des pages.
@@ -21,10 +22,6 @@ type OfferPeriod = {
   slug: string;
   name: string;
   pattern: RegExp;
-  // Facultatif : repérage dans la description (présélection en base par
-  // `descriptionHints`, puis vérification par `descriptionPattern`).
-  descriptionHints?: string[];
-  descriptionPattern?: RegExp;
 };
 
 export const OFFER_PERIODS: Record<PeriodKey, OfferPeriod> = {
@@ -47,13 +44,6 @@ export const OFFER_PERIODS: Record<PeriodKey, OfferPeriod> = {
     slug: "janvier-2027",
     name: "Alternance janvier 2027",
     pattern: new RegExp(`${EARLY_2027.source}|rentree (decalee|de janvier|de fevrier|de mars|en janvier|en fevrier|en mars)`),
-    // Les intitulés donnent rarement la date ; la description, plus souvent
-    // (« début du contrat : janvier 2027 », « rentrée décalée »). Une date
-    // seule ne suffit pas (« de septembre 2026 à février 2027 ») : il faut un
-    // mot de démarrage juste avant.
-    descriptionHints: ["janvier 2027", "février 2027", "fevrier 2027", "rentrée décalée", "rentree decalee"],
-    descriptionPattern:
-      /\b(debut|demarrage|demarrer|a partir d[eu]|commencant|commence|commencer|prise de poste|rentree|start)\b[^.\n]{0,40}\b(janv(ier|\.)?|fevr?(ier|\.)?)\s*(20)?27\b|\bdes (mi-?)?(janv(ier|\.)?|fevr?(ier|\.)?)\s*(20)?27\b|(?<!(pas de|sans|aucune) )rentree decalee/,
   },
 };
 
@@ -80,38 +70,9 @@ function periodsOf(type: ContractType): PeriodKey[] {
 }
 
 // Pages par période dont relève une offre (lien depuis sa fiche).
-export function periodsOfOffer(offer: { title: string; contract_type: ContractType; description?: string | null }): PeriodKey[] {
+export function periodsOfOffer(offer: { title: string; contract_type: ContractType }): PeriodKey[] {
   const title = normalizeTitle(offer.title);
-  const description = offer.description ? normalizeTitle(offer.description) : "";
-  return periodsOf(offer.contract_type).filter(
-    (key) => OFFER_PERIODS[key].pattern.test(title) || Boolean(description && OFFER_PERIODS[key].descriptionPattern?.test(description)),
-  );
-}
-
-// Offres dont la description annonce la période, par identifiant. En cas
-// d'échec (délai dépassé…), on garde les seuls intitulés.
-async function matchDescriptions(supabase: ReturnType<typeof createCatalogClient>, type: ContractType, keys: PeriodKey[]) {
-  const byId = new Map<string, PeriodKey[]>();
-  for (const key of keys) {
-    const { descriptionHints, descriptionPattern } = OFFER_PERIODS[key];
-    if (!descriptionHints || !descriptionPattern) continue;
-    try {
-      const { data, error } = await supabase
-        .from("offers")
-        .select("id, description")
-        .eq("is_active", true)
-        .eq("contract_type", type)
-        .or(descriptionHints.map((hint) => `description.ilike.*${hint}*`).join(","))
-        .limit(1000);
-      if (error) throw new Error(error.message);
-      for (const row of (data ?? []) as { id: string; description: string | null }[]) {
-        if (row.description && descriptionPattern.test(normalizeTitle(row.description))) byId.set(row.id, [...(byId.get(row.id) ?? []), key]);
-      }
-    } catch (err) {
-      console.error(`offer periods: description search failed for ${key}`, err);
-    }
-  }
-  return byId;
+  return periodsOf(offer.contract_type).filter((key) => OFFER_PERIODS[key].pattern.test(title));
 }
 
 // Stages (~3 000 offres) : lignes complètes. Alternance (~15 000) : d'abord
@@ -120,10 +81,7 @@ const cachedPeriodOffers = unstable_cache(
   async (type: ContractType): Promise<Partial<Record<PeriodKey, PublicOfferRow[]>>> => {
     const supabase = createCatalogClient();
     const keys = periodsOf(type);
-    const byDescription = await matchDescriptions(supabase, type, keys);
-    const matches = (row: { id: string; title: string }) => [
-      ...new Set([...periodsOfOffer({ title: row.title, contract_type: type }), ...(byDescription.get(row.id) ?? [])]),
-    ];
+    const matches = (row: { id: string; title: string }) => periodsOfOffer({ title: row.title, contract_type: type });
     let rows: PublicOfferRow[];
     if (type === "stage") {
       rows = await fetchAllRowsByIdCursor<PublicOfferRow>((afterId, limit) => {
@@ -149,7 +107,7 @@ const cachedPeriodOffers = unstable_cache(
     for (const key of keys) result[key] = diverseFirst(rows.filter((row) => matches(row).includes(key)));
     return result;
   },
-  ["offer-period-offers-v3"],
+  ["offer-period-offers-v4"],
   { revalidate: 3600 },
 );
 
