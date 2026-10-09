@@ -120,7 +120,7 @@ const COPY: Record<PeriodKey, Copy> = {
     description: (n, c) =>
       `${plural(n, "offre")} d'alternance qui démarrent en janvier ou février 2027 ou visent une rentrée décalée, chez ${plural(c, "entreprise")}. Mises à jour chaque jour, avec les délais pour signer ton contrat.`,
     intro: (n) =>
-      `Pas d'entreprise pour septembre, ou une école qui fait sa rentrée en janvier ? Voici ${plural(n, "offre")} d'alternance dont l'intitulé annonce un démarrage en janvier ou février 2027, ou une rentrée décalée. La plupart des offres ne donnent pas de date dans leur titre : regarde aussi les offres publiées cette semaine et celles de ta ville.`,
+      `Pas d'entreprise pour septembre, ou une école qui fait sa rentrée en janvier ? Voici ${plural(n, "offre")} d'alternance dont l'annonce précise un démarrage en janvier ou février 2027, ou une rentrée décalée. La plupart des offres ne donnent pas de date : regarde aussi les offres publiées cette semaine et celles de ta ville.`,
     facts: [
       <>
         La rentrée décalée (janvier à mars) existe surtout en école de commerce, et dans quelques BTS (MCO, NDRC, GPME), avec

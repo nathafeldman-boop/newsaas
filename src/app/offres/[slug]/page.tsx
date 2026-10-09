@@ -17,6 +17,7 @@ import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { ShareButtons } from "@/components/share/ShareButtons";
 import { ApplyButton } from "@/components/offers/ApplyButton";
 import { signupHref } from "@/lib/signup/intent";
+import { OFFER_PERIODS, periodsOfOffer } from "@/lib/offers/offerPeriods";
 import { classifyMetier } from "@/lib/seo/metiers";
 import { offerGuides } from "@/lib/guides/contextGuides";
 import type { Offer } from "@/types/database";
@@ -515,6 +516,11 @@ export default async function PublicOfferPage({
               {link.label} ({link.count})
             </Link>
           ))}
+        {periodsOfOffer(offer).map((key) => (
+          <Link key={key} href={`/${key}`} className="tag tag-neutral">
+            {OFFER_PERIODS[key].name} : toutes les offres
+          </Link>
+        ))}
         {/* Liste sans contenu (noindex) : seulement si la ville n'a pas de page /alternance/[ville]. */}
         {links.city && !links.programmatic.city && (
           <Link href={`/offres/ville/${links.city.slug}`} className="tag tag-neutral">
@@ -627,6 +633,11 @@ async function ExpiredOffer({ offer }: { offer: Offer }) {
               {link.label} ({link.count})
             </Link>
           ))}
+        {periodsOfOffer(offer).map((key) => (
+          <Link key={key} href={`/${key}`} className="tag tag-neutral">
+            {OFFER_PERIODS[key].name} : toutes les offres
+          </Link>
+        ))}
         <Link href={`/offres/${offer.contract_type}`} className="tag tag-neutral">
           {LISTING_LABEL[offer.contract_type]}
         </Link>
