@@ -3,6 +3,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { notifyInactiveWinback } from "@/lib/resend/notifyInactiveWinback";
 import { INACTIVE_WINBACK_EMAILS } from "@/lib/resend/inactiveWinbackContent";
 import { isPremium } from "@/lib/subscription/isPremium";
+import { CAMPAIGN_EVENT } from "@/lib/campaigns/relanceOffres";
+import { fetchAllRowsByIdCursor } from "@/lib/supabase/public";
 
 export const maxDuration = 60;
 
@@ -50,8 +52,30 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: profilesError.message }, { status: 500 });
   }
 
+  // Relance « nouvelles offres » envoyée depuis /admin/relance : pas de
+  // série « inactifs » dans les 7 jours qui suivent, un email par semaine
+  // suffit largement.
+  const campaignCutoff = new Date(Date.now() - 7 * 86_400_000).toISOString();
+  let recentlyCampaigned: Set<string>;
+  try {
+    const rows = await fetchAllRowsByIdCursor<{ id: string; user_id: string }>((afterId, limit) => {
+      let q = admin
+        .from("user_events")
+        .select("id, user_id")
+        .eq("event_type", CAMPAIGN_EVENT)
+        .gte("created_at", campaignCutoff);
+      if (afterId) q = q.gt("id", afterId);
+      return q.order("id").limit(limit);
+    });
+    recentlyCampaigned = new Set(rows.map((r) => r.user_id));
+  } catch (err) {
+    // Sans cette liste, mieux vaut ne rien envoyer que doubler les emails.
+    return NextResponse.json({ error: `campagne récente illisible : ${String(err)}` }, { status: 500 });
+  }
+
   const candidates = (profiles ?? [])
     .filter((p) => !isPremium(p))
+    .filter((p) => !recentlyCampaigned.has(p.id))
     .filter((p) => !p.last_active_at || new Date(p.last_active_at) < inactiveCutoff)
     .slice(0, DAILY_LIMIT);
 
