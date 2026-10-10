@@ -4,6 +4,7 @@ import { getResendClient } from "@/lib/resend/client";
 import { computeMatchScore } from "@/lib/matching/score";
 import { fetchActiveOffers } from "@/lib/offers/fetchActiveOffers";
 import { SITE_URL } from "@/lib/site";
+import { unsubscribeFooterHtml, unsubscribeHeaders } from "@/lib/resend/unsubscribe";
 import type { Profile } from "@/types/database";
 
 // Cron quotidien (voir vercel.json) : digest email "nouvelles offres qui te
@@ -112,7 +113,8 @@ export async function GET(request: NextRequest) {
 <p>De nouvelles offres viennent d'arriver et matchent ton profil :</p>
 <ul>${itemsHtml}</ul>
 <p><a href="${SITE_URL}/swipe">Voir mes offres sur Stageio</a></p>
-<p style="font-size:12px;color:#888">Tu reçois cet email car l'alerte "nouvelles offres" est activée dans ton profil Stageio. Tu peux la désactiver à tout moment depuis la page Profil.</p>`,
+${unsubscribeFooterHtml(profile.id)}`,
+        headers: unsubscribeHeaders(profile.id),
       });
 
       emailed++;

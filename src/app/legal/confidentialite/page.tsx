@@ -6,7 +6,7 @@ export const metadata = {
 
 export default function ConfidentialitePage() {
   return (
-    <LegalShell tag="Confidentialité" title="Politique de confidentialité" updated="septembre 2026">
+    <LegalShell tag="Confidentialité" title="Politique de confidentialité" updated="octobre 2026">
       <Section title="Qui sommes-nous">
         <p>
           Stageio est une plateforme française qui aide les étudiant·e·s à
@@ -72,6 +72,23 @@ export default function ConfidentialitePage() {
         </ul>
       </Section>
 
+      <Section title="Emails que tu peux recevoir">
+        <ul style={{ margin: 0, paddingLeft: 20, listStyle: "disc" }}>
+          <li>Emails liés à ton compte : confirmation, connexion, paiement, parrainage.</li>
+          <li>
+            Alertes « nouvelles offres » qui correspondent à ton profil, et
+            de temps en temps une relance sur Stageio (nouvelles offres,
+            fonctionnalités, offre Premium) si tu ne passes plus.
+          </li>
+        </ul>
+        <p style={{ marginTop: 8 }}>
+          Chaque alerte ou relance contient un lien pour ne plus en
+          recevoir, et tu peux aussi les couper depuis ta page Profil
+          (« Alertes nouvelles offres »). Les emails liés à ton compte
+          continuent tant que le compte existe.
+        </p>
+      </Section>
+
       <Section title="Cookies">
         <p>
           Stageio n&apos;utilise aucun cookie de mesure d&apos;audience ni de
@@ -90,7 +107,7 @@ export default function ConfidentialitePage() {
           <li><strong>Supabase</strong> — hébergement de la base de données, authentification, stockage des CV.</li>
           <li><strong>Vercel</strong> — hébergement de l&apos;application.</li>
           <li><strong>Mistral AI</strong> — extraction et classification de texte (offres, CV, emails).</li>
-          <li><strong>Resend</strong> — envoi des emails transactionnels (parrainage, codes de vérification).</li>
+          <li><strong>Resend</strong> — envoi des emails (compte, alertes nouvelles offres, relances).</li>
           <li><strong>Stripe</strong> — traitement des paiements de l&apos;abonnement Premium.</li>
           <li><strong>Adzuna</strong> et sources publiques — sourcing des offres d&apos;alternance/stage.</li>
           <li><strong>Google</strong> — connexion et, si activé, lecture Gmail.</li>

@@ -365,6 +365,7 @@ export async function sendCheckoutAbandonedReminderAction() {
     .not("stripe_customer_id", "is", null)
     .not("subscription_status", "in", "(active,trialing,comp,lifetime)")
     .is("checkout_abandoned_reminder_sent_at", null)
+    .eq("notify_new_offers", true)
     .not("email", "is", null)
     .order("id")
     .limit(2000);
@@ -380,7 +381,7 @@ export async function sendCheckoutAbandonedReminderAction() {
   for (const profile of profiles ?? []) {
     if (!profile.email) continue;
     try {
-      await notifyCheckoutAbandoned(profile.email, profile.full_name);
+      await notifyCheckoutAbandoned(profile.email, profile.full_name, profile.id);
       const { error } = await admin
         .from("profiles")
         .update({ checkout_abandoned_reminder_sent_at: new Date().toISOString() })

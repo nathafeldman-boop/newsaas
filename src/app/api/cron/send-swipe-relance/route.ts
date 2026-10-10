@@ -41,6 +41,7 @@ export async function GET(request: NextRequest) {
     .select("id, email, full_name, created_at")
     .is("swipe_relance_sent_at", null)
     .is("search_completed_at", null)
+    .eq("notify_new_offers", true)
     .not("email", "is", null)
     .lte("created_at", CAMPAIGN_CUTOFF)
     .order("created_at", { ascending: true });
@@ -77,7 +78,7 @@ export async function GET(request: NextRequest) {
     if (!claimed || claimed.length === 0) continue;
 
     try {
-      await notifySwipeRelance(profile.email, profile.full_name);
+      await notifySwipeRelance(profile.email, profile.full_name, profile.id);
       emailed++;
     } catch (err) {
       errors.push(`profile ${profile.id}: ${err instanceof Error ? err.message : String(err)}`);

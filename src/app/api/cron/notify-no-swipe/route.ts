@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getResendClient } from "@/lib/resend/client";
+import { unsubscribeFooterHtml, unsubscribeHeaders } from "@/lib/resend/unsubscribe";
 import { SITE_URL } from "@/lib/site";
 
 // Cron quotidien (voir vercel.json) : relance "tu n'as pas encore swipé"
@@ -43,6 +44,7 @@ export async function GET(request: NextRequest) {
     .from("profiles")
     .select("id, email, full_name")
     .eq("onboarding_completed", true)
+    .eq("notify_new_offers", true)
     .is("no_swipe_reminder_sent_at", null)
     .is("search_completed_at", null)
     .lte("created_at", cutoff.toISOString())
@@ -100,7 +102,8 @@ export async function GET(request: NextRequest) {
         html: `<p>Salut${profile.full_name ? ` ${profile.full_name}` : ""},</p>
 <p>Tu t'es inscrit·e sur Stageio mais tu n'as pas encore swipé une seule offre. Si t'as juste pas eu deux minutes, elles t'attendent toujours -- ça prend 30 secondes pour voir si l'une d'elles te correspond.</p>
 <p><a href="${SITE_URL}/swipe">Voir mes offres sur Stageio</a></p>
-<p style="font-size:12px;color:#888">Un souci pour accéder à l'app ? Réponds directement à cet email.</p>`,
+${unsubscribeFooterHtml(profile.id)}`,
+        headers: unsubscribeHeaders(profile.id),
       });
 
       emailed++;
