@@ -7,8 +7,21 @@ type Filters = {
   sectors?: string[];
   /** Ne renvoyer que les offres publiées APRÈS cette date ISO. */
   publishedAfter?: string;
+  /** Ne renvoyer que les offres dont le lieu contient l'un de ces noms. */
+  locations?: string[];
   limit?: number;
 };
+
+// Filtre PostgREST « lieu contient X ou Y » : la ville peut être saisie
+// librement à l'onboarding, donc on retire ce qui casserait la syntaxe de
+// .or() (virgule, parenthèses, guillemets) et les jokers de LIKE.
+export function locationsFilter(locations: string[]): string | null {
+  const parts = locations
+    .map((l) => l.replace(/[,()"\\%*_]/g, " ").replace(/\s+/g, " ").trim())
+    .filter((l) => l.length >= 2)
+    .map((l) => `location.ilike.%${l}%`);
+  return parts.length > 0 ? parts.join(",") : null;
+}
 
 // Tente le filtre/tri par offers.quality_score ; si la colonne n'existe pas
 // encore côté base (migration 20260925000000_retention_v2 pas encore
@@ -23,13 +36,16 @@ export async function fetchActiveOffers(
   supabase: SupabaseClient<Database>,
   filters: Filters,
 ): Promise<Offer[]> {
-  const { excludeIds = [], sectors = [], publishedAfter, limit = 600 } = filters;
+  const { excludeIds = [], sectors = [], publishedAfter, locations, limit = 600 } = filters;
+  const locationOr = locations ? locationsFilter(locations) : null;
+  if (locations && !locationOr) return [];
 
   function baseQuery() {
     let q = supabase.from("offers").select("*").eq("is_active", true).limit(limit);
     if (excludeIds.length > 0) q = q.not("id", "in", `(${excludeIds.join(",")})`);
     if (sectors.length > 0) q = q.in("sector", sectors);
     if (publishedAfter) q = q.gt("published_at", publishedAfter);
+    if (locationOr) q = q.or(locationOr);
     return q;
   }
 

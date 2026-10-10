@@ -77,6 +77,19 @@ export function isNearbyCity(profileCityLower: string, offerLocationLower: strin
   return cluster.some((c) => offerLocationLower.includes(c.toLowerCase()));
 }
 
+/**
+ * Lieux qui valent « dans ta ville » pour computeMatchScore (+14 / +10) :
+ * la ville du profil et, pour une métropole, son agglomération. Vide pour
+ * un département choisi à l'onboarding (pas de correspondance par lieu dans
+ * le score) ou sans ville. Sert à aller chercher ces offres-là en plus du
+ * bassin national de /swipe.
+ */
+export function localCitiesFor(city: string | null | undefined): string[] {
+  const trimmed = city?.trim() ?? "";
+  if (!trimmed || isDepartmentLocation(trimmed)) return [];
+  return findMetroCluster(trimmed.toLowerCase()) ?? [trimmed];
+}
+
 // Score heuristique (pas de ML) : part d'une base de 40 et ajoute des points
 // selon le recoupement secteur / métier / localisation / compétences / niveau
 // d'études / disponibilité. Plafonné à 99 pour ne jamais promettre un match

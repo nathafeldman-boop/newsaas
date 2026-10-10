@@ -2,7 +2,13 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SwipeDeck } from "@/components/swipe/SwipeDeck";
 import { SearchCompletedCard } from "@/components/swipe/SearchCompletedCard";
-import { computeMatchScore, computeMatchReasons, computeCvMatchBonus, isNearbyCity } from "@/lib/matching/score";
+import {
+  computeMatchScore,
+  computeMatchReasons,
+  computeCvMatchBonus,
+  isNearbyCity,
+  localCitiesFor,
+} from "@/lib/matching/score";
 import { buildLearnedAffinity, type SwipeHistoryEntry } from "@/lib/matching/learning";
 import { isPremium } from "@/lib/subscription/isPremium";
 import { computeApplicationStreak } from "@/lib/engagement/applicationStreak";
@@ -140,7 +146,37 @@ export default async function SwipePage() {
   // Les comptes créés avant que ce champ soit obligatoire (sectors vide)
   // ne sont pas filtrés, sinon leur deck se viderait d'un coup.
   const hardSectors = profile && profile.sectors.length > 0 ? profile.sectors : [];
-  let offers = await fetchActiveOffers(supabase, { excludeIds, sectors: hardSectors, limit: CANDIDATE_POOL_SIZE });
+
+  // Offres de la ville du profil (et de son agglomération), cherchées EN
+  // PLUS du bassin ci-dessus. Le bassin prend les 600 offres les mieux
+  // notées du secteur dans toute la France : avec ~5 200 offres (jusqu'au
+  // 07/10), ça couvrait presque tout le secteur. Depuis la synchro France
+  // Travail par nature de contrat (nuit du 08 au 09/10), des milliers
+  // d'offres d'alternance sont arrivées et ces 600 places partent aux plus
+  // récentes, n'importe où : les offres de la ville de l'étudiant, celles
+  // qui prennent +14 au score, pouvaient ne plus y être. Ses 3 cartes
+  // gratuites tombaient alors ailleurs en France avec un match bas, juste
+  // avant le paywall. Coïncide avec la baisse des paiements du 09 et du
+  // 10/10 (cause probable, pas prouvée : voir SEO_ROADMAP.md).
+  const LOCAL_POOL_SIZE = 300;
+  const localCities = localCitiesFor(profile?.city);
+  const [nationalPool, localPool] = await Promise.all([
+    fetchActiveOffers(supabase, { excludeIds, sectors: hardSectors, limit: CANDIDATE_POOL_SIZE }),
+    localCities.length > 0
+      ? fetchActiveOffers(supabase, {
+          excludeIds,
+          sectors: hardSectors,
+          locations: localCities,
+          limit: LOCAL_POOL_SIZE,
+        }).catch((error) => {
+          // Jamais bloquant : sans ces offres, le deck reste celui d'avant.
+          console.error("SwipePage: offres de la ville en échec", error);
+          return [];
+        })
+      : Promise.resolve([]),
+  ]);
+  const nationalIds = new Set(nationalPool.map((o) => o.id));
+  let offers = [...nationalPool, ...localPool.filter((o) => !nationalIds.has(o.id))];
 
   // Filet de sécurité : si le filtre secteur ne renvoie rien (secteur trop
   // niche, catalogue encore mince dessus...), on se retrouvait avec un deck
