@@ -17,7 +17,14 @@ import { fetchActiveOffers } from "@/lib/offers/fetchActiveOffers";
 import { isSchoolOrJobBoard } from "@/lib/seo/schools";
 import { normalizeTitle } from "@/lib/seo/metiers";
 
-export default async function SwipePage() {
+export default async function SwipePage({
+  searchParams,
+}: {
+  // Retour de Google après « Postuler directement » (voir
+  // components/swipe/SwipeDeck.tsx) : offre likée à reprendre + statut.
+  searchParams: Promise<{ apply?: string; gmail?: string }>;
+}) {
+  const query = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -334,9 +341,23 @@ export default async function SwipePage() {
         ? `${profile.sectors.length} secteurs`
         : null;
 
+  // Envoi des candidatures depuis Gmail : connexion et CV, et l'offre likée à
+  // reprendre au retour de Google.
+  const [{ data: gmailConnection }, { data: resumeOffer }] = await Promise.all([
+    supabase.from("email_connections").select("id").eq("user_id", user.id).eq("provider", "gmail").maybeSingle(),
+    query.apply
+      ? supabase.from("offers").select("id, company").eq("id", query.apply).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+
   return (
     <div className="flex flex-1 flex-col items-center">
       <SwipeDeck
+        autoApplySetup={{
+          gmailConnected: !!gmailConnection,
+          hasCv: !!profile?.cv_path,
+          resume: resumeOffer ? { offerId: resumeOffer.id, company: resumeOffer.company, gmail: query.gmail ?? null } : null,
+        }}
         offers={sortedOffers}
         scores={scores}
         reasons={reasons}

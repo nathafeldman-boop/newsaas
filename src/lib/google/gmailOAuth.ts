@@ -12,3 +12,15 @@ export const GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.send";
 // suivi des réponses (cron sync-gmail-replies).
 export const GMAIL_READ_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
 export const gmailRedirectUri = () => `${SITE_URL}/api/gmail/callback`;
+
+// Page où revenir après Google (?next=…) : chemin interne uniquement, jamais
+// une autre adresse (sinon n'importe quel lien pourrait renvoyer ailleurs).
+export function safeNextPath(next: string | null | undefined): string | null {
+  if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) return null;
+  return next.length <= 300 ? next : null;
+}
+
+// Ajoute ?gmail=<statut> à la page de retour.
+export function withGmailStatus(path: string, status: string): string {
+  return `${path}${path.includes("?") ? "&" : "?"}gmail=${encodeURIComponent(status)}`;
+}

@@ -15,7 +15,7 @@ import { logButtonClick } from "@/lib/analytics/logButtonClick";
 import { PremiumCtaLink } from "@/components/premium/PremiumCtaLink";
 import { OfferCardContent } from "@/components/swipe/OfferCard";
 import { LikeChoiceSheet } from "@/components/swipe/LikeChoiceSheet";
-import { useAutoApply } from "@/components/swipe/AutoApply";
+import { useApplyOnLike, type AutoApplySetup } from "@/components/swipe/ApplyOnLike";
 import { Icon } from "@/components/ui/Icon";
 import { readLikeAction, saveLikeAction, type LikeAction } from "@/lib/swipe/likePreference";
 import { cn } from "@/lib/utils";
@@ -300,6 +300,7 @@ function SwipeDeckInner({
   isPremium,
   onStackChange,
   onSwipesUsedChange,
+  autoApplySetup,
 }: {
   offers: Offer[];
   scores: Record<string, number>;
@@ -309,6 +310,7 @@ function SwipeDeckInner({
   isPremium: boolean;
   onStackChange?: (count: number) => void;
   onSwipesUsedChange?: (count: number) => void;
+  autoApplySetup?: AutoApplySetup;
 }) {
   const router = useRouter();
   const [stack, setStack] = useState(offers);
@@ -326,7 +328,7 @@ function SwipeDeckInner({
   // Premier like d'un compte Premium sans réglage enregistré : on demande
   // si un like doit lancer la candidature ou juste mettre en favori.
   const [likeChoiceOffer, setLikeChoiceOffer] = useState<Offer | null>(null);
-  const autoApply = useAutoApply();
+  const { applyOnLike, ui: applyUi } = useApplyOnLike(autoApplySetup, userId);
   const topCardRef = useRef<SwipeCardHandle>(null);
 
   const visible = stack.slice(0, 3);
@@ -400,7 +402,7 @@ function SwipeDeckInner({
       const likeAction = readLikeAction();
       if (likeAction === "candidature") {
         void logButtonClick(userId, "like_apply", { mode: "auto" });
-        void autoApply.start(offer);
+        applyOnLike(offer);
         return true;
       }
       if (likeAction === null) {
@@ -421,7 +423,7 @@ function SwipeDeckInner({
     if (!offer) return;
     void logButtonClick(userId, "like_choice", { action, remember });
     if (action === "candidature") {
-      void autoApply.start(offer);
+      applyOnLike(offer);
     } else if ((scores[offer.id] ?? 0) >= CELEBRATION_THRESHOLD) {
       setCelebratingOffer(offer);
     }
@@ -457,7 +459,7 @@ function SwipeDeckInner({
   if (visible.length === 0) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center text-center px-6 py-20">
-        {autoApply.toasts}
+        {applyUi}
         <p className="text-4xl">🎉</p>
         <h2 style={{ fontSize: 22, marginTop: 16 }}>Tu as vu toutes les offres du moment</h2>
         <p style={{ marginTop: 8, color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
@@ -503,7 +505,7 @@ function SwipeDeckInner({
           onClose={() => setCelebratingOffer(null)}
         />
         <LikeChoiceSheet offer={likeChoiceOffer} onChoose={handleLikeChoice} />
-        {autoApply.toasts}
+        {applyUi}
         {visible
           .slice()
           .reverse()
@@ -595,6 +597,7 @@ export function SwipeDeck({
   cityBanner = null,
   sectorLabel = null,
   applicationStreak = 0,
+  autoApplySetup,
 }: {
   offers: Offer[];
   scores: Record<string, number>;
@@ -605,6 +608,7 @@ export function SwipeDeck({
   cityBanner?: string | null;
   sectorLabel?: string | null;
   applicationStreak?: number;
+  autoApplySetup?: AutoApplySetup;
 }) {
   const [contractFilter, setContractFilter] = useState<ContractType | "all">("all");
   // Compteur d'offres restantes DANS LE DECK EN COURS, affiché juste
@@ -729,6 +733,7 @@ export function SwipeDeck({
         isPremium={isPremium}
         onStackChange={setCardsLeft}
         onSwipesUsedChange={setSwipesUsed}
+        autoApplySetup={autoApplySetup}
       />
     </div>
   );

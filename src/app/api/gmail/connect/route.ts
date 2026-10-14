@@ -2,33 +2,36 @@ import { randomBytes } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { SITE_URL } from "@/lib/site";
-import { GMAIL_SCOPE, GMAIL_STATE_COOKIE, gmailRedirectUri } from "@/lib/google/gmailOAuth";
+import { GMAIL_SCOPE, GMAIL_STATE_COOKIE, gmailRedirectUri, safeNextPath } from "@/lib/google/gmailOAuth";
 
 // Connexion Gmail par notre propre autorisation Google (14/10), à la place de
 // supabase.auth.signInWithOAuth : celle-ci CONNECTAIT l'utilisateur avec son
 // compte Google, donc une boîte Gmail différente de l'email du compte Stageio
 // ouvrait un autre compte (ou échouait), et l'erreur de Google n'était jamais
 // montrée. Ici le compte Stageio ne change pas : on demande seulement à
-// Google un accès en lecture à Gmail pour ce compte.
+// Google l'autorisation d'envoyer des emails depuis Gmail pour ce compte.
+// ?next=/chemin : page où revenir ensuite (le swipe, quand la connexion est
+// demandée au moment de « Postuler directement »), sinon le profil.
 
 export async function GET(request: NextRequest) {
   // Le cookie de vérification doit être posé sur le domaine où Google
   // renverra la personne (SITE_URL) : on y repasse d'abord si besoin.
   const canonical = new URL(SITE_URL);
   if (request.nextUrl.host !== canonical.host) {
-    return NextResponse.redirect(`${SITE_URL}/api/gmail/connect`);
+    return NextResponse.redirect(`${SITE_URL}/api/gmail/connect${request.nextUrl.search}`);
   }
+  const next = safeNextPath(request.nextUrl.searchParams.get("next"));
 
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return NextResponse.redirect(`${SITE_URL}/login?next=/profil`);
+  if (!user) return NextResponse.redirect(`${SITE_URL}/login?next=${encodeURIComponent(next ?? "/profil")}`);
 
   const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
   if (!clientId || !process.env.GOOGLE_OAUTH_CLIENT_SECRET) {
     console.error("gmail/connect: GOOGLE_OAUTH_CLIENT_ID ou GOOGLE_OAUTH_CLIENT_SECRET manquant");
-    return NextResponse.redirect(`${SITE_URL}/profil?gmail=config`);
+    return NextResponse.redirect(`${SITE_URL}${next ?? "/profil"}${(next ?? "").includes("?") ? "&" : "?"}gmail=config`);
   }
 
   const state = randomBytes(24).toString("base64url");
@@ -43,7 +46,8 @@ export async function GET(request: NextRequest) {
   if (user.email) google.searchParams.set("login_hint", user.email);
 
   const response = NextResponse.redirect(google.toString());
-  response.cookies.set(GMAIL_STATE_COOKIE, `${state}.${user.id}`, {
+  const nextPart = next ? `.${Buffer.from(next, "utf8").toString("base64url")}` : "";
+  response.cookies.set(GMAIL_STATE_COOKIE, `${state}.${user.id}${nextPart}`, {
     httpOnly: true,
     secure: true,
     sameSite: "lax",

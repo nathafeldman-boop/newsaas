@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Icon } from "@/components/ui/Icon";
 import { AUTO_SEND_WARNING_THRESHOLD, type AutoSendResult } from "@/lib/applications/autoSend";
-import type { Offer } from "@/types/database";
+
+export type ApplyTarget = { id: string; company: string };
 
 // Like en mode « Postuler directement » : si l'entreprise a publié un email
 // et que le Gmail de l'étudiant est connecté, la candidature part depuis sa
@@ -18,7 +19,8 @@ type Toast =
   | { id: string; kind: "sending"; company: string; to: string }
   | { id: string; kind: "sent"; company: string; to: string; from: string; count: number }
   | { id: string; kind: "already"; company: string }
-  | { id: string; kind: "failed"; company: string };
+  | { id: string; kind: "failed"; company: string }
+  | { id: string; kind: "notice"; title: string; text: string; href?: string; hrefLabel?: string };
 
 async function callAutoSend(offerId: string, check: boolean): Promise<AutoSendResult> {
   try {
@@ -45,7 +47,7 @@ export function useAutoApply() {
   }, []);
 
   const start = useCallback(
-    async (offer: Offer) => {
+    async (offer: ApplyTarget) => {
       const check = await callAutoSend(offer.id, true);
       if (check.status === "manual" && check.reason === "already_sent") {
         put({ id: offer.id, kind: "already", company: offer.company });
@@ -69,7 +71,12 @@ export function useAutoApply() {
     [router, put, dismiss],
   );
 
-  return { start, toasts: <AutoApplyToasts toasts={toasts} onDismiss={dismiss} /> };
+  const notify = useCallback(
+    (notice: Omit<Extract<Toast, { kind: "notice" }>, "kind">) => put({ ...notice, kind: "notice" }),
+    [put],
+  );
+
+  return { start, notify, toasts: <AutoApplyToasts toasts={toasts} onDismiss={dismiss} /> };
 }
 
 const muted = "color-mix(in srgb, var(--color-text) 68%, transparent)";
@@ -105,7 +112,11 @@ function AutoApplyToasts({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (i
                   color: t.kind === "failed" ? "var(--color-neutral-700)" : "var(--color-accent-700)",
                 }}
               >
-                <Icon name={t.kind === "sending" ? "send" : t.kind === "failed" ? "x" : "sparkles"} size={16} strokeWidth={2.1} />
+                <Icon
+                  name={t.kind === "sending" ? "send" : t.kind === "failed" ? "x" : t.kind === "notice" ? "pen" : "sparkles"}
+                  size={16}
+                  strokeWidth={2.1}
+                />
               </span>
               <div style={{ flex: 1, minWidth: 0, fontSize: 13, lineHeight: 1.45 }}>
                 {t.kind === "sending" && (
@@ -136,6 +147,22 @@ function AutoApplyToasts({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (i
                   <>
                     <strong style={{ fontSize: 14 }}>Déjà envoyée à {t.company}</strong>
                     <p style={{ margin: "2px 0 0", color: muted }}>On ne renvoie pas deux fois la même candidature.</p>
+                  </>
+                )}
+                {t.kind === "notice" && (
+                  <>
+                    <strong style={{ fontSize: 14 }}>{t.title}</strong>
+                    <p style={{ margin: "2px 0 0", color: muted }}>
+                      {t.text}
+                      {t.href && (
+                        <>
+                          {" "}
+                          <Link href={t.href} style={{ fontWeight: 700 }}>
+                            {t.hrefLabel ?? "Voir"}
+                          </Link>
+                        </>
+                      )}
+                    </p>
                   </>
                 )}
                 {t.kind === "failed" && (
