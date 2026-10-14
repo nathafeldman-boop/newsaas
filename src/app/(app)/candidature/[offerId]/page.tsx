@@ -16,10 +16,15 @@ export const maxDuration = 60;
 
 export default async function CandidaturePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ offerId: string }>;
+  searchParams: Promise<{ express?: string }>;
 }) {
   const { offerId } = await params;
+  // Arrivé ici par un like (réglage « postuler directement », voir
+  // lib/swipe/likePreference.ts) plutôt que depuis les favoris.
+  const express = (await searchParams).express === "1";
 
   const supabase = await createClient();
   const {
@@ -42,15 +47,26 @@ export default async function CandidaturePage({
       .eq("user_id", user.id)
       .eq("offer_id", offerId)
       .maybeSingle(),
-    supabase.from("profiles").select("subscription_status, cv_text").eq("id", user.id).single(),
+    supabase.from("profiles").select("subscription_status, current_period_end, cv_text").eq("id", user.id).single(),
   ]);
   const canAnalyzeOfferFit = isPremium(profile) && !!profile?.cv_text;
 
   return (
     <div className="mx-auto max-w-xl">
-      <Link href="/favoris" style={{ fontSize: 14 }}>
-        ← Retour aux favoris
+      <Link href={express ? "/swipe" : "/favoris"} style={{ fontSize: 14 }}>
+        {express ? "← Retour aux offres" : "← Retour aux favoris"}
       </Link>
+
+      {express && !application && (
+        <div
+          className="card mt-4"
+          style={{ padding: "var(--space-4)", borderColor: "var(--color-accent-600)", fontSize: 14 }}
+        >
+          <strong>Candidature lancée.</strong> Ta lettre s&apos;écrit pour cette offre. Dès qu&apos;elle est
+          prête, touche « Postuler sur le site » : elle est copiée, tu n&apos;as plus qu&apos;à la coller si le
+          site la demande.
+        </div>
+      )}
 
       <div className="card elev-sm mt-4" style={{ padding: "var(--space-6)" }}>
         <div className="flex items-center justify-between">

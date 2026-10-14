@@ -14,6 +14,8 @@ import { createClient } from "@/lib/supabase/client";
 import { logButtonClick } from "@/lib/analytics/logButtonClick";
 import { PremiumCtaLink } from "@/components/premium/PremiumCtaLink";
 import { OfferCardContent } from "@/components/swipe/OfferCard";
+import { LikeChoiceSheet } from "@/components/swipe/LikeChoiceSheet";
+import { readLikeAction, saveLikeAction, type LikeAction } from "@/lib/swipe/likePreference";
 import { cn } from "@/lib/utils";
 import type { ContractType, Offer, SwipeDirection } from "@/types/database";
 
@@ -319,6 +321,9 @@ function SwipeDeckInner({
   // son titre/entreprise et proposer "Postuler maintenant" directement
   // depuis le modal, comme le fait le prototype de design.
   const [celebratingOffer, setCelebratingOffer] = useState<Offer | null>(null);
+  // Premier like d'un compte Premium sans réglage enregistré : on demande
+  // si un like doit lancer la candidature ou juste mettre en favori.
+  const [likeChoiceOffer, setLikeChoiceOffer] = useState<Offer | null>(null);
   const topCardRef = useRef<SwipeCardHandle>(null);
 
   const visible = stack.slice(0, 3);
@@ -386,11 +391,37 @@ function SwipeDeckInner({
 
     void recordSwipe(offer, direction);
     setSwipesUsed((n) => n + 1);
+    topCardRef.current?.swipeOut(direction);
+
+    if (direction === "like" && isPremium) {
+      const likeAction = readLikeAction();
+      if (likeAction === "candidature") {
+        void logButtonClick(userId, "like_apply", { mode: "auto" });
+        router.push(`/candidature/${offer.id}?express=1`);
+        return true;
+      }
+      if (likeAction === null) {
+        setLikeChoiceOffer(offer);
+        return true;
+      }
+    }
     if (direction === "like" && (scores[offer.id] ?? 0) >= CELEBRATION_THRESHOLD) {
       setCelebratingOffer(offer);
     }
-    topCardRef.current?.swipeOut(direction);
     return true;
+  }
+
+  function handleLikeChoice(action: LikeAction, remember: boolean) {
+    const offer = likeChoiceOffer;
+    setLikeChoiceOffer(null);
+    if (remember) saveLikeAction(action);
+    if (!offer) return;
+    void logButtonClick(userId, "like_choice", { action, remember });
+    if (action === "candidature") {
+      router.push(`/candidature/${offer.id}?express=1`);
+    } else if ((scores[offer.id] ?? 0) >= CELEBRATION_THRESHOLD) {
+      setCelebratingOffer(offer);
+    }
   }
 
   // Bouton "postuler" du milieu (voir design mobile) : réservé aux Premium
@@ -467,6 +498,7 @@ function SwipeDeckInner({
           }}
           onClose={() => setCelebratingOffer(null)}
         />
+        <LikeChoiceSheet offer={likeChoiceOffer} onChoose={handleLikeChoice} />
         {visible
           .slice()
           .reverse()
