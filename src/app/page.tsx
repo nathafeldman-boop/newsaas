@@ -5,6 +5,8 @@ import { CONTACT_EMAIL, SITE_URL, SOCIAL_PROFILES } from "@/lib/site";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { getPublicReviewStats, getPublicTestimonials, type PublicTestimonial } from "@/lib/reviews/publicStats";
 import { SwipeDemo } from "@/components/landing/SwipeDemo";
+import { AppScreens } from "@/components/landing/AppScreens";
+import { Icon } from "@/components/ui/Icon";
 import { Reveal } from "@/components/ui/Reveal";
 import { Highlight } from "@/components/ui/Highlight";
 import { getProgrammaticIndex } from "@/lib/seo/programmaticIndex";
@@ -33,17 +35,14 @@ export const revalidate = 3600;
 
 const FEATURES = [
   {
-    icon: "✍️",
     title: "Lettre de motivation IA",
     text: "Une lettre adaptée à chaque offre, générée à partir de ton profil.",
   },
   {
-    icon: "🎤",
     title: "Simulateur d'entretien",
     text: "Questions à choix multiples sur 3 niveaux pour arriver prêt·e.",
   },
   {
-    icon: "📄",
     title: "Audit de CV sur 100",
     text: "Des recommandations concrètes pour sortir du lot.",
   },
@@ -653,7 +652,7 @@ export default async function LandingPage() {
                         fontWeight: 700,
                       }}
                     >
-                      🔥 4 j
+                      <Icon name="flame" size={12} strokeWidth={2.2} /> 4 j
                     </span>
                   </div>
                   <p style={{ margin: "10px 16px 0", fontSize: 18, fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.1 }}>
@@ -675,11 +674,11 @@ export default async function LandingPage() {
                       fontSize: 18,
                     }}
                   >
-                    <span style={{ color: "var(--color-accent)" }}>🔥</span>
-                    <span>♥</span>
-                    <span>🎯</span>
-                    <span>📄</span>
-                    <span>👤</span>
+                    <span style={{ color: "var(--color-accent)" }}><Icon name="swipe" size={20} /></span>
+                    <Icon name="heart" size={20} />
+                    <Icon name="dashboard" size={20} />
+                    <Icon name="file" size={20} />
+                    <Icon name="user" size={20} />
                   </div>
                 </div>
               </div>
@@ -701,14 +700,14 @@ export default async function LandingPage() {
                 >
                   <span
                     className="flex items-center justify-center"
-                    style={{ width: 30, height: 30, borderRadius: 10, background: "var(--color-accent)", fontSize: 14 }}
+                    style={{ width: 30, height: 30, borderRadius: 10, background: "var(--color-accent)", color: "var(--color-bg)" }}
                   >
-                    📨
+                    <Icon name="pen" size={15} strokeWidth={2.1} />
                   </span>
                   <span style={{ fontSize: 12, lineHeight: 1.3 }}>
-                    <strong>Candidature envoyée</strong>
+                    <strong>Lettre prête</strong>
                     <br />
-                    <span style={{ opacity: 0.75 }}>Groupe SEB · à l&apos;instant</span>
+                    <span style={{ opacity: 0.75 }}>Groupe Restalliance · Lyon</span>
                   </span>
                 </div>
               </div>
@@ -736,7 +735,7 @@ export default async function LandingPage() {
                   <span style={{ fontSize: 12, lineHeight: 1.3 }}>
                     <strong>Excellent match</strong>
                     <br />
-                    <span style={{ color: mutedText }}>Marketing · Lyon</span>
+                    <span style={{ color: mutedText }}>Commercial · Lyon</span>
                   </span>
                 </div>
               </div>
@@ -799,7 +798,8 @@ export default async function LandingPage() {
                     boxShadow: "0 6px 16px color-mix(in srgb, var(--color-text) 12%, transparent)",
                   }}
                 >
-                  🔥 Série de 4 jours
+                  <Icon name="flame" size={14} strokeWidth={2.2} style={{ marginRight: 4, verticalAlign: "-2px" }} />
+                  Série de 4 jours
                 </div>
               </div>
             </div>
@@ -928,7 +928,7 @@ export default async function LandingPage() {
             <div className="flex flex-wrap items-end justify-between gap-5">
               <div>
                 <p style={eyebrow}>Le parcours</p>
-                <h2 style={{ ...h2Style, maxWidth: "16ch" }}>Trois gestes, et ta candidature est partie.</h2>
+                <h2 style={{ ...h2Style, maxWidth: "16ch" }}>Trois gestes, et ta candidature est prête.</h2>
               </div>
               <p style={{ margin: 0, fontSize: 15, color: mutedText, maxWidth: "32ch" }}>
                 Pas de formulaire à rallonge, pas de lettre à recopier. Juste toi, tes envies et les
@@ -936,228 +936,7 @@ export default async function LandingPage() {
               </p>
             </div>
           </Reveal>
-          <div className="mt-9 grid gap-5" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,280px),1fr))" }}>
-            <Reveal>
-              <div style={{ background: "var(--color-surface)", borderRadius: 24, overflow: "hidden", boxShadow: "0 1px 2px color-mix(in srgb, var(--color-text) 10%, transparent)" }}>
-                <div
-                  aria-hidden
-                  style={{
-                    height: 210,
-                    background: "var(--color-accent-2-100)",
-                    position: "relative",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      backgroundImage: "radial-gradient(color-mix(in srgb, var(--color-text) 12%, transparent) 1px, transparent 1.2px)",
-                      backgroundSize: "18px 18px",
-                    }}
-                  />
-                  <div
-                    style={{
-                      position: "relative",
-                      width: 200,
-                      background: "var(--color-surface)",
-                      borderRadius: 20,
-                      padding: 16,
-                      boxShadow: "0 12px 28px color-mix(in srgb, var(--color-text) 14%, transparent)",
-                    }}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <span
-                        className="flex items-center justify-center"
-                        style={{ width: 38, height: 38, borderRadius: "50%", background: "linear-gradient(135deg, var(--color-accent), var(--color-accent-2))", color: "#fff", fontWeight: 800, fontSize: 13, flexShrink: 0 }}
-                      >
-                        LM
-                      </span>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ height: 8, width: "80%", borderRadius: 4, background: "var(--color-text)" }} />
-                        <div style={{ height: 6, width: "55%", borderRadius: 4, background: "var(--color-divider)", marginTop: 6 }} />
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5" style={{ marginTop: 14 }}>
-                      {["Marketing", "Lyon", "SEO", "Canva"].map((t) => (
-                        <span key={t} className="tag tag-accent" style={{ fontSize: 10.5 }}>
-                          {t}
-                        </span>
-                      ))}
-                      <span className="tag tag-neutral" style={{ fontSize: 10.5 }}>
-                        Bac+3
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div style={{ padding: "24px 26px 28px" }}>
-                  <div className="flex items-center gap-2.5">
-                    <span style={{ fontSize: 13, fontWeight: 800, color: "var(--color-accent)" }}>01</span>
-                    <h3 style={{ margin: 0, fontSize: 21, fontWeight: 800, letterSpacing: "-0.025em" }}>Crée ton profil</h3>
-                  </div>
-                  <p style={{ margin: "8px 0 0", fontSize: 14.5, lineHeight: 1.6, color: mutedText }}>
-                    Compétences, ville, parcours, et ton CV si tu veux — facultatif.
-                  </p>
-                </div>
-              </div>
-            </Reveal>
-
-            <Reveal delay={0.08}>
-              <div style={{ background: "var(--color-surface)", borderRadius: 24, overflow: "hidden", boxShadow: "0 1px 2px color-mix(in srgb, var(--color-text) 10%, transparent)" }}>
-                <div
-                  aria-hidden
-                  style={{
-                    height: 210,
-                    background: "var(--color-accent-2-100)",
-                    position: "relative",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      backgroundImage: "radial-gradient(color-mix(in srgb, var(--color-text) 12%, transparent) 1px, transparent 1.2px)",
-                      backgroundSize: "18px 18px",
-                    }}
-                  />
-                  <div style={{ position: "relative", width: 150, height: 170 }}>
-                    <div style={{ position: "absolute", inset: 0, borderRadius: 18, background: "var(--color-neutral-300)", transform: "translateY(12px) scale(0.9)" }} />
-                    <div
-                      className="lp-wiggle"
-                      style={{
-                        position: "absolute",
-                        inset: 0,
-                        borderRadius: 18,
-                        background: "var(--color-surface)",
-                        overflow: "hidden",
-                        boxShadow: "0 12px 28px color-mix(in srgb, var(--color-text) 18%, transparent)",
-                        transformOrigin: "50% 120%",
-                      }}
-                    >
-                      <div style={{ height: 54, background: "linear-gradient(125deg, var(--color-accent), var(--color-accent-2))" }} />
-                      <div style={{ padding: 12 }}>
-                        <div style={{ height: 8, width: "85%", borderRadius: 4, background: "var(--color-text)" }} />
-                        <div style={{ height: 8, width: "60%", borderRadius: 4, background: "var(--color-text)", marginTop: 6 }} />
-                        <div className="flex gap-1" style={{ marginTop: 12 }}>
-                          <div style={{ flex: 1, height: 26, borderRadius: 8, background: "var(--color-bg)" }} />
-                          <div style={{ flex: 1, height: 26, borderRadius: 8, background: "var(--color-bg)" }} />
-                          <div style={{ flex: 1, height: 26, borderRadius: 8, background: "var(--color-bg)" }} />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <span
-                    className="flex items-center justify-center"
-                    style={{
-                      position: "absolute",
-                      left: 22,
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      width: 40,
-                      height: 40,
-                      borderRadius: "50%",
-                      background: "var(--color-surface)",
-                      color: "var(--color-neutral-600)",
-                      boxShadow: "0 4px 10px color-mix(in srgb, var(--color-text) 12%, transparent)",
-                    }}
-                  >
-                    ✕
-                  </span>
-                  <span
-                    className="flex items-center justify-center"
-                    style={{
-                      position: "absolute",
-                      right: 22,
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      width: 40,
-                      height: 40,
-                      borderRadius: "50%",
-                      background: "var(--color-accent)",
-                      color: "var(--color-bg)",
-                      boxShadow: "0 4px 10px color-mix(in srgb, var(--color-accent) 30%, transparent)",
-                    }}
-                  >
-                    ♥
-                  </span>
-                </div>
-                <div style={{ padding: "24px 26px 28px" }}>
-                  <div className="flex items-center gap-2.5">
-                    <span style={{ fontSize: 13, fontWeight: 800, color: "var(--color-accent)" }}>02</span>
-                    <h3 style={{ margin: 0, fontSize: 21, fontWeight: 800, letterSpacing: "-0.025em" }}>Swipe les offres</h3>
-                  </div>
-                  <p style={{ margin: "8px 0 0", fontSize: 14.5, lineHeight: 1.6, color: mutedText }}>
-                    Logo, salaire, avis d&apos;anciens alternants : tout pour décider d&apos;un regard.
-                  </p>
-                </div>
-              </div>
-            </Reveal>
-
-            <Reveal delay={0.16}>
-              <div
-                style={{
-                  background: "linear-gradient(160deg, var(--color-accent), var(--color-accent-800))",
-                  color: "var(--color-bg)",
-                  borderRadius: 24,
-                  overflow: "hidden",
-                  boxShadow: "0 18px 40px color-mix(in srgb, var(--color-accent) 25%, transparent)",
-                }}
-              >
-                <div aria-hidden style={{ height: 210, position: "relative", overflow: "hidden" }}>
-                  <div
-                    className="lp-float"
-                    style={{ position: "absolute", left: 40, top: 90, ["--r" as string]: "0deg" }}
-                  >
-                    <div
-                      className="flex items-center justify-center"
-                      style={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 15,
-                        background: "var(--color-bg)",
-                        color: "var(--color-accent)",
-                        boxShadow: "0 10px 24px color-mix(in srgb, var(--color-text) 25%, transparent)",
-                        fontSize: 22,
-                      }}
-                    >
-                      ✈️
-                    </div>
-                  </div>
-                  <div
-                    className="flex items-center gap-1.5"
-                    style={{
-                      position: "absolute",
-                      right: 22,
-                      top: 24,
-                      background: "var(--color-neutral-900)",
-                      padding: "8px 12px",
-                      borderRadius: 999,
-                      fontSize: 12,
-                      fontWeight: 700,
-                    }}
-                  >
-                    ✓ Envoyée
-                  </div>
-                </div>
-                <div style={{ padding: "24px 26px 28px" }}>
-                  <div className="flex items-center gap-2.5">
-                    <span style={{ fontSize: 13, fontWeight: 800, color: "var(--color-accent-200)" }}>03</span>
-                    <h3 style={{ margin: 0, fontSize: 21, fontWeight: 800, letterSpacing: "-0.025em" }}>Postule en un geste</h3>
-                  </div>
-                  <p style={{ margin: "8px 0 0", fontSize: 14.5, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-bg) 88%, transparent)" }}>
-                    Directement depuis la carte que tu aimes, sans ressaisir tes infos.
-                  </p>
-                </div>
-              </div>
-            </Reveal>
-          </div>
+          <AppScreens />
         </section>
 
         {/* FONCTIONS */}
@@ -1198,7 +977,7 @@ export default async function LandingPage() {
                 }}
               />
               <div style={{ position: "relative" }}>
-                <span aria-hidden style={{ fontSize: 26 }}>🎯</span>
+                <Icon name="target" size={28} style={{ color: "var(--color-accent-300)" }} />
                 <h3 style={{ margin: "14px 0 0", fontSize: "clamp(22px,2.8vw,30px)", fontWeight: 800, letterSpacing: "-0.025em", lineHeight: 1.15 }}>
                   Un score de compatibilité pour chaque offre.
                 </h3>
@@ -1246,7 +1025,7 @@ export default async function LandingPage() {
                     </p>
                   ))}
                   <p className="flex items-center gap-2.5" style={{ margin: 0, fontSize: 13.5 }}>
-                    <span aria-hidden style={{ color: "var(--color-accent-300)" }}>✨</span>
+                    <span aria-hidden style={{ color: "var(--color-accent-300)", display: "flex" }}><Icon name="sparkles" size={15} /></span>
                     Proche d&apos;offres que tu as aimées
                   </p>
                 </div>
@@ -1270,7 +1049,7 @@ export default async function LandingPage() {
                   </p>
                 </div>
                 <h3 style={{ margin: "16px 0 0", fontSize: 17, fontWeight: 800, letterSpacing: "-0.015em", display: "flex", alignItems: "center", gap: 7 }}>
-                  <span aria-hidden style={{ fontSize: 18 }}>✍️</span>
+                  <Icon name="pen" size={19} style={{ color: "var(--color-accent-700)" }} />
                   {FEATURES[0].title}
                 </h3>
                 <p style={{ margin: "6px 0 0", fontSize: 13.5, lineHeight: 1.55, color: mutedText }}>{FEATURES[0].text}</p>
@@ -1295,7 +1074,7 @@ export default async function LandingPage() {
                   </div>
                 </div>
                 <h3 style={{ margin: "16px 0 0", fontSize: 17, fontWeight: 800, letterSpacing: "-0.015em", display: "flex", alignItems: "center", gap: 7 }}>
-                  <span aria-hidden style={{ fontSize: 18 }}>🎤</span>
+                  <Icon name="mic" size={19} style={{ color: "var(--color-accent-700)" }} />
                   {FEATURES[1].title}
                 </h3>
                 <p style={{ margin: "6px 0 0", fontSize: 13.5, lineHeight: 1.55, color: mutedText }}>{FEATURES[1].text}</p>
@@ -1338,7 +1117,7 @@ export default async function LandingPage() {
                   </div>
                 </div>
                 <h3 style={{ margin: "16px 0 0", fontSize: 17, fontWeight: 800, letterSpacing: "-0.015em", display: "flex", alignItems: "center", gap: 7 }}>
-                  <span aria-hidden style={{ fontSize: 18 }}>📄</span>
+                  <Icon name="file" size={19} style={{ color: "var(--color-accent-700)" }} />
                   {FEATURES[2].title}
                 </h3>
                 <p style={{ margin: "6px 0 0", fontSize: 13.5, lineHeight: 1.55, color: mutedText }}>{FEATURES[2].text}</p>

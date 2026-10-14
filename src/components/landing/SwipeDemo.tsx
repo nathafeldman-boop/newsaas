@@ -10,67 +10,56 @@ import {
   animate,
 } from "framer-motion";
 import { MatchRing, InfoCell } from "@/components/swipe/OfferCard";
+import { Icon } from "@/components/ui/Icon";
 
 const SWIPE_THRESHOLD = 100;
 const EXIT_DISTANCE = 500;
 
 type DemoDirection = "like" | "pass";
 
-// Offres fictives, uniquement pour la démo publique de la LP : la vraie
-// pile vient toujours de la base une fois connecté (cf. /swipe). On évite
-// ainsi de montrer de vraies offres à des visiteurs non connectés.
+// Vraies offres publiées sur Stageio (pages publiques /offres, 14/10),
+// figées ici pour la démo : la démo montre ce que l'appli affiche vraiment,
+// pas des entreprises inventées. Ni date de publication ni « il y a X
+// jours » : la démo reste juste même quand ces offres auront été pourvues.
 const DEMO_OFFERS = [
   {
     id: "demo-1",
-    company: "Lumea",
+    company: "Groupe Restalliance",
     contractType: "Alternance",
-    title: "Chargé·e de marketing digital",
-    location: "Paris",
-    matchScore: 91,
-    salary: "1 100€/mois",
-    duration: "12 mois",
-    start: "Sept. 2026",
-    publishedLabel: "Publiée il y a 2 jours",
-    reasons: ["Secteur Marketing recherché", "À Paris, comme toi"],
+    title: "Alternant Chargé Commercial à Lyon H/F",
+    location: "Lyon",
+    matchScore: 94,
+    salary: "492–1 823 €",
+    duration: "Non précisé",
+    start: "Flexible",
+    publishedLabel: "Vraie offre",
+    reasons: ["Secteur Vente recherché", "Correspond à \"Commercial\"", "À Lyon, comme toi"],
   },
   {
     id: "demo-2",
-    company: "Vertigo Studio",
-    contractType: "Stage",
-    title: "Développeur·se front-end",
-    location: "Lyon",
-    matchScore: 87,
-    salary: "1 200€/mois",
-    duration: "6 mois",
+    company: "Engel & Völkers France",
+    contractType: "Alternance",
+    title: "CRM Manager - Alternance H/F",
+    location: "Paris 8e",
+    matchScore: 88,
+    salary: "Non précisé",
+    duration: "Non précisé",
     start: "Flexible",
-    publishedLabel: "Publiée aujourd'hui",
-    reasons: ["Secteur Informatique recherché", "Compétence en commun : React"],
+    publishedLabel: "Vraie offre",
+    reasons: ["C'est une alternance", "Correspond à \"Chargé de marketing digital\"", "À Paris, comme toi"],
   },
   {
     id: "demo-3",
-    company: "Nordika",
-    contractType: "Alternance",
-    title: "Assistant·e chef de projet",
-    location: "Nantes",
-    matchScore: 78,
-    salary: "Non précisé",
-    duration: "24 mois",
-    start: "Flexible",
-    publishedLabel: "Publiée il y a 5 jours",
-    reasons: ["C'est une alternance", "Niveau Bac+3 demandé"],
-  },
-  {
-    id: "demo-4",
-    company: "Filao Conseil",
+    company: "Groupe Printemps",
     contractType: "Stage",
-    title: "Analyste data junior",
-    location: "Bordeaux",
-    matchScore: 84,
-    salary: "1 000€/mois",
-    duration: "4 mois",
+    title: "Stage - Coordinateur(rice) référencement de marque H/F",
+    location: "Paris 6e",
+    matchScore: 81,
+    salary: "5 000 à 10 000 €/an",
+    duration: "Non précisé",
     start: "Flexible",
-    publishedLabel: "Publiée il y a 1 jour",
-    reasons: ["Secteur Data recherché", "Télétravail possible"],
+    publishedLabel: "Vraie offre",
+    reasons: ["Secteur Marketing recherché", "C'est un stage"],
   },
 ] as const;
 
@@ -247,7 +236,9 @@ const DemoCard = forwardRef<
               >
                 {offer.company}
               </p>
-              <p style={{ margin: "2px 0 0", fontSize: 11.5, color: "rgba(242,248,249,.88)" }}>📍 {offer.location}</p>
+              <p style={{ margin: "2px 0 0", fontSize: 11.5, color: "rgba(242,248,249,.88)", display: "flex", alignItems: "center", gap: 4 }}>
+                <Icon name="pin" size={12} strokeWidth={2.1} /> {offer.location}
+              </p>
             </div>
             <MatchRing score={offer.matchScore} />
           </div>
@@ -258,7 +249,7 @@ const DemoCard = forwardRef<
                 {offer.contractType}
               </span>
               <span className="tag tag-accent-2" style={{ fontSize: 10.5 }}>
-                ✨ {offer.publishedLabel}
+                <Icon name="sparkles" size={12} /> {offer.publishedLabel}
               </span>
             </div>
             <h3
@@ -274,9 +265,9 @@ const DemoCard = forwardRef<
             </h3>
 
             <div className="grid grid-cols-3 gap-1.5" style={{ marginTop: 12 }}>
-              <InfoCell icon="🗓" label="Début" value={offer.start} />
-              <InfoCell icon="⏱" label="Durée" value={offer.duration} />
-              <InfoCell icon="💰" label="Salaire" value={offer.salary} />
+              <InfoCell icon={<Icon name="calendar" size={16} />} label="Début" value={offer.start} />
+              <InfoCell icon={<Icon name="clock" size={16} />} label="Durée" value={offer.duration} />
+              <InfoCell icon={<Icon name="euro" size={16} />} label="Salaire" value={offer.salary} />
             </div>
 
             <p
@@ -412,7 +403,7 @@ export function SwipeDemo() {
               className="btn btn-icon btn-secondary"
               style={{ width: 48, height: 48, borderRadius: "50%", fontSize: 18 }}
             >
-              ✕
+              <Icon name="x" size={22} strokeWidth={2.4} />
             </button>
             <button
               type="button"
@@ -428,7 +419,7 @@ export function SwipeDemo() {
                 color: "var(--color-bg)",
               }}
             >
-              ♥
+              <Icon name="heart" size={24} filled />
             </button>
           </div>
           <p

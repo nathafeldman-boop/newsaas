@@ -4,13 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { Icon, type IconName } from "@/components/ui/Icon";
 
-const ITEMS = [
-  { href: "/swipe", label: "Swipe", icon: "🔥" },
-  { href: "/favoris", label: "Favoris", icon: "♥" },
-  { href: "/dashboard", label: "Dashboard", icon: "🎯" },
-  { href: "/cv", label: "CV", icon: "📄" },
-  { href: "/profil", label: "Profil", icon: "👤" },
+const ITEMS: { href: string; label: string; icon: IconName }[] = [
+  { href: "/swipe", label: "Swipe", icon: "swipe" },
+  { href: "/favoris", label: "Favoris", icon: "heart" },
+  { href: "/dashboard", label: "Dashboard", icon: "dashboard" },
+  { href: "/cv", label: "CV", icon: "file" },
+  { href: "/profil", label: "Profil", icon: "user" },
 ];
 
 export function BottomNav({ favoritesBadge = 0 }: { favoritesBadge?: number }) {
@@ -59,9 +60,9 @@ export function BottomNav({ favoritesBadge = 0 }: { favoritesBadge?: number }) {
                 aria-hidden
                 animate={{ scale: active ? 1.1 : 1 }}
                 transition={{ type: "spring", stiffness: 420, damping: 22 }}
-                style={{ position: "relative", fontSize: 20, lineHeight: 1, opacity: active ? 1 : 0.75 }}
+                style={{ position: "relative", display: "flex", lineHeight: 1, opacity: active ? 1 : 0.8 }}
               >
-                {item.icon}
+                <Icon name={item.icon} size={22} strokeWidth={active ? 2.2 : 1.8} />
               </motion.span>
               {item.href === "/favoris" && favoritesBadge > 0 && (
                 <span

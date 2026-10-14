@@ -15,6 +15,7 @@ import { logButtonClick } from "@/lib/analytics/logButtonClick";
 import { PremiumCtaLink } from "@/components/premium/PremiumCtaLink";
 import { OfferCardContent } from "@/components/swipe/OfferCard";
 import { LikeChoiceSheet } from "@/components/swipe/LikeChoiceSheet";
+import { Icon } from "@/components/ui/Icon";
 import { readLikeAction, saveLikeAction, type LikeAction } from "@/lib/swipe/likePreference";
 import { cn } from "@/lib/utils";
 import type { ContractType, Offer, SwipeDirection } from "@/types/database";
@@ -538,7 +539,7 @@ function SwipeDeckInner({
           className="btn btn-icon btn-secondary"
           style={{ width: 58, height: 58, borderRadius: "50%", fontSize: 22 }}
         >
-          ✕
+          <Icon name="x" size={24} strokeWidth={2.4} />
         </button>
         <button
           type="button"
@@ -555,7 +556,7 @@ function SwipeDeckInner({
             color: "var(--color-accent-2-700)",
           }}
         >
-          ✈️
+          <Icon name="send" size={20} strokeWidth={2.1} />
         </button>
         <button
           type="button"
@@ -573,7 +574,7 @@ function SwipeDeckInner({
             boxShadow: "0 8px 20px color-mix(in srgb, var(--color-accent) 35%, transparent)",
           }}
         >
-          ♥
+          <Icon name="heart" size={30} strokeWidth={2} filled />
         </button>
       </div>
     </div>
@@ -658,8 +659,11 @@ export function SwipeDeck({
           )}
           {sectorLabel && <span className="tag tag-neutral">{sectorLabel}</span>}
           {applicationStreak > 0 && (
-            <span className="tag tag-accent" style={{ fontVariantNumeric: "tabular-nums" }}>
-              🔥 {applicationStreak} j
+            <span
+              className="tag tag-accent"
+              style={{ fontVariantNumeric: "tabular-nums", display: "inline-flex", alignItems: "center", gap: 4 }}
+            >
+              <Icon name="flame" size={13} strokeWidth={2.1} /> {applicationStreak} j
             </span>
           )}
         </div>
@@ -707,7 +711,8 @@ export function SwipeDeck({
             color: "color-mix(in srgb, var(--color-text) 60%, transparent)",
           }}
         >
-          📍 {cityBanner}
+          <Icon name="pin" size={13} strokeWidth={2.1} style={{ verticalAlign: "-2px", marginRight: 3 }} />
+          {cityBanner}
         </p>
       )}
       <SwipeDeckInner

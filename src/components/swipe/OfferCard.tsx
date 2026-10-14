@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
+import { Icon } from "@/components/ui/Icon";
 import { getFreshnessLabel } from "@/lib/offers/freshness";
 import type { Offer } from "@/types/database";
 
@@ -78,34 +79,34 @@ const HYPE_MESSAGES: { min: number; variants: string[] }[] = [
   {
     min: 92,
     variants: [
-      "🔥 Pépite pour ton profil — fonce !",
-      "🔥 Rarissime : un match à ce niveau-là, ne le laisse pas filer",
-      "🏆 Le meilleur match de ton deck en ce moment",
-      "🔥 Ton profil colle presque parfaitement à cette offre",
-      "⚡ Un match aussi fort, ça se joue à quelques clics",
-      "🔥 Ce genre d'offre, tu la retrouveras rarement aussi bien alignée",
+      "Pépite pour ton profil — fonce !",
+      "Rarissime : un match à ce niveau-là, ne le laisse pas filer",
+      "Le meilleur match de ton deck en ce moment",
+      "Ton profil colle presque parfaitement à cette offre",
+      "Un match aussi fort, ça se joue à quelques clics",
+      "Ce genre d'offre, tu la retrouveras rarement aussi bien alignée",
     ],
   },
   {
     min: 82,
     variants: [
-      "✨ Un des meilleurs matchs de ton deck",
-      "✨ Ton profil correspond vraiment bien ici",
-      "✨ Une des offres les plus alignées avec ton parcours",
-      "💫 Ce match sort clairement du lot",
-      "✨ Ça vaut clairement plus qu'un simple coup d'œil",
-      "💫 Un très bon niveau de compatibilité sur cette offre",
+      "Un des meilleurs matchs de ton deck",
+      "Ton profil correspond vraiment bien ici",
+      "Une des offres les plus alignées avec ton parcours",
+      "Ce match sort clairement du lot",
+      "Ça vaut clairement plus qu'un simple coup d'œil",
+      "Un très bon niveau de compatibilité sur cette offre",
     ],
   },
   {
     min: 72,
     variants: [
-      "👍 Bon match, ça vaut le coup d'œil",
-      "👍 Une offre solide par rapport à ton profil",
-      "👍 De bonnes chances que ça matche des deux côtés",
-      "👍 Un profil qui colle plutôt bien à cette offre",
-      "👍 Ça mérite clairement d'être regardé de plus près",
-      "👍 Un match au-dessus de la moyenne de ton deck",
+      "Bon match, ça vaut le coup d'œil",
+      "Une offre solide par rapport à ton profil",
+      "De bonnes chances que ça matche des deux côtés",
+      "Un profil qui colle plutôt bien à cette offre",
+      "Ça mérite clairement d'être regardé de plus près",
+      "Un match au-dessus de la moyenne de ton deck",
     ],
   },
   {
@@ -149,14 +150,14 @@ export function InfoCell({
   value,
   blurred = false,
 }: {
-  icon: string;
+  icon: ReactNode;
   label: string;
   value: string;
   blurred?: boolean;
 }) {
   return (
     <div style={{ minWidth: 0, background: "var(--color-bg)", borderRadius: 14, padding: "10px 10px 9px" }}>
-      <span aria-hidden style={{ fontSize: 15 }}>
+      <span aria-hidden style={{ fontSize: 15, display: "flex", color: "var(--color-accent-700)" }}>
         {icon}
       </span>
       <p
@@ -324,7 +325,7 @@ export function OfferCardContent({
               ...(locked ? teaserBlur : {}),
             }}
           >
-            📍 {offer.location}
+            <Icon name="pin" size={13} strokeWidth={2.1} /> {offer.location}
           </p>
         </div>
         {typeof score === "number" && (
@@ -337,7 +338,11 @@ export function OfferCardContent({
       <div className="flex flex-1 flex-col overflow-y-auto" style={{ padding: "16px 20px 18px" }}>
         <div className="flex flex-wrap gap-1.5" style={locked ? teaserBlur : undefined}>
           <span className="tag tag-accent">{typeLabel}</span>
-          {freshnessLabel && <span className="tag tag-accent-2">✨ {freshnessLabel}</span>}
+          {freshnessLabel && (
+            <span className="tag tag-accent-2" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <Icon name="sparkles" size={12} /> {freshnessLabel}
+            </span>
+          )}
           {tags.map((tag) => (
             <span key={tag} className="tag tag-neutral">
               {tag}
@@ -363,19 +368,21 @@ export function OfferCardContent({
               ...(locked ? teaserBlur : {}),
             }}
           >
-            ✨ {hypeMessage}
+            <Icon name="sparkles" size={14} /> {hypeMessage}
           </p>
         )}
 
         <div className="grid grid-cols-3 gap-2" style={{ marginTop: 14 }}>
-          <InfoCell icon="🗓" label="Début" value={offer.start_date ? formatStartDate(offer.start_date) : "Flexible"} blurred={locked} />
-          <InfoCell icon="⏱" label="Durée" value={offer.duration ?? "Non précisé"} blurred={locked} />
-          <InfoCell icon="💰" label="Salaire" value={offer.salary ?? "Non précisé"} />
+          <InfoCell icon={<Icon name="calendar" size={16} />} label="Début" value={offer.start_date ? formatStartDate(offer.start_date) : "Flexible"} blurred={locked} />
+          <InfoCell icon={<Icon name="clock" size={16} />} label="Durée" value={offer.duration ?? "Non précisé"} blurred={locked} />
+          <InfoCell icon={<Icon name="euro" size={16} />} label="Salaire" value={offer.salary ?? "Non précisé"} />
         </div>
 
         {reasons && reasons.length > 0 && (
           <div style={{ marginTop: 16 }}>
-            <p style={{ margin: 0, fontSize: 12.5, fontWeight: 700, ...(locked ? teaserBlur : {}) }}>✨ Pourquoi cette offre pour toi</p>
+            <p style={{ margin: 0, fontSize: 12.5, fontWeight: 700, display: "flex", alignItems: "center", gap: 6, ...(locked ? teaserBlur : {}) }}>
+              <Icon name="sparkles" size={14} style={{ color: "var(--color-accent-700)" }} /> Pourquoi cette offre pour toi
+            </p>
             <div className="flex flex-col gap-1.5" style={{ marginTop: 8, ...(locked ? teaserBlur : {}) }}>
               {reasons.map((reason) => (
                 <p
