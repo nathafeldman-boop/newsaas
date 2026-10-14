@@ -15,6 +15,7 @@ import { logButtonClick } from "@/lib/analytics/logButtonClick";
 import { PremiumCtaLink } from "@/components/premium/PremiumCtaLink";
 import { OfferCardContent } from "@/components/swipe/OfferCard";
 import { LikeChoiceSheet } from "@/components/swipe/LikeChoiceSheet";
+import { useAutoApply } from "@/components/swipe/AutoApply";
 import { Icon } from "@/components/ui/Icon";
 import { readLikeAction, saveLikeAction, type LikeAction } from "@/lib/swipe/likePreference";
 import { cn } from "@/lib/utils";
@@ -325,6 +326,7 @@ function SwipeDeckInner({
   // Premier like d'un compte Premium sans réglage enregistré : on demande
   // si un like doit lancer la candidature ou juste mettre en favori.
   const [likeChoiceOffer, setLikeChoiceOffer] = useState<Offer | null>(null);
+  const autoApply = useAutoApply();
   const topCardRef = useRef<SwipeCardHandle>(null);
 
   const visible = stack.slice(0, 3);
@@ -398,7 +400,7 @@ function SwipeDeckInner({
       const likeAction = readLikeAction();
       if (likeAction === "candidature") {
         void logButtonClick(userId, "like_apply", { mode: "auto" });
-        router.push(`/candidature/${offer.id}?express=1`);
+        void autoApply.start(offer);
         return true;
       }
       if (likeAction === null) {
@@ -419,7 +421,7 @@ function SwipeDeckInner({
     if (!offer) return;
     void logButtonClick(userId, "like_choice", { action, remember });
     if (action === "candidature") {
-      router.push(`/candidature/${offer.id}?express=1`);
+      void autoApply.start(offer);
     } else if ((scores[offer.id] ?? 0) >= CELEBRATION_THRESHOLD) {
       setCelebratingOffer(offer);
     }
@@ -455,6 +457,7 @@ function SwipeDeckInner({
   if (visible.length === 0) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center text-center px-6 py-20">
+        {autoApply.toasts}
         <p className="text-4xl">🎉</p>
         <h2 style={{ fontSize: 22, marginTop: 16 }}>Tu as vu toutes les offres du moment</h2>
         <p style={{ marginTop: 8, color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
@@ -500,6 +503,7 @@ function SwipeDeckInner({
           onClose={() => setCelebratingOffer(null)}
         />
         <LikeChoiceSheet offer={likeChoiceOffer} onChoose={handleLikeChoice} />
+        {autoApply.toasts}
         {visible
           .slice()
           .reverse()

@@ -1,8 +1,7 @@
 // Client Gmail minimal en fetch() direct (pas de dépendance googleapis).
-// Le refresh_token est obtenu une fois via Supabase Auth (scope Gmail
-// additionnel demandé sur signInWithOAuth, cf. GmailConnectButton +
-// /auth/gmail-callback) puis stocké ; ce module l'échange ensuite lui-même
-// contre un access_token à chaque sync, indépendamment de Supabase.
+// Le refresh_token est obtenu une fois par /api/gmail/connect puis
+// /api/gmail/callback, et stocké ; ce module l'échange ensuite contre un
+// access_token à chaque usage.
 
 interface GmailMessageMetadata {
   id: string;
@@ -12,9 +11,16 @@ interface GmailMessageMetadata {
   date: string | null;
 }
 
-export async function refreshGmailAccessToken(
+export async function refreshGmailAccessToken(refreshToken: string): Promise<string> {
+  return (await refreshGmailAccess(refreshToken)).accessToken;
+}
+
+// Comme refreshGmailAccessToken, avec en plus les autorisations réellement
+// accordées (Google les renvoie à chaque échange) : une connexion faite
+// avant le 14/10 ne peut que lire, une connexion récente ne peut qu'envoyer.
+export async function refreshGmailAccess(
   refreshToken: string,
-): Promise<string> {
+): Promise<{ accessToken: string; scopes: string[] }> {
   const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
   if (!clientId || !clientSecret) {
@@ -39,8 +45,26 @@ export async function refreshGmailAccessToken(
     throw new Error(`Échec du refresh du token Gmail (HTTP ${res.status}) : ${body.slice(0, 300)}`);
   }
 
-  const json = (await res.json()) as { access_token: string };
-  return json.access_token;
+  const json = (await res.json()) as { access_token: string; scope?: string };
+  return { accessToken: json.access_token, scopes: (json.scope ?? "").split(" ").filter(Boolean) };
+}
+
+/**
+ * Envoie un email déjà composé (RFC 2822, voir buildApplicationEmail) depuis
+ * la boîte de l'utilisateur. Point d'envoi « upload » : accepte un message
+ * brut avec pièce jointe jusqu'à 35 Mo, sans encodage base64url du tout.
+ */
+export async function sendGmailMessage(accessToken: string, mime: string): Promise<{ id: string }> {
+  const res = await fetch("https://gmail.googleapis.com/upload/gmail/v1/users/me/messages/send?uploadType=media", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "message/rfc822" },
+    body: mime,
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`Échec de l'envoi Gmail (HTTP ${res.status}) : ${body.slice(0, 300)}`);
+  }
+  return (await res.json()) as { id: string };
 }
 
 /**

@@ -33,6 +33,13 @@ export type StreamResult = {
   capped?: boolean;
 };
 
+let contactEmailColumnMissing = false;
+function withoutContactEmail<T extends { contact_email?: string | null }>(row: T): Omit<T, "contact_email"> {
+  const { contact_email: _omit, ...rest } = row;
+  void _omit;
+  return rest;
+}
+
 // Part minimale d'offres d'alternance (champs structurés) sur la première
 // page pour considérer qu'un filtre natureContrat fonctionne.
 const MIN_ALTERNANCE_SHARE = 0.8;
@@ -89,7 +96,17 @@ export async function runFranceTravailStream(
     mapped += rows.length;
 
     if (rows.length > 0) {
-      const { error } = await admin.from("offers").upsert(rows, { onConflict: "source,external_id" });
+      let { error } = await admin
+        .from("offers")
+        .upsert(contactEmailColumnMissing ? rows.map(withoutContactEmail) : rows, { onConflict: "source,external_id" });
+      // Colonne offers.contact_email pas encore créée en base : on retente
+      // sans elle, et on s'en souvient pour la suite -- la synchro ne doit
+      // jamais s'arrêter pour ça.
+      if (error && !contactEmailColumnMissing && /contact_email/.test(error.message)) {
+        contactEmailColumnMissing = true;
+        console.error("France Travail: colonne offers.contact_email absente, emails recruteurs ignorés", error.message);
+        ({ error } = await admin.from("offers").upsert(rows.map(withoutContactEmail), { onConflict: "source,external_id" }));
+      }
       if (error) {
         errors.push(`upsert ${label} range ${rangeStart}-${rangeEnd}: ${error.message}`);
       } else {

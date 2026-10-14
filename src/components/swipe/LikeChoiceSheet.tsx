@@ -44,8 +44,9 @@ export function LikeChoiceSheet({
               Tu likes « {offer.title} »
             </p>
             <p style={{ fontSize: 14, margin: "8px 0 0", color: "color-mix(in srgb, var(--color-text) 72%, transparent)" }}>
-              On postule tout de suite ? Ta lettre de motivation est écrite pour cette offre, ta candidature
-              est enregistrée, il te reste juste à toucher « Postuler sur le site ».
+              On postule tout de suite ? Si l&apos;entreprise a publié un email et que ton Gmail est connecté,
+              ta candidature part toute seule depuis ton Gmail : lettre écrite pour l&apos;offre et CV, sans
+              relecture. Sinon, ta lettre est prête et il te reste à toucher « Postuler sur le site ».
             </p>
             <div className="mt-5 flex flex-col gap-2">
               <button type="button" className="btn btn-primary btn-block" onClick={() => onChoose("candidature", remember)}>

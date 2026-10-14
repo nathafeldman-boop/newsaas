@@ -14,17 +14,41 @@ import { isPremium } from "@/lib/subscription/isPremium";
 // statique n'ait sa chance).
 export const maxDuration = 60;
 
+const AUTO_SEND_NOTES: Record<string, { text: string; profileLink: boolean }> = {
+  no_email: {
+    text: "Cette entreprise n'a pas publié d'adresse email : impossible d'envoyer ta candidature à ta place, elle se termine sur son site.",
+    profileLink: false,
+  },
+  no_gmail: {
+    text: "Connecte ton Gmail : quand l'entreprise a publié un email, ta candidature partira toute seule au like.",
+    profileLink: true,
+  },
+  gmail_reconnect: {
+    text: "Ta connexion Gmail a expiré : reconnecte-la pour que tes candidatures partent toutes seules.",
+    profileLink: true,
+  },
+  no_cv: {
+    text: "Ajoute ton CV : il part en pièce jointe de chaque candidature envoyée toute seule.",
+    profileLink: true,
+  },
+  error: { text: "L'envoi automatique n'a pas abouti : finis ta candidature ici.", profileLink: false },
+};
+
 export default async function CandidaturePage({
   params,
   searchParams,
 }: {
   params: Promise<{ offerId: string }>;
-  searchParams: Promise<{ express?: string }>;
+  searchParams: Promise<{ express?: string; envoi?: string }>;
 }) {
   const { offerId } = await params;
   // Arrivé ici par un like (réglage « postuler directement », voir
   // lib/swipe/likePreference.ts) plutôt que depuis les favoris.
-  const express = (await searchParams).express === "1";
+  const query = await searchParams;
+  const express = query.express === "1";
+  // Pourquoi la candidature n'est pas partie toute seule par email (voir
+  // components/swipe/AutoApply.tsx).
+  const autoSendNote = query.envoi ? AUTO_SEND_NOTES[query.envoi] : undefined;
 
   const supabase = await createClient();
   const {
@@ -65,6 +89,19 @@ export default async function CandidaturePage({
           <strong>Candidature lancée.</strong> Ta lettre s&apos;écrit pour cette offre. Dès qu&apos;elle est
           prête, touche « Postuler sur le site » : elle est copiée, tu n&apos;as plus qu&apos;à la coller si le
           site la demande.
+          {autoSendNote && (
+            <span className="mt-2 block" style={{ color: "color-mix(in srgb, var(--color-text) 75%, transparent)" }}>
+              {autoSendNote.text}
+              {autoSendNote.profileLink && (
+                <>
+                  {" "}
+                  <Link href="/profil" style={{ fontWeight: 700 }}>
+                    Aller dans mon profil
+                  </Link>
+                </>
+              )}
+            </span>
+          )}
         </div>
       )}
 

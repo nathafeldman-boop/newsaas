@@ -27,47 +27,58 @@ export default function ConfidentialitePage() {
             de chaque candidature.
           </li>
           <li>
-            Si tu connectes Gmail (optionnel) : lecture des emails
-            récents liés à tes candidatures uniquement (voir section
-            dédiée ci-dessous).
+            Si tu connectes Gmail (optionnel) : l&apos;autorisation
+            d&apos;envoyer tes candidatures depuis ta boîte, rien
+            d&apos;autre (voir section dédiée ci-dessous).
           </li>
           <li>Paiement (Premium) : géré entièrement par Stripe — nous ne stockons jamais ton numéro de carte.</li>
         </ul>
       </Section>
 
-      <Section title="Connexion Gmail — ce qu'on lit, ce qu'on ne lit pas">
+      <Section title="Connexion Gmail : envoi de tes candidatures">
         <p>
           Cette fonctionnalité est facultative et désactivée par défaut.
-          Si tu la connectes depuis ton profil :
+          Si tu connectes Gmail depuis ton profil :
         </p>
         <ul style={{ margin: "8px 0 0", paddingLeft: 20, listStyle: "disc" }}>
           <li>
-            On analyse les emails récents de ta boîte de réception
-            principale pour détecter, par intelligence artificielle, les
-            réponses de recruteurs liées à tes candidatures (invitation
-            entretien, refus...).
+            Stageio reçoit seulement l&apos;autorisation d&apos;envoyer des
+            emails depuis ta boîte. Stageio ne lit jamais tes emails, ni
+            ta boîte de réception, ni tes contacts.
           </li>
           <li>
-            On ne stocke jamais le contenu complet d&apos;un email : seuls
-            l&apos;expéditeur, le sujet, un court extrait et le
-            verdict (positif/négatif/neutre) sont conservés, uniquement
-            pour les emails identifiés comme liés à une candidature.
+            Un email part uniquement quand tu le déclenches : un like sur
+            une offre, avec le réglage « Postuler directement », quand
+            l&apos;entreprise a publié une adresse email dans son annonce.
+            Il contient ta lettre de motivation écrite pour l&apos;offre et
+            ton CV, et il est adressé à cette seule adresse. Un message te
+            confirme chaque envoi.
           </li>
           <li>
-            Les emails sans rapport avec une candidature (newsletters,
-            autres échanges personnels...) sont ignorés et jamais
-            stockés.
+            On garde la trace de l&apos;envoi (offre concernée, domaine de
+            l&apos;adresse du recruteur, date) pour ne jamais envoyer deux
+            fois la même candidature. La lettre reste visible dans tes
+            candidatures.
           </li>
           <li>
-            Le jeton d&apos;accès à ta boîte n&apos;est utilisé que par nos
-            serveurs, jamais transmis à ton navigateur ni à un tiers
-            autre que Google (pour l&apos;authentification) et Mistral AI
-            (pour la classification, voir ci-dessous).
+            Le jeton d&apos;accès Gmail n&apos;est utilisé que par nos
+            serveurs, jamais transmis à ton navigateur ni à un tiers.
           </li>
           <li>
-            Tu peux déconnecter Gmail à tout moment depuis ton profil ;
-            l&apos;accès est immédiatement révoqué et les jetons stockés
-            supprimés.
+            L&apos;utilisation et le transfert à toute autre application des
+            informations reçues des API Google respectent les{" "}
+            <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">
+              Règles relatives aux données utilisateur des services API Google
+            </a>
+            , y compris les exigences d&apos;utilisation limitée.
+          </li>
+          <li>
+            Tu peux déconnecter Gmail à tout moment depuis ton profil, ou
+            retirer l&apos;accès sur{" "}
+            <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">
+              myaccount.google.com/permissions
+            </a>
+            .
           </li>
         </ul>
       </Section>
@@ -106,11 +117,11 @@ export default function ConfidentialitePage() {
         <ul style={{ margin: "8px 0 0", paddingLeft: 20, listStyle: "disc" }}>
           <li><strong>Supabase</strong> — hébergement de la base de données, authentification, stockage des CV.</li>
           <li><strong>Vercel</strong> — hébergement de l&apos;application.</li>
-          <li><strong>Mistral AI</strong> — extraction et classification de texte (offres, CV, emails).</li>
+          <li><strong>Anthropic (Claude)</strong> — rédaction des lettres de motivation, analyse des CV et des offres.</li>
           <li><strong>Resend</strong> — envoi des emails (compte, alertes nouvelles offres, relances).</li>
           <li><strong>Stripe</strong> — traitement des paiements de l&apos;abonnement Premium.</li>
           <li><strong>Adzuna</strong> et sources publiques — sourcing des offres d&apos;alternance/stage.</li>
-          <li><strong>Google</strong> — connexion et, si activé, lecture Gmail.</li>
+          <li><strong>Google</strong> — connexion et, si tu l&apos;actives, envoi de tes candidatures depuis Gmail.</li>
         </ul>
       </Section>
 

@@ -205,8 +205,8 @@ export default async function DashboardPage() {
           <p style={{ fontFamily: "var(--font-heading)", fontSize: 17, margin: 0 }}>📧 Connecter Gmail</p>
         </div>
         <p style={{ fontSize: 13, margin: "6px 0 0", color: "color-mix(in srgb, var(--color-text) 65%, transparent)" }}>
-          Suis automatiquement tes candidatures et les réponses des recruteurs, sans rien saisir à
-          la main. Disponible depuis ton profil.
+          Tes likes envoient ta candidature (lettre + CV) depuis ton Gmail quand l&apos;entreprise a
+          publié un email. Disponible depuis ton profil.
         </p>
         <span className="btn btn-secondary mt-3" style={{ whiteSpace: "nowrap" }}>
           Aller sur mon profil →

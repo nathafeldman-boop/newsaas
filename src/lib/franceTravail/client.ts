@@ -115,7 +115,9 @@ export interface FranceTravailJob {
   alternance?: boolean;
   natureContrat?: string;
   origineOffre?: { urlOrigine?: string };
-  contact?: { urlPostulation?: string };
+  // courriel : souvent un texte « Pour postuler, utiliser le lien suivant :
+  // … » plutôt qu'une adresse -- filtré par extractRecruiterEmail.
+  contact?: { urlPostulation?: string; courriel?: string };
 }
 
 // Offre d'alternance d'après les champs structurés de France Travail, quand

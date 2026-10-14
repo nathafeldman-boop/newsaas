@@ -97,6 +97,9 @@ export type Offer = {
   last_seen_at: string;
   content_fingerprint: string | null;
   quality_score: number;
+  // Optionnelle : colonne ajoutée à la main en base (14/10), absente tant
+  // que le SQL n'a pas été passé -- toujours lire avec select("*").
+  contact_email?: string | null;
 };
 
 export type Swipe = {

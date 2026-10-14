@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { refreshGmailAccessToken, listRecentMessages } from "@/lib/google/gmailClient";
+import { refreshGmailAccess, listRecentMessages } from "@/lib/google/gmailClient";
+import { GMAIL_READ_SCOPE } from "@/lib/google/gmailOAuth";
 import { classifyEmailReply } from "@/lib/google/classifyEmailReplyWithAnthropic";
 import type { ApplicationStatus } from "@/types/database";
 
@@ -53,7 +54,10 @@ export async function GET(request: NextRequest) {
 
   for (const conn of connections ?? []) {
     try {
-      const accessToken = await refreshGmailAccessToken(conn.refresh_token);
+      const { accessToken, scopes } = await refreshGmailAccess(conn.refresh_token);
+      // Connexions depuis le 14/10 : envoi seulement, pas de lecture -- rien
+      // à suivre ici pour elles.
+      if (!scopes.includes(GMAIL_READ_SCOPE)) continue;
 
       const afterDate = conn.last_synced_at
         ? new Date(conn.last_synced_at)

@@ -1,6 +1,7 @@
 import { isStructuredAlternance, type FranceTravailJob } from "@/lib/franceTravail/client";
 import type { ContractType, OfferSource } from "@/types/database";
 import { classifyOfferContract, guessSector, isNotAPlacementTitle } from "@/lib/offers/classifyContract";
+import { extractRecruiterEmail } from "@/lib/offers/recruiterEmail";
 
 // Même doctrine que mapAdzunaJob (lib/adzuna/mapOffer.ts) : classification
 // alternance/stage et secteur devinés sur le texte de l'annonce (voir
@@ -26,6 +27,10 @@ export interface MappedOffer {
   external_id: string;
   is_active: true;
   published_at: string;
+  // Adresse publiée par le recruteur pour candidater (like = envoi depuis le
+  // Gmail de l'étudiant). Colonne ajoutée à la main en base le 14/10 : voir
+  // le repli dans sync.ts tant qu'elle n'existe pas.
+  contact_email: string | null;
 }
 
 export function mapFranceTravailJob(job: FranceTravailJob): MappedOffer | null {
@@ -67,5 +72,6 @@ export function mapFranceTravailJob(job: FranceTravailJob): MappedOffer | null {
     external_id: job.id,
     is_active: true,
     published_at: job.dateCreation,
+    contact_email: extractRecruiterEmail(job.contact?.courriel),
   };
 }
