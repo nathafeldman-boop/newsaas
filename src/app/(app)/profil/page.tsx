@@ -9,6 +9,7 @@ import { SearchCompletedToggle } from "@/components/profile/SearchCompletedToggl
 import { DeleteAccountPanel } from "@/components/profile/DeleteAccountPanel";
 import { PremiumCtaLink } from "@/components/premium/PremiumCtaLink";
 import { isPremium } from "@/lib/subscription/isPremium";
+import { refreshStaleSubscription } from "@/lib/stripe/refreshStaleSubscription";
 import type { ApplicationStatus } from "@/types/database";
 
 export default async function ProfilPage({
@@ -23,11 +24,12 @@ export default async function ProfilPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/profil");
 
-  const { data: profile } = await supabase
+  const { data: rawProfile } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", user.id)
     .single();
+  const profile = rawProfile ? await refreshStaleSubscription(rawProfile) : rawProfile;
 
   if (!profile) redirect("/onboarding");
 

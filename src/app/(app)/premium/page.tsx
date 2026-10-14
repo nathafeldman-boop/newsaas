@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isPremium } from "@/lib/subscription/isPremium";
+import { refreshStaleSubscription } from "@/lib/stripe/refreshStaleSubscription";
 import { createPortalSessionAction } from "./actions";
 import { PricingSelector } from "@/components/premium/PricingSelector";
 
@@ -83,12 +84,13 @@ export default async function PremiumPage({
 
   if (!user) redirect("/login?next=/premium");
 
-  const { data: profile } = await supabase
+  const { data: rawProfile } = await supabase
     .from("profiles")
-    .select("subscription_status, current_period_end")
+    .select("subscription_status, current_period_end, stripe_subscription_id")
     .eq("id", user.id)
     .single();
 
+  const profile = rawProfile ? await refreshStaleSubscription(rawProfile) : rawProfile;
   const premium = isPremium(profile);
   // Hard paywall + essai gratuit de 3 swipes (26/09, revu le 28/09 -- voir
   // RETENTION_AUDIT.md et FREE_SWIPE_LIMIT dans SwipeDeck.tsx) : SwipeDeck

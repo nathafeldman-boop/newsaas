@@ -32,7 +32,7 @@ export async function analyzeOfferFitAction(offerId: string): Promise<OfferFitSt
   const [{ data: profile }, { data: offer }] = await Promise.all([
     supabase
       .from("profiles")
-      .select("subscription_status, skills, cv_text")
+      .select("subscription_status, current_period_end, skills, cv_text")
       .eq("id", user.id)
       .single(),
     supabase.from("offers").select("title, company, description, requirements").eq("id", offerId).single(),

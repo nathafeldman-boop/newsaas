@@ -27,7 +27,7 @@ export default async function CvPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("cv_path, subscription_status, sectors, target_jobs")
+    .select("cv_path, subscription_status, current_period_end, sectors, target_jobs")
     .eq("id", user.id)
     .single();
 

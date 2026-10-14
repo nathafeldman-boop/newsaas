@@ -1,7 +1,7 @@
 import type Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-function periodEndOf(subscription: Stripe.Subscription): string | null {
+export function periodEndOf(subscription: Stripe.Subscription): string | null {
   const ts = subscription.items.data[0]?.current_period_end;
   return typeof ts === "number" ? new Date(ts * 1000).toISOString() : null;
 }
@@ -37,7 +37,7 @@ export async function syncSubscriptionToProfile(
 
   // Écriture critique isolée à part : stripe_subscription_id/
   // subscription_status/current_period_end sont ce qui active réellement
-  // le Premium (isPremium() ne lit que subscription_status) -- ça ne doit
+  // le Premium (isPremium() lit subscription_status et current_period_end) -- ça ne doit
   // JAMAIS pouvoir échouer à cause d'une colonne annexe qui n'existerait
   // pas encore en base. C'est très exactement ce qui s'est produit en
   // prod : un paiement réel confirmé côté Stripe, mais subscription_status
@@ -55,7 +55,19 @@ export async function syncSubscriptionToProfile(
   // une nouvelle relance.
   const isHealthy = subscription.status === "active" || subscription.status === "trialing";
 
-  const { error, count } = await admin
+  // Accès à vie ou offert : un abonnement mensuel annulé ou impayé (souvent
+  // l'ancien abonnement d'un compte passé ensuite à l'accès à vie) ne doit
+  // jamais leur retirer Premium. Avant le 14/10, l'événement
+  // customer.subscription.deleted de cet ancien abonnement écrasait
+  // "lifetime" par "canceled".
+  const { data: keepers } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("stripe_customer_id", customerId)
+    .in("subscription_status", ["lifetime", "comp"]);
+  const keeperIds = (keepers ?? []).map((k) => k.id);
+
+  let update = admin
     .from("profiles")
     .update(
       {
@@ -67,9 +79,11 @@ export async function syncSubscriptionToProfile(
       { count: "exact" },
     )
     .eq("stripe_customer_id", customerId);
-
+  if (keeperIds.length > 0) update = update.not("id", "in", `(${keeperIds.join(",")})`);
+  const { error, count } = await update;
   if (error) return { matched: false, error: error.message };
-  const matched = (count ?? 0) > 0;
+  const matched = (count ?? 0) > 0 || keeperIds.length > 0;
+  if (keeperIds.length > 0 && (count ?? 0) === 0) return { matched };
 
   // Best-effort, à part : sert uniquement à affiner l'ARR affiché sur
   // /admin (voir src/app/admin/page.tsx) -- un échec ici (colonnes pas

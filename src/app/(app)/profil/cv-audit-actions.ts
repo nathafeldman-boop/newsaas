@@ -48,7 +48,7 @@ export async function auditCvAction(
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select(`cv_path, subscription_status, ${PROFILE_FOR_AI_COLUMNS}`)
+    .select(`cv_path, subscription_status, current_period_end, ${PROFILE_FOR_AI_COLUMNS}`)
     .eq("id", user.id)
     .single();
 

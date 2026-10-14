@@ -44,6 +44,9 @@ function daysSince(date: string | null | undefined): number | null {
 // reconstruit le signal le plus honnête possible à partir de ce qu'on a déjà
 // (ancienneté du compte, dernière activité via last_active_at, nombre de
 // connexions via user_events) plutôt que d'inventer une métrique.
+// Réconciliation Stripe : quelques centaines de clients, 10 à la fois.
+export const maxDuration = 60;
+
 export default async function AdminPremiumPage({
   searchParams,
 }: {
@@ -261,12 +264,10 @@ export default async function AdminPremiumPage({
       >
         <p style={{ fontWeight: 600, margin: 0, fontSize: 14 }}>Réconcilier le statut d&apos;abonnement avec Stripe</p>
         <p style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>
-          customer.subscription.updated peut arriver avant checkout.session.completed (ordre non
-          garanti par Stripe) et se perdre en silence si le profil n&apos;a pas encore son
-          stripe_customer_id -- corrigé pour tout nouvel événement, mais des clients déjà touchés
-          avant ce correctif restent avec un statut périmé (payant compté &quot;gratuit&quot;, ou
-          l&apos;inverse). Relit le dernier abonnement Stripe connu de chaque client et le réapplique.
-          Sans risque à relancer.
+          À lancer après une annulation à la main dans Stripe ou un renouvellement en échec : chaque
+          compte reprend le vrai statut de son abonnement Stripe (annulé, impayé, actif). Un compte
+          annulé ou impayé perd Premium tout de suite ; les accès à vie et les codes offerts ne
+          bougent pas. Sans risque à relancer.
         </p>
         <button type="submit" className="btn btn-secondary" style={{ alignSelf: "flex-start" }}>
           Lancer la réconciliation

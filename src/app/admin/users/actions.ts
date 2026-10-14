@@ -209,28 +209,37 @@ export async function reconcileAllSubscriptionsAction() {
   let resynced = 0;
   let customersFailed = 0;
 
-  for (const profile of profiles ?? []) {
-    const customerId = profile.stripe_customer_id;
-    if (!customerId) continue;
-    try {
-      // Le plus récent créé = l'abonnement qui doit faire foi aujourd'hui
-      // (list() trie par created desc côté Stripe) -- un client n'a en
-      // pratique qu'un seul abonnement Premium à la fois sur ce produit.
-      const subscriptions = await stripe.subscriptions.list({ customer: customerId, limit: 1 });
-      const subscription = subscriptions.data[0];
-      if (!subscription) continue;
-      checked += 1;
+  // 10 clients Stripe à la fois : un par un, quelques centaines de clients
+  // dépassaient le délai de la page.
+  const customerIds = (profiles ?? []).map((p) => p.stripe_customer_id).filter((id): id is string => !!id);
+  for (let i = 0; i < customerIds.length; i += 10) {
+    await Promise.all(
+      customerIds.slice(i, i + 10).map(async (customerId) => {
+        try {
+          // Le plus récent créé = l'abonnement qui doit faire foi aujourd'hui
+          // (list() trie par created desc côté Stripe) -- un client n'a en
+          // pratique qu'un seul abonnement Premium à la fois sur ce produit.
+          // status "all" : sans lui, Stripe ne renvoie que les abonnements NON
+          // annulés -- un abonnement annulé à la main dans Stripe (renouvellement
+          // en échec) n'était jamais retrouvé ici et le profil restait "active"
+          // pour toujours (corrigé le 14/10).
+          const subscriptions = await stripe.subscriptions.list({ customer: customerId, limit: 1, status: "all" });
+          const subscription = subscriptions.data[0];
+          if (!subscription) return;
+          checked += 1;
 
-      const { matched, error } = await syncSubscriptionToProfile(subscription);
-      if (error) {
-        console.error("reconcileAllSubscriptionsAction: sync failed", error, { customerId });
-      } else if (matched) {
-        resynced += 1;
-      }
-    } catch (stripeError) {
-      customersFailed += 1;
-      console.error("reconcileAllSubscriptionsAction: Stripe fetch failed", stripeError, { customerId });
-    }
+          const { matched, error } = await syncSubscriptionToProfile(subscription);
+          if (error) {
+            console.error("reconcileAllSubscriptionsAction: sync failed", error, { customerId });
+          } else if (matched) {
+            resynced += 1;
+          }
+        } catch (stripeError) {
+          customersFailed += 1;
+          console.error("reconcileAllSubscriptionsAction: Stripe fetch failed", stripeError, { customerId });
+        }
+      }),
+    );
   }
 
   console.log(

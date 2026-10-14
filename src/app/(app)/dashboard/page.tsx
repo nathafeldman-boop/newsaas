@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isPremium } from "@/lib/subscription/isPremium";
+import { refreshStaleSubscription } from "@/lib/stripe/refreshStaleSubscription";
 import { InterviewSimulator } from "@/components/dashboard/InterviewSimulator";
 import { CvQuickSend } from "@/components/dashboard/CvQuickSend";
 import { PremiumCtaLink } from "@/components/premium/PremiumCtaLink";
@@ -16,11 +17,12 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/dashboard");
 
-  const { data: profile } = await supabase
+  const { data: rawProfile } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", user.id)
     .single();
+  const profile = rawProfile ? await refreshStaleSubscription(rawProfile) : rawProfile;
 
   const premium = isPremium(profile);
 

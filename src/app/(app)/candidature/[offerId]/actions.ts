@@ -59,7 +59,7 @@ export async function generateCoverLetterAction(
       .single(),
     supabase
       .from("profiles")
-      .select(`${PROFILE_FOR_AI_COLUMNS}, subscription_status, cv_text`)
+      .select(`${PROFILE_FOR_AI_COLUMNS}, subscription_status, current_period_end, cv_text`)
       .eq("id", user.id)
       .single(),
   ]);
