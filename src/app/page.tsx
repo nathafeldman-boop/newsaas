@@ -3,9 +3,10 @@ import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { CONTACT_EMAIL, SITE_URL, SOCIAL_PROFILES } from "@/lib/site";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
-import { getPublicReviewStats, getPublicTestimonials, type PublicTestimonial } from "@/lib/reviews/publicStats";
+import { getPublicReviewStats, getPublicTestimonials } from "@/lib/reviews/publicStats";
 import { SwipeDemo } from "@/components/landing/SwipeDemo";
 import { AppScreens } from "@/components/landing/AppScreens";
+import { Testimonials } from "@/components/landing/Testimonials";
 import { Icon } from "@/components/ui/Icon";
 import { Reveal } from "@/components/ui/Reveal";
 import { Highlight } from "@/components/ui/Highlight";
@@ -96,26 +97,6 @@ const MARQUEE_ITEMS = [
   "Data analyst · Toulouse",
   "Community manager · Bordeaux",
   "Business developer · Marseille",
-];
-
-// Utilisés seulement si la base ne compte pas encore assez d'avis publiés
-// avec commentaire (voir getPublicTestimonials) -- jamais mélangés avec de
-// vrais avis pour ne pas donner l'impression que ce sont les mêmes.
-const FALLBACK_TESTIMONIALS: PublicTestimonial[] = [
-  {
-    quote: "Trois jours après mon inscription, j'avais déjà un entretien.",
-    author: "Léa, alternante en marketing digital",
-  },
-  {
-    quote:
-      "J'ai enfin arrêté de recopier la même lettre de motivation sur quinze sites différents.",
-    author: "Thomas, stagiaire développement web",
-  },
-  {
-    quote:
-      "Les offres qui remontent correspondent vraiment à ce que j'ai mis dans mon profil, ça change tout.",
-    author: "Inès, alternante ressources humaines",
-  },
 ];
 
 const FAQ = [
@@ -341,7 +322,7 @@ export default async function LandingPage() {
   // un rendu dynamique par requête, rendant `revalidate` ci-dessus inopérant --
   // exactement le genre de lenteur que ce passage SEO cherche à éviter.
   const admin = createAdminClient();
-  const [{ count: activeOffersCount }, { count: alternanceCount }, reviewStats, realTestimonials, discovery, latestOffers] =
+  const [{ count: activeOffersCount }, { count: alternanceCount }, reviewStats, testimonials, discovery, latestOffers] =
     await Promise.all([
       admin.from("offers").select("id", { count: "exact", head: true }).eq("is_active", true),
       admin
@@ -350,7 +331,7 @@ export default async function LandingPage() {
         .eq("is_active", true)
         .eq("contract_type", "alternance"),
       getPublicReviewStats(),
-      getPublicTestimonials(3),
+      getPublicTestimonials(6),
       getDiscoveryLinks(),
       getLatestOfferLinks(),
     ]);
@@ -380,7 +361,6 @@ export default async function LandingPage() {
       : { value: "0€", label: "Sans engagement" },
   ];
 
-  const testimonials = realTestimonials.length >= 3 ? realTestimonials : FALLBACK_TESTIMONIALS;
   const webApplicationJsonLd = buildWebApplicationJsonLd(reviewStats);
   // Même condition que /premium : tant que le Price à vie n'est pas
   // configuré côté Stripe, cette formule ne s'affiche nulle part.
@@ -1166,58 +1146,16 @@ export default async function LandingPage() {
           </div>
         </section>
 
-        {/* TÉMOIGNAGES */}
-        <section className="py-10">
-          <Reveal>
-            <p style={eyebrow}>Ils ont trouvé</p>
-            <h2 style={h2Style}>Ça matche, pour de vrai.</h2>
-          </Reveal>
-          <div className="mt-9 grid gap-7" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,280px),1fr))" }}>
-            {testimonials.map((t, i) => {
-              const dark = i === 1;
-              return (
-                <Reveal key={`${t.author}-${i}`} delay={i * 0.08}>
-                  <figure
-                    className="m-0"
-                    style={{
-                      position: "relative",
-                      background: dark ? "var(--color-neutral-900)" : "var(--color-accent-2-100)",
-                      color: dark ? "var(--color-bg)" : "var(--color-accent-2-900)",
-                      borderRadius: i % 2 === 0 ? "28px 28px 28px 8px" : "28px 28px 8px 28px",
-                      padding: "26px 24px 22px",
-                      boxShadow: "0 16px 34px color-mix(in srgb, var(--color-text) 14%, transparent)",
-                      transform: `rotate(${i % 2 === 0 ? -1.5 : 1.5}deg)`,
-                    }}
-                  >
-                    <blockquote style={{ margin: 0, fontSize: 18.5, fontWeight: 700, lineHeight: 1.4, letterSpacing: "-0.015em" }}>
-                      « {t.quote} »
-                    </blockquote>
-                    <figcaption className="flex items-center gap-2.5 mt-5">
-                      <span
-                        aria-hidden
-                        className="flex items-center justify-center"
-                        style={{
-                          width: 36,
-                          height: 36,
-                          borderRadius: "50%",
-                          background: dark ? "var(--color-accent-300)" : "var(--color-accent-2)",
-                          color: dark ? "var(--color-neutral-900)" : "var(--color-bg)",
-                          fontWeight: 800,
-                          fontSize: 13,
-                        }}
-                      >
-                        {t.author.charAt(0).toUpperCase()}
-                      </span>
-                      <span style={{ fontSize: 12.5, lineHeight: 1.35, color: dark ? "var(--color-neutral-300)" : "var(--color-accent-2-700)" }}>
-                        {t.author}
-                      </span>
-                    </figcaption>
-                  </figure>
-                </Reveal>
-              );
-            })}
-          </div>
-        </section>
+        {/* TÉMOIGNAGES : vrais avis approuvés uniquement, jamais d'exemples inventés. */}
+        {testimonials.length > 0 && (
+          <section className="py-10">
+            <Reveal>
+              <p style={eyebrow}>Avis d&apos;utilisateurs</p>
+              <h2 style={h2Style}>Ça matche, pour de vrai.</h2>
+            </Reveal>
+            <Testimonials testimonials={testimonials} />
+          </section>
+        )}
 
         {/* STATS */}
         <section className="py-8">

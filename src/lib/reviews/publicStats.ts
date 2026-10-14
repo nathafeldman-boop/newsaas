@@ -20,7 +20,7 @@ export async function getPublicReviewStats(): Promise<{ count: number; average: 
   return { count: ratings.length, average: Math.round(average * 10) / 10 };
 }
 
-export type PublicTestimonial = { quote: string; author: string };
+export type PublicTestimonial = { quote: string; author: string; rating: number };
 
 export async function getPublicTestimonials(limit: number): Promise<PublicTestimonial[]> {
   const admin = createAdminClient();
@@ -28,6 +28,7 @@ export async function getPublicTestimonials(limit: number): Promise<PublicTestim
     .from("reviews")
     .select("user_id, rating, comment")
     .eq("status", "approved")
+    .gte("rating", 4)
     .not("comment", "is", null)
     .order("rating", { ascending: false })
     .order("created_at", { ascending: false })
@@ -49,6 +50,7 @@ export async function getPublicTestimonials(limit: number): Promise<PublicTestim
 
   return withComment.map((r) => ({
     quote: r.comment.trim(),
+    rating: r.rating,
     // Prénom seul : page publique sans compte, pas besoin du nom complet.
     author: nameByUserId.get(r.user_id)?.split(" ")[0] || "Utilisateur·rice Stageio",
   }));
