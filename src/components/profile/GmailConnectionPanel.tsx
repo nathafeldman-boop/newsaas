@@ -41,6 +41,22 @@ export function GmailConnectionPanel({
           Échec de la connexion, réessaie.
         </p>
       )}
+      {statusParam === "refused" && (
+        <p style={{ fontSize: 12, color: "var(--color-accent-700)", marginTop: 10 }}>
+          Google n&apos;a pas donné l&apos;accès (refusé sur son écran, ou connexion Gmail pas encore
+          validée par Google pour Stageio). Réessaie plus tard.
+        </p>
+      )}
+      {statusParam === "scope" && (
+        <p style={{ fontSize: 12, color: "var(--color-accent-700)", marginTop: 10 }}>
+          Il manque l&apos;accès à Gmail : réessaie et coche bien la case Gmail sur l&apos;écran de Google.
+        </p>
+      )}
+      {statusParam === "config" && (
+        <p style={{ fontSize: 12, color: "var(--color-accent-700)", marginTop: 10 }}>
+          La connexion Gmail n&apos;est pas encore disponible. Réessaie dans quelques jours.
+        </p>
+      )}
 
       <div style={{ marginTop: 14 }}>
         {connection ? (
