@@ -94,6 +94,8 @@ export async function runFranceTravailStream(
         quality_score: computeOfferQualityScore(o),
       }));
     mapped += rows.length;
+    const withEmail = rows.filter((r) => r.contact_email).length;
+    if (withEmail > 0) console.log(`France Travail ${label} : ${withEmail}/${rows.length} offres avec email recruteur`);
 
     if (rows.length > 0) {
       let { error } = await admin

@@ -23,6 +23,9 @@ export const maxDuration = 60;
 const EVENT = "application_emailed";
 
 function json(result: AutoSendResult, status = 200) {
+  // Une ligne par issue (visible dans les journaux Vercel) : sans elle, un
+  // like qui ne part pas ne laisse aucune trace de la raison.
+  console.log(`auto-send: ${result.status}${result.status === "manual" ? ` (${result.reason})` : ""}`);
   return NextResponse.json(result, { status });
 }
 

@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { Icon } from "@/components/ui/Icon";
+import { recipientForOffer } from "@/lib/offers/recruiterEmail";
 import { getFreshnessLabel } from "@/lib/offers/freshness";
 import type { Offer } from "@/types/database";
 
@@ -216,6 +217,7 @@ export function OfferCardContent({
   );
   const hypeMessage = matchHypeMessage(score, offer.id);
   const freshnessLabel = getFreshnessLabel(offer.published_at);
+  const acceptsEmail = recipientForOffer(offer) !== null;
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -341,6 +343,13 @@ export function OfferCardContent({
           {freshnessLabel && (
             <span className="tag tag-accent-2" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
               <Icon name="sparkles" size={12} /> {freshnessLabel}
+            </span>
+          )}
+          {/* L'entreprise a publié un email : avec Gmail connecté et
+              « Postuler directement », le like envoie la candidature. */}
+          {acceptsEmail && (
+            <span className="tag tag-accent" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <Icon name="send" size={12} /> Candidature par email
             </span>
           )}
           {tags.map((tag) => (
