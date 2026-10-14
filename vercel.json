@@ -9,6 +9,10 @@
       "schedule": "0 4 * * *"
     },
     {
+      "path": "/api/cron/reconcile-subscriptions",
+      "schedule": "20 3 * * *"
+    },
+    {
       "path": "/api/cron/sync-gmail-replies",
       "schedule": "0 6 * * *"
     },

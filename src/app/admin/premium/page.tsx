@@ -264,10 +264,10 @@ export default async function AdminPremiumPage({
       >
         <p style={{ fontWeight: 600, margin: 0, fontSize: 14 }}>Réconcilier le statut d&apos;abonnement avec Stripe</p>
         <p style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>
-          À lancer après une annulation à la main dans Stripe ou un renouvellement en échec : chaque
-          compte reprend le vrai statut de son abonnement Stripe (annulé, impayé, actif). Un compte
-          annulé ou impayé perd Premium tout de suite ; les accès à vie et les codes offerts ne
-          bougent pas. Sans risque à relancer.
+          Se lance tout seul chaque nuit : chaque compte reprend le vrai statut de son
+          abonnement Stripe (annulé, impayé, actif). Un compte annulé ou impayé perd Premium ; les
+          accès à vie et les codes offerts ne bougent pas. Le bouton sert seulement si tu veux le
+          faire tout de suite. Sans risque à relancer.
         </p>
         <button type="submit" className="btn btn-secondary" style={{ alignSelf: "flex-start" }}>
           Lancer la réconciliation
