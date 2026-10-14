@@ -122,7 +122,7 @@ export function CvAuditPanel({
           className="btn btn-primary"
           style={{ marginTop: 14, background: "var(--color-accent-2)", whiteSpace: "nowrap" }}
         >
-          🔓 Débloquer avec Premium (7,99€/mois)
+          🔓 Débloquer avec Premium (39,99 € à vie ou 7,99 €/mois)
         </PremiumCtaLink>
       )}
 

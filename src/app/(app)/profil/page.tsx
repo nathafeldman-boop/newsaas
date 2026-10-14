@@ -145,7 +145,7 @@ export default async function ProfilPage({
           className="card flex-row items-center justify-between no-underline"
           style={{ color: "inherit", padding: "var(--space-3) var(--space-4)" }}
         >
-          <span style={{ fontSize: 14 }}>{premium ? "🔓 Abonnement Premium actif" : "Passer Premium (7,99€/mois)"}</span>
+          <span style={{ fontSize: 14 }}>{premium ? "🔓 Abonnement Premium actif" : "Passer Premium (39,99 € à vie ou 7,99 €/mois)"}</span>
           <span>→</span>
         </PremiumCtaLink>
         <SearchCompletedToggle

@@ -55,7 +55,7 @@ export async function auditCvAction(
   if (!isPremium(profile)) {
     return {
       status: "error",
-      message: "L'audit CV est réservé aux membres Premium (7,99€/mois).",
+      message: "L'audit CV est réservé aux membres Premium (39,99 € à vie ou 7,99 €/mois).",
     };
   }
 

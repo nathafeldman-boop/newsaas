@@ -39,7 +39,7 @@ export async function analyzeOfferFitAction(offerId: string): Promise<OfferFitSt
   ]);
 
   if (!isPremium(profile)) {
-    return { status: "error", message: "Réservé aux membres Premium (7,99€/mois)." };
+    return { status: "error", message: "Réservé aux membres Premium (39,99 € à vie ou 7,99 €/mois)." };
   }
   if (!offer) return { status: "error", message: "Offre introuvable." };
   if (!profile?.cv_text) {

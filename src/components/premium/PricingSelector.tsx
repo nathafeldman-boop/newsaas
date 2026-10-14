@@ -14,6 +14,7 @@ function PlanRow({
   sublabel,
   price,
   priceSuffix,
+  badge,
 }: {
   selected: boolean;
   onSelect: () => void;
@@ -21,6 +22,7 @@ function PlanRow({
   sublabel: string;
   price: string;
   priceSuffix?: string;
+  badge?: string;
 }) {
   return (
     <label
@@ -53,7 +55,23 @@ function PlanRow({
           }}
         />
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 14.5, fontWeight: 700 }}>{label}</div>
+          <div className="flex flex-wrap items-center gap-2" style={{ fontSize: 14.5, fontWeight: 700 }}>
+            {label}
+            {badge && (
+              <span
+                style={{
+                  fontSize: 10.5,
+                  fontWeight: 800,
+                  padding: "2px 8px",
+                  borderRadius: 999,
+                  background: "var(--color-accent)",
+                  color: "var(--color-bg)",
+                }}
+              >
+                {badge}
+              </span>
+            )}
+          </div>
           <div style={{ fontSize: 12, marginTop: 1, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
             {sublabel}
           </div>
@@ -85,11 +103,24 @@ export function PricingSelector({
   lifetimeAvailable: boolean;
   errorMessage: string | null;
 }) {
-  const [plan, setPlan] = useState<Plan>("monthly");
+  // Accès à vie affiché en premier et présélectionné (demande de Nathan,
+  // 14/10) ; le prix du plan choisi est écrit sur le bouton pour qu'il n'y
+  // ait aucune surprise au paiement.
+  const [plan, setPlan] = useState<Plan>(lifetimeAvailable ? "lifetime" : "monthly");
 
   return (
     <div className="animate-in" style={{ marginTop: 18 }}>
       <div className="flex flex-col gap-2.5">
+        {lifetimeAvailable && (
+          <PlanRow
+            selected={plan === "lifetime"}
+            onSelect={() => setPlan("lifetime")}
+            label="Accès à vie"
+            sublabel="Paiement unique, jamais de renouvellement"
+            price="39,99 €"
+            badge="Le prix de 5 mois"
+          />
+        )}
         <PlanRow
           selected={plan === "monthly"}
           onSelect={() => setPlan("monthly")}
@@ -98,15 +129,6 @@ export function PricingSelector({
           price="7,99 €"
           priceSuffix="/mois"
         />
-        {lifetimeAvailable && (
-          <PlanRow
-            selected={plan === "lifetime"}
-            onSelect={() => setPlan("lifetime")}
-            label="Accès à vie"
-            sublabel="Paiement unique, jamais de renouvellement"
-            price="39,99 €"
-          />
-        )}
       </div>
 
       {errorMessage && (
@@ -141,7 +163,7 @@ export function PricingSelector({
             boxShadow: "0 10px 22px color-mix(in srgb, var(--color-accent) 35%, transparent)",
           }}
         >
-          Débloquer Premium
+          {plan === "lifetime" ? "Débloquer à vie · 39,99 €" : "Débloquer Premium · 7,99 €/mois"}
         </button>
       </form>
 
@@ -151,7 +173,7 @@ export function PricingSelector({
       >
         <span>🔒 Paiement sécurisé</span>
         <span style={{ opacity: 0.5 }}>·</span>
-        <span>Résiliable à tout moment</span>
+        <span>{plan === "lifetime" ? "Paiement unique" : "Résiliable à tout moment"}</span>
         <span style={{ opacity: 0.5 }}>·</span>
         <AccessCodeForm />
       </div>

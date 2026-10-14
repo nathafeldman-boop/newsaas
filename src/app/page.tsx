@@ -48,6 +48,46 @@ const FEATURES = [
   },
 ];
 
+const PREMIUM_FEATURES = [
+  "Like & candidatures illimités",
+  "Lettres de motivation IA",
+  "Audit de CV et matching sur ton CV",
+  "Simulateur d'entretien",
+];
+
+const featuredPlanCard: React.CSSProperties = {
+  position: "relative",
+  background: "var(--color-neutral-900)",
+  color: "var(--color-bg)",
+  borderRadius: "var(--radius-lg)",
+  padding: 28,
+  border: "1.5px solid var(--color-accent)",
+  boxShadow: "0 22px 46px color-mix(in srgb, var(--color-text) 22%, transparent)",
+  overflow: "hidden",
+};
+
+const featuredPlanGlow: React.CSSProperties = {
+  position: "absolute",
+  right: -60,
+  top: -60,
+  width: 200,
+  height: 200,
+  borderRadius: "50%",
+  background: "var(--color-accent)",
+  filter: "blur(80px)",
+  opacity: 0.35,
+};
+
+const planBadge: React.CSSProperties = {
+  fontSize: 11,
+  fontWeight: 800,
+  padding: "4px 10px",
+  borderRadius: 999,
+  background: "var(--color-accent)",
+  color: "var(--color-bg)",
+  whiteSpace: "nowrap",
+};
+
 const MARQUEE_ITEMS = [
   "Marketing digital · Lyon",
   "Dev full-stack · Nantes",
@@ -1221,13 +1261,108 @@ export default async function LandingPage() {
         <section id="tarifs" className="py-10" style={{ scrollMarginTop: 80 }}>
           <Reveal>
             <p style={eyebrow}>Tarifs</p>
-            <h2 style={h2Style}>Commence gratuitement.</h2>
+            <h2 style={h2Style}>Choisis ta formule.</h2>
           </Reveal>
+          {/* Ordre voulu par Nathan (14/10) : la formule la plus chère d'abord,
+              puis le mensuel, puis le gratuit -- sur mobile c'est aussi
+              l'ordre de lecture. La carte mise en avant est la première. */}
           <div
             className="mt-8 grid gap-6"
             style={{ gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,300px),1fr))", maxWidth: lifetimeAvailable ? 980 : 780 }}
           >
-            <Reveal delay={0.05}>
+            {lifetimeAvailable && (
+              <Reveal delay={0.05}>
+                <div
+                  className="flex h-full flex-col"
+                  style={featuredPlanCard}
+                >
+                  <div aria-hidden style={featuredPlanGlow} />
+                  <div className="flex items-center justify-between gap-3" style={{ position: "relative" }}>
+                    <p className="flex items-center gap-2" style={{ margin: 0, fontSize: 16, fontWeight: 800 }}>
+                      <Icon name="sparkles" size={17} style={{ color: "var(--color-accent-300)" }} />
+                      Premium à vie
+                    </p>
+                    <span style={planBadge}>Le prix de 5 mois</span>
+                  </div>
+                  <p style={{ position: "relative", margin: "10px 0 0", fontSize: 42, fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1 }}>
+                    39,99 €<span style={{ fontSize: 14, fontWeight: 600, color: "var(--color-neutral-400)" }}> une seule fois</span>
+                  </p>
+                  <div className="flex flex-col gap-2.5" style={{ position: "relative", margin: "20px 0 24px", flex: 1 }}>
+                    {[...PREMIUM_FEATURES, "Jamais de renouvellement"].map((line) => (
+                      <p key={line} className="flex items-center gap-2.5" style={{ margin: 0, fontSize: 14, color: "var(--color-neutral-200)" }}>
+                        <span aria-hidden style={{ color: "var(--color-accent-300)" }}>✓</span>
+                        {line}
+                      </p>
+                    ))}
+                  </div>
+                  <Link href="/inscription" className="btn btn-gradient" style={{ position: "relative", textAlign: "center" }}>
+                    Débloquer à vie
+                  </Link>
+                  <p style={{ position: "relative", margin: "10px 0 0", textAlign: "center", fontSize: 12, color: "var(--color-neutral-400)" }}>
+                    Paiement unique, pas d&apos;abonnement.
+                  </p>
+                </div>
+              </Reveal>
+            )}
+
+            <Reveal delay={0.1}>
+              <div
+                className="flex h-full flex-col"
+                style={
+                  lifetimeAvailable
+                    ? {
+                        background: "var(--color-surface)",
+                        borderRadius: "var(--radius-lg)",
+                        padding: 28,
+                        border: "1.5px solid var(--color-accent)",
+                      }
+                    : featuredPlanCard
+                }
+              >
+                {!lifetimeAvailable && <div aria-hidden style={featuredPlanGlow} />}
+                <p style={{ position: "relative", margin: 0, fontSize: 16, fontWeight: 800 }}>Premium mensuel</p>
+                <p style={{ position: "relative", margin: "10px 0 0", fontSize: 42, fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1 }}>
+                  7,99 €
+                  <span style={{ fontSize: 14, fontWeight: 600, color: lifetimeAvailable ? mutedText : "var(--color-neutral-400)" }}> /mois</span>
+                </p>
+                <div className="flex flex-col gap-2.5" style={{ position: "relative", margin: "20px 0 24px", flex: 1 }}>
+                  {PREMIUM_FEATURES.map((line) => (
+                    <p
+                      key={line}
+                      className="flex items-center gap-2.5"
+                      style={{
+                        margin: 0,
+                        fontSize: 14,
+                        color: lifetimeAvailable ? "color-mix(in srgb, var(--color-text) 82%, transparent)" : "var(--color-neutral-200)",
+                      }}
+                    >
+                      <span aria-hidden style={{ color: lifetimeAvailable ? "var(--color-accent)" : "var(--color-accent-300)" }}>✓</span>
+                      {line}
+                    </p>
+                  ))}
+                </div>
+                <Link
+                  href="/inscription"
+                  className={lifetimeAvailable ? "btn btn-secondary" : "btn btn-gradient"}
+                  style={{ position: "relative", textAlign: "center" }}
+                >
+                  Passer en illimité
+                </Link>
+                <p
+                  style={{
+                    position: "relative",
+                    margin: "10px 0 0",
+                    textAlign: "center",
+                    fontSize: 12,
+                    color: lifetimeAvailable ? mutedText : "var(--color-neutral-400)",
+                  }}
+                >
+                  Sans engagement, résiliable en un clic.
+                </p>
+              </div>
+            </Reveal>
+
+            <Reveal delay={0.15}>
               <div
                 className="flex h-full flex-col"
                 style={{
@@ -1252,77 +1387,6 @@ export default async function LandingPage() {
                 </Link>
               </div>
             </Reveal>
-
-            <Reveal delay={0.1}>
-              <div
-                className="flex h-full flex-col"
-                style={{
-                  position: "relative",
-                  background: "var(--color-neutral-900)",
-                  color: "var(--color-bg)",
-                  borderRadius: "var(--radius-lg)",
-                  padding: 28,
-                  border: "1.5px solid var(--color-accent)",
-                  boxShadow: "0 22px 46px color-mix(in srgb, var(--color-text) 22%, transparent)",
-                  overflow: "hidden",
-                }}
-              >
-                <div
-                  aria-hidden
-                  style={{ position: "absolute", right: -60, top: -60, width: 200, height: 200, borderRadius: "50%", background: "var(--color-accent)", filter: "blur(80px)", opacity: 0.35 }}
-                />
-                <div className="flex items-center justify-between" style={{ position: "relative" }}>
-                  <p style={{ margin: 0, fontSize: 16, fontWeight: 800 }}>👑 Premium</p>
-                  <span style={{ fontSize: 11, fontWeight: 800, padding: "4px 10px", borderRadius: 999, background: "var(--color-accent)", color: "var(--color-bg)" }}>
-                    Le plus choisi
-                  </span>
-                </div>
-                <p style={{ position: "relative", margin: "10px 0 0", fontSize: 42, fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1 }}>
-                  7,99 €<span style={{ fontSize: 14, fontWeight: 600, color: "var(--color-neutral-400)" }}> /mois</span>
-                </p>
-                <div className="flex flex-col gap-2.5" style={{ position: "relative", margin: "20px 0 24px", flex: 1 }}>
-                  {["Like & candidatures illimités", "Lettres de motivation IA", "Audit de CV et matching sur ton CV", "Simulateur d'entretien"].map((line) => (
-                    <p key={line} className="flex items-center gap-2.5" style={{ margin: 0, fontSize: 14, color: "var(--color-neutral-200)" }}>
-                      <span aria-hidden style={{ color: "var(--color-accent-300)" }}>✓</span>
-                      {line}
-                    </p>
-                  ))}
-                </div>
-                <Link href="/inscription" className="btn btn-gradient" style={{ position: "relative", textAlign: "center" }}>
-                  Passer en illimité
-                </Link>
-                <p style={{ position: "relative", margin: "10px 0 0", textAlign: "center", fontSize: 12, color: "var(--color-neutral-400)" }}>
-                  Sans engagement, résiliable en un clic.
-                </p>
-              </div>
-            </Reveal>
-
-            {lifetimeAvailable && (
-              <Reveal delay={0.15}>
-                <div
-                  className="flex h-full flex-col"
-                  style={{
-                    background: "var(--color-surface)",
-                    borderRadius: "var(--radius-lg)",
-                    padding: 28,
-                    border: "1px solid var(--color-divider)",
-                  }}
-                >
-                  <p style={{ margin: 0, fontSize: 13, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", color: mutedText }}>
-                    🎉 Accès à vie
-                  </p>
-                  <p style={{ margin: "10px 0 0", fontSize: 32, fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1 }}>
-                    39,99 €<span style={{ fontSize: 13, fontWeight: 600, color: mutedText }}> paiement unique</span>
-                  </p>
-                  <p style={{ margin: "10px 0 24px", fontSize: 13.5, color: mutedText, flex: 1 }}>
-                    Une fois, jamais de renouvellement.
-                  </p>
-                  <Link href="/inscription" className="btn btn-secondary" style={{ textAlign: "center" }}>
-                    Choisir l&apos;accès à vie
-                  </Link>
-                </div>
-              </Reveal>
-            )}
           </div>
         </section>
 

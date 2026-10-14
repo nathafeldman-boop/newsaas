@@ -231,7 +231,7 @@ export function CvGuideModule({
           Premium.
         </p>
         <PremiumCtaLink userId={userId} source="cv_guide" className="btn btn-primary mt-4" style={{ whiteSpace: "nowrap" }}>
-          🔓 Débloquer avec Premium (7,99€/mois)
+          🔓 Débloquer avec Premium (39,99 € à vie ou 7,99 €/mois)
         </PremiumCtaLink>
       </div>
     );

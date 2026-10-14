@@ -52,7 +52,7 @@ export default async function DashboardPage() {
           className="btn btn-primary mt-5"
           style={{ whiteSpace: "nowrap" }}
         >
-          🔓 Débloquer avec Premium (7,99€/mois)
+          🔓 Débloquer avec Premium (39,99 € à vie ou 7,99 €/mois)
         </PremiumCtaLink>
       </div>
     );
