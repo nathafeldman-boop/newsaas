@@ -56,6 +56,22 @@ export async function fetchActiveOffers(
 
   if (!error) return data ?? [];
 
+  // Délai dépassé (base chargée : 6 fois sur /swipe du 24/09 au 13/10) : le
+  // repli d'origine abandonnait AUSSI le filtre qualité et servait les
+  // offres les plus récentes, bonnes ou pas. On garde le filtre, on lit par
+  // date (index existant, rapide) et on trie par qualité ici.
+  const missingColumn = error.code === "42703" || /quality_score.*(does not exist|n'existe pas)/i.test(error.message);
+  if (!missingColumn) {
+    console.error("fetchActiveOffers: tri par qualité en échec, lecture par date avec filtre qualité", error);
+    const { data: recent, error: recentError } = await baseQuery()
+      .gte("quality_score", MIN_QUALITY_FOR_FEED)
+      .order("published_at", { ascending: false });
+    if (!recentError) {
+      return [...(recent ?? [])].sort((a, b) => (b.quality_score ?? 0) - (a.quality_score ?? 0));
+    }
+    console.error("fetchActiveOffers: lecture par date en échec aussi", recentError);
+  }
+
   console.error(
     "fetchActiveOffers: requête avec quality_score en échec (migration pas encore appliquée ?), repli sans filtre qualité",
     error,

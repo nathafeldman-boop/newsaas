@@ -12,8 +12,7 @@ import { normalizeTitle } from "@/lib/seo/metiers";
 // (décision produit à part). Pas de "institut" ni "campus" seuls : Institut
 // Pasteur, Campus France... recrutent vraiment. Liste revue sur le sitemap
 // de prod du 06/10.
-const NON_EMPLOYER_PATTERN = new RegExp(
-  [
+const SCHOOL_AND_BOARD_PATTERNS = [
     // écoles / formation
     "\\becole\\b", "\\bschool\\b", "\\biscod\\b", "\\bstudi\\b", "openclassrooms", "\\bcfa\\b", "\\bacademie\\b", "\\bacademy\\b",
     "\\biscom\\b", "\\befap\\b", "\\bifag\\b", "\\biscpa\\b", "\\bpigier\\b", "\\baftec\\b", "\\bieft\\b", "\\becema\\b", "\\beductive\\b",
@@ -23,6 +22,11 @@ const NON_EMPLOYER_PATTERN = new RegExp(
     "\\boktogone\\b", "\\bief2i\\b", "\\balternance\\b",
     // sites d'emploi
     "\\bemploi\\b", "\\bhosco\\b", "\\bjobteaser\\b", "\\bindeed\\b", "\\bhellowork\\b",
+];
+const SCHOOL_AND_BOARD_PATTERN = new RegExp(SCHOOL_AND_BOARD_PATTERNS.join("|"));
+const NON_EMPLOYER_PATTERN = new RegExp(
+  [
+    ...SCHOOL_AND_BOARD_PATTERNS,
     // noms vides
     "non communique", "confidentiel", "^(ltd|sas|sarl|sa|eurl)$",
   ].join("|"),
@@ -31,4 +35,11 @@ const NON_EMPLOYER_PATTERN = new RegExp(
 export function isSchool(company: string): boolean {
   const name = normalizeTitle(company).trim();
   return name.length < 3 || NON_EMPLOYER_PATTERN.test(name);
+}
+
+// Pour le deck (/swipe) : écoles, organismes de formation et sites d'emploi
+// seulement. Une entreprise au nom masqué (« Entreprise non communiquée »,
+// fréquent chez France Travail) est un vrai employeur, elle reste.
+export function isSchoolOrJobBoard(company: string): boolean {
+  return SCHOOL_AND_BOARD_PATTERN.test(normalizeTitle(company).trim());
 }

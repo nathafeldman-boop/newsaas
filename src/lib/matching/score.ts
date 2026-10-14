@@ -1,5 +1,6 @@
 import type { Offer, Profile } from "@/types/database";
 import { isDepartmentLocation } from "@/lib/onboarding/options";
+import { METIERS, SPECIALITES, classifyFormations, normalizeTitle, type Metier } from "@/lib/seo/metiers";
 
 const EDUCATION_RANK: Record<string, number> = {
   Bac: 1,
@@ -90,6 +91,59 @@ export function localCitiesFor(city: string | null | undefined): string[] {
   return findMetroCluster(trimmed.toLowerCase()) ?? [trimmed];
 }
 
+// Métiers de la liste du site (lib/seo/metiers) qui correspondent aux métiers
+// visés à l'onboarding, choisis dans la liste ou tapés librement :
+// « Développeur web » -> développeur, « Assistant comptable » -> comptabilité.
+// « ingénieur » seul est trop large (mécanique, BTP...) : écarté quand un
+// métier plus précis a été trouvé (« Ingénieur DevOps » -> développeur).
+const targetMetiersCache = new Map<string, Metier[]>();
+
+export function targetMetiersOf(targetJobs: string[]): Metier[] {
+  const key = targetJobs.join("|");
+  const cached = targetMetiersCache.get(key);
+  if (cached) return cached;
+  const found = new Map<string, Metier>();
+  for (const job of targetJobs) {
+    const normalized = normalizeTitle(job);
+    const matches = [...METIERS, ...SPECIALITES].filter((m) => m.pattern.test(normalized));
+    const precise = matches.length > 1 ? matches.filter((m) => m.slug !== "ingenieur") : matches;
+    for (const m of precise) found.set(m.slug, m);
+  }
+  const result = [...found.values()];
+  if (targetMetiersCache.size > 500) targetMetiersCache.clear();
+  targetMetiersCache.set(key, result);
+  return result;
+}
+
+export function matchesTargetJob(profile: Pick<Profile, "target_jobs">, offer: Pick<Offer, "title">): boolean {
+  if (profile.target_jobs.some((job) => containsWholeWord(offer.title, job))) return true;
+  const metiers = targetMetiersOf(profile.target_jobs);
+  if (metiers.length === 0) return false;
+  const title = normalizeTitle(offer.title);
+  return metiers.some((m) => m.pattern.test(title));
+}
+
+// Diplôme cité dans l'intitulé (« Apprenti boulanger CAP », « Alternance
+// BTS MCO », « Stage Master 2 ») comparé au niveau du profil. Une offre de
+// CAP ou de bac pro n'a aucun sens pour un étudiant en bac+3 et plus, une
+// offre réservée aux masters pas davantage pour un bac ou bac+2.
+const LOW_LEVEL_FORMATIONS = new Set(["cap", "cap-aepe", "bp", "cqp", "advf", "deaes", "bac-pro", "bac-pro-mspc", "titre-pro"]);
+const MASTER_FORMATIONS = new Set(["master"]);
+
+export function educationGapPenalty(
+  profile: Pick<Profile, "education_level">,
+  offer: Pick<Offer, "title">,
+): number {
+  const rank = profile.education_level ? EDUCATION_RANK[profile.education_level] : undefined;
+  if (!rank) return 0;
+  const formations = classifyFormations(offer.title).map((f) => f.slug);
+  if (formations.length === 0) return 0;
+  const onlyLowLevel = formations.every((slug) => LOW_LEVEL_FORMATIONS.has(slug));
+  if (onlyLowLevel && rank >= 3) return -30;
+  if (formations.some((slug) => MASTER_FORMATIONS.has(slug)) && rank <= 2) return -15;
+  return 0;
+}
+
 // Score heuristique (pas de ML) : part d'une base de 40 et ajoute des points
 // selon le recoupement secteur / métier / localisation / compétences / niveau
 // d'études / disponibilité. Plafonné à 99 pour ne jamais promettre un match
@@ -109,13 +163,18 @@ export function computeMatchScore(profile: Profile, offer: Offer): number {
     score += 18;
   }
 
-  // Métier recherché : mot entier dans le titre, pas une simple sous-chaîne.
-  // Poids relevé (10 -> 14) : c'est le signal le plus direct qu'on ait de
-  // "c'est exactement le poste que je veux", donc ce qui pousse le plus à
-  // vouloir vraiment postuler -- pas juste liker par curiosité.
-  if (profile.target_jobs.some((job) => containsWholeWord(offer.title, job))) {
-    score += 14;
+  // Métier recherché : mot entier dans le titre, ou même métier d'après la
+  // liste des métiers du site (« Commercial » reconnaît aussi « Business
+  // developer » et « Chargé d'affaires »). Poids relevé (10 -> 14) : c'est le
+  // signal le plus direct qu'on ait de "c'est exactement le poste que je
+  // veux". Sans aucun rapport avec les métiers visés : -12 (14/10, avis « pas
+  // assez d'offres pertinentes ») -- l'offre reste dans le deck si rien de
+  // mieux n'existe, mais passe derrière celles du bon métier.
+  if (profile.target_jobs.length > 0) {
+    score += matchesTargetJob(profile, offer) ? 14 : -12;
   }
+
+  score += educationGapPenalty(profile, offer);
 
   // Localisation / mobilité
   const cityLower = profile.city?.toLowerCase().trim();
@@ -200,7 +259,9 @@ export function computeMatchReasons(profile: Profile, offer: Offer): string[] {
     reasons.push(`Secteur ${offer.sector} recherché`);
   }
 
-  const matchedJob = profile.target_jobs.find((job) => containsWholeWord(offer.title, job));
+  const matchedJob =
+    profile.target_jobs.find((job) => containsWholeWord(offer.title, job)) ??
+    profile.target_jobs.find((job) => targetMetiersOf([job]).some((m) => m.pattern.test(normalizeTitle(offer.title))));
   if (matchedJob) {
     reasons.push(`Correspond à "${matchedJob}"`);
   }

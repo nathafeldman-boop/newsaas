@@ -11,8 +11,10 @@ import {
 } from "@/lib/matching/score";
 import { buildLearnedAffinity, type SwipeHistoryEntry } from "@/lib/matching/learning";
 import { isPremium } from "@/lib/subscription/isPremium";
+import { refreshStaleSubscription } from "@/lib/stripe/refreshStaleSubscription";
 import { computeApplicationStreak } from "@/lib/engagement/applicationStreak";
 import { fetchActiveOffers } from "@/lib/offers/fetchActiveOffers";
+import { isSchoolOrJobBoard } from "@/lib/seo/schools";
 
 export default async function SwipePage() {
   const supabase = await createClient();
@@ -22,11 +24,12 @@ export default async function SwipePage() {
 
   if (!user) redirect("/login?next=/swipe");
 
-  const { data: profile } = await supabase
+  const { data: rawProfile } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", user.id)
     .single();
+  const profile = rawProfile ? await refreshStaleSubscription(rawProfile) : rawProfile;
 
   // Recherche clôturée ("j'ai trouvé mon alternance", voir
   // RETENTION_AUDIT.md section 17E) : on ne considère jamais ça comme un
@@ -176,7 +179,16 @@ export default async function SwipePage() {
       : Promise.resolve([]),
   ]);
   const nationalIds = new Set(nationalPool.map((o) => o.id));
-  let offers = [...nationalPool, ...localPool.filter((o) => !nationalIds.has(o.id))];
+  const pooled = [...nationalPool, ...localPool.filter((o) => !nationalIds.has(o.id))];
+
+  // Annonces d'écoles et d'organismes de formation (« Iscod Alternance »,
+  // CFA...) et de sites d'emploi : ce sont des pubs pour un cursus, pas des
+  // postes -- environ une nouvelle offre sur six début octobre, et une
+  // source directe des avis « pas assez d'offres pertinentes » (14/10).
+  // Gardées seulement en dernier recours, si sans elles il ne reste presque
+  // rien à montrer.
+  const employers = pooled.filter((o) => !isSchoolOrJobBoard(o.company));
+  let offers = employers.length >= 10 ? employers : pooled;
 
   // Filet de sécurité : si le filtre secteur ne renvoie rien (secteur trop
   // niche, catalogue encore mince dessus...), on se retrouvait avec un deck
