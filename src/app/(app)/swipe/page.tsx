@@ -15,6 +15,7 @@ import { refreshStaleSubscription } from "@/lib/stripe/refreshStaleSubscription"
 import { computeApplicationStreak } from "@/lib/engagement/applicationStreak";
 import { fetchActiveOffers } from "@/lib/offers/fetchActiveOffers";
 import { isSchoolOrJobBoard } from "@/lib/seo/schools";
+import { normalizeTitle } from "@/lib/seo/metiers";
 
 export default async function SwipePage() {
   const supabase = await createClient();
@@ -187,7 +188,17 @@ export default async function SwipePage() {
   // source directe des avis « pas assez d'offres pertinentes » (14/10).
   // Gardées seulement en dernier recours, si sans elles il ne reste presque
   // rien à montrer.
-  const employers = pooled.filter((o) => !isSchoolOrJobBoard(o.company));
+  // France Travail republie aussi ces annonces sans le nom de l'école
+  // (« Entreprise non communiquée ») et avec le même intitulé, au « (F/H) »
+  // près : on écarte ces jumelles quand l'annonce d'école est dans le lot.
+  const schoolTitleKey = (title: string) =>
+    normalizeTitle(title).replace(/\((h\/f|f\/h)\)|\b(h\/f|f\/h)\b/g, "").replace(/\s+/g, " ").trim();
+  const schoolTitles = new Set(pooled.filter((o) => isSchoolOrJobBoard(o.company)).map((o) => schoolTitleKey(o.title)));
+  const employers = pooled.filter(
+    (o) =>
+      !isSchoolOrJobBoard(o.company) &&
+      !(/non communiqu/i.test(o.company) && schoolTitles.has(schoolTitleKey(o.title))),
+  );
   let offers = employers.length >= 10 ? employers : pooled;
 
   // Filet de sécurité : si le filtre secteur ne renvoie rien (secteur trop
