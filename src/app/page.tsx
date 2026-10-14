@@ -5,7 +5,7 @@ import { CONTACT_EMAIL, SITE_URL, SOCIAL_PROFILES } from "@/lib/site";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { getPublicReviewStats, getPublicTestimonials } from "@/lib/reviews/publicStats";
 import { SwipeDemo } from "@/components/landing/SwipeDemo";
-import { AppScreens } from "@/components/landing/AppScreens";
+import { ParcoursVideo } from "@/components/landing/ParcoursVideo";
 import { Testimonials } from "@/components/landing/Testimonials";
 import { Icon } from "@/components/ui/Icon";
 import { Reveal } from "@/components/ui/Reveal";
@@ -956,7 +956,7 @@ export default async function LandingPage() {
               </p>
             </div>
           </Reveal>
-          <AppScreens />
+          <ParcoursVideo />
         </section>
 
         {/* FONCTIONS */}
