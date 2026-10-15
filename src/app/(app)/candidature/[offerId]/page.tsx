@@ -23,8 +23,24 @@ const AUTO_SEND_NOTES: Record<string, { text: string; profileLink: boolean }> = 
     text: "L'envoi automatique n'est pas encore activé : finis ta candidature ici.",
     profileLink: false,
   },
+  lba_off: {
+    text: "L'envoi automatique par La bonne alternance n'est pas encore activé : finis ta candidature ici.",
+    profileLink: false,
+  },
   no_cv: {
     text: "Ajoute ton CV : il part en pièce jointe de chaque candidature envoyée toute seule.",
+    profileLink: true,
+  },
+  cv_too_big: {
+    text: "Ton CV dépasse 3 Mo, la limite pour un envoi automatique : allège-le (PDF exporté sans images lourdes) depuis ton profil.",
+    profileLink: true,
+  },
+  no_phone: {
+    text: "Ajoute ton numéro de téléphone pour que la candidature parte toute seule : le recruteur doit pouvoir te rappeler.",
+    profileLink: true,
+  },
+  no_name: {
+    text: "Indique ton prénom et ton nom dans ton profil pour que la candidature parte toute seule.",
     profileLink: true,
   },
   error: { text: "L'envoi automatique n'a pas abouti : finis ta candidature ici.", profileLink: false },

@@ -8,6 +8,7 @@ import { TagInput } from "@/components/ui/TagInput";
 import { ChipMultiSelect } from "@/components/ui/ChipMultiSelect";
 import { SECTORS } from "@/lib/onboarding/options";
 import { cn } from "@/lib/utils";
+import { normalizePhone } from "@/lib/laBonneAlternance/applicant";
 import type { ContractType, Profile } from "@/types/database";
 
 const EDUCATION_LEVELS = ["Bac", "Bac+2", "Bac+3", "Bac+4", "Bac+5", "Bac+6 et plus"];
@@ -36,6 +37,7 @@ export function ProfileForm({
 }) {
   const router = useRouter();
   const [fullName, setFullName] = useState(initialProfile.full_name ?? "");
+  const [phone, setPhone] = useState(initialProfile.phone ?? "");
   const [skills, setSkills] = useState<string[]>(initialProfile.skills);
   const [sectors, setSectors] = useState<string[]>(initialProfile.sectors);
   const [targetJobs, setTargetJobs] = useState<string[]>(
@@ -74,11 +76,22 @@ export function ProfileForm({
     setError(null);
     setSuccess(false);
 
+    // Téléphone : envoyé seulement s'il a changé (colonne ajoutée à la main,
+    // voir types/database.ts -- son absence ne doit pas bloquer le reste).
+    const phoneChanged = phone.trim() !== (initialProfile.phone ?? "");
+    const normalizedPhone = normalizePhone(phone);
+    if (phoneChanged && phone.trim() && !normalizedPhone) {
+      setSaving(false);
+      setError("Numéro de téléphone invalide : 06 12 34 56 78, ou +32… pour un numéro européen.");
+      return;
+    }
+
     const supabase = createClient();
 
     const { error: updateError } = await supabase
       .from("profiles")
       .update({
+        ...(phoneChanged ? { phone: normalizedPhone } : {}),
         full_name: fullName.trim() || null,
         skills,
         sectors,
@@ -111,6 +124,23 @@ export function ProfileForm({
       <div className="field">
         <label htmlFor="fullName">Prénom et nom</label>
         <input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} className="input" />
+      </div>
+
+      <div className="field">
+        <label htmlFor="phone">Téléphone</label>
+        <input
+          id="phone"
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
+          placeholder="06 12 34 56 78"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          className="input"
+        />
+        <p style={{ fontSize: 12, margin: "6px 0 0", color: "color-mix(in srgb, var(--color-text) 62%, transparent)" }}>
+          Transmis au recruteur avec tes candidatures envoyées par Stageio, pour qu&apos;il puisse te rappeler.
+        </p>
       </div>
 
       <div className="field">

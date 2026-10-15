@@ -217,7 +217,7 @@ export function OfferCardContent({
   );
   const hypeMessage = matchHypeMessage(score, offer.id);
   const freshnessLabel = getFreshnessLabel(offer.published_at);
-  const acceptsEmail = recipientForOffer(offer) !== null;
+  const directApply = offer.source === "la_bonne_alternance" || recipientForOffer(offer) !== null;
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -345,11 +345,11 @@ export function OfferCardContent({
               <Icon name="sparkles" size={12} /> {freshnessLabel}
             </span>
           )}
-          {/* L'entreprise a publié un email : avec Gmail connecté et
-              « Postuler directement », le like envoie la candidature. */}
-          {acceptsEmail && (
+          {/* Le like peut envoyer la candidature tout seul (« Postuler
+              directement ») : offre La bonne alternance, ou email publié. */}
+          {directApply && (
             <span className="tag tag-accent" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-              <Icon name="send" size={12} /> Candidature par email
+              <Icon name="send" size={12} /> Candidature directe
             </span>
           )}
           {tags.map((tag) => (

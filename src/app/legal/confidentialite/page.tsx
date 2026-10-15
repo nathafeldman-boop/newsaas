@@ -17,7 +17,7 @@ export default function ConfidentialitePage() {
 
       <Section title="Données que nous collectons">
         <ul style={{ margin: 0, paddingLeft: 20, listStyle: "disc" }}>
-          <li>Compte : email, nom, mot de passe (haché) ou identité Google.</li>
+          <li>Compte : email, nom, téléphone (optionnel), mot de passe (haché) ou identité Google.</li>
           <li>
             Profil : ville, compétences, secteurs, formation, mobilité,
             CV (optionnel).
@@ -33,6 +33,20 @@ export default function ConfidentialitePage() {
           </li>
           <li>Paiement (Premium) : géré entièrement par Stripe — nous ne stockons jamais ton numéro de carte.</li>
         </ul>
+      </Section>
+
+      <Section title="Candidatures envoyées par La bonne alternance">
+        <p>
+          Sur les offres marquées « Candidature directe » qui viennent de La
+          bonne alternance (service public de l&apos;alternance, ministère
+          du Travail), un like en mode « Postuler directement » transmet ta
+          candidature à La bonne alternance, qui l&apos;envoie au recruteur
+          par email : ton prénom, ton nom, ton email, ton téléphone, ton CV
+          et la lettre de motivation écrite pour l&apos;offre. Rien ne part
+          sans ce like, et jamais deux fois à la même offre. La réponse du
+          recruteur arrive sur ton email (ou ta boîte Stageio si elle est
+          active).
+        </p>
       </Section>
 
       <Section title="Ta boîte Stageio">
@@ -97,6 +111,7 @@ export default function ConfidentialitePage() {
           <li><strong>Resend</strong> — envoi des emails (compte, alertes nouvelles offres, relances, candidatures) et réception des emails de ta boîte Stageio.</li>
           <li><strong>Stripe</strong> — traitement des paiements de l&apos;abonnement Premium.</li>
           <li><strong>Adzuna</strong> et sources publiques — sourcing des offres d&apos;alternance/stage.</li>
+          <li><strong>La bonne alternance</strong> (service public) — offres d&apos;alternance, et transmission au recruteur des candidatures que tu envoies sur ses offres.</li>
           <li><strong>Google</strong> — connexion avec ton compte Google.</li>
         </ul>
       </Section>

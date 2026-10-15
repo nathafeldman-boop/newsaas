@@ -17,7 +17,7 @@ export type ApplicationStatus =
   | "entretien"
   | "acceptee"
   | "refusee";
-export type OfferSource = "demo" | "manuel" | "mistral_ingest" | "adzuna" | "france_travail";
+export type OfferSource = "demo" | "manuel" | "mistral_ingest" | "adzuna" | "france_travail" | "la_bonne_alternance";
 export type EmailProvider = "gmail";
 export type EmailReplySentiment = "positive" | "negative" | "neutral";
 
@@ -42,6 +42,9 @@ export type Profile = {
   // Boîte mail Stageio (voir lib/inbox/address.ts). Optionnelle : colonne
   // ajoutée à la main en base le 15/10.
   inbox_address?: string | null;
+  // Téléphone du candidat, exigé par La bonne alternance pour transmettre une
+  // candidature. Optionnel : colonne ajoutée à la main en base le 15/10.
+  phone?: string | null;
   cv_uploaded_at: string | null;
   cv_text: string | null;
   onboarding_completed: boolean;

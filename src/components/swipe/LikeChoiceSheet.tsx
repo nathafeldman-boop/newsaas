@@ -44,9 +44,10 @@ export function LikeChoiceSheet({
               Tu likes « {offer.title} »
             </p>
             <p style={{ fontSize: 14, margin: "8px 0 0", color: "color-mix(in srgb, var(--color-text) 72%, transparent)" }}>
-              On postule tout de suite ? Quand l&apos;entreprise a publié un email, ta candidature part toute seule
-              de ton adresse Stageio : lettre écrite pour l&apos;offre et CV, sans relecture, et la réponse arrive
-              dans ta boîte Stageio. Sinon, ta lettre est prête et il te reste à toucher « Postuler sur le site ».
+              On postule tout de suite ? Sur les offres « Candidature directe », ta candidature part toute seule :
+              lettre écrite pour l&apos;offre et CV, sans relecture, transmis au recruteur par La bonne alternance
+              (service public) ou par email. Sinon, ta lettre est prête et il te reste à toucher « Postuler sur le
+              site ».
             </p>
             <div className="mt-5 flex flex-col gap-2">
               <button type="button" className="btn btn-primary btn-block" onClick={() => onChoose("candidature", remember)}>

@@ -5,21 +5,38 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Icon } from "@/components/ui/Icon";
-import { AUTO_SEND_WARNING_THRESHOLD, type AutoSendResult } from "@/lib/applications/autoSend";
+import {
+  AUTO_SEND_WARNING_THRESHOLD,
+  FIXABLE_REASONS,
+  type AutoSendChannel,
+  type AutoSendManualReason,
+  type AutoSendResult,
+} from "@/lib/applications/autoSend";
+import type { OfferSource } from "@/types/database";
 
-export type ApplyTarget = { id: string; company: string };
+export type ApplyTarget = { id: string; company: string; source?: OfferSource };
 
-// Like en mode « Postuler directement » : si l'entreprise a publié un email,
-// la candidature part de l'adresse Stageio de l'étudiant sans quitter le
-// deck ; sinon, la page de candidature s'ouvre comme avant, avec la raison. Un message suit chaque envoi (demande de Nathan :
-// pas de plafond, mais un avertissement à chaque fois).
+// Like en mode « Postuler directement » : la candidature part sans quitter
+// le deck, par La bonne alternance (service public, gratuit) ou par email
+// quand l'entreprise a publié une adresse ; sinon, la page de candidature
+// s'ouvre comme avant, avec la raison. Un message suit chaque envoi (demande
+// de Nathan : pas de plafond, mais un avertissement à chaque fois).
 
 type Toast =
-  | { id: string; kind: "sending"; company: string; to: string }
-  | { id: string; kind: "sent"; company: string; to: string; from: string; count: number }
+  | { id: string; kind: "sending"; company: string; to: string; channel: AutoSendChannel }
+  | { id: string; kind: "sent"; company: string; to: string; from: string; count: number; channel: AutoSendChannel }
   | { id: string; kind: "already"; company: string }
   | { id: string; kind: "failed"; company: string }
   | { id: string; kind: "notice"; title: string; text: string; href?: string; hrefLabel?: string };
+
+// Infos manquantes que l'étudiant peut compléter sur place (CV, téléphone,
+// nom) : l'appelant ouvre sa fenêtre plutôt que la page de candidature.
+export type NeedsInfo = (offer: ApplyTarget, reason: AutoSendManualReason) => boolean;
+
+// La bonne alternance limite les envois pour tout Stageio : on réessaie
+// quelques fois, l'étudiant continue de swiper.
+const BUSY_RETRIES = 4;
+const BUSY_DELAY_MS = 20_000;
 
 async function callAutoSend(offerId: string, check: boolean): Promise<AutoSendResult> {
   try {
@@ -46,22 +63,35 @@ export function useAutoApply() {
   }, []);
 
   const start = useCallback(
-    async (offer: ApplyTarget) => {
+    async (offer: ApplyTarget, needsInfo?: NeedsInfo) => {
       const check = await callAutoSend(offer.id, true);
       if (check.status === "manual" && check.reason === "already_sent") {
         put({ id: offer.id, kind: "already", company: offer.company });
         setTimeout(() => dismiss(offer.id), 6000);
         return;
       }
+      if (check.status === "manual" && FIXABLE_REASONS.includes(check.reason) && needsInfo?.(offer, check.reason)) return;
       if (check.status !== "ready") {
         const reason = check.status === "manual" ? check.reason : "error";
         router.push(`/candidature/${offer.id}?express=1&envoi=${reason}`);
         return;
       }
-      put({ id: offer.id, kind: "sending", company: offer.company, to: check.to });
-      const result = await callAutoSend(offer.id, false);
+      put({ id: offer.id, kind: "sending", company: offer.company, to: check.to, channel: check.channel });
+      let result = await callAutoSend(offer.id, false);
+      for (let attempt = 0; result.status === "busy" && attempt < BUSY_RETRIES; attempt++) {
+        await new Promise((resolve) => setTimeout(resolve, BUSY_DELAY_MS));
+        result = await callAutoSend(offer.id, false);
+      }
       if (result.status === "sent") {
-        put({ id: offer.id, kind: "sent", company: result.company, to: result.to, from: result.from, count: result.sentLast24h });
+        put({
+          id: offer.id,
+          kind: "sent",
+          company: result.company,
+          to: result.to,
+          from: result.from,
+          count: result.sentLast24h,
+          channel: result.channel,
+        });
         setTimeout(() => dismiss(offer.id), result.sentLast24h >= AUTO_SEND_WARNING_THRESHOLD ? 14000 : 9000);
       } else {
         put({ id: offer.id, kind: "failed", company: offer.company });
@@ -122,21 +152,31 @@ function AutoApplyToasts({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (i
                   <>
                     <strong style={{ fontSize: 14 }}>Envoi de ta candidature à {t.company}…</strong>
                     <p style={{ margin: "2px 0 0", color: muted }}>
-                      Ta lettre et ton CV partent de ton adresse Stageio vers {t.to}. Tu peux continuer à swiper.
+                      {t.channel === "lba"
+                        ? "Ta lettre et ton CV partent via La bonne alternance, le service public de l'alternance."
+                        : `Ta lettre et ton CV partent de ton adresse Stageio vers ${t.to}.`}{" "}
+                      Tu peux continuer à swiper.
                     </p>
                   </>
                 )}
                 {t.kind === "sent" && (
                   <>
                     <strong style={{ fontSize: 14 }}>Candidature envoyée à {t.company}</strong>
-                    <p style={{ margin: "2px 0 0", color: muted }}>
-                      Elle est vraiment partie de {t.from} vers {t.to}, avec ta lettre et ton CV. La réponse du
-                      recruteur arrivera dans ta{" "}
-                      <Link href="/boite" style={{ fontWeight: 700 }}>
-                        boîte Stageio
-                      </Link>
-                      .
-                    </p>
+                    {t.channel === "lba" ? (
+                      <p style={{ margin: "2px 0 0", color: muted }}>
+                        La bonne alternance l&apos;a transmise au recruteur, avec ta lettre et ton CV. Sa réponse
+                        arrivera sur {t.from}.
+                      </p>
+                    ) : (
+                      <p style={{ margin: "2px 0 0", color: muted }}>
+                        Elle est vraiment partie de {t.from} vers {t.to}, avec ta lettre et ton CV. La réponse du
+                        recruteur arrivera dans ta{" "}
+                        <Link href="/boite" style={{ fontWeight: 700 }}>
+                          boîte Stageio
+                        </Link>
+                        .
+                      </p>
+                    )}
                     {t.count >= AUTO_SEND_WARNING_THRESHOLD && (
                       <p style={{ margin: "8px 0 0", color: "var(--color-accent-800)", fontWeight: 600 }}>
                         {t.count} candidatures envoyées en 24 h. Les recruteurs repèrent les envois en masse : garde tes

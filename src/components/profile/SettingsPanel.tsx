@@ -83,8 +83,8 @@ export function SettingsPanel({
             Quand je like une offre
           </label>
           <p style={{ fontSize: 12, margin: "2px 0 0", color: "color-mix(in srgb, var(--color-text) 65%, transparent)" }}>
-            Premium : postuler tout de suite (envoi depuis ton adresse Stageio quand l&apos;entreprise a
-            publié un email), ou garder l&apos;offre en favori.
+            Premium : postuler tout de suite (envoi automatique sur les offres « Candidature directe »), ou
+            garder l&apos;offre en favori.
           </p>
         </div>
         <select
