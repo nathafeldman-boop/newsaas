@@ -55,9 +55,9 @@ export default function ConfidentialitePage() {
             Chaque compte reçoit une adresse de candidature à son nom sur
             un sous-domaine de Stageio. Les candidatures envoyées au like
             (réglage « Postuler directement », quand l&apos;entreprise a
-            publié une adresse email) partent de cette adresse, avec ta
-            lettre de motivation et ton CV, vers cette seule adresse
-            publiée par le recruteur.
+            publié une adresse email) partent à ton nom, avec ta lettre de
+            motivation et ton CV, vers cette seule adresse publiée par le
+            recruteur ; sa réponse arrive sur ton adresse Stageio.
           </li>
           <li>
             Les emails reçus sur ton adresse Stageio (réponses des
@@ -67,8 +67,9 @@ export default function ConfidentialitePage() {
             la candidature concernée, par analyse automatique du message.
           </li>
           <li>
-            Tu peux répondre depuis l&apos;appli ; ta réponse part de ton
-            adresse Stageio. Les messages sont supprimés avec ton compte.
+            Tu peux répondre depuis l&apos;appli ; ta réponse part à ton
+            nom et la suite de l&apos;échange revient dans ta boîte. Les
+            messages sont supprimés avec ton compte.
           </li>
         </ul>
       </Section>
@@ -108,7 +109,8 @@ export default function ConfidentialitePage() {
           <li><strong>Supabase</strong> — hébergement de la base de données, authentification, stockage des CV.</li>
           <li><strong>Vercel</strong> — hébergement de l&apos;application.</li>
           <li><strong>Anthropic (Claude)</strong> — rédaction des lettres de motivation, analyse des CV et des offres.</li>
-          <li><strong>Resend</strong> — envoi des emails (compte, alertes nouvelles offres, relances, candidatures) et réception des emails de ta boîte Stageio.</li>
+          <li><strong>Resend</strong> — envoi des emails (compte, alertes nouvelles offres, relances, candidatures).</li>
+          <li><strong>Cloudflare</strong> — réception des emails de ta boîte Stageio.</li>
           <li><strong>Stripe</strong> — traitement des paiements de l&apos;abonnement Premium.</li>
           <li><strong>Adzuna</strong> et sources publiques — sourcing des offres d&apos;alternance/stage.</li>
           <li><strong>La bonne alternance</strong> (service public) — offres d&apos;alternance, et transmission au recruteur des candidatures que tu envoies sur ses offres.</li>

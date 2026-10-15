@@ -5,9 +5,10 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getOrCreateInboxAddress } from "@/lib/inbox/address";
 import { getResendClient } from "@/lib/resend/client";
+import { studentSender } from "@/lib/inbox/sender";
 
-// Répondre à un recruteur depuis la boîte Stageio : part de l'adresse
-// Stageio de l'étudiant, la suite de l'échange revient dans la boîte.
+// Répondre à un recruteur depuis la boîte Stageio : part au nom de
+// l'étudiant, la suite de l'échange revient dans la boîte (Reply-To).
 export async function replyInboxMessageAction(messageId: string, formData: FormData) {
   const text = String(formData.get("reply") ?? "").trim();
   if (!text) redirect(`/boite/${messageId}?envoi=vide`);
@@ -34,9 +35,8 @@ export async function replyInboxMessageAction(messageId: string, formData: FormD
   const name = profile?.full_name?.trim() || null;
   const subject = message.subject?.toLowerCase().startsWith("re:") ? message.subject : `Re: ${message.subject ?? ""}`.trim();
   const { error } = await getResendClient().emails.send({
-    from: name ? `${name.replace(/[<>"]/g, "")} <${fromAddress}>` : fromAddress,
+    ...studentSender(name, fromAddress),
     to: message.from_address,
-    replyTo: fromAddress,
     subject,
     text,
   });

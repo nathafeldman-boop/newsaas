@@ -154,7 +154,7 @@ function AutoApplyToasts({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (i
                     <p style={{ margin: "2px 0 0", color: muted }}>
                       {t.channel === "lba"
                         ? "Ta lettre et ton CV partent via La bonne alternance, le service public de l'alternance."
-                        : `Ta lettre et ton CV partent de ton adresse Stageio vers ${t.to}.`}{" "}
+                        : `Ta lettre et ton CV partent vers ${t.to}.`}{" "}
                       Tu peux continuer à swiper.
                     </p>
                   </>
@@ -169,8 +169,8 @@ function AutoApplyToasts({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (i
                       </p>
                     ) : (
                       <p style={{ margin: "2px 0 0", color: muted }}>
-                        Elle est vraiment partie de {t.from} vers {t.to}, avec ta lettre et ton CV. La réponse du
-                        recruteur arrivera dans ta{" "}
+                        Elle est vraiment partie vers {t.to}, avec ta lettre et ton CV. La réponse du recruteur
+                        arrivera dans ta{" "}
                         <Link href="/boite" style={{ fontWeight: 700 }}>
                           boîte Stageio
                         </Link>

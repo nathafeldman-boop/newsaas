@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isPremium } from "@/lib/subscription/isPremium";
 import { recipientForOffer } from "@/lib/offers/recruiterEmail";
 import { getOrCreateInboxAddress, inboxDomain } from "@/lib/inbox/address";
+import { studentSender } from "@/lib/inbox/sender";
 import { getResendClient } from "@/lib/resend/client";
 import { generateCoverLetterAction } from "@/app/(app)/candidature/[offerId]/actions";
 import { logServerEvent } from "@/lib/analytics/logServerEvent";
@@ -16,8 +17,8 @@ import type { Offer, Profile } from "@/types/database";
 // - « lba » (15/10) : offre La bonne alternance. Le service public transmet
 //   lui-même la candidature au recruteur (gratuit, sans Resend) ; la réponse
 //   arrive sur l'email de l'étudiant (ou sa boîte Stageio si elle est active).
-// - « email » : l'entreprise a publié une adresse ; la lettre part de
-//   l'adresse Stageio de l'étudiant via Resend (boîte intégrée).
+// - « email » : l'entreprise a publié une adresse ; la lettre part via
+//   Resend au nom de l'étudiant, réponse vers sa boîte Stageio.
 // Sinon (« manual »), la page de candidature s'ouvre avec la raison.
 // Route plutôt que server action : les server actions d'un même onglet
 // passent l'une après l'autre, et un envoi (lettre + envoi) prend 10 à 30 s
@@ -198,9 +199,8 @@ async function applyByEmail(admin: Admin, supabase: Supabase, { request, user, o
   const subject = `Candidature : ${offer.title}`;
 
   const { error: sendError } = await getResendClient().emails.send({
-    from: name ? `${name.replace(/[<>"]/g, "")} <${fromAddress}>` : fromAddress,
+    ...studentSender(name, fromAddress),
     to,
-    replyTo: fromAddress,
     subject,
     text: letterResult.letter,
     attachments: [
