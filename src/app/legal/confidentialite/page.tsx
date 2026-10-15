@@ -27,58 +27,34 @@ export default function ConfidentialitePage() {
             de chaque candidature.
           </li>
           <li>
-            Si tu connectes Gmail (optionnel) : l&apos;autorisation
-            d&apos;envoyer tes candidatures depuis ta boîte, rien
-            d&apos;autre (voir section dédiée ci-dessous).
+            Boîte Stageio : les candidatures envoyées depuis ton adresse
+            Stageio et les emails reçus sur cette adresse (voir section
+            dédiée ci-dessous).
           </li>
           <li>Paiement (Premium) : géré entièrement par Stripe — nous ne stockons jamais ton numéro de carte.</li>
         </ul>
       </Section>
 
-      <Section title="Connexion Gmail : envoi de tes candidatures">
-        <p>
-          Cette fonctionnalité est facultative et désactivée par défaut.
-          Si tu connectes Gmail depuis ton profil :
-        </p>
+      <Section title="Ta boîte Stageio">
         <ul style={{ margin: "8px 0 0", paddingLeft: 20, listStyle: "disc" }}>
           <li>
-            Stageio reçoit seulement l&apos;autorisation d&apos;envoyer des
-            emails depuis ta boîte. Stageio ne lit jamais tes emails, ni
-            ta boîte de réception, ni tes contacts.
+            Chaque compte reçoit une adresse de candidature à son nom sur
+            un sous-domaine de Stageio. Les candidatures envoyées au like
+            (réglage « Postuler directement », quand l&apos;entreprise a
+            publié une adresse email) partent de cette adresse, avec ta
+            lettre de motivation et ton CV, vers cette seule adresse
+            publiée par le recruteur.
           </li>
           <li>
-            Un email part uniquement quand tu le déclenches : un like sur
-            une offre, avec le réglage « Postuler directement », quand
-            l&apos;entreprise a publié une adresse email dans son annonce.
-            Il contient ta lettre de motivation écrite pour l&apos;offre et
-            ton CV, et il est adressé à cette seule adresse. Un message te
-            confirme chaque envoi.
+            Les emails reçus sur ton adresse Stageio (réponses des
+            recruteurs) sont conservés dans ta boîte, visibles par toi
+            seul·e, et tu es prévenu·e par email à chaque nouveau message.
+            Une réponse claire (entretien, refus) met à jour le statut de
+            la candidature concernée, par analyse automatique du message.
           </li>
           <li>
-            On garde la trace de l&apos;envoi (offre concernée, domaine de
-            l&apos;adresse du recruteur, date) pour ne jamais envoyer deux
-            fois la même candidature. La lettre reste visible dans tes
-            candidatures.
-          </li>
-          <li>
-            Le jeton d&apos;accès Gmail n&apos;est utilisé que par nos
-            serveurs, jamais transmis à ton navigateur ni à un tiers.
-          </li>
-          <li>
-            L&apos;utilisation et le transfert à toute autre application des
-            informations reçues des API Google respectent les{" "}
-            <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">
-              Règles relatives aux données utilisateur des services API Google
-            </a>
-            , y compris les exigences d&apos;utilisation limitée.
-          </li>
-          <li>
-            Tu peux déconnecter Gmail à tout moment depuis ton profil, ou
-            retirer l&apos;accès sur{" "}
-            <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">
-              myaccount.google.com/permissions
-            </a>
-            .
+            Tu peux répondre depuis l&apos;appli ; ta réponse part de ton
+            adresse Stageio. Les messages sont supprimés avec ton compte.
           </li>
         </ul>
       </Section>
@@ -118,10 +94,10 @@ export default function ConfidentialitePage() {
           <li><strong>Supabase</strong> — hébergement de la base de données, authentification, stockage des CV.</li>
           <li><strong>Vercel</strong> — hébergement de l&apos;application.</li>
           <li><strong>Anthropic (Claude)</strong> — rédaction des lettres de motivation, analyse des CV et des offres.</li>
-          <li><strong>Resend</strong> — envoi des emails (compte, alertes nouvelles offres, relances).</li>
+          <li><strong>Resend</strong> — envoi des emails (compte, alertes nouvelles offres, relances, candidatures) et réception des emails de ta boîte Stageio.</li>
           <li><strong>Stripe</strong> — traitement des paiements de l&apos;abonnement Premium.</li>
           <li><strong>Adzuna</strong> et sources publiques — sourcing des offres d&apos;alternance/stage.</li>
-          <li><strong>Google</strong> — connexion et, si tu l&apos;actives, envoi de tes candidatures depuis Gmail.</li>
+          <li><strong>Google</strong> — connexion avec ton compte Google.</li>
         </ul>
       </Section>
 
@@ -155,7 +131,9 @@ export default function ConfidentialitePage() {
           </li>
           <li>
             <strong>Droit de retrait du consentement</strong> : par exemple
-            en déconnectant Gmail depuis ton profil.
+            en désactivant les emails depuis ton profil, ou en repassant
+            « Quand je like une offre » sur « Mettre en favori » pour
+            qu&apos;aucune candidature ne parte toute seule.
           </li>
           <li>
             <strong>Droit d&apos;accès et à la portabilité</strong> : contacte-nous

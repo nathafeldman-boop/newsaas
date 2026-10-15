@@ -190,26 +190,20 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* La connexion Gmail est en réalité déjà disponible (GmailConnectionPanel
-          sur /profil) -- cette carte affichait "À venir" avec un bouton
-          désactivé, ce qui faisait croire à une fonctionnalité inexistante
-          alors qu'elle est live ailleurs. Corrigé pour pointer vers la vraie
-          fonctionnalité plutôt que la dupliquer ici (état de connexion déjà
-          géré sur /profil). Trouvé à l'audit du 2026-09-25. */}
+      {/* Boîte mail Stageio (15/10) : remplace la connexion Gmail. */}
       <Link
-        href="/profil"
+        href="/boite"
         className="card elev-sm mt-5 no-underline"
         style={{ padding: "var(--space-6)", color: "inherit", display: "block" }}
       >
         <div className="flex items-center gap-2">
-          <p style={{ fontFamily: "var(--font-heading)", fontSize: 17, margin: 0 }}>📧 Connecter Gmail</p>
+          <p style={{ fontFamily: "var(--font-heading)", fontSize: 17, margin: 0 }}>Ma boîte Stageio</p>
         </div>
         <p style={{ fontSize: 13, margin: "6px 0 0", color: "color-mix(in srgb, var(--color-text) 65%, transparent)" }}>
-          Tes likes envoient ta candidature (lettre + CV) depuis ton Gmail quand l&apos;entreprise a
-          publié un email. Disponible depuis ton profil.
+          Tes candidatures envoyées au like et les réponses des recruteurs, au même endroit.
         </p>
         <span className="btn btn-secondary mt-3" style={{ whiteSpace: "nowrap" }}>
-          Aller sur mon profil →
+          Ouvrir ma boîte →
         </span>
       </Link>
     </div>

@@ -21,6 +21,7 @@ const PRIVATE_DISALLOW = [
   "/admin/",
   "/swipe",
   "/favoris",
+  "/boite",
   "/mes-candidatures",
   "/parrainage",
   "/profil",

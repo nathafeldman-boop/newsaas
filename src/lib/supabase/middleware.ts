@@ -16,6 +16,7 @@ const PROTECTED_PATHS = [
   "/dashboard",
   "/swipe",
   "/favoris",
+  "/boite",
   "/mes-candidatures",
   "/candidature",
   "/cv",

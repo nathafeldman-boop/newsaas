@@ -9,10 +9,9 @@ import { AUTO_SEND_WARNING_THRESHOLD, type AutoSendResult } from "@/lib/applicat
 
 export type ApplyTarget = { id: string; company: string };
 
-// Like en mode « Postuler directement » : si l'entreprise a publié un email
-// et que le Gmail de l'étudiant est connecté, la candidature part depuis sa
-// boîte sans quitter le deck ; sinon, la page de candidature s'ouvre comme
-// avant, avec la raison. Un message suit chaque envoi (demande de Nathan :
+// Like en mode « Postuler directement » : si l'entreprise a publié un email,
+// la candidature part de l'adresse Stageio de l'étudiant sans quitter le
+// deck ; sinon, la page de candidature s'ouvre comme avant, avec la raison. Un message suit chaque envoi (demande de Nathan :
 // pas de plafond, mais un avertissement à chaque fois).
 
 type Toast =
@@ -123,7 +122,7 @@ function AutoApplyToasts({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (i
                   <>
                     <strong style={{ fontSize: 14 }}>Envoi de ta candidature à {t.company}…</strong>
                     <p style={{ margin: "2px 0 0", color: muted }}>
-                      Ta lettre et ton CV partent depuis ton Gmail vers {t.to}. Tu peux continuer à swiper.
+                      Ta lettre et ton CV partent de ton adresse Stageio vers {t.to}. Tu peux continuer à swiper.
                     </p>
                   </>
                 )}
@@ -131,14 +130,17 @@ function AutoApplyToasts({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (i
                   <>
                     <strong style={{ fontSize: 14 }}>Candidature envoyée à {t.company}</strong>
                     <p style={{ margin: "2px 0 0", color: muted }}>
-                      Elle est vraiment partie de {t.from} vers {t.to}, avec ta lettre et ton CV. Tu la retrouves dans
-                      les messages envoyés de ton Gmail, et la réponse arrivera dans ta boîte.
+                      Elle est vraiment partie de {t.from} vers {t.to}, avec ta lettre et ton CV. La réponse du
+                      recruteur arrivera dans ta{" "}
+                      <Link href="/boite" style={{ fontWeight: 700 }}>
+                        boîte Stageio
+                      </Link>
+                      .
                     </p>
                     {t.count >= AUTO_SEND_WARNING_THRESHOLD && (
                       <p style={{ margin: "8px 0 0", color: "var(--color-accent-800)", fontWeight: 600 }}>
-                        {t.count} candidatures envoyées en 24 h. Gmail bloque au-delà d&apos;environ 500 mails par jour,
-                        et les recruteurs repèrent les envois en masse : garde tes likes pour les offres qui te plaisent
-                        vraiment.
+                        {t.count} candidatures envoyées en 24 h. Les recruteurs repèrent les envois en masse : garde tes
+                        likes pour les offres qui te plaisent vraiment.
                       </p>
                     )}
                   </>

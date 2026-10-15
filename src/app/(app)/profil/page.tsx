@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ProfileForm } from "@/components/profile/ProfileForm";
-import { GmailConnectionPanel } from "@/components/profile/GmailConnectionPanel";
 import { SettingsPanel } from "@/components/profile/SettingsPanel";
 import { ReviewPanel } from "@/components/profile/ReviewPanel";
 import { SearchCompletedToggle } from "@/components/profile/SearchCompletedToggle";
@@ -15,9 +14,9 @@ import type { ApplicationStatus } from "@/types/database";
 export default async function ProfilPage({
   searchParams,
 }: {
-  searchParams: Promise<{ gmail?: string; error?: string }>;
+  searchParams: Promise<{ error?: string }>;
 }) {
-  const { gmail, error } = await searchParams;
+  const { error } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -42,13 +41,7 @@ export default async function ProfilPage({
   const initial = (profile.full_name || user.email || "?").charAt(0).toUpperCase();
   const premium = isPremium(profile);
 
-  const [{ data: gmailConnection }, { data: applications }, { data: review }] = await Promise.all([
-    supabase
-      .from("email_connections")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("provider", "gmail")
-      .maybeSingle(),
+  const [{ data: applications }, { data: review }] = await Promise.all([
     supabase.from("applications").select("status").eq("user_id", user.id),
     supabase.from("reviews").select("rating, comment").eq("user_id", user.id).maybeSingle(),
   ]);
@@ -132,7 +125,25 @@ export default async function ProfilPage({
         <ProfileForm userId={user.id} initialProfile={profile} />
       </div>
 
-      <GmailConnectionPanel connection={gmailConnection ?? null} statusParam={gmail} />
+      <Link
+        href="/boite"
+        className="card elev-sm no-underline"
+        style={{ marginTop: 20, display: "block", color: "inherit", background: "var(--color-accent-100)" }}
+      >
+        <p style={{ fontFamily: "var(--font-heading)", fontSize: 17, margin: 0, color: "var(--color-accent-800)" }}>
+          Ma boîte Stageio
+        </p>
+        <p style={{ fontSize: 13, color: "var(--color-accent-800)", opacity: 0.85, margin: "6px 0 0" }}>
+          {profile.inbox_address ? (
+            <>
+              Ton adresse de candidature : <strong style={{ wordBreak: "break-all" }}>{profile.inbox_address}</strong>.
+              Tes candidatures partent de là, et les réponses des recruteurs arrivent dans ta boîte.
+            </>
+          ) : (
+            "Tes candidatures envoyées au like partent d'une adresse Stageio à ton nom, et les réponses des recruteurs arrivent dans ta boîte."
+          )}
+        </p>
+      </Link>
 
       <SettingsPanel userId={user.id} initialNotifyNewOffers={profile.notify_new_offers} />
 

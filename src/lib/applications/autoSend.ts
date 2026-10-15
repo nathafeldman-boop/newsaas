@@ -12,8 +12,7 @@ export type AutoSendResult =
 
 export type AutoSendManualReason =
   | "no_email"
-  | "no_gmail"
-  | "gmail_reconnect"
+  | "inbox_off"
   | "no_cv"
   | "already_sent"
   | "premium_required"

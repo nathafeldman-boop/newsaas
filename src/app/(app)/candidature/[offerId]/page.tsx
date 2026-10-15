@@ -19,13 +19,9 @@ const AUTO_SEND_NOTES: Record<string, { text: string; profileLink: boolean }> = 
     text: "Cette entreprise n'a pas publié d'adresse email : impossible d'envoyer ta candidature à ta place, elle se termine sur son site.",
     profileLink: false,
   },
-  no_gmail: {
-    text: "Connecte ton Gmail : quand l'entreprise a publié un email, ta candidature partira toute seule au like.",
-    profileLink: true,
-  },
-  gmail_reconnect: {
-    text: "Ta connexion Gmail a expiré : reconnecte-la pour que tes candidatures partent toutes seules.",
-    profileLink: true,
+  inbox_off: {
+    text: "L'envoi automatique n'est pas encore activé : finis ta candidature ici.",
+    profileLink: false,
   },
   no_cv: {
     text: "Ajoute ton CV : il part en pièce jointe de chaque candidature envoyée toute seule.",

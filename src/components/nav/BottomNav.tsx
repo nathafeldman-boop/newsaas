@@ -9,12 +9,13 @@ import { Icon, type IconName } from "@/components/ui/Icon";
 const ITEMS: { href: string; label: string; icon: IconName }[] = [
   { href: "/swipe", label: "Swipe", icon: "swipe" },
   { href: "/favoris", label: "Favoris", icon: "heart" },
+  { href: "/boite", label: "Boîte", icon: "mail" },
   { href: "/dashboard", label: "Dashboard", icon: "dashboard" },
   { href: "/cv", label: "CV", icon: "file" },
   { href: "/profil", label: "Profil", icon: "user" },
 ];
 
-export function BottomNav({ favoritesBadge = 0 }: { favoritesBadge?: number }) {
+export function BottomNav({ favoritesBadge = 0, inboxBadge = 0 }: { favoritesBadge?: number; inboxBadge?: number }) {
   const pathname = usePathname();
 
   return (
@@ -28,7 +29,7 @@ export function BottomNav({ favoritesBadge = 0 }: { favoritesBadge?: number }) {
       }}
     >
       {ITEMS.map((item) => {
-        const active = pathname === item.href;
+        const active = pathname === item.href || (item.href === "/boite" && pathname.startsWith("/boite/"));
         return (
           <Link
             key={item.href}
@@ -64,7 +65,7 @@ export function BottomNav({ favoritesBadge = 0 }: { favoritesBadge?: number }) {
               >
                 <Icon name={item.icon} size={22} strokeWidth={active ? 2.2 : 1.8} />
               </motion.span>
-              {item.href === "/favoris" && favoritesBadge > 0 && (
+              {((item.href === "/favoris" && favoritesBadge > 0) || (item.href === "/boite" && inboxBadge > 0)) && (
                 <span
                   aria-hidden
                   style={{
@@ -86,7 +87,7 @@ export function BottomNav({ favoritesBadge = 0 }: { favoritesBadge?: number }) {
                     border: "2px solid var(--color-surface)",
                   }}
                 >
-                  {favoritesBadge}
+                  {item.href === "/boite" ? inboxBadge : favoritesBadge}
                 </span>
               )}
             </span>

@@ -1,106 +1,38 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { cacheCvTextAction } from "@/app/(app)/cv/actions";
 import { useAutoApply, type ApplyTarget } from "@/components/swipe/AutoApply";
 
-// Like en mode « Postuler directement » (14/10, demande de Nathan) : si le
-// Gmail n'est pas connecté, on envoie tout de suite l'étudiant le connecter
-// chez Google, puis on revient au swipe et la candidature repart. S'il
-// refuse ou n'y arrive pas, on ne le renvoie plus chez Google : il le fera
-// lui-même depuis son profil. Sans CV, on le lui demande ici même (il part
-// en pièce jointe).
+// Like en mode « Postuler directement » : la candidature part de l'adresse
+// Stageio de l'étudiant quand l'entreprise a publié un email (voir
+// api/applications/auto-send). Sans CV, on le lui demande ici même, une
+// fois par visite (il part en pièce jointe).
 
-export type AutoApplySetup = {
-  gmailConnected: boolean;
-  hasCv: boolean;
-  // Offre likée juste avant de partir chez Google, à reprendre au retour.
-  resume: { offerId: string; company: string; gmail: string | null } | null;
-};
+export type AutoApplySetup = { hasCv: boolean };
 
-const PROMPTED_KEY = "stageio_gmail_prompted";
-// Un retour de Google ne se traite qu'une fois, même si le deck se remonte
-// (changement de filtre Stage/Alternance).
-const handledResumes = new Set<string>();
-// CV ajouté depuis la fenêtre ci-dessous : vaut pour le reste de la visite,
-// même si le deck se remonte avant le prochain chargement de la page.
+// CV ajouté ou refusé depuis la fenêtre ci-dessous : vaut pour le reste de
+// la visite, même si le deck se remonte (changement de filtre).
 let cvUploadedThisVisit = false;
-
-function wasPrompted(): boolean {
-  try {
-    return localStorage.getItem(PROMPTED_KEY) === "1";
-  } catch {
-    return true;
-  }
-}
-
-function markPrompted() {
-  try {
-    localStorage.setItem(PROMPTED_KEY, "1");
-  } catch {
-    // Stockage indisponible : wasPrompted() renvoie déjà true, pas de boucle.
-  }
-}
+let cvDeclinedThisVisit = false;
 
 export function useApplyOnLike(setup: AutoApplySetup | undefined, userId: string) {
   const autoApply = useAutoApply();
-  const gmailConnected = setup?.gmailConnected ?? false;
   const [hasCv, setHasCv] = useState((setup?.hasCv ?? false) || cvUploadedThisVisit);
   const [cvFor, setCvFor] = useState<ApplyTarget | null>(null);
 
-  const proceed = useCallback(
-    (offer: ApplyTarget, cvOk: boolean) => {
-      if (gmailConnected && !cvOk) {
+  const applyOnLike = useCallback(
+    (offer: ApplyTarget) => {
+      if (!hasCv && !cvDeclinedThisVisit) {
         setCvFor(offer);
         return;
       }
       void autoApply.start(offer);
     },
-    [gmailConnected, autoApply],
+    [hasCv, autoApply],
   );
-
-  const applyOnLike = useCallback(
-    (offer: ApplyTarget) => {
-      if (!gmailConnected && !wasPrompted()) {
-        markPrompted();
-        // Petit délai : laisse partir l'enregistrement du like avant de
-        // quitter la page.
-        setTimeout(() => {
-          // Navigation complète (pas router.push) : la route redirige chez Google.
-          window.location.href = `/api/gmail/connect?next=${encodeURIComponent(`/swipe?apply=${offer.id}`)}`;
-        }, 600);
-        return;
-      }
-      proceed(offer, hasCv);
-    },
-    [gmailConnected, hasCv, proceed],
-  );
-
-  useEffect(() => {
-    const resume = setup?.resume;
-    if (!resume || handledResumes.has(resume.offerId)) return;
-    handledResumes.add(resume.offerId);
-    window.history.replaceState(null, "", "/swipe");
-    const offer = { id: resume.offerId, company: resume.company };
-    if (resume.gmail === "connected" && gmailConnected) {
-      // Retour de Google (adresse de la page) : reprendre la candidature
-      // une seule fois, au montage.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      proceed(offer, hasCv);
-      return;
-    }
-    autoApply.notify({
-      id: offer.id,
-      title: "Gmail pas connecté",
-      text: `Tu pourras le connecter plus tard depuis ton profil. Ta candidature à ${resume.company} se termine sur son site.`,
-      href: `/candidature/${offer.id}?express=1&envoi=no_gmail`,
-      hrefLabel: "Finir la candidature",
-    });
-    // Une seule fois au montage : c'est le retour de Google.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const ui = (
     <>
@@ -114,6 +46,8 @@ export function useApplyOnLike(setup: AutoApplySetup | undefined, userId: string
           if (uploaded) {
             cvUploadedThisVisit = true;
             setHasCv(true);
+          } else {
+            cvDeclinedThisVisit = true;
           }
           if (offer) void autoApply.start(offer);
         }}
