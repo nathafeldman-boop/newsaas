@@ -189,10 +189,9 @@ function buildWebApplicationJsonLd(reviewStats: { count: number; average: number
     url: SITE_URL,
     applicationCategory: "BusinessApplication",
     operatingSystem: "Web",
-    // Prix réels (voir /premium) : gratuit pour parcourir les offres,
-    // Premium pour liker, candidater, la lettre IA et l'audit de CV.
+    // Prix réels (voir /premium) : Premium pour liker, candidater, la
+    // lettre IA et l'audit de CV.
     offers: [
-      { "@type": "Offer", name: "Gratuit", price: "0", priceCurrency: "EUR" },
       { "@type": "Offer", name: "Premium mensuel (sans engagement)", price: "7.99", priceCurrency: "EUR" },
       { "@type": "Offer", name: "Premium à vie (paiement unique)", price: "39.99", priceCurrency: "EUR" },
     ],
@@ -1206,7 +1205,7 @@ export default async function LandingPage() {
               l'ordre de lecture. La carte mise en avant est la première. */}
           <div
             className="mt-8 grid gap-6"
-            style={{ gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,300px),1fr))", maxWidth: lifetimeAvailable ? 980 : 780 }}
+            style={{ gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,300px),1fr))", maxWidth: lifetimeAvailable ? 700 : 400 }}
           >
             {lifetimeAvailable && (
               <Reveal delay={0.05}>
@@ -1300,31 +1299,6 @@ export default async function LandingPage() {
               </div>
             </Reveal>
 
-            <Reveal delay={0.15}>
-              <div
-                className="flex h-full flex-col"
-                style={{
-                  background: "var(--color-surface)",
-                  borderRadius: "var(--radius-lg)",
-                  padding: 28,
-                  boxShadow: "0 1px 2px color-mix(in srgb, var(--color-text) 10%, transparent)",
-                }}
-              >
-                <p style={{ margin: 0, fontSize: 16, fontWeight: 800 }}>Gratuit</p>
-                <p style={{ margin: "10px 0 0", fontSize: 42, fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1 }}>0 €</p>
-                <div className="flex flex-col gap-2.5" style={{ margin: "20px 0 24px", flex: 1 }}>
-                  {["Parcours illimité de toutes les offres", "Aperçu de chaque offre (titre + salaire)", "Passe Premium pour liker, candidater et tout débloquer"].map((line) => (
-                    <p key={line} className="flex items-center gap-2.5" style={{ margin: 0, fontSize: 14, color: "color-mix(in srgb, var(--color-text) 82%, transparent)" }}>
-                      <span aria-hidden style={{ color: "var(--color-accent)" }}>✓</span>
-                      {line}
-                    </p>
-                  ))}
-                </div>
-                <Link href="/inscription" className="btn btn-secondary" style={{ textAlign: "center" }}>
-                  Créer mon compte
-                </Link>
-              </div>
-            </Reveal>
           </div>
         </section>
 

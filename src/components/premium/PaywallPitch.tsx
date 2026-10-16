@@ -1,8 +1,7 @@
 // Argumentaire du paywall (16/10, demande de Nathan : « promesse, bénéfices,
 // prix ; zéro friction, mais on garde la frustration ») : la promesse en
 // gros, ce que Premium change pour l'étudiant (le résultat d'abord, la
-// fonctionnalité en preuve), ce qu'il rate en restant gratuit, et les vrais
-// avis quand il y en a assez. Que du vrai : chiffres lus en base, aucune
+// fonctionnalité en preuve), et les vrais avis quand il y en a assez. Que du vrai : chiffres lus en base, aucune
 // garantie de résultat.
 
 const BENEFITS: { icon: string; title: string; text: string }[] = [
@@ -33,46 +32,7 @@ const BENEFITS: { icon: string; title: string; text: string }[] = [
   },
 ];
 
-// Gratuit vs Premium : ce que l'essai gratuit permet vraiment (voir
-// FREE_SWIPE_LIMIT dans SwipeDeck.tsx et le hard paywall du 26/09).
-const COMPARISON: { label: string; free: string | boolean; premium: string | boolean }[] = [
-  { label: "Parcourir les offres", free: "3 swipes", premium: "Illimité" },
-  { label: "Liker et garder en favori", free: false, premium: true },
-  { label: "Postuler", free: false, premium: true },
-  { label: "Lettre de motivation IA", free: false, premium: true },
-  { label: "Audit CV et entretien", free: false, premium: true },
-];
-
 const muted = "color-mix(in srgb, var(--color-text) 62%, transparent)";
-
-function Mark({ value, strong }: { value: string | boolean; strong?: boolean }) {
-  if (typeof value === "string") {
-    return <span style={{ fontSize: 12, fontWeight: strong ? 800 : 600, color: strong ? "var(--color-accent-700)" : muted }}>{value}</span>;
-  }
-  return value ? (
-    <span
-      aria-label="Inclus"
-      style={{
-        width: 20,
-        height: 20,
-        borderRadius: 999,
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "linear-gradient(135deg, #3ee08f, var(--color-accent))",
-        color: "#fff",
-        fontSize: 11,
-        fontWeight: 900,
-      }}
-    >
-      ✓
-    </span>
-  ) : (
-    <span aria-label="Non inclus" style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 35%, transparent)" }}>
-      🔒
-    </span>
-  );
-}
 
 function formatCount(n: number): string {
   return n.toLocaleString("fr-FR");
@@ -156,55 +116,6 @@ export function PaywallPitch({
           </li>
         ))}
       </ul>
-
-      {/* Ce que tu rates en restant gratuit */}
-      <div
-        className="animate-in"
-        style={{
-          marginTop: 16,
-          borderRadius: 16,
-          border: "1px solid var(--color-divider)",
-          overflow: "hidden",
-          animationDelay: "0.4s",
-        }}
-      >
-        <div
-          className="grid"
-          style={{
-            gridTemplateColumns: "1fr 76px 84px",
-            fontSize: 11,
-            fontWeight: 800,
-            letterSpacing: "0.04em",
-            textTransform: "uppercase",
-            padding: "9px 12px",
-            background: "var(--color-surface)",
-          }}
-        >
-          <span style={{ color: muted }}>Ce que tu débloques</span>
-          <span style={{ textAlign: "center", color: muted }}>Gratuit</span>
-          <span style={{ textAlign: "center", color: "var(--color-accent-700)" }}>Premium</span>
-        </div>
-        {COMPARISON.map((row) => (
-          <div
-            key={row.label}
-            className="grid items-center"
-            style={{
-              gridTemplateColumns: "1fr 76px 84px",
-              padding: "9px 12px",
-              fontSize: 12.5,
-              borderTop: "1px solid var(--color-divider)",
-            }}
-          >
-            <span style={{ fontWeight: 600 }}>{row.label}</span>
-            <span style={{ display: "flex", justifyContent: "center" }}>
-              <Mark value={row.free} />
-            </span>
-            <span style={{ display: "flex", justifyContent: "center" }}>
-              <Mark value={row.premium} strong />
-            </span>
-          </div>
-        ))}
-      </div>
 
       {/* Vrais avis, seulement s'il y en a assez pour vouloir dire quelque chose */}
       {reviews && reviews.average !== null && reviews.count >= 3 && (
