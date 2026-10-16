@@ -1,11 +1,84 @@
 "use client";
 
 import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { createCheckoutSessionAction } from "@/app/(app)/premium/actions";
 import { AccessCodeForm } from "@/components/premium/AccessCodeForm";
 
 type Plan = "monthly" | "lifetime";
+
+// Ce que l'offre choisie apporte, affiché sous l'offre touchée (16/10,
+// demande de Nathan : petit, concis, les bénéfices d'abord).
+const PERKS: Record<Plan, string[]> = {
+  lifetime: [
+    "Payé une fois, Premium à toi pour toujours",
+    "Le prix de 5 mois d'abonnement",
+    "Garde-le pour tes prochains stages et alternances",
+  ],
+  monthly: [
+    "Tout Premium débloqué tout de suite",
+    "Parfait pour un sprint de candidatures",
+    "Sans engagement, résiliable à tout moment",
+  ],
+};
+
+function Perks({ items }: { items: string[] }) {
+  return (
+    <motion.div
+      initial={{ height: 0, opacity: 0 }}
+      animate={{ height: "auto", opacity: 1 }}
+      exit={{ height: 0, opacity: 0 }}
+      transition={{ type: "spring", stiffness: 420, damping: 34 }}
+      style={{ overflow: "hidden" }}
+    >
+      <ul
+        style={{
+          listStyle: "none",
+          margin: "8px 4px 2px",
+          padding: "10px 12px",
+          borderRadius: 14,
+          background: "linear-gradient(135deg, color-mix(in srgb, var(--color-accent) 10%, transparent), color-mix(in srgb, var(--color-accent-2) 6%, transparent))",
+          border: "1px solid color-mix(in srgb, var(--color-accent) 25%, transparent)",
+          display: "flex",
+          flexDirection: "column",
+          gap: 6,
+        }}
+      >
+        {items.map((item, i) => (
+          <motion.li
+            key={item}
+            initial={{ opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.06 * (i + 1) }}
+            className="flex items-center gap-2"
+            style={{ fontSize: 12.5, fontWeight: 600 }}
+          >
+            <span
+              aria-hidden
+              style={{
+                width: 16,
+                height: 16,
+                borderRadius: 999,
+                flexShrink: 0,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "linear-gradient(135deg, #3ee08f, var(--color-accent))",
+                color: "#fff",
+                fontSize: 9,
+                fontWeight: 900,
+              }}
+            >
+              ✓
+            </span>
+            {item}
+          </motion.li>
+        ))}
+      </ul>
+    </motion.div>
+  );
+}
 
 function PlanRow({
   selected,
@@ -118,23 +191,29 @@ export function PricingSelector({
       {children}
       <div className="animate-in flex flex-col gap-2.5" style={{ marginTop: 18 }}>
         {lifetimeAvailable && (
-          <PlanRow
-            selected={plan === "lifetime"}
-            onSelect={() => setPlan("lifetime")}
-            label="Accès à vie"
-            sublabel="Paiement unique, jamais de renouvellement"
-            price="39,99 €"
-            badge="Le prix de 5 mois"
-          />
+          <div>
+            <PlanRow
+              selected={plan === "lifetime"}
+              onSelect={() => setPlan("lifetime")}
+              label="Accès à vie"
+              sublabel="Paiement unique, jamais de renouvellement"
+              price="39,99 €"
+              badge="Le prix de 5 mois"
+            />
+            <AnimatePresence initial={false}>{plan === "lifetime" && <Perks key="lifetime" items={PERKS.lifetime} />}</AnimatePresence>
+          </div>
         )}
-        <PlanRow
-          selected={plan === "monthly"}
-          onSelect={() => setPlan("monthly")}
-          label="Mensuel"
-          sublabel="Résiliable à tout moment"
-          price="7,99 €"
-          priceSuffix="/mois"
-        />
+        <div>
+          <PlanRow
+            selected={plan === "monthly"}
+            onSelect={() => setPlan("monthly")}
+            label="Mensuel"
+            sublabel="Résiliable à tout moment"
+            price="7,99 €"
+            priceSuffix="/mois"
+          />
+          <AnimatePresence initial={false}>{plan === "monthly" && <Perks key="monthly" items={PERKS.monthly} />}</AnimatePresence>
+        </div>
       </div>
 
       {errorMessage && (
