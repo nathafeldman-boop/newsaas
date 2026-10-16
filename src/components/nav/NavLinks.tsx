@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { FavoritesTabIcon } from "@/components/fx/FavoritesTabIcon";
 
 const LINKS = [
   { href: "/swipe", label: "Swipe" },
@@ -13,7 +14,7 @@ const LINKS = [
   { href: "/profil", label: "Profil" },
 ];
 
-export function NavLinks() {
+export function NavLinks({ favoritesBadge = 0 }: { favoritesBadge?: number }) {
   const pathname = usePathname();
 
   return (
@@ -29,7 +30,11 @@ export function NavLinks() {
               active && "text-accent-700",
             )}
           >
-            {link.label}
+            {link.href === "/favoris" ? (
+              <FavoritesTabIcon baseCount={favoritesBadge}>{link.label}</FavoritesTabIcon>
+            ) : (
+              link.label
+            )}
             {active && (
               <motion.span
                 layoutId="nav-links-underline"

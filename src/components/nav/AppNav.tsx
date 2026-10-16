@@ -1,6 +1,6 @@
 import { NavLinks } from "@/components/nav/NavLinks";
 
-export function AppNav() {
+export function AppNav({ favoritesBadge = 0 }: { favoritesBadge?: number }) {
   return (
     <header
       className="nav hidden sm:flex sticky top-0 z-20 mx-auto w-full max-w-[1040px] overflow-x-auto"
@@ -9,7 +9,7 @@ export function AppNav() {
       <a href="/swipe" className="nav-brand" style={{ textDecoration: "none", color: "inherit" }}>
         Stageio
       </a>
-      <NavLinks />
+      <NavLinks favoritesBadge={favoritesBadge} />
       <form action="/auth/signout" method="post">
         <button type="submit" className="btn btn-secondary">
           Déconnexion

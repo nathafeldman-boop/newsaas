@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { AppNav } from "@/components/nav/AppNav";
 import { BottomNav } from "@/components/nav/BottomNav";
 import { PageTransition } from "@/components/nav/PageTransition";
+import { FavoriteFlight } from "@/components/fx/FavoriteFlight";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -76,11 +77,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
-      <AppNav />
+      <AppNav favoritesBadge={favoritesBadge} />
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 pb-24 sm:pb-8">
         <PageTransition>{children}</PageTransition>
       </main>
       <BottomNav favoritesBadge={favoritesBadge} />
+      <FavoriteFlight />
     </div>
   );
 }

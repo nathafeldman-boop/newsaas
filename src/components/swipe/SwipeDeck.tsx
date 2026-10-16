@@ -16,6 +16,7 @@ import { PremiumCtaLink } from "@/components/premium/PremiumCtaLink";
 import { OfferCardContent } from "@/components/swipe/OfferCard";
 import { Icon } from "@/components/ui/Icon";
 import { cn } from "@/lib/utils";
+import { emitFavoriteAdded } from "@/lib/fx/events";
 import type { ContractType, Offer, SwipeDirection } from "@/types/database";
 
 const SWIPE_THRESHOLD = 120;
@@ -321,6 +322,7 @@ function SwipeDeckInner({
   // depuis le modal, comme le fait le prototype de design.
   const [celebratingOffer, setCelebratingOffer] = useState<Offer | null>(null);
   const topCardRef = useRef<SwipeCardHandle>(null);
+  const deckRef = useRef<HTMLDivElement>(null);
 
   const visible = stack.slice(0, 3);
   const eta = useNextOffersEta();
@@ -388,6 +390,12 @@ function SwipeDeckInner({
     void recordSwipe(offer, direction);
     setSwipesUsed((n) => n + 1);
     topCardRef.current?.swipeOut(direction);
+
+    // Like = favori : le cœur s'envole de la carte vers l'onglet Favoris.
+    if (direction === "like") {
+      const rect = deckRef.current?.getBoundingClientRect();
+      if (rect) emitFavoriteAdded({ x: rect.left + rect.width * 0.62, y: rect.top + rect.height * 0.38 });
+    }
 
     if (direction === "like" && (scores[offer.id] ?? 0) >= CELEBRATION_THRESHOLD) {
       setCelebratingOffer(offer);
@@ -459,7 +467,7 @@ function SwipeDeckInner({
 
   return (
     <div className="flex w-full flex-col items-center">
-      <div className="relative h-[clamp(360px,66dvh,520px)] w-full max-w-sm">
+      <div ref={deckRef} className="relative h-[clamp(360px,66dvh,520px)] w-full max-w-sm">
         <MatchModal
           offer={celebratingOffer}
           score={celebratingOffer ? (scores[celebratingOffer.id] ?? 0) : 0}
