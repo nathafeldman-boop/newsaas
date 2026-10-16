@@ -7,7 +7,7 @@ import { createPortalSessionAction } from "./actions";
 import { PricingSelector } from "@/components/premium/PricingSelector";
 import { PaywallPitch } from "@/components/premium/PaywallPitch";
 import { fetchActiveOfferCount } from "@/lib/offers/fetchPublicOffers";
-import { getPublicReviewStats } from "@/lib/reviews/publicStats";
+import { getPaidReviewAverage } from "@/lib/reviews/publicStats";
 
 const ERROR_MESSAGES: Record<string, string> = {
   not_configured: "Le paiement n'est pas encore configuré, réessaie plus tard.",
@@ -69,7 +69,7 @@ export default async function PremiumPage({
           console.error("premium: offer count failed", err);
           return null;
         }),
-        getPublicReviewStats().catch((err) => {
+        getPaidReviewAverage().catch((err) => {
           console.error("premium: review stats failed", err);
           return null;
         }),
@@ -313,7 +313,7 @@ export default async function PremiumPage({
               lifetimeAvailable={!!process.env.STRIPE_PRICE_ID_LIFETIME}
               errorMessage={error ? (ERROR_MESSAGES[error] ?? "Une erreur est survenue.") : null}
             >
-              <PaywallPitch activeOffers={activeOffers} reviews={reviews} />
+              <PaywallPitch activeOffers={activeOffers} rating={reviews} />
             </PricingSelector>
           </div>
         </>

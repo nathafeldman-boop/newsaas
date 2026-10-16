@@ -40,10 +40,11 @@ function formatCount(n: number): string {
 
 export function PaywallPitch({
   activeOffers,
-  reviews,
+  rating,
 }: {
   activeOffers: number | null;
-  reviews: { count: number; average: number | null } | null;
+  // Moyenne réelle des avis des étudiants qui ont payé (null : pas assez d'avis).
+  rating: number | null;
 }) {
   return (
     <>
@@ -117,8 +118,8 @@ export function PaywallPitch({
         ))}
       </ul>
 
-      {/* Vrais avis, seulement s'il y en a assez pour vouloir dire quelque chose */}
-      {reviews && reviews.average !== null && reviews.count >= 3 && (
+      {/* Note réelle des membres qui ont payé, sans le nombre d'avis */}
+      {rating !== null && (
         <p
           className="animate-in flex items-center justify-center gap-2"
           style={{ margin: "14px 0 0", fontSize: 12.5, fontWeight: 700, animationDelay: "0.45s" }}
@@ -126,7 +127,7 @@ export function PaywallPitch({
           <span aria-hidden style={{ color: "#f5b301", letterSpacing: 1 }}>
             ★★★★★
           </span>
-          {reviews.average.toLocaleString("fr-FR")}/5 · {reviews.count} avis d&apos;étudiants
+          {rating.toLocaleString("fr-FR")}/5 · note de nos membres Premium
         </p>
       )}
     </>
