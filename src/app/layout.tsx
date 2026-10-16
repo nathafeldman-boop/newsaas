@@ -5,6 +5,7 @@ import "./globals.css";
 import { INDEXABLE_ROBOTS } from "@/lib/seo/robots";
 import { TapFx } from "@/components/fx/TapFx";
 import { ToastHost } from "@/components/fx/ToastHost";
+import { PresencePing } from "@/components/fx/PresencePing";
 
 // Même famille pour titres et corps (Plus Jakarta Sans), mais deux
 // instances à poids fixe distinct plutôt qu'une police variable : ~50
@@ -63,6 +64,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {children}
         <TapFx />
         <ToastHost />
+        <PresencePing />
       </body>
     </html>
   );

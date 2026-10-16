@@ -116,12 +116,11 @@ export default async function AdminDashboardPage({
   const todayStart = startOfTodayParis();
   const weekAgo = new Date();
   weekAgo.setDate(weekAgo.getDate() - 7);
-  // Fenêtre "en ligne" : (app)/layout.tsx retape last_active_at à chaque
-  // navigation, donc quelques minutes suffisent à couvrir quelqu'un qui
-  // vient de charger une page et lit tranquillement sans re-naviguer tout
-  // de suite.
+  // Fenêtre "en ligne" : chaque page ouverte par un compte connecté retape
+  // last_active_at toutes les 45 s (voir PresencePing, 16/10) -- 2 min
+  // couvrent un signal manqué sans garder « en ligne » quelqu'un parti.
   const onlineSince = new Date();
-  onlineSince.setMinutes(onlineSince.getMinutes() - 5);
+  onlineSince.setMinutes(onlineSince.getMinutes() - 2);
 
   // "tout" doit quand même borner les requêtes site_visits et profiles (une
   // ligne par visite/inscription depuis le lancement) -- 180 jours est
