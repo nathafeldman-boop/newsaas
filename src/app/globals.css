@@ -310,6 +310,30 @@ a:hover > .card, button:hover > .card,
 }
 .fx-orb { animation: fx-orb 1.8s ease-in-out infinite; }
 
+/* Onde (et étincelles sur les boutons principaux) à chaque toucher, voir
+   components/fx/TapFx.tsx. */
+.fx-tap-layer { position: fixed; inset: 0; pointer-events: none; z-index: 140; overflow: hidden; }
+.fx-tap-ring {
+  position: absolute; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 999px;
+  border: 2px solid var(--fx-color, var(--color-accent));
+  background: radial-gradient(circle, color-mix(in srgb, var(--fx-color, var(--color-accent)) 28%, transparent), transparent 70%);
+  animation: fx-tap-ring 0.55s cubic-bezier(.16, 1, .3, 1) forwards;
+}
+.fx-tap-spark {
+  position: absolute; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 999px;
+  background: var(--spark, #3ee08f); box-shadow: 0 0 8px var(--spark, #3ee08f);
+  animation: fx-tap-spark 0.6s cubic-bezier(.16, 1, .3, 1) forwards;
+}
+@keyframes fx-tap-ring {
+  from { transform: scale(0.4); opacity: 0.95; }
+  to { transform: scale(5.5); opacity: 0; }
+}
+@keyframes fx-tap-spark {
+  from { transform: translate(0, 0) scale(1.1); opacity: 1; }
+  to { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; }
+}
+.btn:not(:disabled):active { transform: translateY(0) scale(0.94); }
+
 @media (prefers-reduced-motion: reduce) {
   .btn, .card, .tag, .seg-opt, .animate-in,
   .lp-float, .lp-drift, .lp-marquee, .lp-wiggle, .lp-pulse, .lp-spin, .lp-ring,

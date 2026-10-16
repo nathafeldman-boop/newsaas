@@ -16,3 +16,17 @@ export function emitFavoriteAdded(origin: FavoriteAddedDetail) {
 export function prefersReducedMotion(): boolean {
   return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
+
+// Notification animée (voir ToastHost) : glisse du haut, icône qui pop,
+// barre de temps, étincelles quand c'est une bonne nouvelle.
+export const TOAST = "stageio:toast";
+export type ToastInput = {
+  title: string;
+  text?: string;
+  tone?: "success" | "info" | "error";
+  icon?: string;
+};
+
+export function showToast(toast: ToastInput) {
+  window.dispatchEvent(new CustomEvent<ToastInput>(TOAST, { detail: toast }));
+}

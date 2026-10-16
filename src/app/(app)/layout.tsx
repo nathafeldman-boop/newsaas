@@ -3,6 +3,7 @@ import { AppNav } from "@/components/nav/AppNav";
 import { BottomNav } from "@/components/nav/BottomNav";
 import { PageTransition } from "@/components/nav/PageTransition";
 import { FavoriteFlight } from "@/components/fx/FavoriteFlight";
+import { WelcomeSplash } from "@/components/fx/WelcomeSplash";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -17,6 +18,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // (voir SwipeDeck.tsx et le trigger SQL enforce_swipe_quota /
   // enforce_premium_application) plutôt que via un quota de navigation.
   let favoritesBadge = 0;
+  // Prénom pour l'écran de bienvenue (nom donné à l'inscription ou par
+  // Google) : lu dans la session, sans requête de plus.
+  let firstName: string | null = null;
 
   try {
     const supabase = await createClient();
@@ -25,6 +29,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     } = await supabase.auth.getUser();
 
     if (user) {
+      const metaName = user.user_metadata?.full_name ?? user.user_metadata?.name;
+      firstName = typeof metaName === "string" ? metaName.trim().split(/\s+/)[0] || null : null;
       // Présence "en ligne" pour le dashboard admin : mise à jour à chaque
       // navigation authentifiée (toutes pages confondues, pas juste les
       // pages soumises au paywall), pas seulement au login -- sinon un
@@ -83,6 +89,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </main>
       <BottomNav favoritesBadge={favoritesBadge} />
       <FavoriteFlight />
+      <WelcomeSplash firstName={firstName} />
     </div>
   );
 }

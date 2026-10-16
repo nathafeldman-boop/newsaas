@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { PremiumCtaLink } from "@/components/premium/PremiumCtaLink";
 import { SparkleBurst } from "@/components/fx/SparkleBurst";
 import { COVER_LETTER_RESET } from "@/lib/coverLetter/stream";
-import { prefersReducedMotion } from "@/lib/fx/events";
+import { prefersReducedMotion, showToast } from "@/lib/fx/events";
 
 // Lettre de motivation (refaite le 16/10, demande de Nathan : « plus rapide,
 // animation refaite de A à Z, ultra stylée pour TikTok ») : la lettre arrive
@@ -173,6 +173,7 @@ export function CoverLetterPanel({
       try {
         await navigator.clipboard.writeText(letter);
         setCopied(true);
+        showToast({ title: "Lettre copiée", text: "Colle-la sur le site de l'offre pour finaliser.", icon: "📋" });
       } catch {
         // best-effort : le clic reste utile même si le presse-papier est refusé
       }

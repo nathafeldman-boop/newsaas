@@ -3,6 +3,8 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 import { INDEXABLE_ROBOTS } from "@/lib/seo/robots";
+import { TapFx } from "@/components/fx/TapFx";
+import { ToastHost } from "@/components/fx/ToastHost";
 
 // Même famille pour titres et corps (Plus Jakarta Sans), mais deux
 // instances à poids fixe distinct plutôt qu'une police variable : ~50
@@ -59,6 +61,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col bg-bg text-text">
         {children}
+        <TapFx />
+        <ToastHost />
       </body>
     </html>
   );

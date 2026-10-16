@@ -5,6 +5,7 @@ import { attachAffiliateIfNeeded } from "@/lib/affiliates/attachAffiliate";
 import { attachUtmSourceIfNeeded } from "@/lib/analytics/attachUtmSource";
 import { notifyReferrerOfNewSignup } from "@/lib/resend/notifyReferrer";
 import { safeRedirectPath } from "@/lib/auth/safeRedirect";
+import { WELCOME_COOKIE, WELCOME_COOKIE_MAX_AGE } from "@/lib/fx/welcome";
 
 // Échange le code renvoyé par le lien de confirmation email / le retour
 // OAuth (Google) contre une session, puis redirige vers `next`.
@@ -51,7 +52,10 @@ export async function GET(request: NextRequest) {
           console.error("auth/callback: login event insert failed", loginEventError, { userId: data.user.id });
         }
       }
-      return NextResponse.redirect(`${origin}${next}`);
+      const response = NextResponse.redirect(`${origin}${next}`);
+      // Écran de bienvenue animé à l'arrivée dans l'appli (voir WelcomeSplash).
+      response.cookies.set(WELCOME_COOKIE, "1", { path: "/", maxAge: WELCOME_COOKIE_MAX_AGE, sameSite: "lax" });
+      return response;
     }
   }
 
