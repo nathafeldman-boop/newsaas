@@ -1,5 +1,6 @@
 "use server";
 
+import type Stripe from "stripe";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getStripeClient } from "@/lib/stripe/client";
@@ -96,7 +97,7 @@ export async function createCheckoutSessionAction(formData: FormData) {
   const customerId = await getOrCreateStripeCustomer(user.id, user.email ?? null);
   const stripe = getStripeClient();
 
-  const session = await stripe.checkout.sessions.create({
+  const params: Stripe.Checkout.SessionCreateParams = {
     mode: isLifetime ? "payment" : "subscription",
     customer: customerId,
     line_items: [{ price: priceId, quantity: 1 }],
@@ -144,7 +145,28 @@ export async function createCheckoutSessionAction(formData: FormData) {
           invoice_creation: { enabled: true },
         }
       : { subscription_data: { metadata: { supabase_user_id: user.id } } }),
-  });
+  };
+
+  // Nom, logo et couleurs Stageio sur la page Stripe (16/10) -- au niveau de
+  // la session et pas du compte : le compte Stripe sert aussi à d'autres
+  // projets (nom public « SMARTAPP »). Si Stripe refuse ces réglages, on
+  // retente sans : le paiement ne doit jamais casser pour une question de
+  // logo.
+  let session: Stripe.Checkout.Session;
+  try {
+    session = await stripe.checkout.sessions.create({
+      ...params,
+      branding_settings: {
+        display_name: "Stageio",
+        icon: { type: "url", url: `${SITE_URL}/logo.png` },
+        button_color: "#0f9c56",
+        border_style: "rounded",
+      },
+    });
+  } catch (err) {
+    console.error("checkout: branding refusé, session sans branding", err);
+    session = await stripe.checkout.sessions.create(params);
+  }
 
   if (!session.url) redirect("/premium?error=checkout_failed");
   redirect(session.url);
