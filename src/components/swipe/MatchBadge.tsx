@@ -9,7 +9,7 @@ import { prefersReducedMotion } from "@/lib/fx/events";
 // demande de Nathan : « en haut, au milieu, ultra stylé, un peu animé, la
 // première chose que tu dois voir »). Bordure en dégradé qui tourne, halo
 // qui pulse, score qui monte de 0 au vrai score, étincelles au-dessus de 85.
-// Le score est toujours le vrai (computeMatchScore) ; `hidden` le floute
+// Le score est toujours le vrai (computeMatchPercent) ; `hidden` le floute
 // avec un cadenas (compte gratuit, au-delà des 3 premières cartes).
 
 function MatchCount({ score }: { score: number }) {

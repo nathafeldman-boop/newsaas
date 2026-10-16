@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { OfferListCard } from "@/components/offers/OfferListCard";
-import { computeMatchScore } from "@/lib/matching/score";
+import { computeMatchPercent } from "@/lib/matching/score";
 import type { ApplicationStatus } from "@/types/database";
 
 export default async function FavorisPage() {
@@ -62,7 +62,7 @@ export default async function FavorisPage() {
               key={offer.id}
               offer={offer}
               applicationStatus={statusByOffer.get(offer.id) ?? null}
-              matchScore={profile ? computeMatchScore(profile, offer) : undefined}
+              matchScore={profile ? computeMatchPercent(profile, offer) : undefined}
             />
           ))}
         </div>

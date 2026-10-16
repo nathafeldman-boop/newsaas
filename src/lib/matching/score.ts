@@ -362,3 +362,56 @@ export function computeCvMatchBonus(
 
   return Math.min(cap, matched.length * 1.5);
 }
+
+// Pourcentage de match AFFICHÉ (16/10, OK de Nathan) : la part des critères
+// déclarés par l'étudiant que l'offre remplit (contrat, secteur, métier,
+// lieu, compétences, niveau, dispo), pondérée. computeMatchScore reste
+// l'échelle de TRI du deck (seuils de pertinence calés dessus) ; celle-ci
+// est l'échelle LISIBLE : une offre qui coche tout affiche 100 %, pour de
+// vrai. Seuls les critères évaluables comptent (une offre sans secteur ne
+// pénalise pas le secteur). Plancher à 30, comme computeMatchScore.
+export function computeMatchPercent(profile: Profile, offer: Offer): number {
+  let earned = 0;
+  let total = 0;
+  const criterion = (weight: number, met: number) => {
+    total += weight;
+    earned += weight * met;
+  };
+
+  if (profile.looking_for.length > 0) criterion(1, profile.looking_for.includes(offer.contract_type) ? 1 : 0);
+  if (profile.sectors.length > 0 && offer.sector) criterion(2, profile.sectors.includes(offer.sector) ? 1 : 0);
+  if (profile.target_jobs.length > 0) criterion(2, matchesTargetJob(profile, offer) ? 1 : 0);
+
+  const cityLower = profile.city?.toLowerCase().trim();
+  if (cityLower) {
+    const offerLocationLower = offer.location.toLowerCase();
+    const isDepartmentSelection = isDepartmentLocation(profile.city!);
+    let met = 0;
+    if (!isDepartmentSelection && (offerLocationLower.includes(cityLower) || isNearbyCity(cityLower, offerLocationLower))) met = 1;
+    else if (profile.mobility === "Mobile en France" || profile.mobility === "Full remote" || offer.remote_policy === "remote") met = 1;
+    else if (profile.mobility === "Mobile dans la région" || isDepartmentSelection) met = 0.75;
+    criterion(2, met);
+  }
+
+  if (profile.skills.length > 0) {
+    const offerText = `${offer.description} ${offer.requirements ?? ""}`;
+    const matched = profile.skills.filter((skill) => containsWholeWord(offerText, skill)).length;
+    criterion(1, Math.min(1, matched / Math.min(3, profile.skills.length)));
+  }
+
+  if (profile.education_level && offer.education_level) {
+    const profileRank = EDUCATION_RANK[profile.education_level];
+    const offerRank = EDUCATION_RANK[offer.education_level];
+    if (profileRank && offerRank) criterion(1, profileRank === offerRank ? 1 : profileRank > offerRank ? 0.6 : 0);
+  }
+
+  if (profile.availability_date && offer.start_date) {
+    const diff = daysBetween(profile.availability_date, offer.start_date);
+    criterion(1, profile.availability_date <= offer.start_date || diff <= 15 ? 1 : diff <= 45 ? 0.5 : 0);
+  }
+
+  if (total === 0) return computeMatchScore(profile, offer);
+  // Formation sans rapport avec le niveau (CAP pour un bac+3, master pour un bac+2).
+  const gap = educationGapPenalty(profile, offer) < 0 ? 15 : 0;
+  return Math.max(30, Math.min(100, Math.round((100 * earned) / total) - gap));
+}
