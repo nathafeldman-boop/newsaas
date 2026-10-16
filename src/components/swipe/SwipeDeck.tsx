@@ -405,12 +405,12 @@ function SwipeDeckInner({
 
     if (!isPremium) {
       if (direction === "like") {
-        void logButtonClick(userId, "premium_cta", { source: "swipe_like" });
+        void logButtonClick(userId, "premium_cta", { source: "swipe_like", offerId: offer.id });
         router.push("/premium?source=swipe_like");
         return false;
       }
       if (swipesUsed >= FREE_SWIPE_LIMIT) {
-        void logButtonClick(userId, "premium_cta", { source: "swipe_limit" });
+        void logButtonClick(userId, "premium_cta", { source: "swipe_limit", offerId: offer.id });
         router.push("/premium?source=swipe_limit");
         return false;
       }
@@ -438,7 +438,7 @@ function SwipeDeckInner({
   // toucher à la carte ni enregistrer quoi que ce soit.
   function handleApplyIntent() {
     if (!isPremium) {
-      void logButtonClick(userId, "premium_cta", { source: "swipe_apply" });
+      void logButtonClick(userId, "premium_cta", { source: "swipe_apply", offerId: stack[0]?.id });
       router.push("/premium?source=swipe_apply");
       return;
     }

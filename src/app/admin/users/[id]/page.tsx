@@ -99,7 +99,14 @@ export default async function AdminUserDetailPage({
 
   // Titres/entreprises des offres swipées ou candidatées : un seul lookup
   // groupé plutôt qu'une requête par ligne.
-  const offerIds = [...new Set([...allSwipes.map((s) => s.offer_id), ...allApplications.map((a) => a.offer_id)])];
+  // + l'offre derrière un clic Premium bloqué (like, 4e swipe, candidater),
+  // pour voir si c'est toujours la même offre ou plusieurs.
+  const eventOfferIds = allEvents
+    .map((e) => (e.metadata as Record<string, unknown> | null)?.offerId)
+    .filter((id): id is string => typeof id === "string");
+  const offerIds = [
+    ...new Set([...allSwipes.map((s) => s.offer_id), ...allApplications.map((a) => a.offer_id), ...eventOfferIds]),
+  ];
   const offerById = new Map<string, { title: string; company: string }>();
   if (offerIds.length > 0) {
     const { data: offers, error: offersError } = await admin
@@ -145,11 +152,13 @@ export default async function AdminUserDetailPage({
     });
   }
   for (const e of allEvents) {
+    const metadata = e.metadata as Record<string, unknown> | null;
+    const offer = typeof metadata?.offerId === "string" ? offerById.get(metadata.offerId) : undefined;
     timeline.push({
       at: e.created_at,
       tag: "event",
       label: EVENT_LABEL[e.event_type] ?? e.event_type,
-      detail: describeEvent(e.event_type, e.metadata as Record<string, unknown> | null),
+      detail: describeEvent(e.event_type, metadata) + (offer ? ` · offre : ${offer.title} — ${offer.company}` : ""),
     });
   }
   timeline.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
