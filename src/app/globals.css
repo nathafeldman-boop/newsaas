@@ -309,6 +309,12 @@ a:hover > .card, button:hover > .card,
   animation: fx-shine 2.6s ease-in-out infinite; pointer-events: none;
 }
 .fx-orb { animation: fx-orb 1.8s ease-in-out infinite; }
+@keyframes fx-shake {
+  0%, 100% { transform: rotate(0); }
+  15%, 45%, 75% { transform: rotate(-14deg) scale(1.1); }
+  30%, 60% { transform: rotate(12deg) scale(1.1); }
+}
+.fx-shake { animation: fx-shake 0.8s ease-in-out 0.3s 2; }
 
 /* Onde (et étincelles sur les boutons principaux) à chaque toucher, voir
    components/fx/TapFx.tsx. */
@@ -337,7 +343,7 @@ a:hover > .card, button:hover > .card,
 @media (prefers-reduced-motion: reduce) {
   .btn, .card, .tag, .seg-opt, .animate-in,
   .lp-float, .lp-drift, .lp-marquee, .lp-wiggle, .lp-pulse, .lp-spin, .lp-ring,
-  .fx-spin, .fx-shimmer, .fx-caret, .fx-shine::after, .fx-orb {
+  .fx-spin, .fx-shimmer, .fx-caret, .fx-shine::after, .fx-orb, .fx-shake {
     transition: none !important; animation: none !important;
   }
 }

@@ -96,12 +96,17 @@ function PlanRow({
 // "Paywall Stageio — 1b", 26/09). Nécessite un état côté client pour savoir
 // quel plan est sélectionné au moment de soumettre, d'où ce composant "use
 // client" plutôt qu'un simple form server-only comme le reste de la page.
+// Zéro friction (16/10) : l'argumentaire (`children`) passe au-dessus des
+// offres, et le bouton -- prix écrit dessus -- reste collé en bas de l'écran
+// pendant toute la lecture : on peut payer à tout moment, en un geste.
 export function PricingSelector({
   lifetimeAvailable,
   errorMessage,
+  children,
 }: {
   lifetimeAvailable: boolean;
   errorMessage: string | null;
+  children?: React.ReactNode;
 }) {
   // Accès à vie affiché en premier et présélectionné (demande de Nathan,
   // 14/10) ; le prix du plan choisi est écrit sur le bouton pour qu'il n'y
@@ -109,8 +114,9 @@ export function PricingSelector({
   const [plan, setPlan] = useState<Plan>(lifetimeAvailable ? "lifetime" : "monthly");
 
   return (
-    <div className="animate-in" style={{ marginTop: 18 }}>
-      <div className="flex flex-col gap-2.5">
+    <div>
+      {children}
+      <div className="animate-in flex flex-col gap-2.5" style={{ marginTop: 18 }}>
         {lifetimeAvailable && (
           <PlanRow
             selected={plan === "lifetime"}
@@ -146,21 +152,34 @@ export function PricingSelector({
         </p>
       )}
 
-      <form action={createCheckoutSessionAction} style={{ marginTop: 14 }}>
+      {/* Collé en bas de l'écran (au-dessus de la barre de navigation sur
+          mobile) tant qu'on lit l'argumentaire. */}
+      <form
+        action={createCheckoutSessionAction}
+        className="sticky bottom-[calc(76px+env(safe-area-inset-bottom))] sm:bottom-4"
+        style={{
+          marginTop: 14,
+          zIndex: 5,
+          padding: "8px 0",
+          borderRadius: 999,
+          background: "linear-gradient(180deg, transparent, color-mix(in srgb, var(--color-bg) 85%, transparent) 40%)",
+        }}
+      >
         <input type="hidden" name="plan" value={plan} />
         <button
           type="submit"
-          className="btn btn-block"
+          className="btn btn-block fx-shine lp-pulse"
+          data-fx-burst
           style={{
-            height: 52,
+            height: 54,
             border: "none",
             borderRadius: 999,
-            background: "linear-gradient(135deg, var(--color-accent), var(--color-accent-700))",
-            color: "var(--color-bg)",
-            fontSize: 15.5,
-            fontWeight: 700,
+            background: "linear-gradient(135deg, #3ee08f, var(--color-accent) 45%, var(--color-accent-700))",
+            color: "#fff",
+            fontSize: 16,
+            fontWeight: 800,
             letterSpacing: "-0.01em",
-            boxShadow: "0 10px 22px color-mix(in srgb, var(--color-accent) 35%, transparent)",
+            boxShadow: "0 12px 26px color-mix(in srgb, var(--color-accent) 40%, transparent)",
           }}
         >
           {plan === "lifetime" ? "Débloquer à vie · 39,99 €" : "Débloquer Premium · 7,99 €/mois"}
