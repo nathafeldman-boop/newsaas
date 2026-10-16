@@ -4,7 +4,7 @@ let cached: Anthropic | null = null;
 
 // true tant que la clé n'est pas renseignée : sert à décider, côté appelant,
 // de tenter Claude ou de retomber directement sur le générateur statique
-// (même doctrine que Gemini avant lui -- voir generateCoverLetterAction /
+// (même doctrine que Gemini avant lui -- voir api/cover-letter /
 // auditCvAction) sans même faire d'appel.
 export function isAnthropicConfigured() {
   return !!process.env.ANTHROPIC_API_KEY?.trim();

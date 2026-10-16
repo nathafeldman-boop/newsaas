@@ -280,9 +280,40 @@ a:hover > .card, button:hover > .card,
 .lp-spin { animation: lp-spin 60s linear infinite; }
 .lp-ring { animation: lp-ring 4s cubic-bezier(.2,.7,.2,1) infinite; }
 
+/* — effets de l'appli (16/10 : « ultra visuel ») — */
+@keyframes fx-spin { to { transform: rotate(1turn); } }
+@keyframes fx-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@keyframes fx-caret { 0%, 100% { opacity: 1; } 50% { opacity: 0.1; } }
+@keyframes fx-shine {
+  0% { transform: translateX(-140%) skewX(-20deg); }
+  55%, 100% { transform: translateX(380%) skewX(-20deg); }
+}
+@keyframes fx-orb {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.14) rotate(180deg); }
+}
+.fx-spin { animation: fx-spin 2.6s linear infinite; }
+.fx-shimmer {
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--color-text) 7%, transparent) 25%,
+    color-mix(in srgb, var(--color-accent) 22%, transparent) 50%,
+    color-mix(in srgb, var(--color-text) 7%, transparent) 75%);
+  background-size: 200% 100%;
+  animation: fx-shimmer 1.3s linear infinite;
+}
+.fx-caret { animation: fx-caret 0.8s ease-in-out infinite; }
+.fx-shine { position: relative; overflow: hidden; }
+.fx-shine::after {
+  content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 32%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+  animation: fx-shine 2.6s ease-in-out infinite; pointer-events: none;
+}
+.fx-orb { animation: fx-orb 1.8s ease-in-out infinite; }
+
 @media (prefers-reduced-motion: reduce) {
   .btn, .card, .tag, .seg-opt, .animate-in,
-  .lp-float, .lp-drift, .lp-marquee, .lp-wiggle, .lp-pulse, .lp-spin, .lp-ring {
+  .lp-float, .lp-drift, .lp-marquee, .lp-wiggle, .lp-pulse, .lp-spin, .lp-ring,
+  .fx-spin, .fx-shimmer, .fx-caret, .fx-shine::after, .fx-orb {
     transition: none !important; animation: none !important;
   }
 }

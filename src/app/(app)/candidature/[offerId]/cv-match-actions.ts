@@ -10,8 +10,7 @@ import type { OfferFit } from "@/lib/cvAudit/offerFitSchema";
 
 // maxDuration ne peut pas être exporté ici (fichier "use server", voir le
 // commentaire équivalent dans profil/cv-audit-actions.ts) -- posé sur
-// src/app/(app)/candidature/[offerId]/page.tsx à la place (déjà nécessaire
-// pour generateCoverLetterAction, rendu sur la même page).
+// src/app/(app)/candidature/[offerId]/page.tsx à la place.
 
 export type OfferFitState =
   | { status: "idle" }

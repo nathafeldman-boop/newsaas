@@ -70,15 +70,21 @@ function buildUserPrompt(
   return lines.join("\n");
 }
 
-export async function generateCoverLetterWithAnthropic(
+// Lettre écrite en direct (16/10, demande de Nathan : plus rapide) : chaque
+// morceau de texte part vers l'écran dès que Claude l'écrit (`onText`), au
+// lieu d'attendre la lettre entière. Renvoie la lettre complète ; lève une
+// erreur si Claude refuse ou ne renvoie rien (l'appelant passe alors au
+// générateur statique).
+export async function streamCoverLetterWithAnthropic(
   offer: OfferInput,
   profile: ProfileForAI,
   cvText: string | null,
-  extra?: CoverLetterExtra,
+  extra: CoverLetterExtra | undefined,
+  onText: (text: string) => void,
 ): Promise<string> {
   const client = getAnthropicClient();
 
-  const response = await client.messages.create(
+  const stream = client.messages.stream(
     {
       model: COVER_LETTER_MODEL,
       max_tokens: 1000,
@@ -94,8 +100,21 @@ export async function generateCoverLetterWithAnthropic(
     { timeout: ANTHROPIC_TIMEOUT_MS },
   );
 
-  const textBlock = response.content.find((b) => b.type === "text");
-  const text = textBlock?.text.trim();
+  for await (const event of stream) {
+    if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+      onText(event.delta.text);
+    }
+  }
+
+  const message = await stream.finalMessage();
+  if (message.stop_reason === "refusal") {
+    throw new Error("Claude a refusé d'écrire la lettre.");
+  }
+  const text = message.content
+    .filter((b) => b.type === "text")
+    .map((b) => b.text)
+    .join("")
+    .trim();
   if (!text) {
     throw new Error("Claude n'a pas renvoyé de lettre exploitable.");
   }
