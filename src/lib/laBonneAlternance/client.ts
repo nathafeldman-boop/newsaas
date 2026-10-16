@@ -82,8 +82,11 @@ export class LbaError extends Error {
   }
 }
 
-async function call(path: string, init: { method: "GET" | "POST"; body?: unknown }): Promise<unknown> {
-  const key = lbaApiKey();
+// Clé de production (LBA_API_KEY) par défaut ; une clé sandbox peut être
+// passée explicitement (test depuis /admin/la-bonne-alternance : tout part
+// alors vers l'environnement de recette de La bonne alternance).
+async function call(path: string, init: { method: "GET" | "POST"; body?: unknown; key?: string }): Promise<unknown> {
+  const key = init.key ?? lbaApiKey();
   if (!key) throw new LbaError("LBA_API_KEY manquant", 0);
   const res = await fetch(`${API_URL}${path}`, {
     method: init.method,
@@ -103,12 +106,12 @@ async function call(path: string, init: { method: "GET" | "POST"; body?: unknown
 
 // Offres d'un département (150 au plus par source : La bonne alternance,
 // France Travail, partenaires).
-export async function searchLbaJobs(departement: string): Promise<LbaJob[]> {
+export async function searchLbaJobs(departement: string, key?: string): Promise<LbaJob[]> {
   const params = new URLSearchParams({ departements: departement });
-  const data = (await call(`/job/v1/search?${params}`, { method: "GET" })) as { jobs?: LbaJob[] } | null;
+  const data = (await call(`/job/v1/search?${params}`, { method: "GET", key })) as { jobs?: LbaJob[] } | null;
   return data?.jobs ?? [];
 }
 
-export async function sendLbaApplication(application: LbaApplication): Promise<{ id: string }> {
-  return (await call("/job/v1/apply", { method: "POST", body: application })) as { id: string };
+export async function sendLbaApplication(application: LbaApplication, key?: string): Promise<{ id: string }> {
+  return (await call("/job/v1/apply", { method: "POST", body: application, key })) as { id: string };
 }
