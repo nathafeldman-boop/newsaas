@@ -1,177 +1,211 @@
 "use client";
 
-import { useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
+import { motion, useReducedMotion } from "framer-motion";
 import { createCheckoutSessionAction } from "@/app/(app)/premium/actions";
 import { AccessCodeForm } from "@/components/premium/AccessCodeForm";
 
 type Plan = "monthly" | "lifetime";
 
-// Ce que l'offre choisie apporte, affiché sous l'offre touchée (16/10,
-// demande de Nathan : petit, concis, les bénéfices d'abord).
-const PERKS: Record<Plan, string[]> = {
-  lifetime: [
-    "Payé une fois, Premium à toi pour toujours",
-    "Le prix de 5 mois d'abonnement",
-    "Garde-le pour tes prochains stages et alternances",
-  ],
-  monthly: [
-    "Tout Premium débloqué tout de suite",
-    "Parfait pour un sprint de candidatures",
-    "Sans engagement, résiliable à tout moment",
-  ],
+// Paywall en 2 cartes côte à côte (16/10, maquette de référence envoyée par
+// Nathan) : en haut de chaque carte le nom, le prix et le bouton ; en
+// dessous, en petit, tout ce que l'offre apporte (✓ / ✗) ; sous les cartes,
+// paiement sécurisé, CGV et code d'accès. Mensuel en premier et mis en avant
+// (16/10 : l'accès à vie en premier ne convertissait pas mieux).
+const BENEFITS = [
+  "Toutes les offres en clair : entreprise, match, analyse",
+  "Like, favoris et candidatures illimités",
+  "Ta lettre de motivation en quelques secondes",
+  "Ton CV noté sur 100, avec les corrections",
+  "Simulateur d'entretien à 3 niveaux",
+  "Toutes tes candidatures suivies",
+];
+
+type PlanInfo = {
+  name: string;
+  tagline: string;
+  price: string;
+  priceSuffix: string;
+  billing: string;
+  cta: string;
+  ribbon?: string;
+  extra?: string;
 };
 
-function Perks({ items }: { items: string[] }) {
+const PLANS: Record<Plan, PlanInfo> = {
+  lifetime: {
+    name: "Accès à vie",
+    tagline: "Payé une fois, à toi pour toujours",
+    price: "39,99 €",
+    priceSuffix: "une fois",
+    billing: "Paiement unique, aucun renouvellement",
+    cta: "Débloquer à vie",
+    ribbon: "Le prix de 5 mois",
+    extra: "Premium à vie, pour tes prochains stages et alternances",
+  },
+  monthly: {
+    name: "Mensuel",
+    tagline: "Pour un sprint de candidatures",
+    price: "7,99 €",
+    priceSuffix: "/mois",
+    billing: "Facturé chaque mois, sans engagement",
+    cta: "Débloquer",
+  },
+};
+
+const muted = "color-mix(in srgb, var(--color-text) 55%, transparent)";
+
+function Check() {
+  return (
+    <span
+      aria-hidden
+      style={{
+        width: 15,
+        height: 15,
+        marginTop: 1,
+        borderRadius: 999,
+        flexShrink: 0,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: 8.5,
+        fontWeight: 900,
+        color: "#fff",
+        background: "linear-gradient(135deg, #3ee08f, var(--color-accent))",
+      }}
+    >
+      ✓
+    </span>
+  );
+}
+
+// Bouton d'achat : une seule ligne, reflet qui balaie, flèche qui avance et,
+// sur l'offre mise en avant, une petite secousse régulière qui attire le doigt.
+function CtaButton({ label, featured }: { label: string; featured: boolean }) {
+  const still = useReducedMotion();
+  return (
+    <motion.button
+      type="submit"
+      className={featured ? "btn btn-block fx-shine lp-pulse" : "btn btn-block fx-shine"}
+      data-fx-burst
+      animate={featured && !still ? { scale: [1, 1.06, 0.98, 1.02, 1] } : undefined}
+      transition={{ duration: 0.7, repeat: Infinity, repeatDelay: 2.2, ease: "easeInOut" }}
+      whileTap={{ scale: 0.94 }}
+      style={{
+        marginTop: 12,
+        height: 46,
+        gap: 6,
+        whiteSpace: "nowrap",
+        borderRadius: 999,
+        fontSize: 14,
+        fontWeight: 800,
+        letterSpacing: "-0.01em",
+        ...(featured
+          ? {
+              border: "none",
+              color: "#fff",
+              background: "linear-gradient(135deg, #3ee08f, var(--color-accent) 50%, var(--color-accent-700))",
+              boxShadow: "0 10px 22px color-mix(in srgb, var(--color-accent) 40%, transparent)",
+            }
+          : {
+              border: "1.5px solid var(--color-accent)",
+              color: "var(--color-accent-700)",
+              background: "var(--color-neutral-100)",
+            }),
+      }}
+    >
+      {label}
+      <motion.span
+        aria-hidden
+        animate={still ? undefined : { x: [0, 4, 0] }}
+        transition={{ duration: 1.1, repeat: Infinity, ease: "easeInOut" }}
+        style={{ display: "inline-block" }}
+      >
+        →
+      </motion.span>
+    </motion.button>
+  );
+}
+
+function PlanCard({ plan, featured, index }: { plan: Plan; featured: boolean; index: number }) {
+  const info = PLANS[plan];
+  const items = info.extra ? [...BENEFITS, info.extra] : BENEFITS;
+
   return (
     <motion.div
-      initial={{ height: 0, opacity: 0 }}
-      animate={{ height: "auto", opacity: 1 }}
-      exit={{ height: 0, opacity: 0 }}
-      transition={{ type: "spring", stiffness: 420, damping: 34 }}
-      style={{ overflow: "hidden" }}
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: "spring", stiffness: 320, damping: 26, delay: 0.08 * index }}
+      style={{
+        position: "relative",
+        display: "flex",
+        borderRadius: 22,
+        padding: featured ? 2 : 1,
+        background: featured
+          ? "linear-gradient(160deg, #3ee08f, var(--color-accent) 45%, var(--color-accent-2))"
+          : "var(--color-divider)",
+        boxShadow: featured ? "0 16px 34px color-mix(in srgb, var(--color-accent) 26%, transparent)" : "none",
+      }}
     >
-      <ul
+      {info.ribbon && (
+        <span
+          style={{
+            position: "absolute",
+            top: -11,
+            left: "50%",
+            zIndex: 1,
+            transform: "translateX(-50%) rotate(-3deg)",
+            whiteSpace: "nowrap",
+            fontSize: 10.5,
+            fontWeight: 800,
+            color: "#fff",
+            borderRadius: 999,
+            padding: "4px 10px",
+            background: "linear-gradient(90deg, var(--color-accent-2), var(--color-accent))",
+            boxShadow: "0 6px 14px color-mix(in srgb, var(--color-accent-2) 35%, transparent)",
+          }}
+        >
+          {info.ribbon}
+        </span>
+      )}
+      <form
+        action={createCheckoutSessionAction}
         style={{
-          listStyle: "none",
-          margin: "8px 4px 2px",
-          padding: "10px 12px",
-          borderRadius: 14,
-          background: "linear-gradient(135deg, color-mix(in srgb, var(--color-accent) 10%, transparent), color-mix(in srgb, var(--color-accent-2) 6%, transparent))",
-          border: "1px solid color-mix(in srgb, var(--color-accent) 25%, transparent)",
+          flex: 1,
           display: "flex",
           flexDirection: "column",
-          gap: 6,
+          borderRadius: featured ? 20 : 21,
+          background: "var(--color-neutral-100)",
+          padding: "20px 12px 14px",
         }}
       >
-        {items.map((item, i) => (
-          <motion.li
-            key={item}
-            initial={{ opacity: 0, x: -8 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.06 * (i + 1) }}
-            className="flex items-center gap-2"
-            style={{ fontSize: 12.5, fontWeight: 600 }}
-          >
-            <span
-              aria-hidden
-              style={{
-                width: 16,
-                height: 16,
-                borderRadius: 999,
-                flexShrink: 0,
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: "linear-gradient(135deg, #3ee08f, var(--color-accent))",
-                color: "#fff",
-                fontSize: 9,
-                fontWeight: 900,
-              }}
-            >
-              ✓
-            </span>
-            {item}
-          </motion.li>
-        ))}
-      </ul>
+        <input type="hidden" name="plan" value={plan} />
+        <p style={{ margin: 0, fontFamily: "var(--font-heading)", fontSize: 16, fontWeight: 800, letterSpacing: "-0.01em" }}>
+          {info.name}
+        </p>
+        <p style={{ margin: "2px 0 0", fontSize: 11, lineHeight: 1.3, color: muted, minHeight: 29 }}>{info.tagline}</p>
+        <p style={{ margin: "10px 0 0", display: "flex", alignItems: "baseline", gap: 4, flexWrap: "wrap" }}>
+          <span style={{ fontFamily: "var(--font-heading)", fontSize: 27, fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1 }}>
+            {info.price}
+          </span>
+          <span style={{ fontSize: 11.5, fontWeight: 600, color: muted }}>{info.priceSuffix}</span>
+        </p>
+        <CtaButton label={info.cta} featured={featured} />
+        <p style={{ margin: "8px 0 0", fontSize: 10, textAlign: "center", color: muted }}>{info.billing}</p>
+        <div aria-hidden style={{ height: 1, background: "var(--color-divider)", margin: "12px 0 11px" }} />
+        <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 7 }}>
+          {items.map((item) => (
+            <li key={item} className="flex items-start gap-1.5" style={{ fontSize: 11.5, fontWeight: 600, lineHeight: 1.3 }}>
+              <Check />
+              {item}
+            </li>
+          ))}
+        </ul>
+      </form>
     </motion.div>
   );
 }
 
-function PlanRow({
-  selected,
-  onSelect,
-  label,
-  sublabel,
-  price,
-  priceSuffix,
-  badge,
-}: {
-  selected: boolean;
-  onSelect: () => void;
-  label: string;
-  sublabel: string;
-  price: string;
-  priceSuffix?: string;
-  badge?: string;
-}) {
-  return (
-    <label
-      className="flex items-center justify-between gap-3"
-      style={{
-        cursor: "pointer",
-        padding: "14px 16px",
-        borderRadius: 16,
-        border: selected ? "2px solid var(--color-accent)" : "1.5px solid var(--color-divider)",
-        background: "var(--color-surface)",
-      }}
-    >
-      <input
-        type="radio"
-        name="plan-choice"
-        checked={selected}
-        onChange={onSelect}
-        style={{ position: "absolute", opacity: 0, width: 0, height: 0 }}
-      />
-      <div className="flex items-center gap-3" style={{ minWidth: 0 }}>
-        <span
-          aria-hidden
-          style={{
-            width: 20,
-            height: 20,
-            borderRadius: "50%",
-            flexShrink: 0,
-            border: selected ? "6px solid var(--color-accent)" : "1.5px solid var(--color-divider)",
-            background: "var(--color-bg)",
-          }}
-        />
-        <div style={{ minWidth: 0 }}>
-          <div className="flex flex-wrap items-center gap-2" style={{ fontSize: 14.5, fontWeight: 700 }}>
-            {label}
-            {badge && (
-              <span
-                style={{
-                  fontSize: 10.5,
-                  fontWeight: 800,
-                  padding: "2px 8px",
-                  borderRadius: 999,
-                  background: "var(--color-accent)",
-                  color: "var(--color-bg)",
-                }}
-              >
-                {badge}
-              </span>
-            )}
-          </div>
-          <div style={{ fontSize: 12, marginTop: 1, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-            {sublabel}
-          </div>
-        </div>
-      </div>
-      <div style={{ textAlign: "right", flexShrink: 0 }}>
-        <span style={{ fontSize: 19, fontWeight: 800, letterSpacing: "-0.01em" }}>{price}</span>
-        {priceSuffix && (
-          <span style={{ fontSize: 12.5, fontWeight: 500, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-            {" "}
-            {priceSuffix}
-          </span>
-        )}
-      </div>
-    </label>
-  );
-}
-
-// Sélecteur unique (radio Mensuel / Accès à vie) + un seul bouton "Débloquer
-// Premium" qui soumet le plan choisi -- remplace les deux cartes avec chacune
-// leur propre bouton (une par plan) : design fourni par Nathan (maquette
-// "Paywall Stageio — 1b", 26/09). Nécessite un état côté client pour savoir
-// quel plan est sélectionné au moment de soumettre, d'où ce composant "use
-// client" plutôt qu'un simple form server-only comme le reste de la page.
-// Zéro friction (16/10) : l'argumentaire (`children`) passe au-dessus des
-// offres, et le bouton -- prix écrit dessus -- reste collé en bas de l'écran
-// pendant toute la lecture : on peut payer à tout moment, en un geste.
 export function PricingSelector({
   lifetimeAvailable,
   errorMessage,
@@ -181,39 +215,18 @@ export function PricingSelector({
   errorMessage: string | null;
   children?: React.ReactNode;
 }) {
-  // Accès à vie affiché en premier et présélectionné (demande de Nathan,
-  // 14/10) ; le prix du plan choisi est écrit sur le bouton pour qu'il n'y
-  // ait aucune surprise au paiement.
-  const [plan, setPlan] = useState<Plan>(lifetimeAvailable ? "lifetime" : "monthly");
+  const plans: Plan[] = lifetimeAvailable ? ["monthly", "lifetime"] : ["monthly"];
 
   return (
     <div>
       {children}
-      <div className="animate-in flex flex-col gap-2.5" style={{ marginTop: 18 }}>
-        {lifetimeAvailable && (
-          <div>
-            <PlanRow
-              selected={plan === "lifetime"}
-              onSelect={() => setPlan("lifetime")}
-              label="Accès à vie"
-              sublabel="Paiement unique, jamais de renouvellement"
-              price="39,99 €"
-              badge="Le prix de 5 mois"
-            />
-            <AnimatePresence initial={false}>{plan === "lifetime" && <Perks key="lifetime" items={PERKS.lifetime} />}</AnimatePresence>
-          </div>
-        )}
-        <div>
-          <PlanRow
-            selected={plan === "monthly"}
-            onSelect={() => setPlan("monthly")}
-            label="Mensuel"
-            sublabel="Résiliable à tout moment"
-            price="7,99 €"
-            priceSuffix="/mois"
-          />
-          <AnimatePresence initial={false}>{plan === "monthly" && <Perks key="monthly" items={PERKS.monthly} />}</AnimatePresence>
-        </div>
+      <div
+        className="plan-grid grid gap-2.5"
+        style={{ marginTop: 24, gridTemplateColumns: `repeat(${plans.length}, minmax(0, 1fr))` }}
+      >
+        {plans.map((plan, i) => (
+          <PlanCard key={plan} plan={plan} featured={plan === "monthly"} index={i} />
+        ))}
       </div>
 
       {errorMessage && (
@@ -231,66 +244,15 @@ export function PricingSelector({
         </p>
       )}
 
-      {/* Collé en bas de l'écran (au-dessus de la barre de navigation sur
-          mobile) tant qu'on lit l'argumentaire. */}
-      <form
-        action={createCheckoutSessionAction}
-        className="sticky bottom-[calc(76px+env(safe-area-inset-bottom))] sm:bottom-4"
-        style={{
-          marginTop: 14,
-          zIndex: 5,
-          padding: "8px 0",
-          borderRadius: 999,
-          background: "linear-gradient(180deg, transparent, color-mix(in srgb, var(--color-bg) 85%, transparent) 40%)",
-        }}
-      >
-        <input type="hidden" name="plan" value={plan} />
-        <button
-          type="submit"
-          className="btn btn-block fx-shine lp-pulse"
-          data-fx-burst
-          style={{
-            height: 54,
-            border: "none",
-            borderRadius: 999,
-            background: "linear-gradient(135deg, #3ee08f, var(--color-accent) 45%, var(--color-accent-700))",
-            color: "#fff",
-            fontSize: 16,
-            fontWeight: 800,
-            letterSpacing: "-0.01em",
-            boxShadow: "0 12px 26px color-mix(in srgb, var(--color-accent) 40%, transparent)",
-          }}
-        >
-          {plan === "lifetime" ? "Débloquer à vie · 39,99 €" : "Débloquer Premium · 7,99 €/mois"}
-        </button>
-      </form>
-
-      <div
-        className="flex flex-wrap items-center justify-center gap-2"
-        style={{ marginTop: 10, fontSize: 11.5, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}
-      >
-        <span>🔒 Paiement sécurisé</span>
-        <span style={{ opacity: 0.5 }}>·</span>
-        <span>{plan === "lifetime" ? "Paiement unique" : "Résiliable à tout moment"}</span>
-        <span style={{ opacity: 0.5 }}>·</span>
-        <AccessCodeForm />
-      </div>
-
-      <p
-        style={{
-          fontSize: 10.5,
-          textAlign: "center",
-          lineHeight: 1.4,
-          margin: "12px 0 0",
-          color: "color-mix(in srgb, var(--color-text) 50%, transparent)",
-        }}
-      >
-        En continuant, tu acceptes les{" "}
+      <p style={{ fontSize: 11, textAlign: "center", lineHeight: 1.5, margin: "16px 0 0", color: muted }}>
+        🔒 Paiement sécurisé par Stripe · En continuant, tu acceptes les{" "}
         <Link href="/legal/cgv" style={{ color: "var(--color-accent-700)", textDecoration: "underline" }}>
           CGV
         </Link>
-        .
       </p>
+      <div className="flex justify-center" style={{ marginTop: 6, fontSize: 11.5, color: muted }}>
+        <AccessCodeForm />
+      </div>
     </div>
   );
 }
