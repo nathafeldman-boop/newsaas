@@ -749,10 +749,10 @@ export default async function LandingPage() {
                     className="flex items-center justify-center"
                     style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--color-accent-100)", color: "var(--color-accent-700)", fontSize: 11, fontWeight: 800 }}
                   >
-                    94%
+                    ❤️
                   </span>
                   <span style={{ fontSize: 12, lineHeight: 1.3 }}>
-                    <strong>Excellent match</strong>
+                    <strong>Ajoutée aux favoris</strong>
                     <br />
                     <span style={{ color: mutedText }}>Commercial · Lyon</span>
                   </span>
@@ -998,7 +998,7 @@ export default async function LandingPage() {
               <div style={{ position: "relative" }}>
                 <Icon name="target" size={28} style={{ color: "var(--color-accent-300)" }} />
                 <h3 style={{ margin: "14px 0 0", fontSize: "clamp(22px,2.8vw,30px)", fontWeight: 800, letterSpacing: "-0.025em", lineHeight: 1.15 }}>
-                  Un score de compatibilité pour chaque offre.
+                  Les offres qui te correspondent, en premier.
                 </h3>
                 <p style={{ margin: "10px 0 0", fontSize: 14.5, lineHeight: 1.65, color: "var(--color-neutral-300)", maxWidth: "42ch" }}>
                   Secteur, métier, ville et mobilité, compétences, niveau d&apos;études,

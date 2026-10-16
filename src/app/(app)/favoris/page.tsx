@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { OfferListCard } from "@/components/offers/OfferListCard";
-import { computeMatchPercent } from "@/lib/matching/score";
 import type { ApplicationStatus } from "@/types/database";
 
 export default async function FavorisPage() {
@@ -10,12 +9,6 @@ export default async function FavorisPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/favoris");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
 
   const { data: liked } = await supabase
     .from("swipes")
@@ -62,7 +55,6 @@ export default async function FavorisPage() {
               key={offer.id}
               offer={offer}
               applicationStatus={statusByOffer.get(offer.id) ?? null}
-              matchScore={profile ? computeMatchPercent(profile, offer) : undefined}
             />
           ))}
         </div>

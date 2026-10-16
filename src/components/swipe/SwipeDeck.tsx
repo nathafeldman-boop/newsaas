@@ -33,10 +33,8 @@ const SwipeCard = forwardRef<
   {
     offer: Offer;
     reasons?: string[];
-    score?: number;
     isTop: boolean;
     isPremium: boolean;
-    revealMatch: boolean;
     onExited: (direction: SwipeDirection) => void;
     // Déclenché quand un DRAG physique (pas un clic bouton) franchit le
     // seuil -- doit passer par le même chemin que les boutons (voir
@@ -51,7 +49,7 @@ const SwipeCard = forwardRef<
     // éjectée, seul le clic/drag est intercepté et redirigé vers /premium.
     onSwipeIntent: (direction: SwipeDirection) => boolean;
   }
->(function SwipeCard({ offer, reasons, score, isTop, isPremium, revealMatch, onExited, onSwipeIntent }, ref) {
+>(function SwipeCard({ offer, reasons, isTop, isPremium, onExited, onSwipeIntent }, ref) {
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-300, 300], [-18, 18]);
   const likeOpacity = useTransform(x, [20, 140], [0, 1]);
@@ -137,14 +135,7 @@ const SwipeCard = forwardRef<
             </motion.span>
           </>
         )}
-        <OfferCardContent
-          offer={offer}
-          reasons={reasons}
-          score={score}
-          isPremium={isPremium}
-          revealMatch={revealMatch}
-          active={isTop}
-        />
+        <OfferCardContent offer={offer} reasons={reasons} isPremium={isPremium} />
       </div>
     </motion.div>
   );
@@ -152,12 +143,10 @@ const SwipeCard = forwardRef<
 
 function MatchModal({
   offer,
-  score,
   onApply,
   onClose,
 }: {
   offer: Offer | null;
-  score: number;
   onApply: () => void;
   onClose: () => void;
 }) {
@@ -230,18 +219,6 @@ function MatchModal({
                 🎉
               </motion.span>
             </span>
-            <p
-              style={{
-                margin: "16px 0 0",
-                fontSize: 12,
-                fontWeight: 800,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                color: "var(--color-accent-700)",
-              }}
-            >
-              {score}% de compatibilité
-            </p>
             <h2 style={{ margin: "6px 0 0", fontSize: 27, fontWeight: 800, letterSpacing: "-0.03em" }}>
               Excellent match !
             </h2>
@@ -351,9 +328,6 @@ function SwipeDeckInner({
   const deckRef = useRef<HTMLDivElement>(null);
 
   const visible = stack.slice(0, 3);
-  // Compte gratuit : le match des 3 toutes premières cartes de sa vie sur
-  // Stageio reste visible (16/10, Nathan), figé au montage du deck.
-  const [revealedIds] = useState(() => new Set(offers.slice(0, Math.max(0, 3 - initialTotalSwipes)).map((o) => o.id)));
   const eta = useNextOffersEta();
 
   // Remonté au parent (voir SwipeDeck) pour afficher un compteur qui
@@ -499,7 +473,6 @@ function SwipeDeckInner({
       <div ref={deckRef} className="relative h-[clamp(360px,66dvh,520px)] w-full max-w-sm">
         <MatchModal
           offer={celebratingOffer}
-          score={celebratingOffer ? (scores[celebratingOffer.id] ?? 0) : 0}
           onApply={() => {
             if (!celebratingOffer) return;
             router.push(`/candidature/${celebratingOffer.id}`);
@@ -526,10 +499,8 @@ function SwipeDeckInner({
                   ref={isTop ? topCardRef : undefined}
                   offer={offer}
                   reasons={reasons[offer.id]}
-                  score={scores[offer.id]}
                   isTop={isTop}
                   isPremium={isPremium}
-                  revealMatch={revealedIds.has(offer.id)}
                   onExited={() => handleExited(offer.id)}
                   onSwipeIntent={handleSwipeIntent}
                 />

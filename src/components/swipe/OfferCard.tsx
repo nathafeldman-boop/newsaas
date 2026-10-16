@@ -5,132 +5,11 @@ import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import { getFreshnessLabel } from "@/lib/offers/freshness";
 import { offerSalary } from "@/lib/salary/estimate";
-import { MatchBadge } from "@/components/swipe/MatchBadge";
 import type { Offer } from "@/types/database";
 
 function formatStartDate(dateStr: string): string {
   const date = new Date(dateStr);
   return date.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
-}
-
-// Toujours utilisé par la démo publique de la landing (SwipeDemo.tsx), qui a
-// ses propres offres fictives et son propre balisage de carte -- gardé
-// exporté même si OfferCardContent ci-dessous ne l'utilise plus directement
-// (InfoCell plus bas, elle, est réutilisée telle quelle par les deux).
-export function MatchRing({ score }: { score: number }) {
-  const size = 46;
-  const stroke = 4;
-  const r = (size - stroke) / 2;
-  const c = 2 * Math.PI * r;
-  const offset = c - (score / 100) * c;
-
-  return (
-    <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
-      <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
-        <circle cx={size / 2} cy={size / 2} r={r} stroke="rgba(255,255,255,0.3)" strokeWidth={stroke} fill="none" />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          stroke="#fff"
-          strokeWidth={stroke}
-          fill="none"
-          strokeDasharray={c}
-          strokeDashoffset={offset}
-          strokeLinecap="round"
-        />
-      </svg>
-      <span
-        style={{
-          position: "absolute",
-          inset: 0,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontFamily: "var(--font-heading)",
-          fontSize: 12,
-          color: "#fff",
-        }}
-      >
-        {score}%
-      </span>
-    </div>
-  );
-}
-
-// Petit message d'incitation, calé sur le score de matching -- l'objectif
-// est qu'une carte à très haut score se ressente comme "évidemment je veux
-// postuler", pas juste comme une offre parmi d'autres. Plusieurs variantes
-// par palier (même logique que les lettres de motivation, voir
-// src/lib/coverLetter/staticGenerator.ts) pour éviter de revoir le même
-// texte à chaque carte à score équivalent. Le ton descend volontairement
-// en intensité avec le score -- très enthousiaste en haut, simple constat
-// factuel dès 60 -- mais reste toujours silencieux sous 60 : un score
-// faible ne doit jamais recevoir de message, qu'il soit hyped ou
-// décourageant, pour ne pas entamer la confiance dans le score affiché
-// ailleurs sur la carte.
-function seededHashForHype(str: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < str.length; i++) {
-    h ^= str.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}
-
-const HYPE_MESSAGES: { min: number; variants: string[] }[] = [
-  {
-    min: 92,
-    variants: [
-      "Pépite pour ton profil — fonce !",
-      "Rarissime : un match à ce niveau-là, ne le laisse pas filer",
-      "Le meilleur match de ton deck en ce moment",
-      "Ton profil colle presque parfaitement à cette offre",
-      "Un match aussi fort, ça se joue à quelques clics",
-      "Ce genre d'offre, tu la retrouveras rarement aussi bien alignée",
-    ],
-  },
-  {
-    min: 82,
-    variants: [
-      "Un des meilleurs matchs de ton deck",
-      "Ton profil correspond vraiment bien ici",
-      "Une des offres les plus alignées avec ton parcours",
-      "Ce match sort clairement du lot",
-      "Ça vaut clairement plus qu'un simple coup d'œil",
-      "Un très bon niveau de compatibilité sur cette offre",
-    ],
-  },
-  {
-    min: 72,
-    variants: [
-      "Bon match, ça vaut le coup d'œil",
-      "Une offre solide par rapport à ton profil",
-      "De bonnes chances que ça matche des deux côtés",
-      "Un profil qui colle plutôt bien à cette offre",
-      "Ça mérite clairement d'être regardé de plus près",
-      "Un match au-dessus de la moyenne de ton deck",
-    ],
-  },
-  {
-    min: 60,
-    variants: [
-      "Un match correct pour ton profil",
-      "Une offre qui reste dans tes critères",
-      "Compatibilité correcte, à voir selon tes envies",
-      "Ça peut valoir le coup selon ce que tu recherches",
-      "Un match dans la moyenne, à toi de juger",
-      "Une offre raisonnablement alignée avec ton profil",
-    ],
-  },
-];
-
-function matchHypeMessage(score: number | undefined, seedKey: string): string | null {
-  if (score === undefined) return null;
-  const tier = HYPE_MESSAGES.find((t) => score >= t.min);
-  if (!tier) return null;
-  const hash = seededHashForHype(`${seedKey}::${tier.min}`);
-  return tier.variants[hash % tier.variants.length];
 }
 
 function companyInitials(company: string): string {
@@ -245,20 +124,11 @@ function UnlockPill({ label }: { label: string }) {
 export function OfferCardContent({
   offer,
   reasons,
-  score,
   isPremium = true,
-  revealMatch = false,
-  active = true,
 }: {
   offer: Offer;
   reasons?: string[];
-  score?: number;
   isPremium?: boolean;
-  // Compte gratuit : le match des 3 premières cartes reste visible (le reste
-  // est flouté avec un cadenas). Toujours visible en Premium.
-  revealMatch?: boolean;
-  // Carte du dessus : rejoue l'animation du badge quand elle arrive devant.
-  active?: boolean;
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const locked = !isPremium;
@@ -266,7 +136,6 @@ export function OfferCardContent({
   const tags = [offer.sector, offer.remote_policy].filter(
     (t): t is string => Boolean(t),
   );
-  const hypeMessage = matchHypeMessage(score, offer.id);
   const salary = offerSalary(offer);
   const freshnessLabel = getFreshnessLabel(offer.published_at);
 
@@ -277,7 +146,7 @@ export function OfferCardContent({
           position: "relative",
           flexShrink: 0,
           overflow: "hidden",
-          padding: typeof score === "number" ? "18px 18px 26px 20px" : "18px 18px 17px 20px",
+          padding: "18px 18px 17px 20px",
           background: "linear-gradient(125deg, var(--color-accent), var(--color-accent-2))",
           display: "flex",
           alignItems: "flex-start",
@@ -383,18 +252,7 @@ export function OfferCardContent({
         </div>
       </div>
 
-      {typeof score === "number" && (
-        <div style={{ position: "relative", zIndex: 3, height: 0, display: "flex", justifyContent: "center", alignItems: "flex-start" }}>
-          <div style={{ transform: "translateY(-50%)" }}>
-            <MatchBadge key={String(active)} score={score} hidden={locked && !revealMatch} live={active} />
-          </div>
-        </div>
-      )}
-
-      <div
-        className="flex flex-1 flex-col overflow-y-auto"
-        style={{ padding: typeof score === "number" ? "30px 20px 18px" : "16px 20px 18px" }}
-      >
+      <div className="flex flex-1 flex-col overflow-y-auto" style={{ padding: "16px 20px 18px" }}>
         <div className="flex flex-wrap gap-1.5" style={locked ? teaserBlur : undefined}>
           <span className="tag tag-accent">{typeLabel}</span>
           {freshnessLabel && (
@@ -413,23 +271,6 @@ export function OfferCardContent({
           {offer.title}
         </h2>
 
-        {hypeMessage && (
-          <p
-            style={{
-              margin: "8px 0 0",
-              alignSelf: "flex-start",
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              fontSize: 12.5,
-              fontWeight: 700,
-              color: "var(--color-accent-700)",
-              ...(locked ? teaserBlur : {}),
-            }}
-          >
-            <Icon name="sparkles" size={14} /> {hypeMessage}
-          </p>
-        )}
 
         <div className="grid grid-cols-3 gap-2" style={{ marginTop: 14 }}>
           <InfoCell icon={<Icon name="calendar" size={16} />} label="Début" value={offer.start_date ? formatStartDate(offer.start_date) : "Flexible"} blurred={locked} />

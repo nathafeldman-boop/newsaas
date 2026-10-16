@@ -82,7 +82,7 @@ const MOBILITY_SUBTEXT: Record<string, string> = {
 // juste à faire sentir que l'app travaille pendant les ~1.8s d'animation.
 const OUTRO_LOAD_MESSAGES = [
   "On analyse les offres actives…",
-  "On calcule tes scores de compatibilité…",
+  "On sélectionne les offres qui te correspondent…",
   "On trie ton deck du jour…",
 ];
 

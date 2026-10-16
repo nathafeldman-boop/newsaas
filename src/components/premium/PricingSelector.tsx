@@ -13,7 +13,7 @@ type Plan = "monthly" | "lifetime";
 // paiement sécurisé, CGV et code d'accès. Mensuel en premier et mis en avant
 // (16/10 : l'accès à vie en premier ne convertissait pas mieux).
 const BENEFITS = [
-  "Toutes les offres en clair : entreprise, match, analyse",
+  "Toutes les offres en clair : entreprise, analyse, description",
   "Like, favoris et candidatures illimités",
   "Ta lettre de motivation en quelques secondes",
   "Ton CV noté sur 100, avec les corrections",

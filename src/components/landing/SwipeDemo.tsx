@@ -9,7 +9,7 @@ import {
   useTransform,
   animate,
 } from "framer-motion";
-import { MatchRing, InfoCell } from "@/components/swipe/OfferCard";
+import { InfoCell } from "@/components/swipe/OfferCard";
 import { Icon } from "@/components/ui/Icon";
 
 const SWIPE_THRESHOLD = 100;
@@ -28,7 +28,6 @@ const DEMO_OFFERS = [
     contractType: "Alternance",
     title: "Alternant Chargé Commercial à Lyon H/F",
     location: "Lyon",
-    matchScore: 94,
     salary: "492–1 823 €",
     duration: "Non précisé",
     start: "Flexible",
@@ -41,7 +40,6 @@ const DEMO_OFFERS = [
     contractType: "Alternance",
     title: "CRM Manager - Alternance H/F",
     location: "Paris 8e",
-    matchScore: 88,
     salary: "Non précisé",
     duration: "Non précisé",
     start: "Flexible",
@@ -54,7 +52,6 @@ const DEMO_OFFERS = [
     contractType: "Stage",
     title: "Stage - Coordinateur(rice) référencement de marque H/F",
     location: "Paris 6e",
-    matchScore: 81,
     salary: "5 000 à 10 000 €/an",
     duration: "Non précisé",
     start: "Flexible",
@@ -240,7 +237,6 @@ const DemoCard = forwardRef<
                 <Icon name="pin" size={12} strokeWidth={2.1} /> {offer.location}
               </p>
             </div>
-            <MatchRing score={offer.matchScore} />
           </div>
 
           <div className="flex flex-1 flex-col overflow-y-auto" style={{ padding: "13px 16px 15px" }}>

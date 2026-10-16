@@ -4,7 +4,6 @@ import { SwipeDeck } from "@/components/swipe/SwipeDeck";
 import { SearchCompletedCard } from "@/components/swipe/SearchCompletedCard";
 import {
   computeMatchScore,
-  computeMatchPercent,
   computeMatchReasons,
   computeCvMatchBonus,
   isNearbyCity,
@@ -295,22 +294,6 @@ export default async function SwipePage() {
     hasPreferences && filteredByRelevance.length >= MIN_RELEVANT_POOL ? filteredByRelevance : rankedOffers;
 
   const sortedOffers = relevantOffers.slice(0, DECK_SIZE);
-  // % de match affiché sur les cartes (part des critères remplis, voir
-  // computeMatchPercent) -- distinct de `scores`, qui sert au tri.
-  const matchPercents: Record<string, number> = {};
-  if (profile) for (const offer of sortedOffers) matchPercents[offer.id] = computeMatchPercent(profile, offer);
-
-  // Compte gratuit, 3 premières cartes (match visible, 16/10) : parmi les 10
-  // offres les mieux classées, les 3 meilleurs vrais % rangés pour l'effet
-  // « waouh » -- 2e meilleur, puis le meilleur, puis le 3e. Aucun % modifié,
-  // seulement l'ordre.
-  if (!premium && profile && totalSwipesEver < 3 && sortedOffers.length >= 3) {
-    const head = sortedOffers.slice(0, 10).sort((a, b) => matchPercents[b.id] - matchPercents[a.id]);
-    const [best, second, third] = head;
-    const firstThree = [second, best, third];
-    const rest = sortedOffers.filter((o) => !firstThree.includes(o));
-    sortedOffers.splice(0, sortedOffers.length, ...firstThree, ...rest);
-  }
 
   const reasons: Record<string, string[]> = {};
   if (profile) {
@@ -355,7 +338,7 @@ export default async function SwipePage() {
     <div className="flex flex-1 flex-col items-center">
       <SwipeDeck
         offers={sortedOffers}
-        scores={matchPercents}
+        scores={scores}
         reasons={reasons}
         userId={user.id}
         totalSwipesEver={totalSwipesEver}

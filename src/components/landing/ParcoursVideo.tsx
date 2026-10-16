@@ -14,7 +14,7 @@ const STEPS = [
     n: "01",
     label: "Swipe",
     title: "Swipe les offres faites pour toi",
-    text: "Ton métier, ta ville, ton niveau : chaque offre affiche son % de compatibilité et pourquoi elle te correspond.",
+    text: "Ton métier, ta ville, ton niveau : les offres qui te correspondent passent en premier, avec pourquoi.",
     premium: false,
   },
   {
