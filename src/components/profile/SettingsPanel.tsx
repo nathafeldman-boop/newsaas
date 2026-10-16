@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { readLikeAction, saveLikeAction, type LikeAction } from "@/lib/swipe/likePreference";
 
 export function SettingsPanel({
   userId,
@@ -13,13 +12,6 @@ export function SettingsPanel({
 }) {
   const [notify, setNotify] = useState(initialNotifyNewOffers);
   const [saving, setSaving] = useState(false);
-  // Réglage du navigateur (voir lib/swipe/likePreference.ts), lu après le
-  // montage : localStorage n'existe pas au rendu serveur.
-  const [likeAction, setLikeAction] = useState<LikeAction | "">("");
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLikeAction(readLikeAction() ?? "");
-  }, []);
 
   async function toggle() {
     const next = !notify;
@@ -75,35 +67,6 @@ export function SettingsPanel({
             }}
           />
         </button>
-      </div>
-
-      <div className="mt-4 flex items-center justify-between gap-4" style={{ paddingTop: 14, borderTop: "1px solid var(--color-divider)" }}>
-        <div>
-          <label htmlFor="like-action" style={{ fontSize: 14, margin: 0, display: "block" }}>
-            Quand je like une offre
-          </label>
-          <p style={{ fontSize: 12, margin: "2px 0 0", color: "color-mix(in srgb, var(--color-text) 65%, transparent)" }}>
-            Premium : postuler tout de suite (envoi automatique sur les offres « Candidature directe »), ou
-            garder l&apos;offre en favori.
-          </p>
-        </div>
-        <select
-          id="like-action"
-          className="input"
-          style={{ width: "auto", flexShrink: 0 }}
-          value={likeAction}
-          onChange={(e) => {
-            const next = e.target.value as LikeAction;
-            setLikeAction(next);
-            saveLikeAction(next);
-          }}
-        >
-          <option value="" disabled>
-            Me demander
-          </option>
-          <option value="candidature">Postuler directement</option>
-          <option value="favori">Mettre en favori</option>
-        </select>
       </div>
 
       <a

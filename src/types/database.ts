@@ -17,7 +17,7 @@ export type ApplicationStatus =
   | "entretien"
   | "acceptee"
   | "refusee";
-export type OfferSource = "demo" | "manuel" | "mistral_ingest" | "adzuna" | "france_travail" | "la_bonne_alternance";
+export type OfferSource = "demo" | "manuel" | "mistral_ingest" | "adzuna" | "france_travail";
 export type EmailProvider = "gmail";
 export type EmailReplySentiment = "positive" | "negative" | "neutral";
 
@@ -39,12 +39,6 @@ export type Profile = {
   mobility: string | null;
   availability_date: string | null;
   cv_path: string | null;
-  // Boîte mail Stageio (voir lib/inbox/address.ts). Optionnelle : colonne
-  // ajoutée à la main en base le 15/10.
-  inbox_address?: string | null;
-  // Téléphone du candidat, exigé par La bonne alternance pour transmettre une
-  // candidature. Optionnel : colonne ajoutée à la main en base le 15/10.
-  phone?: string | null;
   cv_uploaded_at: string | null;
   cv_text: string | null;
   onboarding_completed: boolean;
@@ -124,23 +118,6 @@ export type Application = {
   cover_note: string | null;
   applied_at: string;
   updated_at: string;
-};
-
-// Boîte mail Stageio : emails reçus sur l'adresse de l'étudiant ("in") et
-// candidatures envoyées depuis elle ("out"). Table créée à la main le 15/10.
-export type InboxMessage = {
-  id: string;
-  user_id: string;
-  direction: "in" | "out";
-  resend_email_id: string | null;
-  from_address: string;
-  from_name: string | null;
-  to_address: string;
-  subject: string | null;
-  body_text: string | null;
-  offer_id: string | null;
-  read_at: string | null;
-  created_at: string;
 };
 
 export type EmailConnection = {
@@ -383,17 +360,6 @@ export type Database = {
         Row: AccessCodeRedemption;
         Insert: Partial<AccessCodeRedemption> & { code_id: string; user_id: string };
         Update: Partial<AccessCodeRedemption>;
-        Relationships: [];
-      };
-      inbox_messages: {
-        Row: InboxMessage;
-        Insert: Partial<InboxMessage> & {
-          user_id: string;
-          direction: "in" | "out";
-          from_address: string;
-          to_address: string;
-        };
-        Update: Partial<InboxMessage>;
         Relationships: [];
       };
       user_events: {

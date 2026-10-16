@@ -190,22 +190,6 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Boîte mail Stageio (15/10) : remplace la connexion Gmail. */}
-      <Link
-        href="/boite"
-        className="card elev-sm mt-5 no-underline"
-        style={{ padding: "var(--space-6)", color: "inherit", display: "block" }}
-      >
-        <div className="flex items-center gap-2">
-          <p style={{ fontFamily: "var(--font-heading)", fontSize: 17, margin: 0 }}>Ma boîte Stageio</p>
-        </div>
-        <p style={{ fontSize: 13, margin: "6px 0 0", color: "color-mix(in srgb, var(--color-text) 65%, transparent)" }}>
-          Tes candidatures envoyées au like et les réponses des recruteurs, au même endroit.
-        </p>
-        <span className="btn btn-secondary mt-3" style={{ whiteSpace: "nowrap" }}>
-          Ouvrir ma boîte →
-        </span>
-      </Link>
     </div>
   );
 }

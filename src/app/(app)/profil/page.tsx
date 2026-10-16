@@ -125,25 +125,6 @@ export default async function ProfilPage({
         <ProfileForm userId={user.id} initialProfile={profile} />
       </div>
 
-      <Link
-        href="/boite"
-        className="card elev-sm no-underline"
-        style={{ marginTop: 20, display: "block", color: "inherit", background: "var(--color-accent-100)" }}
-      >
-        <p style={{ fontFamily: "var(--font-heading)", fontSize: 17, margin: 0, color: "var(--color-accent-800)" }}>
-          Ma boîte Stageio
-        </p>
-        <p style={{ fontSize: 13, color: "var(--color-accent-800)", opacity: 0.85, margin: "6px 0 0" }}>
-          {profile.inbox_address ? (
-            <>
-              Ton adresse de candidature : <strong style={{ wordBreak: "break-all" }}>{profile.inbox_address}</strong>.
-              Tes candidatures partent de là, et les réponses des recruteurs arrivent dans ta boîte.
-            </>
-          ) : (
-            "Tes candidatures envoyées au like partent d'une adresse Stageio à ton nom, et les réponses des recruteurs arrivent dans ta boîte."
-          )}
-        </p>
-      </Link>
 
       <SettingsPanel userId={user.id} initialNotifyNewOffers={profile.notify_new_offers} />
 

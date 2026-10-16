@@ -16,7 +16,6 @@ import { computeApplicationStreak } from "@/lib/engagement/applicationStreak";
 import { fetchActiveOffers } from "@/lib/offers/fetchActiveOffers";
 import { isSchoolOrJobBoard } from "@/lib/seo/schools";
 import { normalizeTitle } from "@/lib/seo/metiers";
-import { normalizePhone, splitFullName } from "@/lib/laBonneAlternance/applicant";
 
 export default async function SwipePage() {
   const supabase = await createClient();
@@ -338,11 +337,6 @@ export default async function SwipePage() {
   return (
     <div className="flex flex-1 flex-col items-center">
       <SwipeDeck
-        autoApplySetup={{
-          hasCv: !!profile?.cv_path,
-          hasPhone: !!normalizePhone(profile?.phone),
-          hasFullName: !!splitFullName(profile?.full_name),
-        }}
         offers={sortedOffers}
         scores={scores}
         reasons={reasons}

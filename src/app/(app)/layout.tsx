@@ -16,7 +16,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // (voir SwipeDeck.tsx et le trigger SQL enforce_swipe_quota /
   // enforce_premium_application) plutôt que via un quota de navigation.
   let favoritesBadge = 0;
-  let inboxBadge = 0;
 
   try {
     const supabase = await createClient();
@@ -56,18 +55,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         console.error("AppLayout last_active_path update failed", pathError);
       }
 
-      const [{ data: swiped }, { data: applications }, { count: unreadInbox }] = await Promise.all([
+      const [{ data: swiped }, { data: applications }] = await Promise.all([
         supabase.from("swipes").select("offer_id, direction, created_at").eq("user_id", user.id),
         supabase.from("applications").select("offer_id").eq("user_id", user.id),
-        // Messages non lus de la boîte Stageio (0 tant que la table n'existe pas).
-        supabase
-          .from("inbox_messages")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", user.id)
-          .eq("direction", "in")
-          .is("read_at", null),
       ]);
-      inboxBadge = unreadInbox ?? 0;
 
       const appliedOfferIds = new Set((applications ?? []).map((a) => a.offer_id));
       const likedOfferIds = new Set(
@@ -89,7 +80,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 pb-24 sm:pb-8">
         <PageTransition>{children}</PageTransition>
       </main>
-      <BottomNav favoritesBadge={favoritesBadge} inboxBadge={inboxBadge} />
+      <BottomNav favoritesBadge={favoritesBadge} />
     </div>
   );
 }

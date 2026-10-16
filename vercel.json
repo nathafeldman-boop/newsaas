@@ -69,10 +69,6 @@
       "schedule": "30 4 * * *"
     },
     {
-      "path": "/api/cron/sync-la-bonne-alternance",
-      "schedule": "5 5 * * *"
-    },
-    {
       "path": "/api/cron/indexnow",
       "schedule": "30 5 * * *"
     },

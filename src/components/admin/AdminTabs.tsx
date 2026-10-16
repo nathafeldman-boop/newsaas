@@ -11,7 +11,6 @@ const TABS = [
   { href: "/admin/offres", label: "Offres" },
   { href: "/admin/affiliates", label: "Affiliés" },
   { href: "/admin/relance", label: "Relance" },
-  { href: "/admin/la-bonne-alternance", label: "La bonne alternance" },
 ];
 
 export function AdminTabs() {
