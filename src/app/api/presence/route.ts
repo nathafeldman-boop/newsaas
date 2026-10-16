@@ -18,13 +18,17 @@ export async function POST(request: NextRequest) {
   const path = typeof body?.path === "string" ? body.path.slice(0, 200) : null;
   const now = new Date().toISOString();
 
-  // Deux mises à jour séparées, comme dans (app)/layout.tsx : la présence ne
+  // Une seule écriture (deux avant : deux fois plus de chances de tomber sur
+  // un Supabase lent). Si elle échoue, on retente la présence seule : elle ne
   // doit jamais dépendre de la colonne annexe last_active_path.
-  const { error } = await supabase.from("profiles").update({ last_active_at: now }).eq("id", user.id);
-  if (error) console.error("presence: last_active_at update failed", error);
-  if (path) {
-    const { error: pathError } = await supabase.from("profiles").update({ last_active_path: path }).eq("id", user.id);
-    if (pathError) console.error("presence: last_active_path update failed", pathError);
+  if (path?.startsWith("/admin")) return new NextResponse(null, { status: 204 });
+  const { error } = await supabase
+    .from("profiles")
+    .update(path ? { last_active_at: now, last_active_path: path } : { last_active_at: now })
+    .eq("id", user.id);
+  if (error) {
+    console.error("presence: update failed", error);
+    if (path) await supabase.from("profiles").update({ last_active_at: now }).eq("id", user.id);
   }
   return new NextResponse(null, { status: 204 });
 }

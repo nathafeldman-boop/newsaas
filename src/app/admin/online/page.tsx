@@ -16,7 +16,7 @@ export default async function AdminOnlinePage() {
   // Même fenêtre que la tuile "En ligne maintenant" du dashboard : voir
   // src/app/admin/page.tsx pour l'explication. Rechargée toutes les 20 s.
   const onlineSince = new Date();
-  onlineSince.setMinutes(onlineSince.getMinutes() - 2);
+  onlineSince.setMinutes(onlineSince.getMinutes() - 3);
 
   const admin = createAdminClient();
   const { data: users, error: usersError } = await admin
