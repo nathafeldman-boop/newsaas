@@ -118,6 +118,18 @@ export async function createCheckoutSessionAction(formData: FormData) {
     success_url: `${SITE_URL}/premium/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${SITE_URL}/premium`,
     client_reference_id: user.id,
+    // Page Stripe plus rassurante (16/10, Nathan) : en français quelle que
+    // soit la langue du navigateur, ce que l'étudiant obtient juste au-dessus
+    // du bouton, et la sécurité de la carte juste en dessous.
+    locale: "fr",
+    custom_text: {
+      submit: {
+        message: isLifetime
+          ? "Accès Premium immédiat. Paiement unique : aucun renouvellement, jamais."
+          : "Accès Premium immédiat. Sans engagement : résiliable à tout moment.",
+      },
+      after_submit: { message: "Paiement sécurisé par Stripe : Stageio ne voit jamais les données de ta carte." },
+    },
     ...(isLifetime
       ? {
           // mode "payment" n'a pas de subscription_data -- payment_intent_data
