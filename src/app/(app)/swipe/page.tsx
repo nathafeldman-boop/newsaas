@@ -294,6 +294,12 @@ export default async function SwipePage() {
     hasPreferences && filteredByRelevance.length >= MIN_RELEVANT_POOL ? filteredByRelevance : rankedOffers;
 
   const sortedOffers = relevantOffers.slice(0, DECK_SIZE);
+  // Compte gratuit, 3 premières cartes (match visible, 16/10) : les vrais
+  // scores, rangés pour l'effet « waouh » -- 2e meilleur match, puis le
+  // meilleur, puis le 3e. Aucun score modifié, seulement l'ordre.
+  if (!premium && profile && totalSwipesEver < 3 && sortedOffers.length >= 2) {
+    [sortedOffers[0], sortedOffers[1]] = [sortedOffers[1], sortedOffers[0]];
+  }
 
   const reasons: Record<string, string[]> = {};
   if (profile) {

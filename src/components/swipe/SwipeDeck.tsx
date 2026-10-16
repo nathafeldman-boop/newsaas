@@ -36,6 +36,7 @@ const SwipeCard = forwardRef<
     score?: number;
     isTop: boolean;
     isPremium: boolean;
+    revealMatch: boolean;
     onExited: (direction: SwipeDirection) => void;
     // Déclenché quand un DRAG physique (pas un clic bouton) franchit le
     // seuil -- doit passer par le même chemin que les boutons (voir
@@ -50,7 +51,7 @@ const SwipeCard = forwardRef<
     // éjectée, seul le clic/drag est intercepté et redirigé vers /premium.
     onSwipeIntent: (direction: SwipeDirection) => boolean;
   }
->(function SwipeCard({ offer, reasons, score, isTop, isPremium, onExited, onSwipeIntent }, ref) {
+>(function SwipeCard({ offer, reasons, score, isTop, isPremium, revealMatch, onExited, onSwipeIntent }, ref) {
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-300, 300], [-18, 18]);
   const likeOpacity = useTransform(x, [20, 140], [0, 1]);
@@ -136,7 +137,14 @@ const SwipeCard = forwardRef<
             </motion.span>
           </>
         )}
-        <OfferCardContent offer={offer} reasons={reasons} score={score} isPremium={isPremium} />
+        <OfferCardContent
+          offer={offer}
+          reasons={reasons}
+          score={score}
+          isPremium={isPremium}
+          revealMatch={revealMatch}
+          active={isTop}
+        />
       </div>
     </motion.div>
   );
@@ -343,6 +351,9 @@ function SwipeDeckInner({
   const deckRef = useRef<HTMLDivElement>(null);
 
   const visible = stack.slice(0, 3);
+  // Compte gratuit : le match des 3 toutes premières cartes de sa vie sur
+  // Stageio reste visible (16/10, Nathan), figé au montage du deck.
+  const [revealedIds] = useState(() => new Set(offers.slice(0, Math.max(0, 3 - initialTotalSwipes)).map((o) => o.id)));
   const eta = useNextOffersEta();
 
   // Remonté au parent (voir SwipeDeck) pour afficher un compteur qui
@@ -518,6 +529,7 @@ function SwipeDeckInner({
                   score={scores[offer.id]}
                   isTop={isTop}
                   isPremium={isPremium}
+                  revealMatch={revealedIds.has(offer.id)}
                   onExited={() => handleExited(offer.id)}
                   onSwipeIntent={handleSwipeIntent}
                 />

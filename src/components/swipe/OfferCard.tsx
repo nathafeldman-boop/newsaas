@@ -1,8 +1,11 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import { getFreshnessLabel } from "@/lib/offers/freshness";
+import { offerSalary } from "@/lib/salary/estimate";
+import { MatchBadge } from "@/components/swipe/MatchBadge";
 import type { Offer } from "@/types/database";
 
 function formatStartDate(dateStr: string): string {
@@ -143,17 +146,20 @@ const mutedText = "color-mix(in srgb, var(--color-text) 60%, transparent)";
 // ne le passe jamais) : teaser hard paywall (voir OfferCardContent) -- flou
 // CSS pur, la valeur réelle reste dans le DOM (pas remplacée par un
 // placeholder), exactement ce que "voilà tout ce qui est alléchant, le reste
-// flouté" décrit.
+// flouté" décrit. Un petit 🔒 à côté du libellé dit que c'est verrouillé.
+// `note` : précision en tout petit sous la valeur (ex. « (estimation) »).
 export function InfoCell({
   icon,
   label,
   value,
   blurred = false,
+  note,
 }: {
   icon: ReactNode;
   label: string;
   value: string;
   blurred?: boolean;
+  note?: string;
 }) {
   return (
     <div style={{ minWidth: 0, background: "var(--color-bg)", borderRadius: 14, padding: "10px 10px 9px" }}>
@@ -171,6 +177,7 @@ export function InfoCell({
         }}
       >
         {label}
+        {blurred && <span aria-label="verrouillé"> 🔒</span>}
       </p>
       <p
         style={{
@@ -186,6 +193,7 @@ export function InfoCell({
       >
         {value}
       </p>
+      {note && <p style={{ margin: "1px 0 0", fontSize: 9, lineHeight: 1.2, color: mutedText }}>{note}</p>}
     </div>
   );
 }
@@ -195,18 +203,62 @@ export function InfoCell({
 // sont mises") mais seuls le titre et le salaire restent lisibles -- tout le
 // reste (entreprise, ville, tags, score, raisons, description) est flouté.
 // Spec confirmée par Nathan : "Titre + salaire visibles, le reste flouté".
+// 16/10 (Nathan) : salaire jamais flouté, estimé quand l'annonce n'en donne
+// pas, et un petit cadenas / CTA « Débloquer » sur les zones floutées.
 const teaserBlur = { filter: "blur(6px)", userSelect: "none" as const };
+
+const UNLOCK_HREF = "/premium?source=card_unlock";
+
+// Petit CTA posé au centre d'une zone floutée. stopPropagation : un tap
+// dessus ouvre le paywall sans démarrer de drag sur la carte.
+function UnlockPill({ label }: { label: string }) {
+  return (
+    <Link
+      href={UNLOCK_HREF}
+      onPointerDown={(e) => e.stopPropagation()}
+      data-fx-burst
+      style={{
+        position: "absolute",
+        left: "50%",
+        top: "50%",
+        transform: "translate(-50%, -50%)",
+        zIndex: 2,
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 5,
+        whiteSpace: "nowrap",
+        fontSize: 11.5,
+        fontWeight: 800,
+        color: "#fff",
+        background: "linear-gradient(90deg, var(--color-accent), var(--color-accent-2))",
+        borderRadius: 999,
+        padding: "5px 11px",
+        boxShadow: "0 6px 16px color-mix(in srgb, var(--color-accent) 35%, transparent)",
+        textDecoration: "none",
+      }}
+    >
+      🔒 {label}
+    </Link>
+  );
+}
 
 export function OfferCardContent({
   offer,
   reasons,
   score,
   isPremium = true,
+  revealMatch = false,
+  active = true,
 }: {
   offer: Offer;
   reasons?: string[];
   score?: number;
   isPremium?: boolean;
+  // Compte gratuit : le match des 3 premières cartes reste visible (le reste
+  // est flouté avec un cadenas). Toujours visible en Premium.
+  revealMatch?: boolean;
+  // Carte du dessus : rejoue l'animation du badge quand elle arrive devant.
+  active?: boolean;
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const locked = !isPremium;
@@ -215,6 +267,7 @@ export function OfferCardContent({
     (t): t is string => Boolean(t),
   );
   const hypeMessage = matchHypeMessage(score, offer.id);
+  const salary = offerSalary(offer);
   const freshnessLabel = getFreshnessLabel(offer.published_at);
 
   return (
@@ -224,7 +277,7 @@ export function OfferCardContent({
           position: "relative",
           flexShrink: 0,
           overflow: "hidden",
-          padding: "18px 18px 17px 20px",
+          padding: typeof score === "number" ? "18px 18px 26px 20px" : "18px 18px 17px 20px",
           background: "linear-gradient(125deg, var(--color-accent), var(--color-accent-2))",
           display: "flex",
           alignItems: "flex-start",
@@ -328,14 +381,20 @@ export function OfferCardContent({
             <Icon name="pin" size={13} strokeWidth={2.1} /> {offer.location}
           </p>
         </div>
-        {typeof score === "number" && (
-          <div style={locked ? teaserBlur : undefined}>
-            <MatchRing score={score} />
-          </div>
-        )}
       </div>
 
-      <div className="flex flex-1 flex-col overflow-y-auto" style={{ padding: "16px 20px 18px" }}>
+      {typeof score === "number" && (
+        <div style={{ position: "relative", zIndex: 3, height: 0, display: "flex", justifyContent: "center", alignItems: "flex-start" }}>
+          <div style={{ transform: "translateY(-50%)" }}>
+            <MatchBadge key={String(active)} score={score} hidden={locked && !revealMatch} />
+          </div>
+        </div>
+      )}
+
+      <div
+        className="flex flex-1 flex-col overflow-y-auto"
+        style={{ padding: typeof score === "number" ? "30px 20px 18px" : "16px 20px 18px" }}
+      >
         <div className="flex flex-wrap gap-1.5" style={locked ? teaserBlur : undefined}>
           <span className="tag tag-accent">{typeLabel}</span>
           {freshnessLabel && (
@@ -375,11 +434,17 @@ export function OfferCardContent({
         <div className="grid grid-cols-3 gap-2" style={{ marginTop: 14 }}>
           <InfoCell icon={<Icon name="calendar" size={16} />} label="Début" value={offer.start_date ? formatStartDate(offer.start_date) : "Flexible"} blurred={locked} />
           <InfoCell icon={<Icon name="clock" size={16} />} label="Durée" value={offer.duration ?? "Non précisé"} blurred={locked} />
-          <InfoCell icon={<Icon name="euro" size={16} />} label="Salaire" value={offer.salary ?? "Non précisé"} />
+          <InfoCell
+            icon={<Icon name="euro" size={16} />}
+            label="Salaire"
+            value={salary.value}
+            note={salary.estimated ? "/mois (estimation)" : undefined}
+          />
         </div>
 
         {reasons && reasons.length > 0 && (
-          <div style={{ marginTop: 16 }}>
+          <div style={{ marginTop: 16, position: "relative" }}>
+            {locked && <UnlockPill label="Débloquer l'analyse complète" />}
             <p style={{ margin: 0, fontSize: 12.5, fontWeight: 700, display: "flex", alignItems: "center", gap: 6, ...(locked ? teaserBlur : {}) }}>
               <Icon name="sparkles" size={14} style={{ color: "var(--color-accent-700)" }} /> Pourquoi cette offre pour toi
             </p>
@@ -420,17 +485,20 @@ export function OfferCardContent({
             {offer.description}
           </p>
           {locked ? (
-            <span
+            <Link
+              href={UNLOCK_HREF}
+              onPointerDown={(e) => e.stopPropagation()}
               style={{
                 marginTop: 6,
                 display: "inline-block",
                 fontSize: 12.5,
                 fontWeight: 700,
                 color: "var(--color-accent-700)",
+                textDecoration: "none",
               }}
             >
-              🔒 Description complète avec Premium
-            </span>
+              🔒 Débloquer l&apos;offre complète →
+            </Link>
           ) : (
             !detailsOpen && (
             <button
