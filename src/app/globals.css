@@ -360,3 +360,22 @@ a:hover > .card, button:hover > .card,
 .nav a { color: inherit; text-decoration: none; font-size: 14px; }
 .nav a:hover, .nav a[aria-current='page'] { color: var(--color-accent); }
 }
+
+/* — Paywall sur PC (16/10) : plus large et plus aéré ; le téléphone garde
+   exactement son rendu (rien sous 1024 px). Les !important battent les
+   styles en ligne des composants. — */
+@media (min-width: 1024px) {
+  .pw-shell { max-width: 60rem !important; }
+  .pw-panel { padding: 44px 56px !important; }
+  .pw-pitch { text-align: center; max-width: 680px; margin: 0 auto; }
+  .pw-pitch h1 { font-size: 40px !important; margin-top: 22px !important; }
+  .pw-pitch > p:first-of-type { font-size: 16.5px !important; }
+  .pw-grid { gap: 22px !important; max-width: 780px; margin-left: auto; margin-right: auto; margin-top: 32px !important; }
+  .pw-card { padding: 30px 26px 24px !important; }
+  .pw-plan { font-size: 20px !important; }
+  .pw-price { font-size: 42px !important; }
+  .pw-cta { height: 54px !important; font-size: 16px !important; }
+  .pw-benefits { gap: 10px !important; }
+  .pw-benefits li { font-size: 14px !important; }
+  .pw-sub { font-size: 13px !important; min-height: 0 !important; }
+}

@@ -77,9 +77,9 @@ export default async function PremiumPage({
     : [null, null];
 
   return (
-    <div className="mx-auto flex max-w-md flex-1 items-center py-6">
+    <div className="pw-shell mx-auto flex max-w-md flex-1 items-center py-6">
       <div
-        className="flex w-full flex-col"
+        className="pw-panel flex w-full flex-col"
         style={{
           padding: "28px 22px",
           background: "linear-gradient(180deg,#f7fbfa 0%,var(--color-bg) 45%,#e2f0ee 100%)",

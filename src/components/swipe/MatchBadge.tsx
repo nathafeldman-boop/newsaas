@@ -26,8 +26,11 @@ function MatchCount({ score }: { score: number }) {
   return <>{shown}</>;
 }
 
-export function MatchBadge({ score, hidden = false }: { score: number; hidden?: boolean }) {
-  const hot = !hidden && score >= 85;
+// `live` : seulement la carte du dessus s'anime (les 2 cartes derrière
+// restent fixes -- moins de travail pour les téléphones).
+export function MatchBadge({ score, hidden = false, live = true }: { score: number; hidden?: boolean; live?: boolean }) {
+  const animated = live && !hidden;
+  const hot = animated && score >= 85;
   const icon = score >= 90 ? "🔥" : score >= 80 ? "⚡" : "✨";
 
   return (
@@ -38,7 +41,7 @@ export function MatchBadge({ score, hidden = false }: { score: number; hidden?: 
       style={{ position: "relative", display: "inline-flex" }}
     >
       {hot && <SparkleBurst count={16} spread={110} />}
-      {!hidden && (
+      {animated && (
         <motion.span
           aria-hidden
           animate={{ scale: [1, 1.18, 1], opacity: [0.55, 0, 0.55] }}
@@ -64,7 +67,7 @@ export function MatchBadge({ score, hidden = false }: { score: number; hidden?: 
       >
         <span
           aria-hidden
-          className={hidden ? undefined : "fx-spin"}
+          className={animated ? "fx-spin" : undefined}
           style={{
             position: "absolute",
             left: "50%",
@@ -104,7 +107,7 @@ export function MatchBadge({ score, hidden = false }: { score: number; hidden?: 
               ...(hidden ? { filter: "blur(6px)", userSelect: "none" as const } : {}),
             }}
           >
-            {hidden ? score : <MatchCount score={score} />}%
+            {animated ? <MatchCount score={score} /> : score}%
           </span>
           <span
             style={{

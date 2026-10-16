@@ -633,8 +633,8 @@ export function SwipeDeck({
   return (
     <div className="flex w-full flex-col items-center">
       <div className="w-full max-w-sm">
-        {/* Le wordmark Stageio est déjà dans AppNav sur desktop (sm:flex) --
-            répété ici seulement en mobile, seul endroit où AppNav est masqué. */}
+        {/* Le wordmark Stageio est déjà dans la barre latérale sur PC (AppShell) --
+            répété ici seulement en mobile, où elle est masquée. */}
         <div className="flex items-center gap-1.5 sm:hidden">
           <span aria-hidden style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--color-accent)" }} />
           <span style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontWeight: 800, letterSpacing: "-0.02em" }}>

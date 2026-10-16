@@ -386,7 +386,7 @@ export function OfferCardContent({
       {typeof score === "number" && (
         <div style={{ position: "relative", zIndex: 3, height: 0, display: "flex", justifyContent: "center", alignItems: "flex-start" }}>
           <div style={{ transform: "translateY(-50%)" }}>
-            <MatchBadge key={String(active)} score={score} hidden={locked && !revealMatch} />
+            <MatchBadge key={String(active)} score={score} hidden={locked && !revealMatch} live={active} />
           </div>
         </div>
       )}

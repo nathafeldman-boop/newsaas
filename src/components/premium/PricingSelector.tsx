@@ -86,7 +86,7 @@ function CtaButton({ label, featured }: { label: string; featured: boolean }) {
   return (
     <motion.button
       type="submit"
-      className={featured ? "btn btn-block fx-shine lp-pulse" : "btn btn-block fx-shine"}
+      className={featured ? "pw-cta btn btn-block fx-shine lp-pulse" : "pw-cta btn btn-block fx-shine"}
       data-fx-burst
       animate={featured && !still ? { scale: [1, 1.06, 0.98, 1.02, 1] } : undefined}
       transition={{ duration: 0.7, repeat: Infinity, repeatDelay: 2.2, ease: "easeInOut" }}
@@ -94,10 +94,11 @@ function CtaButton({ label, featured }: { label: string; featured: boolean }) {
       style={{
         marginTop: 12,
         height: 46,
-        gap: 6,
+        gap: 5,
+        padding: "0 6px",
         whiteSpace: "nowrap",
         borderRadius: 999,
-        fontSize: 14,
+        fontSize: 13.5,
         fontWeight: 800,
         letterSpacing: "-0.01em",
         ...(featured
@@ -170,30 +171,31 @@ function PlanCard({ plan, featured, index }: { plan: Plan; featured: boolean; in
       )}
       <form
         action={createCheckoutSessionAction}
+        className="pw-card"
         style={{
           flex: 1,
           display: "flex",
           flexDirection: "column",
           borderRadius: featured ? 20 : 21,
           background: "var(--color-neutral-100)",
-          padding: "20px 12px 14px",
+          padding: "20px 10px 14px",
         }}
       >
         <input type="hidden" name="plan" value={plan} />
-        <p style={{ margin: 0, fontFamily: "var(--font-heading)", fontSize: 16, fontWeight: 800, letterSpacing: "-0.01em" }}>
+        <p className="pw-plan" style={{ margin: 0, fontFamily: "var(--font-heading)", fontSize: 16, fontWeight: 800, letterSpacing: "-0.01em" }}>
           {info.name}
         </p>
-        <p style={{ margin: "2px 0 0", fontSize: 11, lineHeight: 1.3, color: muted, minHeight: 29 }}>{info.tagline}</p>
+        <p className="pw-sub" style={{ margin: "2px 0 0", fontSize: 11, lineHeight: 1.3, color: muted, minHeight: 29 }}>{info.tagline}</p>
         <p style={{ margin: "10px 0 0", display: "flex", alignItems: "baseline", gap: 4, flexWrap: "wrap" }}>
-          <span style={{ fontFamily: "var(--font-heading)", fontSize: 27, fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1 }}>
+          <span className="pw-price" style={{ fontFamily: "var(--font-heading)", fontSize: 27, fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1 }}>
             {info.price}
           </span>
           <span style={{ fontSize: 11.5, fontWeight: 600, color: muted }}>{info.priceSuffix}</span>
         </p>
         <CtaButton label={info.cta} featured={featured} />
-        <p style={{ margin: "8px 0 0", fontSize: 10, textAlign: "center", color: muted }}>{info.billing}</p>
+        <p className="pw-sub" style={{ margin: "8px 0 0", fontSize: 10, textAlign: "center", color: muted }}>{info.billing}</p>
         <div aria-hidden style={{ height: 1, background: "var(--color-divider)", margin: "12px 0 11px" }} />
-        <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 7 }}>
+        <ul className="pw-benefits" style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 7 }}>
           {items.map((item) => (
             <li key={item} className="flex items-start gap-1.5" style={{ fontSize: 11.5, fontWeight: 600, lineHeight: 1.3 }}>
               <Check />
@@ -221,7 +223,7 @@ export function PricingSelector({
     <div>
       {children}
       <div
-        className="plan-grid grid gap-2.5"
+        className="pw-grid grid gap-2.5"
         style={{ marginTop: 24, gridTemplateColumns: `repeat(${plans.length}, minmax(0, 1fr))` }}
       >
         {plans.map((plan, i) => (
@@ -244,7 +246,7 @@ export function PricingSelector({
         </p>
       )}
 
-      <p style={{ fontSize: 11, textAlign: "center", lineHeight: 1.5, margin: "16px 0 0", color: muted }}>
+      <p className="pw-sub" style={{ fontSize: 11, textAlign: "center", lineHeight: 1.5, margin: "16px 0 0", color: muted }}>
         🔒 Paiement sécurisé par Stripe · En continuant, tu acceptes les{" "}
         <Link href="/legal/cgv" style={{ color: "var(--color-accent-700)", textDecoration: "underline" }}>
           CGV

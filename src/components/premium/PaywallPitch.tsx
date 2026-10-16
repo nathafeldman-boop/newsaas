@@ -18,7 +18,7 @@ export function PaywallPitch({
   rating: number | null;
 }) {
   return (
-    <>
+    <div className="pw-pitch">
       {/* Promesse */}
       <h1
         className="animate-in"
@@ -63,6 +63,6 @@ export function PaywallPitch({
           {rating.toLocaleString("fr-FR")}/5 · note de nos membres Premium
         </p>
       )}
-    </>
+    </div>
   );
 }

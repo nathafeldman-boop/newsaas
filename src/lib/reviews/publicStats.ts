@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 // Lecture publique (page d'accueil, hors compte) d'un agrégat sur les avis
@@ -59,8 +60,11 @@ export async function getPublicTestimonials(limit: number): Promise<PublicTestim
 // Note moyenne des avis approuvés laissés par des étudiants qui ont payé
 // (paywall, 16/10 : Nathan veut la note de ceux qui paient, sans le nombre
 // d'avis). Toujours la vraie moyenne -- null s'il y a moins de 3 avis
-// payants, trop peu pour afficher une note.
-export async function getPaidReviewAverage(): Promise<number | null> {
+// payants, trop peu pour afficher une note. En cache 10 min : le paywall
+// s'ouvre plus vite (deux requêtes de moins à chaque affichage).
+export const getPaidReviewAverage = unstable_cache(computePaidReviewAverage, ["paid-review-average"], { revalidate: 600 });
+
+async function computePaidReviewAverage(): Promise<number | null> {
   const admin = createAdminClient();
   const { data: reviews, error } = await admin.from("reviews").select("user_id, rating").eq("status", "approved").limit(5000);
   if (error) console.error("getPaidReviewAverage: reviews query failed", error);
