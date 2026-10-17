@@ -26,10 +26,17 @@ export function GoogleButton({
   referredByCode,
   affiliateCode,
   next = "/onboarding",
+  hideInAppBrowser = false,
+  block = true,
 }: {
   referredByCode?: string | null;
   affiliateCode?: string | null;
   next?: string;
+  // Page d'accueil : dans TikTok/Instagram, le bouton disparaît simplement
+  // (le CTA d'inscription email à côté suffit) au lieu d'afficher un message.
+  hideInAppBrowser?: boolean;
+  // false : largeur du contenu, pour se ranger à côté d'un autre bouton.
+  block?: boolean;
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +83,7 @@ export function GoogleButton({
   }
 
   if (blockedInAppBrowser) {
+    if (hideInAppBrowser) return null;
     return (
       <p
         className="text-sm"
@@ -99,7 +107,8 @@ export function GoogleButton({
         type="button"
         onClick={handleClick}
         disabled={loading}
-        className="btn btn-secondary btn-block"
+        className={block ? "btn btn-secondary btn-block" : "btn btn-secondary"}
+        style={block ? undefined : { whiteSpace: "nowrap", background: "#fff", color: "#1f1f1f", borderColor: "var(--color-divider)" }}
       >
         <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
           <path

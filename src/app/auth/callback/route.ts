@@ -13,7 +13,9 @@ export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const ref = searchParams.get("ref");
-  const aff = searchParams.get("aff");
+  // Bouton Google de la page d'accueil (servie en cache, sans lecture de
+  // cookie) : le code affilié vient alors du cookie posé à l'arrivée.
+  const aff = searchParams.get("aff") ?? request.cookies.get("aff_code")?.value ?? null;
   // Un endpoint GET public reste appelable directement avec n'importe quel
   // `next` forgé, indépendamment de ce que LoginForm/GoogleButton envoient
   // normalement -- ne jamais faire confiance à la seule validation côté

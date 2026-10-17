@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { GoogleButton } from "@/components/auth/GoogleButton";
 import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { CONTACT_EMAIL, SITE_URL, SOCIAL_PROFILES } from "@/lib/site";
@@ -491,7 +492,7 @@ export default async function LandingPage() {
                 textWrap: "balance" as React.CSSProperties["textWrap"],
               }}
             >
-              Trouve ta prochaine expérience{" "}
+              Décroche ton alternance ou ton stage{" "}
               <span className="lp-wiggle" style={{ display: "inline-block" }}>
                 <Highlight>en swipant</Highlight>
               </span>
@@ -505,16 +506,16 @@ export default async function LandingPage() {
                 color: mutedText,
               }}
             >
-              Fini les quarante candidatures identiques sur dix sites différents. On te propose
-              les offres qui matchent ton profil ; tu likes, tu postules, c&apos;est tout.
+              Tu swipes les offres faites pour toi, Stageio écrit ta lettre de motivation en
+              quelques secondes. Tu n&apos;as plus qu&apos;à postuler.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Link href="/inscription" className="btn btn-gradient" style={{ whiteSpace: "nowrap" }}>
                 Commencer à swiper — c&apos;est gratuit
               </Link>
-              <a href="#comment" className="btn btn-secondary" style={{ whiteSpace: "nowrap" }}>
-                ▶ Voir comment
-              </a>
+              {/* SOP 19 (landing qui convertit) : inscription en un clic dès
+                  l'accueil. Masqué dans TikTok/Instagram, où Google refuse. */}
+              <GoogleButton hideInAppBrowser block={false} />
             </div>
             <div className="mt-7 flex items-center gap-3.5">
               <div className="flex">
@@ -1428,6 +1429,7 @@ export default async function LandingPage() {
                   >
                     Créer mon compte gratuitement
                   </Link>
+                  <GoogleButton hideInAppBrowser block={false} />
                 </div>
               </div>
             </div>
@@ -1441,6 +1443,7 @@ export default async function LandingPage() {
           <span className="flex items-center gap-2" style={{ marginRight: "auto", fontSize: 14, fontWeight: 800 }}>
             <span aria-hidden style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--color-accent)" }} />
             Stageio
+            <span style={{ fontWeight: 500, fontSize: 13, color: mutedText }}>© {new Date().getFullYear()}</span>
           </span>
           {[
             { href: "/a-propos", label: "Stageio, c'est quoi ?" },
