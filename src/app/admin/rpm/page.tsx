@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getRpmWindowStats, type RpmWindowStats } from "@/lib/admin/dashboardStats";
+import { getHourlyAttribution, getRpmWindowStats, type RpmWindowStats } from "@/lib/admin/dashboardStats";
 import { saveContentViewsAction } from "@/app/admin/rpm-actions";
 
 // RPM (SOP 16 « Tracking minimum vital ») : les 3 métriques de démarrage,
@@ -61,12 +61,16 @@ async function loadRpmData() {
       dates.map(async (d) => [d, await getRpmWindowStats(windowEnd(d)).catch(() => null)] as const),
     ),
   );
-  return { today, rows, missingTable, knownSources, dates, windows };
+  const hourly = await getHourlyAttribution().catch((err) => {
+    console.error("AdminRpmPage: hourly attribution failed", err);
+    return null;
+  });
+  return { today, rows, missingTable, knownSources, dates, windows, hourly };
 }
 
 export default async function AdminRpmPage({ searchParams }: { searchParams: Promise<{ error?: string; saved?: string }> }) {
   const { error, saved } = await searchParams;
-  const { today, rows, missingTable, knownSources, dates, windows } = await loadRpmData();
+  const { today, rows, missingTable, knownSources, dates, windows, hourly } = await loadRpmData();
 
   return (
     <div className="mx-auto w-full max-w-5xl px-5 py-6">
@@ -175,9 +179,52 @@ export default async function AdminRpmPage({ searchParams }: { searchParams: Pro
         </div>
       )}
 
+      <div className="card" style={{ marginTop: 16, padding: 16, overflowX: "auto" }}>
+        <h2 style={{ fontSize: 16, margin: 0 }}>Heure par heure · 72 h</h2>
+        <p style={{ fontSize: 12, margin: "4px 0 12px", color: muted, maxWidth: "80ch" }}>
+          Attribution par corrélation (SOP 17) : ouvre les vues TikTok heure par heure à côté. Un pic de paiements à la même heure
+          qu&apos;une vidéo qui monte = le revenu vient d&apos;elle. Heures sans aucune activité masquées ; lignes avec paiement en vert.
+        </p>
+        {hourly === null ? (
+          <p style={{ margin: 0, fontSize: 13 }}>Calcul indisponible (base lente), recharge dans quelques minutes.</p>
+        ) : (
+          <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse", whiteSpace: "nowrap" }}>
+            <thead>
+              <tr style={{ textAlign: "left", color: muted }}>
+                {["Heure", "Arrivées", "Inscrits", "Paiements", "Montant", "Sources principales"].map((h) => (
+                  <th key={h} style={{ padding: "4px 12px 4px 0", fontWeight: 500 }}>
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {hourly.map((h) => (
+                <tr
+                  key={h.hour}
+                  style={{
+                    borderTop: "1px solid var(--color-divider)",
+                    background: h.payments > 0 ? "color-mix(in srgb, var(--color-accent) 10%, transparent)" : undefined,
+                  }}
+                >
+                  <td style={{ padding: "5px 12px 5px 0", fontWeight: 700 }}>
+                    {new Date(h.hour).toLocaleString("fr-FR", { timeZone: "Europe/Paris", weekday: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                  </td>
+                  <td style={{ padding: "5px 12px 5px 0" }}>{h.arrivals}</td>
+                  <td style={{ padding: "5px 12px 5px 0" }}>{h.signups}</td>
+                  <td style={{ padding: "5px 12px 5px 0", fontWeight: h.payments > 0 ? 800 : 400 }}>{h.payments}</td>
+                  <td style={{ padding: "5px 12px 5px 0" }}>{h.cents > 0 ? euros(h.cents) : "—"}</td>
+                  <td style={{ padding: "5px 0", color: muted }}>{h.topSources.join(" · ") || "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
       <p style={{ fontSize: 12, margin: "14px 0 0", color: muted, maxWidth: "80ch" }}>
-        Par vidéo : un lien de bio TikTok ne dit pas de quelle vidéo vient la visite. Pour lire une vidéo winner, donne à chaque
-        créateur (ou compte) son propre lien stageio.fr/?utm_source=nom, et compare les jours où la vidéo a explosé.
+        Un lien par compte de diffusion, posé dès sa création : stageio.fr/?a=nom-du-compte (même effet qu&apos;un utm_source).
+        Pour le pilotage seulement, jamais pour payer un créateur (payé à la vue, ~1 €/1000).
       </p>
     </div>
   );

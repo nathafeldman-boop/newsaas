@@ -50,7 +50,11 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
   // convertissent réellement (voir Nathan, 27/09 : 106 clics TikTok
   // rapportés vs 6 inscriptions, sans donnée pour départager clics
   // non-qualifiés / abandon avant inscription / bug technique).
-  const rawUtmSource = request.nextUrl.searchParams.get("utm_source");
+  // ?a=compte (SOP 17, 17/10) : un lien court par compte de diffusion
+  // (stageio.fr/?a=ines), même effet qu'un utm_source. Pilotage seulement,
+  // jamais rémunération -- les affiliés rémunérés gardent ?aff=.
+  const rawUtmSource =
+    request.nextUrl.searchParams.get("utm_source") ?? request.nextUrl.searchParams.get("a")?.trim().toLowerCase().slice(0, 60) ?? null;
   const utmParam = rawUtmSource ? normalizeUtmSource(rawUtmSource) : null;
   const utmSourceParam = utmParam?.source ?? null;
   // Pas d'utm_source : on déduit la source du site d'origine (Google, Bing,

@@ -29,8 +29,15 @@ type PlanInfo = {
   billing: string;
   cta: string;
   ribbon?: string;
+  // Économie réelle, calculée face à notre propre mensuel (jamais un faux
+  // prix barré « avant/après » : interdit, voir premium/page.tsx).
+  saving?: string;
   extra?: string;
 };
+
+const MONTHLY_PRICE = 7.99;
+const LIFETIME_PRICE = 39.99;
+const LIFETIME_SAVING = Math.round((1 - LIFETIME_PRICE / (MONTHLY_PRICE * 12)) * 100);
 
 const PLANS: Record<Plan, PlanInfo> = {
   lifetime: {
@@ -41,6 +48,7 @@ const PLANS: Record<Plan, PlanInfo> = {
     billing: "Paiement unique, aucun renouvellement",
     cta: "Débloquer à vie",
     ribbon: "Le prix de 5 mois",
+    saving: `−${LIFETIME_SAVING} % vs 1 an en mensuel`,
     extra: "Premium à vie, pour tes prochains stages et alternances",
   },
   monthly: {
@@ -192,6 +200,22 @@ function PlanCard({ plan, featured, index }: { plan: Plan; featured: boolean; in
           </span>
           <span style={{ fontSize: 11.5, fontWeight: 600, color: muted }}>{info.priceSuffix}</span>
         </p>
+        {info.saving && (
+          <span
+            style={{
+              alignSelf: "flex-start",
+              marginTop: 6,
+              fontSize: 10.5,
+              fontWeight: 800,
+              color: "var(--color-accent-700)",
+              background: "var(--color-accent-100)",
+              borderRadius: 999,
+              padding: "3px 8px",
+            }}
+          >
+            {info.saving}
+          </span>
+        )}
         <CtaButton label={info.cta} featured={featured} />
         <p className="pw-sub" style={{ margin: "8px 0 0", fontSize: 10, textAlign: "center", color: muted }}>{info.billing}</p>
         <div aria-hidden style={{ height: 1, background: "var(--color-divider)", margin: "12px 0 11px" }} />

@@ -286,3 +286,78 @@ export const getRpmWindowStats = unstable_cache(
   ["admin-rpm-window-v1"],
   { revalidate: 600 },
 );
+
+// Attribution par corrélation (SOP 17) : heure par heure sur 72 h, arrivées,
+// inscrits et paiements, pour rapprocher un pic de revenu d'un pic de vues
+// (« une vidéo qui monte à 17 h et un spike de revenu à 17 h : le revenu
+// vient d'elle »). Paiements limités aux clients Stageio (compte partagé).
+export type HourlyAttribution = {
+  hour: string;
+  arrivals: number;
+  signups: number;
+  payments: number;
+  cents: number;
+  topSources: string[];
+};
+
+export const getHourlyAttribution = unstable_cache(
+  guarded("hourly attribution", async (): Promise<HourlyAttribution[]> => {
+    const since = new Date(Date.now() - 72 * HOUR_MS);
+    const admin = createAdminClient();
+    const [visits, { data: signups, error: signupsError }, { data: invoices, error: invoicesError }] = await Promise.all([
+      readVisits<{ visitor_id: string; utm_source: string | null; created_at: string }>("visitor_id, utm_source, created_at", since, new Date(), HOUR_MS),
+      admin.from("profiles").select("created_at").gte("created_at", since.toISOString()).limit(20_000),
+      admin.from("stripe_processed_invoices").select("stripe_customer_id, amount_cents, created_at").gte("created_at", since.toISOString()).gt("amount_cents", 0).limit(5_000),
+    ]);
+    if (signupsError) throw new Error(signupsError.message);
+    if (invoicesError) throw new Error(invoicesError.message);
+
+    const customers = [...new Set((invoices ?? []).map((i) => i.stripe_customer_id))];
+    const owned = new Set<string>();
+    for (let i = 0; i < customers.length; i += 200) {
+      const { data, error } = await admin.from("profiles").select("stripe_customer_id").in("stripe_customer_id", customers.slice(i, i + 200));
+      if (error) throw new Error(error.message);
+      for (const p of data ?? []) if (p.stripe_customer_id) owned.add(p.stripe_customer_id);
+    }
+
+    const hourKey = (iso: string) => {
+      const d = new Date(iso);
+      d.setUTCMinutes(0, 0, 0);
+      return d.toISOString();
+    };
+    const hours = new Map<string, { visitors: Set<string>; bySource: Map<string, Set<string>>; signups: number; payments: number; cents: number }>();
+    const bucket = (iso: string) => {
+      const key = hourKey(iso);
+      let b = hours.get(key);
+      if (!b) hours.set(key, (b = { visitors: new Set(), bySource: new Map(), signups: 0, payments: 0, cents: 0 }));
+      return b;
+    };
+    for (const v of visits) {
+      const b = bucket(v.created_at);
+      b.visitors.add(v.visitor_id);
+      if (v.utm_source) {
+        if (!b.bySource.has(v.utm_source)) b.bySource.set(v.utm_source, new Set());
+        b.bySource.get(v.utm_source)!.add(v.visitor_id);
+      }
+    }
+    for (const p of signups ?? []) bucket(p.created_at).signups += 1;
+    for (const inv of invoices ?? []) {
+      if (!owned.has(inv.stripe_customer_id)) continue;
+      const b = bucket(inv.created_at);
+      b.payments += 1;
+      b.cents += inv.amount_cents;
+    }
+    return [...hours.entries()]
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([hour, b]) => ({
+        hour,
+        arrivals: b.visitors.size,
+        signups: b.signups,
+        payments: b.payments,
+        cents: b.cents,
+        topSources: [...b.bySource.entries()].sort((x, y) => y[1].size - x[1].size).slice(0, 2).map(([s, set]) => `${s} (${set.size})`),
+      }));
+  }),
+  ["admin-hourly-attribution-v1"],
+  { revalidate: 300 },
+);
