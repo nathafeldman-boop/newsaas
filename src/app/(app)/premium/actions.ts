@@ -2,6 +2,8 @@
 
 import type Stripe from "stripe";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
+import { logServerEvent } from "@/lib/analytics/logServerEvent";
 import { createClient } from "@/lib/supabase/server";
 import { getStripeClient } from "@/lib/stripe/client";
 import { SITE_URL } from "@/lib/site";
@@ -169,6 +171,8 @@ export async function createCheckoutSessionAction(formData: FormData) {
   }
 
   if (!session.url) redirect("/premium?error=checkout_failed");
+  // Chemin de Léo (SOP 26) : « 60-70 % ouvrent le checkout ».
+  after(() => logServerEvent(supabase, user.id, "checkout_opened", { plan: isLifetime ? "lifetime" : "monthly" }));
   redirect(session.url);
 }
 

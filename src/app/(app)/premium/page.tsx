@@ -1,5 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
+import { logServerEvent } from "@/lib/analytics/logServerEvent";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { isPremium } from "@/lib/subscription/isPremium";
 import { refreshStaleSubscription } from "@/lib/stripe/refreshStaleSubscription";
@@ -63,6 +66,13 @@ export default async function PremiumPage({
   // approuvés), lus seulement quand la page de vente s'affiche. Une erreur
   // n'empêche jamais d'afficher la page : le bloc concerné disparaît.
   const showPitch = !premium && !paymentIssue;
+  // Chemin de Léo (SOP 26), étape 4 : « 90 % doivent VOIR le paywall » --
+  // noté après la réponse, sans ralentir l'affichage. Client admin : une
+  // page ne peut plus lire les cookies une fois la réponse partie.
+  if (showPitch && user) {
+    const viewerId = user.id;
+    after(() => logServerEvent(createAdminClient(), viewerId, "paywall_viewed", { source: source ?? null }));
+  }
   const [activeOffers, reviews] = showPitch
     ? await Promise.all([
         fetchActiveOfferCount("all").catch((err) => {

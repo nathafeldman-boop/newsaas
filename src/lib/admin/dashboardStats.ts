@@ -167,3 +167,53 @@ export async function withTimeout<T>(promise: Promise<T>, ms: number, fallback: 
     clearTimeout(timer);
   }
 }
+
+// Chemin de Léo (SOP 26, 17/10) : les taux de l'entonnoir sur les inscrits
+// des 7 derniers jours, à comparer aux benchmarks de la fiche. Arrivées =
+// visiteurs distincts de l'accueil (/). paywall_viewed et checkout_opened
+// sont notés depuis le 17/10 (page /premium et création de la session
+// Stripe). Payé = au moins un paiement réel (total_paid_cents > 0).
+export type LeoFunnel = {
+  arrivals: number;
+  signups: number;
+  onboarded: number;
+  paywallViewed: number;
+  checkoutOpened: number;
+  paid: number;
+};
+
+export const getLeoFunnel = unstable_cache(
+  guarded("leo funnel", async (): Promise<LeoFunnel> => {
+    const since = new Date(Date.now() - 7 * DAY_MS);
+    const admin = createAdminClient();
+    const [visits, { data: signups, error }] = await Promise.all([
+      readVisits<{ visitor_id: string; path: string; created_at: string }>("visitor_id, path, created_at", since, new Date(), DAY_MS),
+      admin.from("profiles").select("id, onboarding_completed, total_paid_cents").gte("created_at", since.toISOString()).limit(10_000),
+    ]);
+    if (error) throw new Error(error.message);
+    const ids = (signups ?? []).map((p) => p.id);
+    const viewed = new Set<string>();
+    const opened = new Set<string>();
+    for (let i = 0; i < ids.length; i += 200) {
+      const { data: events, error: eventsError } = await admin
+        .from("user_events")
+        .select("user_id, event_type")
+        .in("event_type", ["paywall_viewed", "checkout_opened"])
+        .in("user_id", ids.slice(i, i + 200))
+        .gte("created_at", since.toISOString())
+        .limit(20_000);
+      if (eventsError) throw new Error(eventsError.message);
+      for (const e of events ?? []) (e.event_type === "paywall_viewed" ? viewed : opened).add(e.user_id);
+    }
+    return {
+      arrivals: new Set(visits.filter((v) => v.path === "/").map((v) => v.visitor_id)).size,
+      signups: ids.length,
+      onboarded: (signups ?? []).filter((p) => p.onboarding_completed).length,
+      paywallViewed: viewed.size,
+      checkoutOpened: opened.size,
+      paid: (signups ?? []).filter((p) => p.total_paid_cents > 0).length,
+    };
+  }),
+  ["admin-leo-funnel-v1"],
+  { revalidate: 600 },
+);

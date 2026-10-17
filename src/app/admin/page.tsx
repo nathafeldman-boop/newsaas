@@ -2,7 +2,7 @@ import Link from "next/link";
 import { submitIndexNowAction } from "@/app/admin/seo-actions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchAllRows } from "@/lib/supabase/public";
-import { getOnboardingFunnelStats, getTodayVisitorsBySource, getWeekdayAverages, withTimeout } from "@/lib/admin/dashboardStats";
+import { getLeoFunnel, getOnboardingFunnelStats, getTodayVisitorsBySource, getWeekdayAverages, withTimeout } from "@/lib/admin/dashboardStats";
 import { startOfTodayParis } from "@/lib/date";
 import { STEP_IDS, STEP_LABELS, type StepId } from "@/lib/onboarding/steps";
 import { LineAreaChart } from "@/components/admin/charts/LineAreaChart";
@@ -152,6 +152,14 @@ export default async function AdminDashboardPage({
   // tout parte en même temps.
   const HEAVY_STAT_BUDGET_MS = 8000;
   const UNKNOWN_SOURCE = "direct / inconnu";
+  const leoFunnelPromise = withTimeout(
+    getLeoFunnel().catch((err) => {
+      console.error("AdminDashboardPage: leo funnel failed", err);
+      return null;
+    }),
+    HEAVY_STAT_BUDGET_MS,
+    null,
+  );
   const weekdayAveragesPromise = withTimeout(
     getWeekdayAverages(period).catch((err) => {
       console.error("AdminDashboardPage: visits query failed", err);
@@ -307,7 +315,27 @@ export default async function AdminDashboardPage({
     period,
   );
 
-  const [{ value: weekdayAverages }, { value: visitorsBySourceRows }] = await Promise.all([weekdayAveragesPromise, visitorsBySourcePromise]);
+  const [{ value: weekdayAverages }, { value: visitorsBySourceRows }, { value: leoFunnel }] = await Promise.all([
+    weekdayAveragesPromise,
+    visitorsBySourcePromise,
+    leoFunnelPromise,
+  ]);
+
+  // Chemin de Léo (SOP 26) : chaque taux comparé au bas de son benchmark ;
+  // le maillon faible est celui qui en est le plus loin (un seul chantier).
+  const leoRows = leoFunnel
+    ? [
+        { step: "Arrivées sur l'accueil", from: null, to: leoFunnel.arrivals, bench: null, benchLabel: "vues TikTok → accueil ~1 % (voir TikTok)" },
+        { step: "Accueil → inscription", from: leoFunnel.arrivals, to: leoFunnel.signups, bench: 0.3, benchLabel: "30-40 % (cible 50 %)" },
+        { step: "Inscription → onboarding fini", from: leoFunnel.signups, to: leoFunnel.onboarded, bench: null, benchLabel: "—" },
+        { step: "Inscription → paywall vu", from: leoFunnel.signups, to: leoFunnel.paywallViewed, bench: 0.9, benchLabel: "90 %" },
+        { step: "Paywall vu → paiement ouvert", from: leoFunnel.paywallViewed, to: leoFunnel.checkoutOpened, bench: 0.6, benchLabel: "60-70 %" },
+        { step: "Paywall vu → payé", from: leoFunnel.paywallViewed, to: leoFunnel.paid, bench: 0.1, benchLabel: "10-25 %" },
+      ].map((r) => ({ ...r, rate: r.from ? r.to / r.from : null }))
+    : [];
+  const weakestStep = leoRows
+    .filter((r) => r.bench !== null && r.rate !== null && r.rate < r.bench)
+    .sort((a, b) => a.rate! / a.bench! - b.rate! / b.bench!)[0]?.step;
 
   // Répartition par source aujourd'hui : seul moyen de répondre à "j'ai eu
   // 106 clics TikTok mais 6 inscrits" avec des vraies données plutôt qu'une
@@ -422,6 +450,44 @@ export default async function AdminDashboardPage({
         « Dont payant réel » = abonnement Stripe actif ou en essai uniquement — exclut les codes d&apos;accès offerts.
         « ARR » = abonnements actifs/essai annualisés selon leur vraie cadence (mensuel/hebdo), hors codes offerts.
       </p>
+
+      <SectionCard
+        title="Chemin de Léo · 7 derniers jours"
+        subtitle="Vidéos → accueil → inscription → paywall → paiement. Un seul chantier à la fois : le maillon faible. Paywall vu et paiement ouvert sont mesurés depuis le 17/10 (7 jours complets le 24/10)."
+      >
+        {leoFunnel === null ? (
+          <p style={{ fontSize: 13, margin: 0 }}>Calcul indisponible pour le moment (base lente), réessaie dans quelques minutes.</p>
+        ) : (
+          <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ textAlign: "left", color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
+                <th style={{ padding: "4px 0", fontWeight: 500 }}>Étape</th>
+                <th style={{ padding: "4px 0", fontWeight: 500 }}>Volume</th>
+                <th style={{ padding: "4px 0", fontWeight: 500 }}>Taux</th>
+                <th style={{ padding: "4px 0", fontWeight: 500 }}>Benchmark Léo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {leoRows.map((r) => {
+                const weak = r.step === weakestStep;
+                return (
+                  <tr key={r.step} style={{ borderTop: "1px solid var(--color-divider)", background: weak ? "color-mix(in srgb, #e5484d 10%, transparent)" : undefined }}>
+                    <td style={{ padding: "6px 0", fontWeight: 700 }}>
+                      {r.step}
+                      {weak && <span style={{ marginLeft: 6, color: "#e5484d", fontWeight: 800 }}>← maillon faible</span>}
+                    </td>
+                    <td style={{ padding: "6px 0" }}>{r.from !== null ? `${r.to} / ${r.from}` : r.to}</td>
+                    <td style={{ padding: "6px 0", fontWeight: 700, color: r.bench !== null && r.rate !== null ? (r.rate >= r.bench ? "var(--color-accent-700)" : "#e5484d") : undefined }}>
+                      {r.rate !== null ? `${Math.round(r.rate * 100)} %` : "—"}
+                    </td>
+                    <td style={{ padding: "6px 0" }}>{r.benchLabel}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </SectionCard>
 
       <SectionCard title="Inscriptions">
         <div className="seg mb-4" style={{ display: "inline-flex" }}>
