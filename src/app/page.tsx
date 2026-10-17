@@ -322,8 +322,15 @@ export default async function LandingPage() {
   // un rendu dynamique par requête, rendant `revalidate` ci-dessus inopérant --
   // exactement le genre de lenteur que ce passage SEO cherche à éviter.
   const admin = createAdminClient();
-  const [{ count: activeOffersCount }, { count: alternanceCount }, reviewStats, testimonials, discovery, latestOffers] =
-    await Promise.all([
+  const [
+    { count: activeOffersCount },
+    { count: alternanceCount },
+    reviewStats,
+    testimonials,
+    discovery,
+    latestOffers,
+    { count: studentCount },
+  ] = await Promise.all([
       admin.from("offers").select("id", { count: "exact", head: true }).eq("is_active", true),
       admin
         .from("offers")
@@ -334,7 +341,15 @@ export default async function LandingPage() {
       getPublicTestimonials(6),
       getDiscoveryLinks(),
       getLatestOfferLinks(),
+      admin.from("profiles").select("id", { count: "exact", head: true }),
     ]);
+
+  // Réassurance sociale (checklist « landing qui convertit ») : le vrai
+  // nombre de comptes, arrondi vers le bas (« plus de 1 200 »), jamais gonflé.
+  const studentsLabel =
+    studentCount && studentCount >= 50
+      ? `Plus de ${(Math.floor(studentCount / (studentCount >= 1000 ? 100 : 10)) * (studentCount >= 1000 ? 100 : 10)).toLocaleString("fr-FR")} étudiants inscrits`
+      : null;
 
   const alternanceShare =
     activeOffersCount && activeOffersCount > 0
@@ -350,7 +365,9 @@ export default async function LandingPage() {
       label: "Offres actives",
       color: "var(--color-accent)",
     },
-    { value: "100%", label: "Gratuit à l'inscription" },
+    studentCount && studentCount >= 50
+      ? { value: studentCount.toLocaleString("fr-FR"), label: "Étudiants inscrits" }
+      : { value: "100%", label: "Gratuit à l'inscription" },
     {
       value: alternanceShare !== null ? `${alternanceShare}%` : "—",
       label: "Alternances",
@@ -558,9 +575,9 @@ export default async function LandingPage() {
                 </span>
               </div>
               <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.4, color: mutedText }}>
-                <strong style={{ color: "var(--color-text)" }}>Gratuit à l&apos;inscription</strong>
+                <strong style={{ color: "var(--color-text)" }}>{studentsLabel ?? "Gratuit à l'inscription"}</strong>
                 <br />
-                CV facultatif · partout en France
+                {studentsLabel ? "Gratuit · prêt à swiper en 1 minute" : "CV facultatif · partout en France"}
               </p>
             </div>
           </div>

@@ -1362,15 +1362,6 @@ export function OnboardingWizard({
                       onEdit: () => goToStep("sectors"),
                     },
                     {
-                      icon: "💼",
-                      label: "Métiers visés",
-                      value: targetJobs.length
-                        ? targetJobs.slice(0, 2).join(", ") +
-                          (targetJobs.length > 2 ? ` +${targetJobs.length - 2}` : "")
-                        : "—",
-                      onEdit: () => goToStep("jobs"),
-                    },
-                    {
                       icon: "🎓",
                       label: "Niveau",
                       value: [educationLevel, experienceLevel, availabilityLabel].filter(Boolean).join(" · ") || "—",

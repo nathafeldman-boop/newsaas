@@ -6,7 +6,9 @@
 // le bundler RSC transforme tous ses exports en références client, ce qui
 // casse silencieusement dès qu'on essaie de s'en servir comme un tableau
 // normal côté serveur ("STEP_IDS is not iterable").
-export const STEP_IDS = [
+// Toutes les étapes qui existent dans le wizard (le type), et ci-dessous le
+// parcours réellement joué.
+export const ALL_STEP_IDS = [
   "intro",
   "looking_for",
   "trust",
@@ -20,7 +22,15 @@ export const STEP_IDS = [
   "cv",
   "outro",
 ] as const;
-export type StepId = (typeof STEP_IDS)[number];
+export type StepId = (typeof ALL_STEP_IDS)[number];
+
+// Parcours express (17/10, checklist « landing qui convertit » : inscription
+// en 30 s avant le paywall) : 5 questions en un ou deux taps, puis le récap.
+// Retirés du parcours : bienvenue, écran de confiance, compétences, métiers
+// visés, disponibilité et CV -- tous modifiables ensuite depuis /profil.
+// Gardés : ce qui fait la pertinence du deck (contrat, secteurs = filtre
+// dur du deck, ville + mobilité = pénalité de distance, niveau).
+export const STEP_IDS: readonly StepId[] = ["looking_for", "sectors", "city", "mobility", "level", "outro"];
 
 export const STEP_LABELS: Record<StepId, string> = {
   intro: "Bienvenue",

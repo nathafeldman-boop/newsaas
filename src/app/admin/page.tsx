@@ -315,6 +315,11 @@ export default async function AdminDashboardPage({
   // page ne doit pas compter deux fois) vs inscriptions, groupés par
   // utm_source (voir migration 20260927000000_utm_tracking.sql).
   const visitorsBySource = new Map(visitorsBySourceRows ?? []);
+  // Taux visites → comptes du jour (checklist « landing qui convertit » :
+  // 30-40 % en organique, cible 50 %). Visiteurs = somme par source, donc
+  // un visiteur venu par deux sources compte deux fois (léger sous-taux).
+  const visitorsToday = [...visitorsBySource.values()].reduce((sum, n) => sum + n, 0);
+  const pct = (signups: number, visitors: number) => (visitors > 0 ? `${Math.round((signups / visitors) * 100)} %` : "—");
   const signupsBySource = new Map<string, number>();
   for (const p of signupsTodayRows ?? []) {
     const source = p.utm_source || UNKNOWN_SOURCE;
@@ -392,6 +397,11 @@ export default async function AdminDashboardPage({
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <StatTile label="En ligne maintenant" value={String(onlineNow ?? 0)} accent href="/admin/online" />
         <StatTile label="Inscrits aujourd'hui" value={String(signupsToday ?? 0)} accent />
+        <StatTile
+          label="Visites → comptes (jour) · cible 30-40 %"
+          value={visitorsBySourceRows === null ? "—" : `${pct(signupsToday ?? 0, visitorsToday)} (${signupsToday ?? 0}/${visitorsToday})`}
+          accent
+        />
         <StatTile label="Inscrits (7 jours)" value={String(signupsWeek ?? 0)} />
         <StatTile label="Total utilisateurs" value={String(totalUsers ?? 0)} />
         <StatTile label="Premium (avec bonus)" value={`${premiumTotal} (${totalUsers && totalUsers > 0 ? Math.round((premiumTotal / totalUsers) * 100) : 0}%)`} accent />
@@ -449,6 +459,7 @@ export default async function AdminDashboardPage({
                 <th style={{ padding: "4px 0", fontWeight: 500 }}>Source</th>
                 <th style={{ padding: "4px 0", fontWeight: 500 }}>Visiteurs</th>
                 <th style={{ padding: "4px 0", fontWeight: 500 }}>Inscriptions</th>
+                <th style={{ padding: "4px 0", fontWeight: 500 }}>Conversion</th>
               </tr>
             </thead>
             <tbody>
@@ -457,6 +468,7 @@ export default async function AdminDashboardPage({
                   <td style={{ padding: "6px 0", fontWeight: source === UNKNOWN_SOURCE ? 400 : 700 }}>{source}</td>
                   <td style={{ padding: "6px 0" }}>{visitorsBySource.get(source) ?? 0}</td>
                   <td style={{ padding: "6px 0" }}>{signupsBySource.get(source) ?? 0}</td>
+                  <td style={{ padding: "6px 0" }}>{pct(signupsBySource.get(source) ?? 0, visitorsBySource.get(source) ?? 0)}</td>
                 </tr>
               ))}
             </tbody>
