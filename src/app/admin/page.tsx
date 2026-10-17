@@ -326,11 +326,13 @@ export default async function AdminDashboardPage({
   const leoRows = leoFunnel
     ? [
         { step: "Arrivées sur l'accueil", from: null, to: leoFunnel.arrivals, bench: null, benchLabel: "vues TikTok → accueil ~1 % (voir TikTok)" },
+        { step: "Accueil → inscription commencée", from: leoFunnel.arrivals, to: leoFunnel.signupStarted, bench: null, benchLabel: "—" },
         { step: "Accueil → inscription", from: leoFunnel.arrivals, to: leoFunnel.signups, bench: 0.3, benchLabel: "30-40 % (cible 50 %)" },
         { step: "Inscription → onboarding fini", from: leoFunnel.signups, to: leoFunnel.onboarded, bench: null, benchLabel: "—" },
         { step: "Inscription → paywall vu", from: leoFunnel.signups, to: leoFunnel.paywallViewed, bench: 0.9, benchLabel: "90 %" },
         { step: "Paywall vu → paiement ouvert", from: leoFunnel.paywallViewed, to: leoFunnel.checkoutOpened, bench: 0.6, benchLabel: "60-70 %" },
         { step: "Paywall vu → payé", from: leoFunnel.paywallViewed, to: leoFunnel.paid, bench: 0.1, benchLabel: "10-25 %" },
+        { step: "Arrivée → payé", from: leoFunnel.arrivals, to: leoFunnel.paid, bench: 0.03, benchLabel: "3-6 %" },
       ].map((r) => ({ ...r, rate: r.from ? r.to / r.from : null }))
     : [];
   const weakestStep = leoRows

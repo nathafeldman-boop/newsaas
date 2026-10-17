@@ -196,6 +196,15 @@ export type StripeProcessedInvoice = {
   created_at: string;
 };
 
+// Vues TikTok/créateurs saisies à la main dans /admin/rpm (SOP 16) : vues
+// des 7 jours qui finissent le `recorded_on`, par source (utm_source).
+export type ContentView = {
+  recorded_on: string;
+  source: string;
+  views: number;
+  created_at: string;
+};
+
 export type ReviewStatus = "pending" | "approved" | "rejected";
 
 export type Review = {
@@ -366,6 +375,12 @@ export type Database = {
         Row: UserEvent;
         Insert: Partial<UserEvent> & { user_id: string; event_type: string };
         Update: Partial<UserEvent>;
+        Relationships: [];
+      };
+      content_views: {
+        Row: ContentView;
+        Insert: Partial<ContentView> & { recorded_on: string; source: string; views: number };
+        Update: Partial<ContentView>;
         Relationships: [];
       };
       site_visits: {

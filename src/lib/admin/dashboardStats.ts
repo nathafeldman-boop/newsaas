@@ -175,6 +175,7 @@ export async function withTimeout<T>(promise: Promise<T>, ms: number, fallback: 
 // Stripe). Payé = au moins un paiement réel (total_paid_cents > 0).
 export type LeoFunnel = {
   arrivals: number;
+  signupStarted: number;
   signups: number;
   onboarded: number;
   paywallViewed: number;
@@ -207,6 +208,8 @@ export const getLeoFunnel = unstable_cache(
     }
     return {
       arrivals: new Set(visits.filter((v) => v.path === "/").map((v) => v.visitor_id)).size,
+      // Sign-up commencé (SOP 16) : visiteurs distincts du formulaire d'inscription.
+      signupStarted: new Set(visits.filter((v) => v.path === "/inscription").map((v) => v.visitor_id)).size,
       signups: ids.length,
       onboarded: (signups ?? []).filter((p) => p.onboarding_completed).length,
       paywallViewed: viewed.size,
@@ -214,6 +217,72 @@ export const getLeoFunnel = unstable_cache(
       paid: (signups ?? []).filter((p) => p.total_paid_cents > 0).length,
     };
   }),
-  ["admin-leo-funnel-v1"],
+  ["admin-leo-funnel-v2"],
+  { revalidate: 600 },
+);
+
+// RPM par source (SOP 16) : sur les 7 jours qui finissent `endIso` (même
+// période que les vues saisies), par utm_source -- arrivées (visiteurs
+// distincts), inscrits, et revenu du PREMIER paiement uniquement (jamais la
+// LTV : « comme ça tu es sûr d'être en bénéfice sur la suite »), attribué à
+// la source d'inscription du compte.
+export type RpmWindowStats = Record<string, { arrivals: number; signups: number; firstPaymentCents: number; payers: number }>;
+
+export const getRpmWindowStats = unstable_cache(
+  guarded("rpm window", async (endIso: string): Promise<RpmWindowStats> => {
+    const end = new Date(endIso);
+    const start = new Date(end.getTime() - 7 * DAY_MS);
+    const admin = createAdminClient();
+    const stats: RpmWindowStats = {};
+    const entry = (source: string) => (stats[source] ??= { arrivals: 0, signups: 0, firstPaymentCents: 0, payers: 0 });
+
+    const [visits, { data: signups, error: signupsError }, { data: invoices, error: invoicesError }] = await Promise.all([
+      readVisits<{ visitor_id: string; utm_source: string | null; created_at: string }>("visitor_id, utm_source, created_at", start, end, DAY_MS),
+      admin.from("profiles").select("utm_source").gte("created_at", start.toISOString()).lt("created_at", end.toISOString()).limit(20_000),
+      admin
+        .from("stripe_processed_invoices")
+        .select("stripe_customer_id, amount_cents, created_at")
+        .gte("created_at", start.toISOString())
+        .lt("created_at", end.toISOString())
+        .gt("amount_cents", 0)
+        .order("created_at")
+        .limit(5_000),
+    ]);
+    if (signupsError) throw new Error(signupsError.message);
+    if (invoicesError) throw new Error(invoicesError.message);
+
+    const visitorsBySource = new Map<string, Set<string>>();
+    for (const v of visits) {
+      if (!v.utm_source) continue;
+      if (!visitorsBySource.has(v.utm_source)) visitorsBySource.set(v.utm_source, new Set());
+      visitorsBySource.get(v.utm_source)!.add(v.visitor_id);
+    }
+    for (const [source, visitors] of visitorsBySource) entry(source).arrivals = visitors.size;
+    for (const p of signups ?? []) if (p.utm_source) entry(p.utm_source).signups += 1;
+
+    // Premier paiement = première facture du client dans la fenêtre, sans
+    // facture plus ancienne.
+    const firstInWindow = new Map<string, number>();
+    for (const inv of invoices ?? []) if (!firstInWindow.has(inv.stripe_customer_id)) firstInWindow.set(inv.stripe_customer_id, inv.amount_cents);
+    const customers = [...firstInWindow.keys()];
+    for (let i = 0; i < customers.length; i += 200) {
+      const chunk = customers.slice(i, i + 200);
+      const [{ data: earlier, error: earlierError }, { data: owners, error: ownersError }] = await Promise.all([
+        admin.from("stripe_processed_invoices").select("stripe_customer_id").in("stripe_customer_id", chunk).lt("created_at", start.toISOString()).gt("amount_cents", 0).limit(5_000),
+        admin.from("profiles").select("stripe_customer_id, utm_source").in("stripe_customer_id", chunk),
+      ]);
+      if (earlierError) throw new Error(earlierError.message);
+      if (ownersError) throw new Error(ownersError.message);
+      const repeat = new Set((earlier ?? []).map((e) => e.stripe_customer_id));
+      for (const o of owners ?? []) {
+        if (!o.stripe_customer_id || !o.utm_source || repeat.has(o.stripe_customer_id)) continue;
+        const e = entry(o.utm_source);
+        e.firstPaymentCents += firstInWindow.get(o.stripe_customer_id) ?? 0;
+        e.payers += 1;
+      }
+    }
+    return stats;
+  }),
+  ["admin-rpm-window-v1"],
   { revalidate: 600 },
 );
