@@ -25,12 +25,13 @@ export const ALL_STEP_IDS = [
 export type StepId = (typeof ALL_STEP_IDS)[number];
 
 // Parcours express (17/10, checklist « landing qui convertit » : inscription
-// en 30 s avant le paywall) : 5 questions en un ou deux taps, puis le récap.
+// en 30 s avant le paywall ; SOP 03 : 4 questions max) : 4 écrans en un ou
+// deux taps -- la mobilité est posée sur l'écran de la ville --, puis le récap.
 // Retirés du parcours : bienvenue, écran de confiance, compétences, métiers
 // visés, disponibilité et CV -- tous modifiables ensuite depuis /profil.
 // Gardés : ce qui fait la pertinence du deck (contrat, secteurs = filtre
 // dur du deck, ville + mobilité = pénalité de distance, niveau).
-export const STEP_IDS: readonly StepId[] = ["looking_for", "sectors", "city", "mobility", "level", "outro"];
+export const STEP_IDS: readonly StepId[] = ["looking_for", "sectors", "city", "level", "outro"];
 
 export const STEP_LABELS: Record<StepId, string> = {
   intro: "Bienvenue",

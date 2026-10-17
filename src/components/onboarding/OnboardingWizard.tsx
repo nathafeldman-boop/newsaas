@@ -328,6 +328,9 @@ export function OnboardingWizard({
     if (stepId === "city" && !city.trim()) {
       return "Indique au moins ta ville.";
     }
+    if (stepId === "city" && !mobility) {
+      return "Indique jusqu'où tu peux bouger.";
+    }
     if (stepId === "sectors" && sectors.length === 0) {
       return "Sélectionne au moins un secteur.";
     }
@@ -997,6 +1000,25 @@ export function OnboardingWizard({
                     + Autre ville
                   </button>
                 )}
+                {/* Mobilité sur le même écran que la ville (SOP 03 : 4
+                    questions max avant le paywall) -- elle pèse lourd dans
+                    le tri des offres, donc toujours demandée. */}
+                <div className="flex flex-col gap-2" style={{ marginTop: 4 }}>
+                  <p style={{ margin: 0, fontSize: 14, fontWeight: 700 }}>Tu peux bouger jusqu&apos;où ?</p>
+                  <div className="flex flex-wrap gap-2">
+                    {MOBILITY_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setMobility(opt.value)}
+                        className={mobility === opt.value ? "tag tag-accent" : "tag tag-outline"}
+                        style={{ padding: "8px 12px", fontSize: 13, fontWeight: mobility === opt.value ? 800 : 600 }}
+                      >
+                        {opt.icon} {opt.value}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
 
