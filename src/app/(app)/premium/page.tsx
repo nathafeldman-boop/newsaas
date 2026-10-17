@@ -11,6 +11,7 @@ import { PricingSelector } from "@/components/premium/PricingSelector";
 import { PaywallPitch } from "@/components/premium/PaywallPitch";
 import { fetchActiveOfferCount } from "@/lib/offers/fetchPublicOffers";
 import { getPaidReviewAverage } from "@/lib/reviews/publicStats";
+import { getLettersWrittenLast30Days, getProfileOfferMatch } from "@/lib/premium/paywallProof";
 
 const ERROR_MESSAGES: Record<string, string> = {
   not_configured: "Le paiement n'est pas encore configuré, réessaie plus tard.",
@@ -73,7 +74,7 @@ export default async function PremiumPage({
     const viewerId = user.id;
     after(() => logServerEvent(createAdminClient(), viewerId, "paywall_viewed", { source: source ?? null }));
   }
-  const [activeOffers, reviews] = showPitch
+  const [activeOffers, reviews, offerMatch, lettersWritten] = showPitch
     ? await Promise.all([
         fetchActiveOfferCount("all").catch((err) => {
           console.error("premium: offer count failed", err);
@@ -83,8 +84,16 @@ export default async function PremiumPage({
           console.error("premium: review stats failed", err);
           return null;
         }),
+        getProfileOfferMatch(user.id).catch((err) => {
+          console.error("premium: offer match failed", err);
+          return null;
+        }),
+        getLettersWrittenLast30Days().catch((err) => {
+          console.error("premium: letters count failed", err);
+          return null;
+        }),
       ])
-    : [null, null];
+    : [null, null, null, null];
 
   return (
     <div className="pw-shell mx-auto flex max-w-md flex-1 items-center py-6">
@@ -323,7 +332,7 @@ export default async function PremiumPage({
               lifetimeAvailable={!!process.env.STRIPE_PRICE_ID_LIFETIME}
               errorMessage={error ? (ERROR_MESSAGES[error] ?? "Une erreur est survenue.") : null}
             >
-              <PaywallPitch activeOffers={activeOffers} rating={reviews} />
+              <PaywallPitch activeOffers={activeOffers} rating={reviews} offerMatch={offerMatch} lettersWritten={lettersWritten} />
             </PricingSelector>
           </div>
         </>

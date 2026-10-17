@@ -3,7 +3,14 @@
 // les cartes d'offre (PricingSelector), pas ici. Que du vrai : chiffres lus
 // en base, aucune garantie de résultat.
 
+import type { ProfileOfferMatch } from "@/lib/premium/paywallProof";
+
 const muted = "color-mix(in srgb, var(--color-text) 62%, transparent)";
+
+function matchSentence(m: ProfileOfferMatch): string {
+  const sectors = m.sectors.length > 0 ? ` en ${m.sectors.slice(0, 2).join(" ou ")}${m.sectors.length > 2 ? "…" : ""}` : "";
+  return `Tu cherches ${m.contract}${sectors}${m.city ? ` à ${m.city}` : ""}`;
+}
 
 function formatCount(n: number): string {
   return n.toLocaleString("fr-FR");
@@ -12,7 +19,14 @@ function formatCount(n: number): string {
 export function PaywallPitch({
   activeOffers,
   rating,
+  offerMatch = null,
+  lettersWritten = null,
 }: {
+  // Réponses d'onboarding réinjectées + vrai nombre d'offres qui y
+  // correspondent (SOP 12 : « on a remarqué [X] »).
+  offerMatch?: ProfileOfferMatch | null;
+  // Lettres réellement écrites par Stageio sur 30 jours (preuve chiffrée).
+  lettersWritten?: number | null;
   activeOffers: number | null;
   // Moyenne réelle des avis des étudiants qui ont payé (null : pas assez d'avis).
   rating: number | null;
@@ -41,13 +55,36 @@ export function PaywallPitch({
         qu&apos;à postuler.
       </p>
 
-      {activeOffers !== null && activeOffers > 0 && (
+      {offerMatch ? (
+        <div
+          className="animate-in"
+          style={{
+            marginTop: 14,
+            padding: "11px 14px",
+            borderRadius: 14,
+            background: "var(--color-accent-100)",
+            border: "1px solid color-mix(in srgb, var(--color-accent) 30%, transparent)",
+          }}
+        >
+          <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: "var(--color-accent-700)" }}>🎯 On a regardé ton profil</p>
+          <p style={{ margin: "3px 0 0", fontSize: 14, fontWeight: 800, lineHeight: 1.35 }}>
+            {matchSentence(offerMatch)} : <span style={{ color: "var(--color-accent-700)" }}>{formatCount(offerMatch.count)} offres</span>{" "}
+            correspondent, prêtes à être débloquées.
+          </p>
+        </div>
+      ) : activeOffers !== null && activeOffers > 0 && (
         <p
           className="animate-in tag tag-accent"
           style={{ marginTop: 12, padding: "6px 12px", fontSize: 12.5, fontWeight: 700, gap: 7 }}
         >
           <span aria-hidden className="lp-pulse" style={{ width: 8, height: 8, borderRadius: 999, background: "var(--color-accent)" }} />
           {formatCount(activeOffers)} offres t&apos;attendent en ce moment
+        </p>
+      )}
+
+      {lettersWritten !== null && lettersWritten >= 20 && (
+        <p className="animate-in" style={{ margin: "12px 0 0", fontSize: 12.5, fontWeight: 700, textAlign: "center", color: muted }}>
+          ✍️ {formatCount(lettersWritten)} lettres de motivation écrites avec Stageio ces 30 derniers jours
         </p>
       )}
 
