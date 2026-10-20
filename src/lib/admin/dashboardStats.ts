@@ -1,7 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { computeWeekdayAverages, periodStart, type Period } from "@/lib/admin/analytics";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { POSTGREST_MAX_ROWS } from "@/lib/supabase/public";
+import { fetchAllRows, POSTGREST_MAX_ROWS } from "@/lib/supabase/public";
 
 // Statistiques lourdes du tableau de bord : bornées, en cache, et jamais
 // bloquantes.
@@ -218,6 +218,60 @@ export const getLeoFunnel = unstable_cache(
     };
   }),
   ["admin-leo-funnel-v2"],
+  { revalidate: 600 },
+);
+
+// « Tu nous as connus comment ? » (onboarding, depuis le 20/10) : dernière
+// réponse de chaque inscrit des 30 derniers jours, et ce qu'il a payé depuis.
+// Lu par lots d'inscrits (index user_id + event_type) comme getLeoFunnel :
+// un filtre sur event_type seul parcourrait toute la table.
+export type HeardFromStats = {
+  signups: number;
+  answered: number;
+  rows: { source: string; answers: number; payers: number; cents: number }[];
+};
+
+export const getHeardFromStats = unstable_cache(
+  guarded("heard from", async (): Promise<HeardFromStats> => {
+    const since = new Date(Date.now() - 30 * DAY_MS);
+    const admin = createAdminClient();
+    const signups = await fetchAllRows<{ id: string; total_paid_cents: number }>((from, to) =>
+      admin.from("profiles").select("id, total_paid_cents").gte("created_at", since.toISOString()).order("created_at").range(from, to),
+    );
+    const paidById = new Map(signups.map((p) => [p.id, p.total_paid_cents ?? 0]));
+    const ids = [...paidById.keys()];
+    const latest = new Map<string, { source: string; at: string }>();
+    for (let i = 0; i < ids.length; i += 200) {
+      const { data, error } = await admin
+        .from("user_events")
+        .select("user_id, metadata, created_at")
+        .eq("event_type", "heard_from")
+        .in("user_id", ids.slice(i, i + 200))
+        .limit(POSTGREST_MAX_ROWS);
+      if (error) throw new Error(error.message);
+      for (const e of data ?? []) {
+        const source = (e.metadata as { source?: unknown } | null)?.source;
+        if (typeof source !== "string") continue;
+        const prev = latest.get(e.user_id);
+        if (!prev || e.created_at > prev.at) latest.set(e.user_id, { source, at: e.created_at });
+      }
+    }
+    const bySource = new Map<string, { source: string; answers: number; payers: number; cents: number }>();
+    for (const [userId, { source }] of latest) {
+      const row = bySource.get(source) ?? { source, answers: 0, payers: 0, cents: 0 };
+      const cents = paidById.get(userId) ?? 0;
+      row.answers += 1;
+      if (cents > 0) row.payers += 1;
+      row.cents += cents;
+      bySource.set(source, row);
+    }
+    return {
+      signups: ids.length,
+      answered: latest.size,
+      rows: [...bySource.values()].sort((a, b) => b.answers - a.answers || b.cents - a.cents),
+    };
+  }),
+  ["admin-heard-from-v1"],
   { revalidate: 600 },
 );
 

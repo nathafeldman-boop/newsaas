@@ -17,6 +17,7 @@ import {
   EDUCATION_LEVELS,
   EXPERIENCE_LEVELS,
   AVAILABILITY_OPTIONS,
+  HEARD_FROM_OPTIONS,
 } from "@/lib/onboarding/options";
 import { STEP_IDS, STEP_LABELS, type StepId } from "@/lib/onboarding/steps";
 import { forgetSignupCity, readSignupCity } from "@/lib/signup/intentStorage";
@@ -240,6 +241,18 @@ async function logOnboardingEvent(
   }
 }
 
+// Réponse à « Tu nous as connus comment ? » : notée dès le tap (pas à la fin
+// de l'onboarding) pour compter aussi ceux qui s'arrêtent après. Un
+// changement d'avis ajoute une ligne ; l'admin garde la plus récente.
+async function logHeardFrom(userId: string, source: string) {
+  const { error } = await createClient()
+    .from("user_events")
+    .insert({ user_id: userId, event_type: "heard_from", metadata: { source } });
+  if (error) {
+    console.error("onboarding heard_from event failed", error, { source });
+  }
+}
+
 export function OnboardingWizard({
   userId,
   initialProfile,
@@ -307,6 +320,7 @@ export function OnboardingWizard({
   // vue qu'avant la fin de l'onboarding, où ce champ n'a normalement encore
   // jamais été renseigné.
   const [availabilityLabel, setAvailabilityLabel] = useState<string | null>(null);
+  const [heardFrom, setHeardFrom] = useState<string | null>(null);
 
   const [cvFile, setCvFile] = useState<File | null>(null);
 
@@ -348,6 +362,9 @@ export function OnboardingWizard({
     }
     if (stepId === "dispo" && !availabilityLabel) {
       return "Indique ta disponibilité.";
+    }
+    if (stepId === "source" && !heardFrom) {
+      return "Dis-nous comment tu nous as connus.";
     }
     return null;
   }
@@ -1127,6 +1144,28 @@ export function OnboardingWizard({
                       onClick={() => {
                         setAvailabilityLabel(opt.label);
                         advanceStep("dispo");
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {stepId === "source" && (
+              <div className="flex flex-col gap-5">
+                <StepHeader title="Tu nous as connus comment ?" subtitle="Ça nous aide à savoir où parler de Stageio." />
+                <div className="grid grid-cols-2 gap-3">
+                  {HEARD_FROM_OPTIONS.map((opt) => (
+                    <TileOption
+                      key={opt.value}
+                      label={opt.value}
+                      icon={opt.icon}
+                      sub={opt.sub}
+                      active={heardFrom === opt.value}
+                      onClick={() => {
+                        setHeardFrom(opt.value);
+                        void logHeardFrom(userId, opt.value);
+                        advanceStep("source");
                       }}
                     />
                   ))}

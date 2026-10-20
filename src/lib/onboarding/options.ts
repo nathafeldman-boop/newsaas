@@ -352,3 +352,20 @@ export const AVAILABILITY_OPTIONS: AvailabilityOption[] = [
   { label: "Dans 3 mois", icon: "🗓️", daysFromNow: 90 },
   { label: "Je ne sais pas encore", icon: "🤔", daysFromNow: null },
 ];
+
+// « Tu nous as connus comment ? » (demande de Nathan, 20/10) : la réponse
+// complète utm_source, qui ne voit ni le bouche-à-oreille ni la vidéo TikTok
+// vue la veille avant une recherche Google. Valeurs comparées telles quelles
+// dans l'admin : ne pas renommer une valeur existante.
+export const HEARD_FROM_OPTIONS = [
+  { value: "TikTok", icon: "🎵" },
+  { value: "Instagram", icon: "📸" },
+  { value: "Google", icon: "🔎" },
+  { value: "Bouche-à-oreille", icon: "🗣️", sub: "Un ami, la famille" },
+  { value: "Snapchat", icon: "👻" },
+  { value: "YouTube", icon: "▶️" },
+  { value: "LinkedIn", icon: "💼" },
+  { value: "École ou prof", icon: "🏫" },
+  { value: "ChatGPT ou une IA", icon: "🤖" },
+  { value: "Autre", icon: "✨" },
+];

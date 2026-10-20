@@ -17,6 +17,7 @@ export const STEP_IDS = [
   "mobility",
   "level",
   "dispo",
+  "source",
   "cv",
   "outro",
 ] as const;
@@ -33,6 +34,7 @@ export const STEP_LABELS: Record<StepId, string> = {
   mobility: "Mobilité",
   level: "Ton niveau",
   dispo: "Disponibilité",
+  source: "Tu nous as connus comment",
   cv: "Ton CV",
   outro: "Récap",
 };

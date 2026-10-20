@@ -2,7 +2,7 @@ import Link from "next/link";
 import { submitIndexNowAction } from "@/app/admin/seo-actions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchAllRows } from "@/lib/supabase/public";
-import { getLeoFunnel, getOnboardingFunnelStats, getTodayVisitorsBySource, getWeekdayAverages, withTimeout } from "@/lib/admin/dashboardStats";
+import { getHeardFromStats, getLeoFunnel, getOnboardingFunnelStats, getTodayVisitorsBySource, getWeekdayAverages, withTimeout } from "@/lib/admin/dashboardStats";
 import { startOfTodayParis } from "@/lib/date";
 import { STEP_IDS, STEP_LABELS, type StepId } from "@/lib/onboarding/steps";
 import { LineAreaChart } from "@/components/admin/charts/LineAreaChart";
@@ -176,6 +176,14 @@ export default async function AdminDashboardPage({
     HEAVY_STAT_BUDGET_MS,
     null,
   );
+  const heardFromPromise = withTimeout(
+    getHeardFromStats().catch((err) => {
+      console.error("AdminDashboardPage: heard from query failed", err);
+      return null;
+    }),
+    HEAVY_STAT_BUDGET_MS,
+    null,
+  );
   const funnelStatsPromise = withTimeout(
     getOnboardingFunnelStats().catch((err) => {
       console.error("AdminDashboardPage: onboarding funnel query failed", err);
@@ -315,10 +323,11 @@ export default async function AdminDashboardPage({
     period,
   );
 
-  const [{ value: weekdayAverages }, { value: visitorsBySourceRows }, { value: leoFunnel }] = await Promise.all([
+  const [{ value: weekdayAverages }, { value: visitorsBySourceRows }, { value: leoFunnel }, { value: heardFrom }] = await Promise.all([
     weekdayAveragesPromise,
     visitorsBySourcePromise,
     leoFunnelPromise,
+    heardFromPromise,
   ]);
 
   // Chemin de Léo (SOP 26) : chaque taux comparé au bas de son benchmark ;
@@ -577,6 +586,51 @@ export default async function AdminDashboardPage({
               ))}
             </tbody>
           </table>
+        )}
+      </SectionCard>
+
+      <SectionCard
+        title="Tu nous as connus comment ? — inscrits des 30 derniers jours"
+        subtitle="Réponse donnée dans l'onboarding (question ajoutée le 20/10 : les inscrits d'avant n'ont pas répondu). Payants = ont payé au moins une fois, revenu encaissé depuis l'inscription. Recalculé toutes les 10 min."
+      >
+        {heardFrom === null ? (
+          <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>
+            Calcul en cours, recharge dans une minute.
+          </p>
+        ) : heardFrom.rows.length === 0 ? (
+          <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>
+            Aucune réponse pour l&apos;instant.
+          </p>
+        ) : (
+          <>
+            <p style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "0 0 8px" }}>
+              {heardFrom.answered} réponses sur {heardFrom.signups} inscrits.
+            </p>
+            <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ textAlign: "left", color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
+                  <th style={{ padding: "4px 0", fontWeight: 500 }}>Réponse</th>
+                  <th style={{ padding: "4px 0", fontWeight: 500 }}>Inscrits</th>
+                  <th style={{ padding: "4px 0", fontWeight: 500 }}>Part</th>
+                  <th style={{ padding: "4px 0", fontWeight: 500 }}>Payants</th>
+                  <th style={{ padding: "4px 0", fontWeight: 500 }}>Revenu</th>
+                </tr>
+              </thead>
+              <tbody>
+                {heardFrom.rows.map((r) => (
+                  <tr key={r.source} style={{ borderTop: "1px solid var(--color-divider)" }}>
+                    <td style={{ padding: "6px 0", fontWeight: 700 }}>{r.source}</td>
+                    <td style={{ padding: "6px 0" }}>{r.answers}</td>
+                    <td style={{ padding: "6px 0" }}>{Math.round((r.answers / heardFrom.answered) * 100)} %</td>
+                    <td style={{ padding: "6px 0" }}>
+                      {r.payers} ({Math.round((r.payers / r.answers) * 100)} %)
+                    </td>
+                    <td style={{ padding: "6px 0" }}>{euros(r.cents)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
         )}
       </SectionCard>
 
