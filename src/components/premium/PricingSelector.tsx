@@ -16,6 +16,7 @@ function PlanRow({
   sublabel,
   price,
   priceSuffix,
+  afterPrice,
   badge,
 }: {
   selected: boolean;
@@ -24,6 +25,9 @@ function PlanRow({
   sublabel: string;
   price: string;
   priceSuffix?: string;
+  // Prix de bienvenue en cours : le prix qui s'appliquera ensuite, en petit
+  // (jamais barré ni en « −X % », voir lib/pricing/plans.ts).
+  afterPrice?: string;
   badge?: string;
 }) {
   return (
@@ -87,6 +91,11 @@ function PlanRow({
             {priceSuffix}
           </span>
         )}
+        {afterPrice && (
+          <div style={{ fontSize: 11.5, fontWeight: 700, marginTop: 2, color: "var(--color-accent-700)", whiteSpace: "nowrap" }}>
+            ensuite {afterPrice}
+          </div>
+        )}
       </div>
     </label>
   );
@@ -129,6 +138,7 @@ export function PricingSelector({
             label="Accès à vie"
             sublabel="Paiement unique, jamais de renouvellement"
             price={lifetimePrice}
+            afterPrice={welcome ? PLAN_PRICES.lifetime.regular : undefined}
             badge="Le prix de 5 mois"
           />
         )}
@@ -138,6 +148,7 @@ export function PricingSelector({
           label="Mensuel"
           sublabel="Résiliable à tout moment"
           price={monthlyPrice}
+          afterPrice={welcome ? `${PLAN_PRICES.monthly.regular}/mois` : undefined}
           priceSuffix="/mois"
         />
       </div>
