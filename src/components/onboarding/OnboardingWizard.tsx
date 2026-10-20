@@ -82,7 +82,7 @@ const MOBILITY_SUBTEXT: Record<string, string> = {
 // juste à faire sentir que l'app travaille pendant les ~1.8s d'animation.
 const OUTRO_LOAD_MESSAGES = [
   "On analyse les offres actives…",
-  "On sélectionne les offres qui te correspondent…",
+  "On calcule tes scores de compatibilité…",
   "On trie ton deck du jour…",
 ];
 
@@ -327,9 +327,6 @@ export function OnboardingWizard({
     }
     if (stepId === "city" && !city.trim()) {
       return "Indique au moins ta ville.";
-    }
-    if (stepId === "city" && !mobility) {
-      return "Indique jusqu'où tu peux bouger.";
     }
     if (stepId === "sectors" && sectors.length === 0) {
       return "Sélectionne au moins un secteur.";
@@ -1000,25 +997,6 @@ export function OnboardingWizard({
                     + Autre ville
                   </button>
                 )}
-                {/* Mobilité sur le même écran que la ville (SOP 03 : 4
-                    questions max avant le paywall) -- elle pèse lourd dans
-                    le tri des offres, donc toujours demandée. */}
-                <div className="flex flex-col gap-2" style={{ marginTop: 4 }}>
-                  <p style={{ margin: 0, fontSize: 14, fontWeight: 700 }}>Tu peux bouger jusqu&apos;où ?</p>
-                  <div className="flex flex-wrap gap-2">
-                    {MOBILITY_OPTIONS.map((opt) => (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => setMobility(opt.value)}
-                        className={mobility === opt.value ? "tag tag-accent" : "tag tag-outline"}
-                        style={{ padding: "8px 12px", fontSize: 13, fontWeight: mobility === opt.value ? 800 : 600 }}
-                      >
-                        {opt.icon} {opt.value}
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </div>
             )}
 
@@ -1382,6 +1360,15 @@ export function OnboardingWizard({
                         ? sectors.slice(0, 3).join(", ") + (sectors.length > 3 ? ` +${sectors.length - 3}` : "")
                         : "—",
                       onEdit: () => goToStep("sectors"),
+                    },
+                    {
+                      icon: "💼",
+                      label: "Métiers visés",
+                      value: targetJobs.length
+                        ? targetJobs.slice(0, 2).join(", ") +
+                          (targetJobs.length > 2 ? ` +${targetJobs.length - 2}` : "")
+                        : "—",
+                      onEdit: () => goToStep("jobs"),
                     },
                     {
                       icon: "🎓",

@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Icon, type IconName } from "@/components/ui/Icon";
-import { FavoritesTabIcon } from "@/components/fx/FavoritesTabIcon";
 
 const ITEMS: { href: string; label: string; icon: IconName }[] = [
   { href: "/swipe", label: "Swipe", icon: "swipe" },
@@ -57,12 +56,38 @@ export function BottomNav({ favoritesBadge = 0 }: { favoritesBadge?: number }) {
                   }}
                 />
               )}
-              {item.href === "/favoris" ? (
-                <FavoritesTabIcon baseCount={favoritesBadge}>
-                  <TabIcon icon={item.icon} active={active} />
-                </FavoritesTabIcon>
-              ) : (
-                <TabIcon icon={item.icon} active={active} />
+              <motion.span
+                aria-hidden
+                animate={{ scale: active ? 1.1 : 1 }}
+                transition={{ type: "spring", stiffness: 420, damping: 22 }}
+                style={{ position: "relative", display: "flex", lineHeight: 1, opacity: active ? 1 : 0.8 }}
+              >
+                <Icon name={item.icon} size={22} strokeWidth={active ? 2.2 : 1.8} />
+              </motion.span>
+              {item.href === "/favoris" && favoritesBadge > 0 && (
+                <span
+                  aria-hidden
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    right: 8,
+                    minWidth: 16,
+                    height: 16,
+                    padding: "0 4px",
+                    boxSizing: "border-box",
+                    borderRadius: 999,
+                    background: "var(--color-accent)",
+                    color: "var(--color-bg)",
+                    fontSize: 9.5,
+                    fontWeight: 800,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    border: "2px solid var(--color-surface)",
+                  }}
+                >
+                  {favoritesBadge}
+                </span>
               )}
             </span>
             <span className={cn("text-[10.5px]", active && "font-bold")}>{item.label}</span>
@@ -70,18 +95,5 @@ export function BottomNav({ favoritesBadge = 0 }: { favoritesBadge?: number }) {
         );
       })}
     </nav>
-  );
-}
-
-function TabIcon({ icon, active }: { icon: IconName; active: boolean }) {
-  return (
-    <motion.span
-      aria-hidden
-      animate={{ scale: active ? 1.1 : 1 }}
-      transition={{ type: "spring", stiffness: 420, damping: 22 }}
-      style={{ position: "relative", display: "flex", lineHeight: 1, opacity: active ? 1 : 0.8 }}
-    >
-      <Icon name={icon} size={22} strokeWidth={active ? 2.2 : 1.8} />
-    </motion.span>
   );
 }

@@ -1,15 +1,133 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import { getFreshnessLabel } from "@/lib/offers/freshness";
-import { offerSalary } from "@/lib/salary/estimate";
 import type { Offer } from "@/types/database";
 
 function formatStartDate(dateStr: string): string {
   const date = new Date(dateStr);
   return date.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+}
+
+// Toujours utilisé par la démo publique de la landing (SwipeDemo.tsx), qui a
+// ses propres offres fictives et son propre balisage de carte -- gardé
+// exporté même si OfferCardContent ci-dessous ne l'utilise plus directement
+// (InfoCell plus bas, elle, est réutilisée telle quelle par les deux).
+export function MatchRing({ score }: { score: number }) {
+  const size = 46;
+  const stroke = 4;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const offset = c - (score / 100) * c;
+
+  return (
+    <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
+      <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
+        <circle cx={size / 2} cy={size / 2} r={r} stroke="rgba(255,255,255,0.3)" strokeWidth={stroke} fill="none" />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          stroke="#fff"
+          strokeWidth={stroke}
+          fill="none"
+          strokeDasharray={c}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+        />
+      </svg>
+      <span
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontFamily: "var(--font-heading)",
+          fontSize: 12,
+          color: "#fff",
+        }}
+      >
+        {score}%
+      </span>
+    </div>
+  );
+}
+
+// Petit message d'incitation, calé sur le score de matching -- l'objectif
+// est qu'une carte à très haut score se ressente comme "évidemment je veux
+// postuler", pas juste comme une offre parmi d'autres. Plusieurs variantes
+// par palier (même logique que les lettres de motivation, voir
+// src/lib/coverLetter/staticGenerator.ts) pour éviter de revoir le même
+// texte à chaque carte à score équivalent. Le ton descend volontairement
+// en intensité avec le score -- très enthousiaste en haut, simple constat
+// factuel dès 60 -- mais reste toujours silencieux sous 60 : un score
+// faible ne doit jamais recevoir de message, qu'il soit hyped ou
+// décourageant, pour ne pas entamer la confiance dans le score affiché
+// ailleurs sur la carte.
+function seededHashForHype(str: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+const HYPE_MESSAGES: { min: number; variants: string[] }[] = [
+  {
+    min: 92,
+    variants: [
+      "Pépite pour ton profil — fonce !",
+      "Rarissime : un match à ce niveau-là, ne le laisse pas filer",
+      "Le meilleur match de ton deck en ce moment",
+      "Ton profil colle presque parfaitement à cette offre",
+      "Un match aussi fort, ça se joue à quelques clics",
+      "Ce genre d'offre, tu la retrouveras rarement aussi bien alignée",
+    ],
+  },
+  {
+    min: 82,
+    variants: [
+      "Un des meilleurs matchs de ton deck",
+      "Ton profil correspond vraiment bien ici",
+      "Une des offres les plus alignées avec ton parcours",
+      "Ce match sort clairement du lot",
+      "Ça vaut clairement plus qu'un simple coup d'œil",
+      "Un très bon niveau de compatibilité sur cette offre",
+    ],
+  },
+  {
+    min: 72,
+    variants: [
+      "Bon match, ça vaut le coup d'œil",
+      "Une offre solide par rapport à ton profil",
+      "De bonnes chances que ça matche des deux côtés",
+      "Un profil qui colle plutôt bien à cette offre",
+      "Ça mérite clairement d'être regardé de plus près",
+      "Un match au-dessus de la moyenne de ton deck",
+    ],
+  },
+  {
+    min: 60,
+    variants: [
+      "Un match correct pour ton profil",
+      "Une offre qui reste dans tes critères",
+      "Compatibilité correcte, à voir selon tes envies",
+      "Ça peut valoir le coup selon ce que tu recherches",
+      "Un match dans la moyenne, à toi de juger",
+      "Une offre raisonnablement alignée avec ton profil",
+    ],
+  },
+];
+
+function matchHypeMessage(score: number | undefined, seedKey: string): string | null {
+  if (score === undefined) return null;
+  const tier = HYPE_MESSAGES.find((t) => score >= t.min);
+  if (!tier) return null;
+  const hash = seededHashForHype(`${seedKey}::${tier.min}`);
+  return tier.variants[hash % tier.variants.length];
 }
 
 function companyInitials(company: string): string {
@@ -25,20 +143,17 @@ const mutedText = "color-mix(in srgb, var(--color-text) 60%, transparent)";
 // ne le passe jamais) : teaser hard paywall (voir OfferCardContent) -- flou
 // CSS pur, la valeur réelle reste dans le DOM (pas remplacée par un
 // placeholder), exactement ce que "voilà tout ce qui est alléchant, le reste
-// flouté" décrit. Un petit 🔒 à côté du libellé dit que c'est verrouillé.
-// `note` : précision en tout petit sous la valeur (ex. « (estimation) »).
+// flouté" décrit.
 export function InfoCell({
   icon,
   label,
   value,
   blurred = false,
-  note,
 }: {
   icon: ReactNode;
   label: string;
   value: string;
   blurred?: boolean;
-  note?: string;
 }) {
   return (
     <div style={{ minWidth: 0, background: "var(--color-bg)", borderRadius: 14, padding: "10px 10px 9px" }}>
@@ -56,7 +171,6 @@ export function InfoCell({
         }}
       >
         {label}
-        {blurred && <span aria-label="verrouillé"> 🔒</span>}
       </p>
       <p
         style={{
@@ -72,7 +186,6 @@ export function InfoCell({
       >
         {value}
       </p>
-      {note && <p style={{ margin: "1px 0 0", fontSize: 9, lineHeight: 1.2, color: mutedText }}>{note}</p>}
     </div>
   );
 }
@@ -82,52 +195,17 @@ export function InfoCell({
 // sont mises") mais seuls le titre et le salaire restent lisibles -- tout le
 // reste (entreprise, ville, tags, score, raisons, description) est flouté.
 // Spec confirmée par Nathan : "Titre + salaire visibles, le reste flouté".
-// 16/10 (Nathan) : salaire jamais flouté, estimé quand l'annonce n'en donne
-// pas, et un petit cadenas / CTA « Débloquer » sur les zones floutées.
 const teaserBlur = { filter: "blur(6px)", userSelect: "none" as const };
-
-const UNLOCK_HREF = "/premium?source=card_unlock";
-
-// Petit CTA posé au centre d'une zone floutée. stopPropagation : un tap
-// dessus ouvre le paywall sans démarrer de drag sur la carte.
-function UnlockPill({ label }: { label: string }) {
-  return (
-    <Link
-      href={UNLOCK_HREF}
-      onPointerDown={(e) => e.stopPropagation()}
-      data-fx-burst
-      style={{
-        position: "absolute",
-        left: "50%",
-        top: "50%",
-        transform: "translate(-50%, -50%)",
-        zIndex: 2,
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 5,
-        whiteSpace: "nowrap",
-        fontSize: 11.5,
-        fontWeight: 800,
-        color: "#fff",
-        background: "linear-gradient(90deg, var(--color-accent), var(--color-accent-2))",
-        borderRadius: 999,
-        padding: "5px 11px",
-        boxShadow: "0 6px 16px color-mix(in srgb, var(--color-accent) 35%, transparent)",
-        textDecoration: "none",
-      }}
-    >
-      🔒 {label}
-    </Link>
-  );
-}
 
 export function OfferCardContent({
   offer,
   reasons,
+  score,
   isPremium = true,
 }: {
   offer: Offer;
   reasons?: string[];
+  score?: number;
   isPremium?: boolean;
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -136,7 +214,7 @@ export function OfferCardContent({
   const tags = [offer.sector, offer.remote_policy].filter(
     (t): t is string => Boolean(t),
   );
-  const salary = offerSalary(offer);
+  const hypeMessage = matchHypeMessage(score, offer.id);
   const freshnessLabel = getFreshnessLabel(offer.published_at);
 
   return (
@@ -250,6 +328,11 @@ export function OfferCardContent({
             <Icon name="pin" size={13} strokeWidth={2.1} /> {offer.location}
           </p>
         </div>
+        {typeof score === "number" && (
+          <div style={locked ? teaserBlur : undefined}>
+            <MatchRing score={score} />
+          </div>
+        )}
       </div>
 
       <div className="flex flex-1 flex-col overflow-y-auto" style={{ padding: "16px 20px 18px" }}>
@@ -271,21 +354,32 @@ export function OfferCardContent({
           {offer.title}
         </h2>
 
+        {hypeMessage && (
+          <p
+            style={{
+              margin: "8px 0 0",
+              alignSelf: "flex-start",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 12.5,
+              fontWeight: 700,
+              color: "var(--color-accent-700)",
+              ...(locked ? teaserBlur : {}),
+            }}
+          >
+            <Icon name="sparkles" size={14} /> {hypeMessage}
+          </p>
+        )}
 
         <div className="grid grid-cols-3 gap-2" style={{ marginTop: 14 }}>
           <InfoCell icon={<Icon name="calendar" size={16} />} label="Début" value={offer.start_date ? formatStartDate(offer.start_date) : "Flexible"} blurred={locked} />
           <InfoCell icon={<Icon name="clock" size={16} />} label="Durée" value={offer.duration ?? "Non précisé"} blurred={locked} />
-          <InfoCell
-            icon={<Icon name="euro" size={16} />}
-            label="Salaire"
-            value={salary.value}
-            note={salary.estimated ? "/mois (estimation)" : undefined}
-          />
+          <InfoCell icon={<Icon name="euro" size={16} />} label="Salaire" value={offer.salary ?? "Non précisé"} />
         </div>
 
         {reasons && reasons.length > 0 && (
-          <div style={{ marginTop: 16, position: "relative" }}>
-            {locked && <UnlockPill label="Débloquer l'analyse complète" />}
+          <div style={{ marginTop: 16 }}>
             <p style={{ margin: 0, fontSize: 12.5, fontWeight: 700, display: "flex", alignItems: "center", gap: 6, ...(locked ? teaserBlur : {}) }}>
               <Icon name="sparkles" size={14} style={{ color: "var(--color-accent-700)" }} /> Pourquoi cette offre pour toi
             </p>
@@ -326,20 +420,17 @@ export function OfferCardContent({
             {offer.description}
           </p>
           {locked ? (
-            <Link
-              href={UNLOCK_HREF}
-              onPointerDown={(e) => e.stopPropagation()}
+            <span
               style={{
                 marginTop: 6,
                 display: "inline-block",
                 fontSize: 12.5,
                 fontWeight: 700,
                 color: "var(--color-accent-700)",
-                textDecoration: "none",
               }}
             >
-              🔒 Débloquer l&apos;offre complète →
-            </Link>
+              🔒 Description complète avec Premium
+            </span>
           ) : (
             !detailsOpen && (
             <button

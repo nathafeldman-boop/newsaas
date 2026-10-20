@@ -1,9 +1,8 @@
 "use server";
 
-import type Stripe from "stripe";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
-import { recordCheckoutOpened } from "@/lib/stripe/checkoutReminder";
+import { logServerEvent } from "@/lib/analytics/logServerEvent";
 import { createClient } from "@/lib/supabase/server";
 import { getStripeClient } from "@/lib/stripe/client";
 import { SITE_URL } from "@/lib/site";
@@ -99,7 +98,7 @@ export async function createCheckoutSessionAction(formData: FormData) {
   const customerId = await getOrCreateStripeCustomer(user.id, user.email ?? null);
   const stripe = getStripeClient();
 
-  const params: Stripe.Checkout.SessionCreateParams = {
+  const session = await stripe.checkout.sessions.create({
     mode: isLifetime ? "payment" : "subscription",
     customer: customerId,
     line_items: [{ price: priceId, quantity: 1 }],
@@ -121,18 +120,6 @@ export async function createCheckoutSessionAction(formData: FormData) {
     success_url: `${SITE_URL}/premium/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${SITE_URL}/premium`,
     client_reference_id: user.id,
-    // Page Stripe plus rassurante (16/10, Nathan) : en français quelle que
-    // soit la langue du navigateur, ce que l'étudiant obtient juste au-dessus
-    // du bouton, et la sécurité de la carte juste en dessous.
-    locale: "fr",
-    custom_text: {
-      submit: {
-        message: isLifetime
-          ? "Accès Premium immédiat. Paiement unique : aucun renouvellement, jamais."
-          : "Accès Premium immédiat. Sans engagement : résiliable à tout moment.",
-      },
-      after_submit: { message: "Paiement sécurisé par Stripe : Stageio ne voit jamais les données de ta carte." },
-    },
     ...(isLifetime
       ? {
           // mode "payment" n'a pas de subscription_data -- payment_intent_data
@@ -147,35 +134,11 @@ export async function createCheckoutSessionAction(formData: FormData) {
           invoice_creation: { enabled: true },
         }
       : { subscription_data: { metadata: { supabase_user_id: user.id } } }),
-  };
-
-  // Nom, logo et couleurs Stageio sur la page Stripe (16/10) -- au niveau de
-  // la session et pas du compte : le compte Stripe sert aussi à d'autres
-  // projets (nom public « SMARTAPP »). Si Stripe refuse ces réglages, on
-  // retente sans : le paiement ne doit jamais casser pour une question de
-  // logo.
-  let session: Stripe.Checkout.Session;
-  try {
-    session = await stripe.checkout.sessions.create({
-      ...params,
-      branding_settings: {
-        display_name: "Stageio",
-        icon: { type: "url", url: `${SITE_URL}/logo.png` },
-        button_color: "#0f9c56",
-        border_style: "rounded",
-      },
-    });
-  } catch (err) {
-    console.error("checkout: branding refusé, session sans branding", err);
-    session = await stripe.checkout.sessions.create(params);
-  }
+  });
 
   if (!session.url) redirect("/premium?error=checkout_failed");
-  // Chemin de Léo (SOP 26) : « 60-70 % ouvrent le checkout » -- noté, et
-  // relance programmée à +10 min si le paiement n'aboutit pas (annulée par
-  // le webhook sinon). Après la redirection : aucun délai pour l'étudiant.
-  const checkoutUrl = session.url;
-  after(() => recordCheckoutOpened({ userId: user.id, email: user.email ?? null, checkoutUrl, lifetime: isLifetime }));
+  // Mesure seulement (tableau « Chemin de Léo » de l'admin), rien de visible.
+  after(() => logServerEvent(supabase, user.id, "checkout_opened", { plan: isLifetime ? "lifetime" : "monthly" }));
   redirect(session.url);
 }
 

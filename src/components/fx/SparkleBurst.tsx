@@ -1,13 +1,20 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Heart } from "@/components/fx/FavoriteFlight";
 
 // Gerbe d'étincelles qui part du centre de son conteneur (position
 // relative) : points lumineux, petits cœurs et étoiles. Se joue une fois au
 // montage -- changer la `key` pour la rejouer.
 
 const COLORS = ["#3ee08f", "#ffd84d", "var(--color-accent)", "#7fe3ff", "#ff8fb1"];
+
+function Heart({ size }: { size: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" style={{ display: "block" }}>
+      <path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.7 4.5c2.1 0 3.6 1.2 4.3 2.5.7-1.3 2.2-2.5 4.3-2.5 3.7 0 5.8 3.9 4.3 7.3C19.5 16.4 12 21 12 21Z" fill="#ff5c8a" />
+    </svg>
+  );
+}
 
 function Star({ size, color }: { size: number; color: string }) {
   return (

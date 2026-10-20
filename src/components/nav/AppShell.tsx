@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Icon, type IconName } from "@/components/ui/Icon";
-import { FavoritesTabIcon } from "@/components/fx/FavoritesTabIcon";
 import { SIDEBAR_COOKIE } from "@/lib/nav/sidebar";
 import { cn } from "@/lib/utils";
 
@@ -132,10 +131,26 @@ function Sidebar({ open, onClose, favoritesBadge }: { open: boolean; onClose: ()
                         <Icon name={item.icon} size={18} strokeWidth={active ? 2.2 : 1.8} />
                       </span>
                       <span style={{ position: "relative" }}>
-                        {item.href === "/favoris" ? (
-                          <FavoritesTabIcon baseCount={favoritesBadge}>{item.label}</FavoritesTabIcon>
-                        ) : (
-                          item.label
+                        {item.label}
+                        {item.href === "/favoris" && favoritesBadge > 0 && (
+                          <span
+                            style={{
+                              marginLeft: 8,
+                              minWidth: 18,
+                              height: 18,
+                              padding: "0 5px",
+                              borderRadius: 999,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: 11,
+                              fontWeight: 800,
+                              color: "#fff",
+                              background: "var(--color-accent)",
+                            }}
+                          >
+                            {favoritesBadge}
+                          </span>
                         )}
                       </span>
                     </Link>

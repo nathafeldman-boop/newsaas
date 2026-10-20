@@ -1,4 +1,3 @@
-import { unstable_cache } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 // Lecture publique (page d'accueil, hors compte) d'un agrégat sur les avis
@@ -55,28 +54,4 @@ export async function getPublicTestimonials(limit: number): Promise<PublicTestim
     // Prénom seul : page publique sans compte, pas besoin du nom complet.
     author: nameByUserId.get(r.user_id)?.split(" ")[0] || "Utilisateur·rice Stageio",
   }));
-}
-
-// Note moyenne des avis approuvés laissés par des étudiants qui ont payé
-// (paywall, 16/10 : Nathan veut la note de ceux qui paient, sans le nombre
-// d'avis). Toujours la vraie moyenne -- null s'il y a moins de 3 avis
-// payants, trop peu pour afficher une note. En cache 10 min : le paywall
-// s'ouvre plus vite (deux requêtes de moins à chaque affichage).
-export const getPaidReviewAverage = unstable_cache(computePaidReviewAverage, ["paid-review-average"], { revalidate: 600 });
-
-async function computePaidReviewAverage(): Promise<number | null> {
-  const admin = createAdminClient();
-  const { data: reviews, error } = await admin.from("reviews").select("user_id, rating").eq("status", "approved").limit(5000);
-  if (error) console.error("getPaidReviewAverage: reviews query failed", error);
-  if (!reviews?.length) return null;
-
-  const { data: payers } = await admin
-    .from("profiles")
-    .select("id")
-    .gt("total_paid_cents", 0)
-    .in("id", [...new Set(reviews.map((r) => r.user_id))]);
-  const paid = new Set((payers ?? []).map((p) => p.id));
-  const ratings = reviews.filter((r) => paid.has(r.user_id)).map((r) => r.rating);
-  if (ratings.length < 3) return null;
-  return Math.round((ratings.reduce((sum, r) => sum + r, 0) / ratings.length) * 10) / 10;
 }

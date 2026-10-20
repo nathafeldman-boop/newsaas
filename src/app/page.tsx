@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { GoogleButton } from "@/components/auth/GoogleButton";
 import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { CONTACT_EMAIL, SITE_URL, SOCIAL_PROFILES } from "@/lib/site";
@@ -190,9 +189,10 @@ function buildWebApplicationJsonLd(reviewStats: { count: number; average: number
     url: SITE_URL,
     applicationCategory: "BusinessApplication",
     operatingSystem: "Web",
-    // Prix réels (voir /premium) : Premium pour liker, candidater, la
-    // lettre IA et l'audit de CV.
+    // Prix réels (voir /premium) : gratuit pour parcourir les offres,
+    // Premium pour liker, candidater, la lettre IA et l'audit de CV.
     offers: [
+      { "@type": "Offer", name: "Gratuit", price: "0", priceCurrency: "EUR" },
       { "@type": "Offer", name: "Premium mensuel (sans engagement)", price: "7.99", priceCurrency: "EUR" },
       { "@type": "Offer", name: "Premium à vie (paiement unique)", price: "39.99", priceCurrency: "EUR" },
     ],
@@ -322,15 +322,8 @@ export default async function LandingPage() {
   // un rendu dynamique par requête, rendant `revalidate` ci-dessus inopérant --
   // exactement le genre de lenteur que ce passage SEO cherche à éviter.
   const admin = createAdminClient();
-  const [
-    { count: activeOffersCount },
-    { count: alternanceCount },
-    reviewStats,
-    testimonials,
-    discovery,
-    latestOffers,
-    { count: studentCount },
-  ] = await Promise.all([
+  const [{ count: activeOffersCount }, { count: alternanceCount }, reviewStats, testimonials, discovery, latestOffers] =
+    await Promise.all([
       admin.from("offers").select("id", { count: "exact", head: true }).eq("is_active", true),
       admin
         .from("offers")
@@ -341,15 +334,7 @@ export default async function LandingPage() {
       getPublicTestimonials(6),
       getDiscoveryLinks(),
       getLatestOfferLinks(),
-      admin.from("profiles").select("id", { count: "exact", head: true }),
     ]);
-
-  // Réassurance sociale (checklist « landing qui convertit ») : le vrai
-  // nombre de comptes, arrondi vers le bas (« plus de 1 200 »), jamais gonflé.
-  const studentsLabel =
-    studentCount && studentCount >= 50
-      ? `Plus de ${(Math.floor(studentCount / (studentCount >= 1000 ? 100 : 10)) * (studentCount >= 1000 ? 100 : 10)).toLocaleString("fr-FR")} étudiants inscrits`
-      : null;
 
   const alternanceShare =
     activeOffersCount && activeOffersCount > 0
@@ -365,9 +350,7 @@ export default async function LandingPage() {
       label: "Offres actives",
       color: "var(--color-accent)",
     },
-    studentCount && studentCount >= 50
-      ? { value: studentCount.toLocaleString("fr-FR"), label: "Étudiants inscrits" }
-      : { value: "100%", label: "Gratuit à l'inscription" },
+    { value: "100%", label: "Gratuit à l'inscription" },
     {
       value: alternanceShare !== null ? `${alternanceShare}%` : "—",
       label: "Alternances",
@@ -509,7 +492,7 @@ export default async function LandingPage() {
                 textWrap: "balance" as React.CSSProperties["textWrap"],
               }}
             >
-              Décroche ton alternance ou ton stage{" "}
+              Trouve ta prochaine expérience{" "}
               <span className="lp-wiggle" style={{ display: "inline-block" }}>
                 <Highlight>en swipant</Highlight>
               </span>
@@ -523,16 +506,16 @@ export default async function LandingPage() {
                 color: mutedText,
               }}
             >
-              Tu swipes les offres faites pour toi, Stageio écrit ta lettre de motivation en
-              quelques secondes. Tu n&apos;as plus qu&apos;à postuler.
+              Fini les quarante candidatures identiques sur dix sites différents. On te propose
+              les offres qui matchent ton profil ; tu likes, tu postules, c&apos;est tout.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Link href="/inscription" className="btn btn-gradient" style={{ whiteSpace: "nowrap" }}>
                 Commencer à swiper — c&apos;est gratuit
               </Link>
-              {/* SOP 19 (landing qui convertit) : inscription en un clic dès
-                  l'accueil. Masqué dans TikTok/Instagram, où Google refuse. */}
-              <GoogleButton hideInAppBrowser block={false} />
+              <a href="#comment" className="btn btn-secondary" style={{ whiteSpace: "nowrap" }}>
+                ▶ Voir comment
+              </a>
             </div>
             <div className="mt-7 flex items-center gap-3.5">
               <div className="flex">
@@ -575,9 +558,9 @@ export default async function LandingPage() {
                 </span>
               </div>
               <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.4, color: mutedText }}>
-                <strong style={{ color: "var(--color-text)" }}>{studentsLabel ?? "Gratuit à l'inscription"}</strong>
+                <strong style={{ color: "var(--color-text)" }}>Gratuit à l&apos;inscription</strong>
                 <br />
-                {studentsLabel ? "Gratuit · prêt à swiper en 1 minute" : "CV facultatif · partout en France"}
+                CV facultatif · partout en France
               </p>
             </div>
           </div>
@@ -767,10 +750,10 @@ export default async function LandingPage() {
                     className="flex items-center justify-center"
                     style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--color-accent-100)", color: "var(--color-accent-700)", fontSize: 11, fontWeight: 800 }}
                   >
-                    ❤️
+                    94%
                   </span>
                   <span style={{ fontSize: 12, lineHeight: 1.3 }}>
-                    <strong>Ajoutée aux favoris</strong>
+                    <strong>Excellent match</strong>
                     <br />
                     <span style={{ color: mutedText }}>Commercial · Lyon</span>
                   </span>
@@ -1016,7 +999,7 @@ export default async function LandingPage() {
               <div style={{ position: "relative" }}>
                 <Icon name="target" size={28} style={{ color: "var(--color-accent-300)" }} />
                 <h3 style={{ margin: "14px 0 0", fontSize: "clamp(22px,2.8vw,30px)", fontWeight: 800, letterSpacing: "-0.025em", lineHeight: 1.15 }}>
-                  Les offres qui te correspondent, en premier.
+                  Un score de compatibilité pour chaque offre.
                 </h3>
                 <p style={{ margin: "10px 0 0", fontSize: 14.5, lineHeight: 1.65, color: "var(--color-neutral-300)", maxWidth: "42ch" }}>
                   Secteur, métier, ville et mobilité, compétences, niveau d&apos;études,
@@ -1223,7 +1206,7 @@ export default async function LandingPage() {
               l'ordre de lecture. La carte mise en avant est la première. */}
           <div
             className="mt-8 grid gap-6"
-            style={{ gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,300px),1fr))", maxWidth: lifetimeAvailable ? 700 : 400 }}
+            style={{ gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,300px),1fr))", maxWidth: lifetimeAvailable ? 980 : 780 }}
           >
             {lifetimeAvailable && (
               <Reveal delay={0.05}>
@@ -1317,6 +1300,31 @@ export default async function LandingPage() {
               </div>
             </Reveal>
 
+            <Reveal delay={0.15}>
+              <div
+                className="flex h-full flex-col"
+                style={{
+                  background: "var(--color-surface)",
+                  borderRadius: "var(--radius-lg)",
+                  padding: 28,
+                  boxShadow: "0 1px 2px color-mix(in srgb, var(--color-text) 10%, transparent)",
+                }}
+              >
+                <p style={{ margin: 0, fontSize: 16, fontWeight: 800 }}>Gratuit</p>
+                <p style={{ margin: "10px 0 0", fontSize: 42, fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1 }}>0 €</p>
+                <div className="flex flex-col gap-2.5" style={{ margin: "20px 0 24px", flex: 1 }}>
+                  {["Parcours illimité de toutes les offres", "Aperçu de chaque offre (titre + salaire)", "Passe Premium pour liker, candidater et tout débloquer"].map((line) => (
+                    <p key={line} className="flex items-center gap-2.5" style={{ margin: 0, fontSize: 14, color: "color-mix(in srgb, var(--color-text) 82%, transparent)" }}>
+                      <span aria-hidden style={{ color: "var(--color-accent)" }}>✓</span>
+                      {line}
+                    </p>
+                  ))}
+                </div>
+                <Link href="/inscription" className="btn btn-secondary" style={{ textAlign: "center" }}>
+                  Créer mon compte
+                </Link>
+              </div>
+            </Reveal>
           </div>
         </section>
 
@@ -1446,7 +1454,6 @@ export default async function LandingPage() {
                   >
                     Créer mon compte gratuitement
                   </Link>
-                  <GoogleButton hideInAppBrowser block={false} />
                 </div>
               </div>
             </div>
@@ -1460,7 +1467,6 @@ export default async function LandingPage() {
           <span className="flex items-center gap-2" style={{ marginRight: "auto", fontSize: 14, fontWeight: 800 }}>
             <span aria-hidden style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--color-accent)" }} />
             Stageio
-            <span style={{ fontWeight: 500, fontSize: 13, color: mutedText }}>© {new Date().getFullYear()}</span>
           </span>
           {[
             { href: "/a-propos", label: "Stageio, c'est quoi ?" },

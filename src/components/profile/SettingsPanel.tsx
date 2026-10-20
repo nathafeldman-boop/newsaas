@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { showToast } from "@/lib/fx/events";
 
 export function SettingsPanel({
   userId,
@@ -24,16 +23,7 @@ export function SettingsPanel({
       .update({ notify_new_offers: next })
       .eq("id", userId);
     setSaving(false);
-    if (error) {
-      setNotify(!next);
-      showToast({ title: "Réglage non enregistré", text: "Réessaie dans un instant.", tone: "error" });
-      return;
-    }
-    showToast(
-      next
-        ? { title: "Alertes activées", text: "On te prévient dès qu'une offre colle à ta recherche.", icon: "🔔" }
-        : { title: "Alertes coupées", text: "Tu peux les rallumer quand tu veux.", tone: "info", icon: "🔕" },
-    );
+    if (error) setNotify(!next);
   }
 
   return (

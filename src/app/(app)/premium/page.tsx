@@ -8,10 +8,6 @@ import { isPremium } from "@/lib/subscription/isPremium";
 import { refreshStaleSubscription } from "@/lib/stripe/refreshStaleSubscription";
 import { createPortalSessionAction } from "./actions";
 import { PricingSelector } from "@/components/premium/PricingSelector";
-import { PaywallPitch } from "@/components/premium/PaywallPitch";
-import { fetchActiveOfferCount } from "@/lib/offers/fetchPublicOffers";
-import { getPaidReviewAverage } from "@/lib/reviews/publicStats";
-import { getLettersWrittenLast30Days, getProfileOfferMatch } from "@/lib/premium/paywallProof";
 
 const ERROR_MESSAGES: Record<string, string> = {
   not_configured: "Le paiement n'est pas encore configuré, réessaie plus tard.",
@@ -19,6 +15,64 @@ const ERROR_MESSAGES: Record<string, string> = {
   no_subscription: "Aucun abonnement actif à gérer.",
   already_subscribed: "Tu as déjà un abonnement Premium actif — gère-le avec le bouton ci-dessous plutôt que d'en recréer un.",
 };
+
+const BENEFITS = [
+  {
+    label: "Liker & mettre en favori",
+    icon: (
+      <path
+        d="M6 9a4.5 4.5 0 100 6 6 6 0 004-1.7 6 6 0 004 1.7 4.5 4.5 0 100-6 6 6 0 00-4 1.7A6 6 0 006 9z"
+        stroke="var(--color-accent-700)"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        fill="none"
+      />
+    ),
+  },
+  {
+    label: "Candidatures illimitées",
+    icon: <path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z" fill="var(--color-accent-700)" />,
+  },
+  {
+    label: "Lettre de motivation générée par IA",
+    icon: (
+      <path
+        d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"
+        fill="var(--color-accent-700)"
+      />
+    ),
+  },
+  {
+    label: "Audit CV sur 100",
+    icon: (
+      <>
+        <path d="M4 15a8 8 0 1116 0" stroke="var(--color-accent-700)" strokeWidth="1.8" strokeLinecap="round" fill="none" />
+        <path d="M12 15l4-5" stroke="var(--color-accent-700)" strokeWidth="1.8" strokeLinecap="round" fill="none" />
+      </>
+    ),
+  },
+];
+
+function BenefitIcon({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        width: 32,
+        height: 32,
+        borderRadius: 10,
+        background: "var(--color-accent-100)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: 0,
+      }}
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24">
+        {children}
+      </svg>
+    </div>
+  );
+}
 
 export default async function PremiumPage({
   searchParams,
@@ -63,42 +117,16 @@ export default async function PremiumPage({
     !premium &&
     (profile?.subscription_status === "past_due" || profile?.subscription_status === "incomplete");
 
-  // Argumentaire du paywall : vrais chiffres (offres actives, avis
-  // approuvés), lus seulement quand la page de vente s'affiche. Une erreur
-  // n'empêche jamais d'afficher la page : le bloc concerné disparaît.
-  const showPitch = !premium && !paymentIssue;
-  // Chemin de Léo (SOP 26), étape 4 : « 90 % doivent VOIR le paywall » --
-  // noté après la réponse, sans ralentir l'affichage. Client admin : une
-  // page ne peut plus lire les cookies une fois la réponse partie.
-  if (showPitch && user) {
+  // Mesure seulement (tableau « Chemin de Léo » de l'admin), rien de visible.
+  if (!premium && !paymentIssue) {
     const viewerId = user.id;
     after(() => logServerEvent(createAdminClient(), viewerId, "paywall_viewed", { source: source ?? null }));
   }
-  const [activeOffers, reviews, offerMatch, lettersWritten] = showPitch
-    ? await Promise.all([
-        fetchActiveOfferCount("all").catch((err) => {
-          console.error("premium: offer count failed", err);
-          return null;
-        }),
-        getPaidReviewAverage().catch((err) => {
-          console.error("premium: review stats failed", err);
-          return null;
-        }),
-        getProfileOfferMatch(user.id).catch((err) => {
-          console.error("premium: offer match failed", err);
-          return null;
-        }),
-        getLettersWrittenLast30Days().catch((err) => {
-          console.error("premium: letters count failed", err);
-          return null;
-        }),
-      ])
-    : [null, null, null, null];
 
   return (
-    <div className="pw-shell mx-auto flex max-w-md flex-1 items-center py-6">
+    <div className="mx-auto flex max-w-md flex-1 items-center py-6">
       <div
-        className="pw-panel flex w-full flex-col"
+        className="flex w-full flex-col"
         style={{
           padding: "28px 22px",
           background: "linear-gradient(180deg,#f7fbfa 0%,var(--color-bg) 45%,#e2f0ee 100%)",
@@ -271,7 +299,6 @@ export default async function PremiumPage({
               >
                 <div
                   aria-hidden
-                  className="fx-shake"
                   style={{
                     width: 24,
                     height: 24,
@@ -328,12 +355,48 @@ export default async function PremiumPage({
               </div>
             </div>
 
+            <h1
+              className="animate-in"
+              style={{ fontSize: 25, fontWeight: 800, lineHeight: 1.22, letterSpacing: "-0.01em", margin: "14px 0 0" }}
+            >
+              Trouve ton alternance plus efficacement.
+            </h1>
+            <p
+              className="animate-in"
+              style={{
+                fontSize: 13.5,
+                lineHeight: 1.5,
+                maxWidth: "34ch",
+                margin: "8px 0 0",
+                color: "color-mix(in srgb, var(--color-text) 62%, transparent)",
+              }}
+            >
+              Débloque toutes les opportunités et les outils pour maximiser tes chances.
+            </p>
+
+            {/* Grille 2x2 (au lieu d'une liste verticale) -- maquette
+                fournie par Nathan. */}
+            <div className="animate-in grid grid-cols-2 gap-2.5" style={{ marginTop: 20 }}>
+              {BENEFITS.map((b) => (
+                <div
+                  key={b.label}
+                  style={{
+                    padding: "13px 12px",
+                    borderRadius: 16,
+                    border: "1px solid var(--color-divider)",
+                    background: "var(--color-surface)",
+                  }}
+                >
+                  <BenefitIcon>{b.icon}</BenefitIcon>
+                  <div style={{ fontSize: 12.5, fontWeight: 700, marginTop: 8, lineHeight: 1.3 }}>{b.label}</div>
+                </div>
+              ))}
+            </div>
+
             <PricingSelector
               lifetimeAvailable={!!process.env.STRIPE_PRICE_ID_LIFETIME}
               errorMessage={error ? (ERROR_MESSAGES[error] ?? "Une erreur est survenue.") : null}
-            >
-              <PaywallPitch activeOffers={activeOffers} rating={reviews} offerMatch={offerMatch} lettersWritten={lettersWritten} />
-            </PricingSelector>
+            />
           </div>
         </>
       )}

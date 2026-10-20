@@ -6,7 +6,6 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { GoogleButton } from "@/components/auth/GoogleButton";
 import { safeRedirectPath } from "@/lib/auth/safeRedirect";
-import { WELCOME_COOKIE, WELCOME_COOKIE_MAX_AGE } from "@/lib/fx/welcome";
 
 export function LoginForm() {
   const searchParams = useSearchParams();
@@ -62,8 +61,6 @@ export function LoginForm() {
     // router.refresh() -- symptôme observé : il fallait se connecter deux
     // fois. Un rechargement complet repart avec les cookies de session à
     // jour, sans passer par ce cache.
-    // Écran de bienvenue animé à l'arrivée (voir WelcomeSplash).
-    document.cookie = `${WELCOME_COOKIE}=1; path=/; max-age=${WELCOME_COOKIE_MAX_AGE}; samesite=lax`;
     window.location.href = next;
   }
 

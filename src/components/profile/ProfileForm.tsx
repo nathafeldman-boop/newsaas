@@ -8,7 +8,6 @@ import { TagInput } from "@/components/ui/TagInput";
 import { ChipMultiSelect } from "@/components/ui/ChipMultiSelect";
 import { SECTORS } from "@/lib/onboarding/options";
 import { cn } from "@/lib/utils";
-import { showToast } from "@/lib/fx/events";
 import type { ContractType, Profile } from "@/types/database";
 
 const EDUCATION_LEVELS = ["Bac", "Bac+2", "Bac+3", "Bac+4", "Bac+5", "Bac+6 et plus"];
@@ -104,7 +103,6 @@ export function ProfileForm({
     }
 
     setSuccess(true);
-    showToast({ title: "Profil enregistré", text: "Tes offres s'adaptent à tes changements." });
     router.refresh();
   }
 

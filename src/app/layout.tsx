@@ -3,8 +3,6 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 import { INDEXABLE_ROBOTS } from "@/lib/seo/robots";
-import { TapFx } from "@/components/fx/TapFx";
-import { ToastHost } from "@/components/fx/ToastHost";
 import { PresencePing } from "@/components/fx/PresencePing";
 
 // Même famille pour titres et corps (Plus Jakarta Sans), mais deux
@@ -62,8 +60,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col bg-bg text-text">
         {children}
-        <TapFx />
-        <ToastHost />
         <PresencePing />
       </body>
     </html>

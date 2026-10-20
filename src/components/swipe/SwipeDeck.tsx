@@ -15,9 +15,7 @@ import { logButtonClick } from "@/lib/analytics/logButtonClick";
 import { PremiumCtaLink } from "@/components/premium/PremiumCtaLink";
 import { OfferCardContent } from "@/components/swipe/OfferCard";
 import { Icon } from "@/components/ui/Icon";
-import { SparkleBurst } from "@/components/fx/SparkleBurst";
 import { cn } from "@/lib/utils";
-import { emitFavoriteAdded } from "@/lib/fx/events";
 import type { ContractType, Offer, SwipeDirection } from "@/types/database";
 
 const SWIPE_THRESHOLD = 120;
@@ -33,6 +31,7 @@ const SwipeCard = forwardRef<
   {
     offer: Offer;
     reasons?: string[];
+    score?: number;
     isTop: boolean;
     isPremium: boolean;
     onExited: (direction: SwipeDirection) => void;
@@ -49,7 +48,7 @@ const SwipeCard = forwardRef<
     // éjectée, seul le clic/drag est intercepté et redirigé vers /premium.
     onSwipeIntent: (direction: SwipeDirection) => boolean;
   }
->(function SwipeCard({ offer, reasons, isTop, isPremium, onExited, onSwipeIntent }, ref) {
+>(function SwipeCard({ offer, reasons, score, isTop, isPremium, onExited, onSwipeIntent }, ref) {
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-300, 300], [-18, 18]);
   const likeOpacity = useTransform(x, [20, 140], [0, 1]);
@@ -135,7 +134,7 @@ const SwipeCard = forwardRef<
             </motion.span>
           </>
         )}
-        <OfferCardContent offer={offer} reasons={reasons} isPremium={isPremium} />
+        <OfferCardContent offer={offer} reasons={reasons} score={score} isPremium={isPremium} />
       </div>
     </motion.div>
   );
@@ -143,10 +142,12 @@ const SwipeCard = forwardRef<
 
 function MatchModal({
   offer,
+  score,
   onApply,
   onClose,
 }: {
   offer: Offer | null;
+  score: number;
   onApply: () => void;
   onClose: () => void;
 }) {
@@ -187,38 +188,33 @@ function MatchModal({
               boxShadow: "var(--shadow-lg)",
             }}
           >
-            <span style={{ position: "relative", display: "inline-flex" }}>
-              <SparkleBurst count={24} spread={190} />
-              {[0, 0.2].map((delay) => (
-                <motion.span
-                  key={delay}
-                  aria-hidden
-                  initial={{ scale: 0.6, opacity: 0.8 }}
-                  animate={{ scale: 2.6, opacity: 0 }}
-                  transition={{ duration: 1, delay: 0.1 + delay, ease: "easeOut" }}
-                  style={{ position: "absolute", inset: 0, borderRadius: 20, border: "2px solid var(--color-accent)" }}
-                />
-              ))}
-              <motion.span
-                aria-hidden
-                initial={{ scale: 0, rotate: -160 }}
-                animate={{ scale: [0, 1.3, 0.95, 1], rotate: 0 }}
-                transition={{ duration: 0.7, ease: "easeOut" }}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: 64,
-                  height: 64,
-                  borderRadius: 20,
-                  background: "linear-gradient(135deg, var(--color-accent), var(--color-accent-2))",
-                  boxShadow: "0 12px 28px color-mix(in srgb, var(--color-accent) 45%, transparent)",
-                  fontSize: 30,
-                }}
-              >
-                🎉
-              </motion.span>
+            <span
+              aria-hidden
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 64,
+                height: 64,
+                borderRadius: 20,
+                background: "linear-gradient(135deg, var(--color-accent), var(--color-accent-2))",
+                fontSize: 30,
+              }}
+            >
+              🎉
             </span>
+            <p
+              style={{
+                margin: "16px 0 0",
+                fontSize: 12,
+                fontWeight: 800,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: "var(--color-accent-700)",
+              }}
+            >
+              {score}% de compatibilité
+            </p>
             <h2 style={{ margin: "6px 0 0", fontSize: 27, fontWeight: 800, letterSpacing: "-0.03em" }}>
               Excellent match !
             </h2>
@@ -325,7 +321,6 @@ function SwipeDeckInner({
   // depuis le modal, comme le fait le prototype de design.
   const [celebratingOffer, setCelebratingOffer] = useState<Offer | null>(null);
   const topCardRef = useRef<SwipeCardHandle>(null);
-  const deckRef = useRef<HTMLDivElement>(null);
 
   const visible = stack.slice(0, 3);
   const eta = useNextOffersEta();
@@ -393,12 +388,6 @@ function SwipeDeckInner({
     void recordSwipe(offer, direction);
     setSwipesUsed((n) => n + 1);
     topCardRef.current?.swipeOut(direction);
-
-    // Like = favori : le cœur s'envole de la carte vers l'onglet Favoris.
-    if (direction === "like") {
-      const rect = deckRef.current?.getBoundingClientRect();
-      if (rect) emitFavoriteAdded({ x: rect.left + rect.width * 0.62, y: rect.top + rect.height * 0.38 });
-    }
 
     if (direction === "like" && (scores[offer.id] ?? 0) >= CELEBRATION_THRESHOLD) {
       setCelebratingOffer(offer);
@@ -470,9 +459,10 @@ function SwipeDeckInner({
 
   return (
     <div className="flex w-full flex-col items-center">
-      <div ref={deckRef} className="relative h-[clamp(360px,66dvh,520px)] w-full max-w-sm">
+      <div className="relative h-[clamp(360px,66dvh,520px)] w-full max-w-sm">
         <MatchModal
           offer={celebratingOffer}
+          score={celebratingOffer ? (scores[celebratingOffer.id] ?? 0) : 0}
           onApply={() => {
             if (!celebratingOffer) return;
             router.push(`/candidature/${celebratingOffer.id}`);
@@ -499,6 +489,7 @@ function SwipeDeckInner({
                   ref={isTop ? topCardRef : undefined}
                   offer={offer}
                   reasons={reasons[offer.id]}
+                  score={scores[offer.id]}
                   isTop={isTop}
                   isPremium={isPremium}
                   onExited={() => handleExited(offer.id)}
