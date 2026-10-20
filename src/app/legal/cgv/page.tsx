@@ -35,9 +35,16 @@ export default function CGVPage() {
       <Section title="Prix">
         <p>L&apos;accès Premium est proposé selon deux formules, au choix :</p>
         <ul style={{ margin: "8px 0 0", paddingLeft: 20, listStyle: "disc" }}>
-          <li><strong>7,99&nbsp;€ / mois</strong>, renouvelable automatiquement chaque mois ;</li>
-          <li><strong>39,99&nbsp;€</strong>, en un paiement unique, donnant un accès Premium à vie (sans renouvellement, sans limite de durée).</li>
+          <li><strong>12,79&nbsp;€ / mois</strong>, renouvelable automatiquement chaque mois ;</li>
+          <li><strong>63,99&nbsp;€</strong>, en un paiement unique, donnant un accès Premium à vie (sans renouvellement, sans limite de durée).</li>
         </ul>
+        <p style={{ marginTop: 8 }}>
+          <strong>Prix de bienvenue :</strong> pendant 20 minutes à compter du premier affichage de la page Premium
+          sur son compte, l&apos;utilisateur peut souscrire au prix de 7,99&nbsp;€ / mois ou de 39,99&nbsp;€ pour
+          l&apos;accès à vie. Le prix de bienvenue souscrit pendant ce délai reste celui de l&apos;abonnement (pas
+          d&apos;augmentation au renouvellement). Le délai restant est affiché sur la page Premium ; passé ce
+          délai, les prix ci-dessus s&apos;appliquent.
+        </p>
         <p style={{ marginTop: 8 }}>
           {" "}
           <ToComplete>TVA applicable (montants ci-dessus TTC) ou &laquo; TVA non applicable, art. 293 B du CGI &raquo; selon ton statut fiscal — à préciser</ToComplete>

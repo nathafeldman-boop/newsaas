@@ -8,6 +8,8 @@ import { isPremium } from "@/lib/subscription/isPremium";
 import { refreshStaleSubscription } from "@/lib/stripe/refreshStaleSubscription";
 import { createPortalSessionAction } from "./actions";
 import { PricingSelector } from "@/components/premium/PricingSelector";
+import { WelcomePriceBanner } from "@/components/premium/WelcomeCountdown";
+import { getWelcomeState } from "@/lib/pricing/welcome";
 
 const ERROR_MESSAGES: Record<string, string> = {
   not_configured: "Le paiement n'est pas encore configuré, réessaie plus tard.",
@@ -116,6 +118,10 @@ export default async function PremiumPage({
   const paymentIssue =
     !premium &&
     (profile?.subscription_status === "past_due" || profile?.subscription_status === "incomplete");
+
+  // Prix de bienvenue : 20 min à compter du premier affichage de cette page
+  // (lu avant d'enregistrer l'affichage en cours).
+  const welcome = !premium && !paymentIssue ? await getWelcomeState(user.id) : null;
 
   // Mesure seulement (tableau « Chemin de Léo » de l'admin), rien de visible.
   if (!premium && !paymentIssue) {
@@ -325,35 +331,11 @@ export default async function PremiumPage({
               </div>
             )}
 
-            {/* Bandeau temporaire (rentrée) : une hausse de prix est
-                confirmée à venir (confirmé par Nathan le 20/09), ceci
-                annonce honnêtement que le tarif actuel ne tient qu'un temps
-                limité -- jamais de faux prix barré ("avant/après" jamais
-                réellement pratiqué), ce qui serait interdit (arrêté du 11
-                mars 2015 sur les annonces de réduction de prix).
-                CONSIGNE EXPLICITE (22/09) : garder ce bandeau tel quel
-                pendant 1 à 2 mois, y compris si d'autres changements
-                touchent le paywall entre-temps (ex: retrait de la formule
-                quotidienne ci-dessous) -- ne pas le retirer ni le modifier
-                sans demande explicite de Nathan. */}
-            <div
-              className="animate-in flex items-center gap-2"
-              style={{
-                background: "var(--color-accent-2-100)",
-                border: "1px solid var(--color-accent-2-300)",
-                borderRadius: 12,
-                padding: "9px 12px",
-                marginBottom: 14,
-              }}
-            >
-              <span aria-hidden style={{ fontSize: 16, lineHeight: 1 }}>
-                🎒
-              </span>
-              <div style={{ fontSize: 12, lineHeight: 1.4, color: "var(--color-accent-2-800)" }}>
-                <strong>Offre spéciale rentrée</strong> — tarifs actuels garantis encore 1 mois,
-                augmentation prévue ensuite.
-              </div>
-            </div>
+            {/* Nouveaux tarifs (20/10, décision de Nathan) : le bandeau
+                « Offre spéciale rentrée » (tarifs garantis 1 mois puis hausse,
+                22/09) laisse la place au prix de bienvenue de 20 minutes. Voir
+                lib/pricing/plans.ts : jamais de « −X % » ni de prix barré. */}
+            <WelcomePriceBanner endsAt={welcome?.endsAt ?? null} initialActive={welcome?.active ?? false} />
 
             <h1
               className="animate-in"
@@ -394,6 +376,8 @@ export default async function PremiumPage({
             </div>
 
             <PricingSelector
+              welcomeEndsAt={welcome?.endsAt ?? null}
+              welcomeActive={welcome?.active ?? false}
               lifetimeAvailable={!!process.env.STRIPE_PRICE_ID_LIFETIME}
               errorMessage={error ? (ERROR_MESSAGES[error] ?? "Une erreur est survenue.") : null}
             />

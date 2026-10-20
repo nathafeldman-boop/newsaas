@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { createCheckoutSessionAction } from "@/app/(app)/premium/actions";
 import { AccessCodeForm } from "@/components/premium/AccessCodeForm";
+import { useWelcomeCountdown } from "@/components/premium/WelcomeCountdown";
+import { PLAN_PRICES } from "@/lib/pricing/plans";
 
 type Plan = "monthly" | "lifetime";
 
@@ -99,10 +101,19 @@ function PlanRow({
 export function PricingSelector({
   lifetimeAvailable,
   errorMessage,
+  welcomeEndsAt = null,
+  welcomeActive = false,
 }: {
   lifetimeAvailable: boolean;
   errorMessage: string | null;
+  // Prix de bienvenue (voir lib/pricing/plans.ts) : fin fixée côté serveur.
+  welcomeEndsAt?: number | null;
+  welcomeActive?: boolean;
 }) {
+  const { active: welcome, remaining } = useWelcomeCountdown(welcomeEndsAt, welcomeActive);
+  const tier = welcome ? "welcome" : "regular";
+  const lifetimePrice = PLAN_PRICES.lifetime[tier];
+  const monthlyPrice = PLAN_PRICES.monthly[tier];
   // Accès à vie affiché en premier et présélectionné (demande de Nathan,
   // 14/10) ; le prix du plan choisi est écrit sur le bouton pour qu'il n'y
   // ait aucune surprise au paiement.
@@ -117,7 +128,7 @@ export function PricingSelector({
             onSelect={() => setPlan("lifetime")}
             label="Accès à vie"
             sublabel="Paiement unique, jamais de renouvellement"
-            price="39,99 €"
+            price={lifetimePrice}
             badge="Le prix de 5 mois"
           />
         )}
@@ -126,7 +137,7 @@ export function PricingSelector({
           onSelect={() => setPlan("monthly")}
           label="Mensuel"
           sublabel="Résiliable à tout moment"
-          price="7,99 €"
+          price={monthlyPrice}
           priceSuffix="/mois"
         />
       </div>
@@ -143,6 +154,14 @@ export function PricingSelector({
           }}
         >
           {errorMessage}
+        </p>
+      )}
+
+      {welcome && (
+        <p style={{ margin: "14px 0 0", fontSize: 12.5, fontWeight: 700, textAlign: "center", color: "var(--color-accent-700)" }}>
+          🎁 Prix de bienvenue encore{" "}
+          <span style={{ fontVariantNumeric: "tabular-nums" }}>{remaining ?? "quelques minutes"}</span>, ensuite{" "}
+          {plan === "lifetime" ? PLAN_PRICES.lifetime.regular : `${PLAN_PRICES.monthly.regular}/mois`}
         </p>
       )}
 
@@ -163,7 +182,7 @@ export function PricingSelector({
             boxShadow: "0 10px 22px color-mix(in srgb, var(--color-accent) 35%, transparent)",
           }}
         >
-          {plan === "lifetime" ? "Débloquer à vie · 39,99 €" : "Débloquer Premium · 7,99 €/mois"}
+          {plan === "lifetime" ? `Débloquer à vie · ${lifetimePrice}` : `Débloquer Premium · ${monthlyPrice}/mois`}
         </button>
       </form>
 

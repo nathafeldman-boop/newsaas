@@ -3,6 +3,8 @@
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { logServerEvent } from "@/lib/analytics/logServerEvent";
+import { REGULAR_PRICE_IDS } from "@/lib/pricing/plans";
+import { getWelcomeEndsAt } from "@/lib/pricing/welcome";
 import { createClient } from "@/lib/supabase/server";
 import { getStripeClient } from "@/lib/stripe/client";
 import { SITE_URL } from "@/lib/site";
@@ -83,7 +85,17 @@ export async function createCheckoutSessionAction(formData: FormData) {
     redirect("/premium?error=not_configured");
   }
   const isLifetime = plan === "lifetime";
-  const rawPriceId = isLifetime ? process.env.STRIPE_PRICE_ID_LIFETIME : process.env.STRIPE_PRICE_ID;
+  // Prix de bienvenue (anciens prix) tant que ses 20 minutes ne sont pas
+  // écoulées, prix réguliers ensuite (voir lib/pricing/plans.ts). Une minute
+  // de marge : un clic à 19:59 garde le prix affiché sur le bouton.
+  const welcome = Date.now() <= (await getWelcomeEndsAt(user.id)) + 60_000;
+  const rawPriceId = welcome
+    ? isLifetime
+      ? process.env.STRIPE_PRICE_ID_LIFETIME
+      : process.env.STRIPE_PRICE_ID
+    : isLifetime
+      ? REGULAR_PRICE_IDS.lifetime
+      : REGULAR_PRICE_IDS.monthly;
   // .trim() : Stripe rejette un ID avec un espace superflu ("No such
   // price") sans distinguer ça d'un ID réellement invalide -- un simple
   // copier-coller depuis le dashboard Stripe vers Vercel embarque parfois
@@ -138,7 +150,7 @@ export async function createCheckoutSessionAction(formData: FormData) {
 
   if (!session.url) redirect("/premium?error=checkout_failed");
   // Mesure seulement (tableau « Chemin de Léo » de l'admin), rien de visible.
-  after(() => logServerEvent(supabase, user.id, "checkout_opened", { plan: isLifetime ? "lifetime" : "monthly" }));
+  after(() => logServerEvent(supabase, user.id, "checkout_opened", { plan: isLifetime ? "lifetime" : "monthly", welcome }));
   redirect(session.url);
 }
 

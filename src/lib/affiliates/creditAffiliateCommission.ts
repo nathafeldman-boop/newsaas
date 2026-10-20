@@ -1,4 +1,5 @@
 import type Stripe from "stripe";
+import { REGULAR_PRICE_IDS } from "@/lib/pricing/plans";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 // 50% sur mensuel et à vie (formule hebdomadaire retirée le 26/09, voir
@@ -15,8 +16,8 @@ const COMMISSION_RATE = 0.5;
 function planLabelForPriceId(priceId: string | null): "week" | "month" | "lifetime" | null {
   if (!priceId) return null;
   if (priceId === process.env.STRIPE_PRICE_ID_WEEKLY?.trim()) return "week";
-  if (priceId === process.env.STRIPE_PRICE_ID?.trim()) return "month";
-  if (priceId === process.env.STRIPE_PRICE_ID_LIFETIME?.trim()) return "lifetime";
+  if (priceId === process.env.STRIPE_PRICE_ID?.trim() || priceId === REGULAR_PRICE_IDS.monthly) return "month";
+  if (priceId === process.env.STRIPE_PRICE_ID_LIFETIME?.trim() || priceId === REGULAR_PRICE_IDS.lifetime) return "lifetime";
   return null;
 }
 
