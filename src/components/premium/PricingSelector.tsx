@@ -158,10 +158,13 @@ export function PricingSelector({
       )}
 
       {welcome && (
-        <p style={{ margin: "14px 0 0", fontSize: 12.5, fontWeight: 700, textAlign: "center", color: "var(--color-accent-700)" }}>
+        <p style={{ margin: "14px 0 0", fontSize: 14, fontWeight: 700, textAlign: "center", color: "var(--color-accent-700)" }}>
           🎁 Prix de bienvenue encore{" "}
-          <span style={{ fontVariantNumeric: "tabular-nums" }}>{remaining ?? "quelques minutes"}</span>, ensuite{" "}
-          {plan === "lifetime" ? PLAN_PRICES.lifetime.regular : `${PLAN_PRICES.monthly.regular}/mois`}
+          <span style={{ fontSize: 20, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{remaining ?? "––:––"}</span>
+          <br />
+          <span style={{ fontSize: 12.5, fontWeight: 600 }}>
+            ensuite {plan === "lifetime" ? PLAN_PRICES.lifetime.regular : `${PLAN_PRICES.monthly.regular}/mois`}
+          </span>
         </p>
       )}
 
