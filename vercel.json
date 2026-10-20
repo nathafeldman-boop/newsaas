@@ -75,6 +75,10 @@
     {
       "path": "/api/cron/google-indexing",
       "schedule": "50 5 * * *"
+    },
+    {
+      "path": "/api/cron/refund-guarantee-reminder",
+      "schedule": "41 7 * * *"
     }
   ]
 }

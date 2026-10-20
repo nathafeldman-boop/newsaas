@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { logServerEvent } from "@/lib/analytics/logServerEvent";
@@ -10,6 +11,12 @@ import { createPortalSessionAction } from "./actions";
 import { PricingSelector } from "@/components/premium/PricingSelector";
 import { WelcomePriceBanner } from "@/components/premium/WelcomeCountdown";
 import { getWelcomeState } from "@/lib/pricing/welcome";
+import { PaywallPledge } from "@/components/premium/PaywallPledge";
+import { GuaranteeBadge, PaywallExitGuard } from "@/components/premium/PaywallExitGuard";
+import { GuaranteeCard, type GuaranteePhase } from "@/components/premium/GuaranteeCard";
+import { getGuaranteeStatus, type GuaranteeStatus } from "@/lib/premium/refundGuarantee";
+import { GUARANTEE_COOKIE, PLEDGE_COOKIE } from "@/lib/premium/guaranteeTerms";
+import { getTrustCount } from "@/lib/premium/trustCount";
 
 const ERROR_MESSAGES: Record<string, string> = {
   not_configured: "Le paiement n'est pas encore configuré, réessaie plus tard.",
@@ -76,12 +83,31 @@ function BenefitIcon({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Garantie remboursé d'un compte Premium (null si aucune) et où en est sa
+// fenêtre de demande. Hors du composant : l'heure courante n'est lue
+// qu'ici, jamais pendant le rendu.
+async function loadGuarantee(
+  userId: string,
+  profile: Parameters<typeof getGuaranteeStatus>[1],
+): Promise<{ status: GuaranteeStatus; phase: GuaranteePhase } | null> {
+  try {
+    const status = await getGuaranteeStatus(userId, profile);
+    if (!status) return null;
+    const now = Date.now();
+    const phase: GuaranteePhase = now < status.opensAt.getTime() ? "before" : now <= status.closesAt.getTime() ? "open" : "closed";
+    return { status, phase };
+  } catch (err) {
+    console.error("PremiumPage: guarantee status failed", err, { userId });
+    return null;
+  }
+}
+
 export default async function PremiumPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; source?: string }>;
+  searchParams: Promise<{ error?: string; source?: string; refund?: string }>;
 }) {
-  const { error, source } = await searchParams;
+  const { error, source, refund } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -91,7 +117,7 @@ export default async function PremiumPage({
 
   const { data: rawProfile } = await supabase
     .from("profiles")
-    .select("subscription_status, current_period_end, stripe_subscription_id")
+    .select("subscription_status, current_period_end, stripe_subscription_id, premium_activated_at, total_paid_cents")
     .eq("id", user.id)
     .single();
 
@@ -122,6 +148,16 @@ export default async function PremiumPage({
   // Prix de bienvenue : 20 min à compter du premier affichage de cette page
   // (lu avant d'enregistrer l'affichage en cours).
   const welcome = !premium && !paymentIssue ? await getWelcomeState(user.id) : null;
+
+  const guarantee = premium && profile ? await loadGuarantee(user.id, profile) : null;
+
+  // Avant le paywall : engagement (empreinte) puis vrai nombre d'inscrits,
+  // une seule fois (cookie posé à la signature). Garantie : badge si le
+  // message de sortie a déjà été vu.
+  const cookieStore = await cookies();
+  const showPledge = !premium && !paymentIssue && !cookieStore.get(PLEDGE_COOKIE);
+  const guaranteeShown = !!cookieStore.get(GUARANTEE_COOKIE);
+  const trustCount = showPledge ? await getTrustCount().catch(() => 0) : 0;
 
   // Mesure seulement (tableau « Chemin de Léo » de l'admin), rien de visible.
   if (!premium && !paymentIssue) {
@@ -177,6 +213,7 @@ export default async function PremiumPage({
           >
             Like, favoris, candidatures illimitées et audit CV sont débloqués.
           </p>
+          {guarantee && <GuaranteeCard status={guarantee.status} phase={guarantee.phase} refund={refund ?? null} />}
           {profile?.subscription_status === "lifetime" ? (
             <p
               className="tag tag-accent"
@@ -253,6 +290,8 @@ export default async function PremiumPage({
         </div>
       ) : (
         <>
+          {showPledge && <PaywallPledge userId={user.id} trustCount={trustCount} />}
+          <PaywallExitGuard />
           <div className="flex-1">
             {/* Header : marque + badge PREMIUM + fermeture -- maquette
                 fournie par Nathan ("Paywall Stageio — 1b", 26/09). Le X
@@ -374,6 +413,8 @@ export default async function PremiumPage({
                 </div>
               ))}
             </div>
+
+            <GuaranteeBadge initialVisible={guaranteeShown} />
 
             <PricingSelector
               welcomeEndsAt={welcome?.endsAt ?? null}

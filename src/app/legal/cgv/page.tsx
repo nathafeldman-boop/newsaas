@@ -6,7 +6,7 @@ export const metadata = {
 
 export default function CGVPage() {
   return (
-    <LegalShell tag="Conditions" title="Conditions générales de vente" updated="septembre 2026">
+    <LegalShell tag="Conditions" title="Conditions générales de vente" updated="octobre 2026">
       <Section title="Objet">
         <p>
           Les présentes CGV s&apos;appliquent à l&apos;accès Premium
@@ -106,6 +106,50 @@ export default function CGVPage() {
           te rétracter.
         </p>
       </Section>
+
+      <div id="garantie" style={{ scrollMarginTop: 80 }}>
+        <Section title="Garantie « aucun entretien = remboursé »">
+          <p>
+            <strong>Qui en bénéficie :</strong> uniquement l&apos;utilisateur à qui cette garantie a été présentée sur la
+            page Premium de Stageio (message affiché quand il quitte cette page), pour un achat Premium effectué après
+            cet affichage, quelle que soit la formule (mensuelle ou à vie). Une seule garantie par personne. Les accès
+            Premium offerts (codes d&apos;accès, parrainage) en sont exclus.
+          </p>
+          <p style={{ marginTop: 8 }}>
+            <strong>Conditions, toutes cumulatives :</strong>
+          </p>
+          <ul style={{ margin: "8px 0 0", paddingLeft: 20, listStyle: "disc" }}>
+            <li>
+              avoir gardé Premium pendant 3 mois consécutifs à compter de l&apos;achat (formule mensuelle : abonnement
+              ni résilié ni suspendu pendant ces 3 mois ; formule à vie : 3 mois après l&apos;achat) ;
+            </li>
+            <li>
+              avoir liké au moins 50 offres sur Stageio pendant ces 3 mois (décompte enregistré par Stageio et affiché
+              sur la page Premium) ;
+            </li>
+            <li>
+              n&apos;avoir obtenu aucun entretien d&apos;embauche (en personne, par téléphone ou en visio, pour une
+              alternance, un stage ou un emploi) pendant ces 3 mois, ce que l&apos;utilisateur certifie sur
+              l&apos;honneur au moment de sa demande ; une fausse déclaration entraîne le refus ou la restitution du
+              remboursement ;
+            </li>
+            <li>
+              faire la demande avec le bouton &laquo;&nbsp;Demander mon remboursement&nbsp;&raquo; de la page Premium,{" "}
+              <strong>dans les 12 heures qui suivent la fin de ces 3 mois</strong>. La date et l&apos;heure exactes de
+              début et de fin de cette période sont affichées sur la page Premium dès l&apos;achat, et un email de
+              rappel est envoyé la veille à l&apos;adresse du compte. Aucune demande n&apos;est recevable en dehors de
+              cette période.
+            </li>
+          </ul>
+          <p style={{ marginTop: 8 }}>
+            <strong>Remboursement :</strong> l&apos;intégralité des sommes payées pour Premium (formule mensuelle :
+            toutes les mensualités payées ; formule à vie : le prix payé), sur le moyen de paiement utilisé, sous 14
+            jours après la demande. Le remboursement met fin à l&apos;accès Premium et, pour la formule mensuelle,
+            résilie l&apos;abonnement. Cette garantie s&apos;ajoute aux droits que la loi te reconnaît et ne les
+            réduit en rien.
+          </p>
+        </Section>
+      </div>
 
       <Section title="Réclamations et médiation">
         <p>
