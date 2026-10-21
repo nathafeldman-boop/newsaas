@@ -1,3 +1,4 @@
+import type Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -28,4 +29,18 @@ export async function creditInvoicePayment(
   });
   if (error) return { credited: false, error: error.message };
   return { credited: data === true };
+}
+
+// Achat à vie (checkout en mode "payment") : aucune facture Stripe, donc
+// rien ne passait par invoice.paid -- le paiement est crédité sous l'id du
+// PaymentIntent, dans le même registre idempotent que les factures.
+export async function creditCheckoutPayment(
+  session: Stripe.Checkout.Session,
+  customerId: string,
+): Promise<{ credited: boolean; error?: string }> {
+  const amount = session.amount_total ?? 0;
+  if (session.mode !== "payment" || session.payment_status !== "paid" || amount <= 0) return { credited: false };
+  const key =
+    typeof session.payment_intent === "string" ? session.payment_intent : (session.payment_intent?.id ?? session.id);
+  return creditInvoicePayment(key, customerId, amount);
 }

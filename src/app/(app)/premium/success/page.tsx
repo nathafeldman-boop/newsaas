@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getStripeClient } from "@/lib/stripe/client";
 import { syncSubscriptionToProfile } from "@/lib/stripe/syncSubscription";
-import { creditInvoicePayment } from "@/lib/stripe/creditInvoicePayment";
+import { creditCheckoutPayment, creditInvoicePayment } from "@/lib/stripe/creditInvoicePayment";
 import { creditAffiliateCommission } from "@/lib/affiliates/creditAffiliateCommission";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type Stripe from "stripe";
@@ -77,6 +77,11 @@ async function reconcileFromSession(sessionId: string, userId: string) {
       } else if (!matched) {
         console.error("premium/success: syncSubscriptionToProfile matched no profile", { userId });
       }
+    }
+
+    if (isLifetimePurchase && customerId) {
+      const { error } = await creditCheckoutPayment(session, customerId);
+      if (error) console.error("premium/success: lifetime payment credit failed", error, { userId });
     }
 
     const invoice = session.invoice as Stripe.Invoice | null;

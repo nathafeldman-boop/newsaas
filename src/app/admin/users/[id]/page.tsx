@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isPremium } from "@/lib/subscription/isPremium";
-import { grantPremiumAndNotifyAction } from "@/app/admin/users/actions";
+import { grantPremiumAndNotifyAction, syncUserPaymentsAction } from "@/app/admin/users/actions";
 
 const SUBSCRIPTION_LABEL: Record<string, string> = {
   active: "Payant (actif)",
@@ -57,12 +57,21 @@ type TimelineItem = {
   detail: string;
 };
 
+const LTV_MESSAGES: Record<string, string> = {
+  ok: "Paiements Stripe relus et crédités.",
+  no_customer: "Aucun client Stripe trouvé pour ce compte.",
+  error: "La base n'a pas répondu pour au moins un paiement : réessaie dans une minute.",
+};
+
 export default async function AdminUserDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ ltv?: string }>;
 }) {
   const { id } = await params;
+  const { ltv } = await searchParams;
   const admin = createAdminClient();
 
   // Requêtes toutes filtrées sur ce seul user_id (index dédiés sur chaque
@@ -177,6 +186,12 @@ export default async function AdminUserDetailPage({
         {profile.email}
       </p>
 
+      {ltv && LTV_MESSAGES[ltv] && (
+        <p className="card" style={{ padding: "var(--space-3)", margin: "12px 0 0", fontSize: 13 }}>
+          {LTV_MESSAGES[ltv]}
+        </p>
+      )}
+
       <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div className="card elev-sm" style={{ padding: "var(--space-4)" }}>
           <p style={{ fontFamily: "var(--font-heading)", fontSize: 22, margin: 0 }}>
@@ -214,6 +229,14 @@ export default async function AdminUserDetailPage({
           <span className="tag tag-neutral" style={{ fontFamily: "monospace" }}>
             actuellement sur {profile.last_active_path}
           </span>
+        )}
+        {(profile.total_paid_cents ?? 0) === 0 && (profile.stripe_customer_id || isPremium(profile)) && (
+          <form action={syncUserPaymentsAction}>
+            <input type="hidden" name="userId" value={profile.id} />
+            <button type="submit" className="btn btn-secondary" style={{ padding: "6px 12px", fontSize: 12 }}>
+              LTV à 0 € → Récupérer les paiements depuis Stripe
+            </button>
+          </form>
         )}
         {!isPremium(profile) && (
           <form action={grantPremiumAndNotifyAction}>

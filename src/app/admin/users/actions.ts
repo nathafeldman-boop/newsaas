@@ -8,7 +8,7 @@ import { notifyPremiumFixed } from "@/lib/resend/notifyPremiumFixed";
 import { notifyCheckoutAbandoned } from "@/lib/resend/notifyCheckoutAbandoned";
 import { notifyIncompletePaymentOnce } from "@/lib/stripe/notifyIncompletePayment";
 import { getStripeClient } from "@/lib/stripe/client";
-import { creditInvoicePayment } from "@/lib/stripe/creditInvoicePayment";
+import { creditCheckoutPayment, creditInvoicePayment } from "@/lib/stripe/creditInvoicePayment";
 import { syncSubscriptionToProfile } from "@/lib/stripe/syncSubscription";
 import { reconcileAllSubscriptions } from "@/lib/stripe/reconcileSubscriptions";
 
@@ -58,43 +58,65 @@ export async function grantPremiumAndNotifyAction(formData: FormData) {
   revalidatePath(`/admin/users/${userId}`);
 }
 
-// Recours pour les comptes déjà passés Premium (statut correct) mais dont le
-// LTV est resté à 0 -- invoice.paid s'avère systémiquement en échec en prod
-// (3+ paiements réels confirmés, un seul reflété avant correction manuelle) :
-// /premium/success crédite maintenant le paiement à la volée pour toute
-// NOUVELLE conversion, mais les comptes déjà touchés avant ce correctif
-// restent à corriger une fois à la main. 799 = 7,99€ (mensuel) ; 3999 =
-// 39,99€ (accès à vie, voir premium/actions.ts -- 70€ avant le 27/09) --
-// plusieurs prix possibles selon la formule et la date d'achat, donc le bon
-// montant est désormais choisi côté appelant (voir admin/premium/page.tsx)
-// selon subscription_status plutôt que deviné ici.
-const MONTHLY_PRICE_CENTS = 799;
-
-export async function fixMissingLtvAction(formData: FormData) {
+// LTV à 0 € malgré un paiement (21/10 : la page de succès n'a pas pu créditer
+// pendant une saturation de la base, et l'endpoint Stripe de Stageio
+// n'écoutait pas invoice.paid) : relit les vrais paiements de ce compte chez
+// Stripe et les crédite via le registre idempotent -- jamais un montant
+// deviné, sans risque à relancer. Achats à vie crédités seulement si le LTV
+// est encore à 0 (d'anciens comptes ont été corrigés à la main, sans trace
+// dans le registre).
+export async function syncUserPaymentsAction(formData: FormData) {
   await assertAdminSession();
   const userId = formData.get("userId") as string;
   if (!userId) return;
-  const amountCents = Number(formData.get("amountCents")) || MONTHLY_PRICE_CENTS;
+  const back = (formData.get("back") as string) || `/admin/users/${userId}`;
 
   const admin = createAdminClient();
-  const { error } = await admin
+  const stripe = getStripeClient();
+  const { data: profile } = await admin
     .from("profiles")
-    .update({ total_paid_cents: amountCents })
+    .select("stripe_customer_id, total_paid_cents")
     .eq("id", userId)
-    .eq("total_paid_cents", 0);
+    .maybeSingle();
+  if (!profile) redirect(`${back}?ltv=error`);
 
-  if (error) {
-    console.error("fixMissingLtvAction: update failed", error, { userId });
+  let result: "ok" | "error" | "no_customer" = "ok";
+  try {
+    let customerId = profile.stripe_customer_id;
+    if (!customerId) {
+      const found = await stripe.customers.search({ query: `metadata['supabase_user_id']:'${userId}'`, limit: 1 });
+      customerId = found.data[0]?.id ?? null;
+      if (customerId) await admin.from("profiles").update({ stripe_customer_id: customerId }).eq("id", userId);
+    }
+    if (!customerId) {
+      result = "no_customer";
+    } else {
+      const invoices = await stripe.invoices.list({ customer: customerId, status: "paid", limit: 100 });
+      for (const invoice of invoices.data) {
+        if (invoice.amount_paid <= 0) continue;
+        const { error } = await creditInvoicePayment(invoice.id, customerId, invoice.amount_paid);
+        if (error) result = "error";
+      }
+      if ((profile.total_paid_cents ?? 0) === 0) {
+        const sessions = await stripe.checkout.sessions.list({ customer: customerId, limit: 100 });
+        for (const session of sessions.data) {
+          const { error } = await creditCheckoutPayment(session, customerId);
+          if (error) result = "error";
+        }
+      }
+    }
+  } catch (err) {
+    console.error("syncUserPaymentsAction failed", err, { userId });
+    result = "error";
   }
 
   revalidatePath("/admin/premium");
   revalidatePath(`/admin/users/${userId}`);
+  redirect(`${back}?ltv=${result}`);
 }
 
-// Correctif définitif du trou historique de LTV, au-delà du correctif au cas
-// par cas ci-dessus (fixMissingLtvAction, qui se contente de poser un prix
-// forfaitaire sur les comptes à 0€ -- imprécis pour un client qui a payé
-// plusieurs mois dont certains manquants). La vraie cause (voir migration
+// Correctif définitif du trou historique de LTV, pour tous les clients à la
+// fois (le correctif au cas par cas est syncUserPaymentsAction ci-dessus). La vraie cause (voir migration
 // 20260913000000) est corrigée pour tout NOUVEAU paiement, mais les factures
 // déjà marquées "traitées" dans le registre avant ce correctif restent
 // bloquées pour toujours -- rien ne les rejoue automatiquement. Ici, on va

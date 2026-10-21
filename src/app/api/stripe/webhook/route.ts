@@ -3,7 +3,7 @@ import type Stripe from "stripe";
 import { getStripeClient } from "@/lib/stripe/client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { syncSubscriptionToProfile } from "@/lib/stripe/syncSubscription";
-import { creditInvoicePayment } from "@/lib/stripe/creditInvoicePayment";
+import { creditCheckoutPayment, creditInvoicePayment } from "@/lib/stripe/creditInvoicePayment";
 import { notifyIncompletePaymentByCustomerId } from "@/lib/stripe/notifyIncompletePayment";
 import { creditAffiliateCommission } from "@/lib/affiliates/creditAffiliateCommission";
 
@@ -154,6 +154,12 @@ export async function POST(request: NextRequest) {
               console.error("Stripe webhook: event insert failed", eventError, { userId, eventType });
             }
           }
+          if (isLifetimePurchase) {
+            const { error: creditError } = await creditCheckoutPayment(session, customerId);
+            if (creditError) {
+              console.error("Stripe webhook: lifetime payment credit failed", creditError, { userId, customerId });
+            }
+          }
         }
       } else {
         console.error("Stripe webhook: checkout.session.completed missing userId or customerId", {
@@ -203,11 +209,14 @@ export async function POST(request: NextRequest) {
           invoice.amount_paid,
         );
         if (error) {
+          // Base indisponible (délai dépassé...) : 500 pour que Stripe
+          // réessaie, au lieu d'un 200 qui perdait ce paiement pour le LTV.
           console.error("Stripe webhook: creditInvoicePayment failed", error, {
             customerId,
             invoiceId: invoice.id,
             amount: invoice.amount_paid,
           });
+          return NextResponse.json({ error: "Base indisponible, réessaie plus tard." }, { status: 500 });
         } else if (!credited) {
           // Aucun profil ne correspond encore à ce stripe_customer_id --
           // arrive quand "invoice.paid" est livré avant "checkout.session.
