@@ -1,6 +1,7 @@
 // Garantie « pas d'entretien en 3 mois = remboursé » (Nathan, 20/10) :
-// proposée uniquement à ceux qui ont vu le message en quittant le paywall
-// (événement refund_guarantee_offered), sur n'importe quelle formule
+// proposée uniquement à ceux qui l'ont vue sur /premium -- 3e écran avant le
+// paywall (21/10) ou message en quittant le paywall -- (événement
+// refund_guarantee_offered), sur n'importe quelle formule
 // souscrite ensuite. Conditions écrites dans les CGV (section « Garantie »)
 // et rappelées sur chaque écran qui en parle : la fenêtre de demande est
 // courte (12 h, choix de Nathan), donc ses dates exactes sont affichées dans

@@ -10,7 +10,11 @@ export const OFFER_EXPIRY_DAYS = 30;
 // fiche basculait chaque jour entre « active » et « expirée » (mauvais pour
 // Google Jobs). Elle n'est retirée qu'après OFFER_UNSEEN_GRACE_DAYS jours
 // sans être revue.
-export const OFFER_UNSEEN_GRACE_DAYS = 2;
+// 5 jours (2 avant le 21/10) : les nuits où Supabase sature, une partie des
+// upserts des synchros échoue (1 252 offres France Travail sur 3 384 le
+// 21/10) et des offres toujours en ligne n'étaient plus « revues », puis
+// retirées (baisse de ~20 000 à ~16 000 offres signalée le 21/10).
+export const OFFER_UNSEEN_GRACE_DAYS = 5;
 
 export function offerExpiresAt(publishedAt: string): Date {
   const date = new Date(publishedAt);

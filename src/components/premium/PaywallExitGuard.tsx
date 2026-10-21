@@ -32,6 +32,9 @@ function markShown() {
 export function PaywallExitGuard() {
   const router = useRouter();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
+  // Garantie déjà vue sur l'écran avant le paywall : on la rappelle au lieu
+  // de la présenter comme un geste de plus.
+  const [alreadyGranted, setAlreadyGranted] = useState(false);
   const shown = useRef(false);
 
   useEffect(() => {
@@ -47,6 +50,7 @@ export function PaywallExitGuard() {
       e.stopPropagation();
       shown.current = true;
       markShown();
+      setAlreadyGranted(document.cookie.split("; ").some((c) => c.startsWith(`${GUARANTEE_COOKIE}=`)));
       setBrowserCookie(GUARANTEE_COOKIE);
       void offerRefundGuaranteeAction();
       setPendingHref(url.pathname + url.search + url.hash);
@@ -101,7 +105,8 @@ export function PaywallExitGuard() {
               Attends… tu t&apos;étais engagé·e à ne pas lâcher
             </h2>
             <p style={{ fontSize: 14, lineHeight: 1.5, margin: "8px 0 0", color: "color-mix(in srgb, var(--color-text) 68%, transparent)" }}>
-              On est vraiment déçus de te voir partir. Alors on va plus loin pour toi :
+              On est vraiment déçus de te voir partir.{" "}
+              {alreadyGranted ? "Et n'oublie pas, tu as notre garantie :" : "Alors on va plus loin pour toi :"}
             </p>
             <div
               style={{

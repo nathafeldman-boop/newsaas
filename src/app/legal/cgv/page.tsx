@@ -111,8 +111,9 @@ export default function CGVPage() {
         <Section title="Garantie « aucun entretien = remboursé »">
           <p>
             <strong>Qui en bénéficie :</strong> uniquement l&apos;utilisateur à qui cette garantie a été présentée sur la
-            page Premium de Stageio (message affiché quand il quitte cette page), pour un achat Premium effectué après
-            cet affichage, quelle que soit la formule (mensuelle ou à vie). Une seule garantie par personne. Les accès
+            page Premium de Stageio (écran &laquo;&nbsp;Des résultats, ou on te rembourse&nbsp;&raquo; affiché avant les
+            offres, ou message affiché quand il quitte cette page), pour un achat Premium effectué après cet affichage,
+            quelle que soit la formule (mensuelle ou à vie). Une seule garantie par personne. Les accès
             Premium offerts (codes d&apos;accès, parrainage) en sont exclus.
           </p>
           <p style={{ marginTop: 8 }}>

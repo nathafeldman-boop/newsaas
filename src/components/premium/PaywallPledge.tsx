@@ -3,17 +3,21 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
-import { PLEDGE_COOKIE, setBrowserCookie } from "@/lib/premium/guaranteeTerms";
+import { offerRefundGuaranteeAction } from "@/app/(app)/premium/guarantee-actions";
+import { GUARANTEE_COOKIE, PLEDGE_COOKIE, setBrowserCookie } from "@/lib/premium/guaranteeTerms";
+import { GUARANTEE_EVENT } from "@/components/premium/PaywallExitGuard";
 
 // Avant le paywall (Nathan, 20/10) : l'étudiant « signe » son engagement en
 // maintenant son doigt sur une empreinte, puis voit combien de personnes
 // nous ont fait confiance (vrai chiffre), puis arrive sur le paywall. Geste
 // symbolique : aucune donnée biométrique n'est lue, et c'est écrit à l'écran.
+// 3e écran (21/10) : la garantie remboursé, accordée à qui la voit (CGV
+// « Garantie »), conditions renvoyées aux CGV.
 const HOLD_MS = 1600;
 const RING_RADIUS = 58;
 const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
 
-type Phase = "pledge" | "signed" | "trust" | "done";
+type Phase = "pledge" | "signed" | "trust" | "guarantee" | "done";
 
 // « Plus de 3 200 » : arrondi vers le bas, pour que « plus de » reste vrai.
 function trustFloor(count: number): number {
@@ -71,13 +75,22 @@ export function PaywallPledge({ userId, trustCount }: { userId: string; trustCou
     };
   }, [phase]);
 
+  // Afficher la garantie, c'est l'accorder : même événement que le message
+  // de sortie du paywall, et badge « garantie activée » sur le paywall.
+  function showGuarantee() {
+    setBrowserCookie(GUARANTEE_COOKIE);
+    void offerRefundGuaranteeAction();
+    window.dispatchEvent(new Event(GUARANTEE_EVENT));
+    setPhase("guarantee");
+  }
+
   useEffect(() => {
     if (phase === "signed") {
-      const timer = setTimeout(() => setPhase(showTrust ? "trust" : "done"), 1000);
+      const timer = setTimeout(() => (showTrust ? setPhase("trust") : showGuarantee()), 1000);
       return () => clearTimeout(timer);
     }
     if (phase === "trust") {
-      const timer = setTimeout(() => setPhase("done"), 3200);
+      const timer = setTimeout(showGuarantee, 3200);
       return () => clearTimeout(timer);
     }
   }, [phase, showTrust]);
@@ -166,9 +179,82 @@ export function PaywallPledge({ userId, trustCount }: { userId: string; trustCou
                 <p style={{ fontSize: 14, margin: "8px 0 0", color: "color-mix(in srgb, var(--color-text) 62%, transparent)" }}>
                   pour trouver leur alternance ou leur stage.
                 </p>
-                <button type="button" className="btn btn-primary" onClick={() => setPhase("done")} style={{ marginTop: 28, height: 50, borderRadius: 999, padding: "0 28px", fontWeight: 700 }}>
+                <button type="button" className="btn btn-primary" onClick={showGuarantee} style={{ marginTop: 28, height: 50, borderRadius: 999, padding: "0 28px", fontWeight: 700 }}>
+                  Continuer →
+                </button>
+              </motion.div>
+            ) : phase === "guarantee" ? (
+              <motion.div
+                key="guarantee"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -16 }}
+                className="flex w-full flex-col items-center text-center"
+                style={{ maxWidth: 400 }}
+              >
+                <p style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", margin: 0, color: "var(--color-accent-700)" }}>
+                  Notre garantie
+                </p>
+                <h1 style={{ fontSize: 28, fontWeight: 800, lineHeight: 1.15, margin: "8px 0 0" }}>
+                  Des résultats,
+                  <br />
+                  ou on te rembourse.
+                </h1>
+                <motion.div
+                  initial={{ scale: 0.92, rotate: -2 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: "spring", stiffness: 220, damping: 14 }}
+                  style={{
+                    position: "relative",
+                    marginTop: 22,
+                    width: "100%",
+                    borderRadius: 28,
+                    padding: "30px 22px 26px",
+                    background: "linear-gradient(140deg, var(--color-accent), var(--color-accent-2))",
+                    color: "var(--color-bg)",
+                    boxShadow: "0 18px 40px color-mix(in srgb, var(--color-accent) 35%, transparent)",
+                    overflow: "hidden",
+                  }}
+                >
+                  <svg aria-hidden width="220" height="220" viewBox="0 0 24 24" style={{ position: "absolute", right: -50, top: -40, opacity: 0.12 }}>
+                    <path d="M12 2l8 3v6c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5l8-3z" fill="currentColor" />
+                  </svg>
+                  <svg aria-hidden width="92" height="92" viewBox="0 0 24 24" fill="none" style={{ margin: "0 auto", display: "block" }}>
+                    <path d="M12 2l8 3v6c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5l8-3z" fill="currentColor" fillOpacity="0.95" />
+                    <path d="M8.2 12.2l2.6 2.6 5-5.4" stroke="var(--color-accent-700)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <p style={{ fontFamily: "var(--font-heading)", fontSize: 34, fontWeight: 800, lineHeight: 1.05, margin: "14px 0 0" }}>
+                    Remboursé
+                  </p>
+                  <p style={{ fontSize: 16, fontWeight: 700, lineHeight: 1.4, margin: "10px 0 0" }}>
+                    Pas d&apos;entretien au bout de 3 mois de Premium ? On te rembourse.
+                  </p>
+                  <span
+                    style={{
+                      display: "inline-block",
+                      marginTop: 14,
+                      padding: "6px 14px",
+                      borderRadius: 999,
+                      background: "color-mix(in srgb, var(--color-bg) 22%, transparent)",
+                      fontSize: 13,
+                      fontWeight: 800,
+                    }}
+                  >
+                    Sur toutes les formules
+                  </span>
+                </motion.div>
+                <p style={{ fontSize: 14.5, lineHeight: 1.5, margin: "18px 0 0", color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
+                  On met tout en œuvre pour que tu décroches ton alternance. Et si ça ne donne rien, tu ne perds pas ton argent.
+                </p>
+                <button type="button" className="btn btn-primary" onClick={() => setPhase("done")} style={{ marginTop: 22, height: 50, borderRadius: 999, padding: "0 28px", fontWeight: 700 }}>
                   Voir mon offre →
                 </button>
+                <p style={{ fontSize: 12, margin: "12px 0 0", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+                  Sous conditions.{" "}
+                  <a href="/legal/cgv#garantie" target="_blank" rel="noopener" style={{ textDecoration: "underline" }}>
+                    Voir les conditions générales
+                  </a>
+                </p>
               </motion.div>
             ) : (
               <motion.div
