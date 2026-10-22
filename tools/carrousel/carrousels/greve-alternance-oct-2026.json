@@ -1,0 +1,79 @@
+{
+  "slug": "greve-alternance-oct-2026",
+  "theme": "Actu : manif du samedi 24 octobre et grève du jeudi 5 novembre 2026 — les droits des alternants",
+  "sources": [
+    "https://www.france24.com/fr/france/20261019-acte-ii-le-24-octobre-mobilisation-le-5-novembre-%C3%A0-quoi-s-attendre-pour-la-suite-du-mouvement",
+    "https://basta.media/Appel-greve-generale-5-novembre-manifestation-24-octobre-intersyndicale-refuse-de-se-laisser-intimider",
+    "https://www.welcometothejungle.com/fr/articles/droit-greve-stage-alternance"
+  ],
+  "slides": [
+    {
+      "type": "cover",
+      "photo": "https://images.unsplash.com/photo-1513258496099-48168024aec0?w=1600&q=85",
+      "photoPosition": "center 30%",
+      "title": ["Manif du 24 oct.", "en alternance :"],
+      "highlight": "t'as le droit ?",
+      "titleSize": 84
+    },
+    {
+      "type": "tip",
+      "title": ["Tu es", "salarié"],
+      "text": "En alternance, tu as un ==contrat de travail== : le droit de grève, c'est aussi pour toi",
+      "objectif": "À retenir",
+      "items": [
+        { "icon": "scale", "label": "un droit, pas une faute" },
+        { "icon": "briefcase", "label": "même les jours de CFA" }
+      ]
+    },
+    {
+      "type": "tip",
+      "title": ["Ton", "salaire"],
+      "text": "Les heures de grève ne sont ==pas payées== : la retenue dépend du temps de grève",
+      "objectif": "À retenir",
+      "items": [
+        { "icon": "wallet", "label": "retenue au prorata" },
+        { "icon": "clock", "label": "pas d'heures à rattraper" }
+      ]
+    },
+    {
+      "type": "tip",
+      "title": ["Préviens", "ton tuteur"],
+      "text": "Dans le privé, ==pas d'obligation== de prévenir, mais un mail à ton tuteur et à ton CFA évite les malentendus",
+      "objectif": "Objectifs",
+      "items": [
+        { "icon": "mail", "label": "un mail court suffit" },
+        { "icon": "heart", "label": "garder la confiance" }
+      ]
+    },
+    {
+      "type": "tip",
+      "title": ["Jour", "d'exam ?"],
+      "text": "Si tu rates un examen, le CFA n'est ==pas obligé== d'organiser un rattrapage",
+      "objectif": "Réflexe",
+      "items": [
+        { "icon": "calendar-x", "label": "vérifie ton planning avant" }
+      ],
+      "note": "Infos générales : vérifie ton contrat et le règlement de ton CFA."
+    },
+    {
+      "type": "tip",
+      "title": ["Grève du", "5 novembre"],
+      "text": "Transports perturbés ? Pour tes entretiens d'alternance, prévois un ==plan B==",
+      "objectif": "Plan B",
+      "items": [
+        { "icon": "train-front", "label": "vérifie ton trajet la veille" },
+        { "icon": "video", "label": "propose une visio" }
+      ]
+    },
+    {
+      "type": "cta",
+      "title": ["Trouve ton", "alternance"],
+      "lead": "Va sur ==stageio.fr== : tape-le sur Google",
+      "bullets": [
+        "Des milliers d'offres d'alternance et de stage",
+        "Tu swipes, tu likes, tu postules",
+        "Inscription gratuite"
+      ]
+    }
+  ]
+}

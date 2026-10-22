@@ -40,3 +40,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# usine à carrousels (rendus et cache)
+/tools/carrousel/.cache
+/tools/carrousel/out

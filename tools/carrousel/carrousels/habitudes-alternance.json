@@ -1,0 +1,72 @@
+{
+  "slug": "habitudes-alternance",
+  "theme": "Les habitudes pour décrocher ton alternance (intemporel)",
+  "slides": [
+    {
+      "type": "cover",
+      "photo": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=1600&q=85",
+      "photoPosition": "center 20%",
+      "title": ["Les habitudes", "pour décrocher"],
+      "highlight": "ton alternance"
+    },
+    {
+      "type": "tip",
+      "title": ["Postuler", "chaque jour"],
+      "text": "==3 à 5 candidatures par jour==, plutôt que 30 d'un coup le dimanche soir",
+      "objectif": "Objectifs",
+      "items": [
+        { "icon": "repeat", "label": "garder le rythme" },
+        { "icon": "clock", "label": "ne rater aucune nouvelle offre" }
+      ]
+    },
+    {
+      "type": "tip",
+      "title": ["Adapter", "ta lettre"],
+      "text": "Une lettre ==qui parle de l'entreprise== vaut mieux que dix copiées-collées",
+      "objectif": "Objectif",
+      "items": [
+        { "icon": "target", "label": "montrer que tu as choisi cette boîte" },
+        { "icon": "file-text", "label": "sortir du lot" }
+      ]
+    },
+    {
+      "type": "tip",
+      "title": ["Relancer", "les recruteurs"],
+      "text": "Pas de réponse au bout d'==une semaine== ? Un mail court et poli suffit",
+      "objectif": "Objectifs",
+      "items": [
+        { "icon": "mail", "label": "rester en tête" },
+        { "icon": "heart", "label": "prouver ta motivation" }
+      ]
+    },
+    {
+      "type": "tip",
+      "title": ["Viser", "plus large"],
+      "text": "Élargis ta ==zone== et regarde les ==métiers proches== du tien",
+      "objectif": "Objectif",
+      "items": [
+        { "icon": "map-pin", "label": "plus d'offres autour de toi" },
+        { "icon": "briefcase", "label": "plus de portes ouvertes" }
+      ]
+    },
+    {
+      "type": "tip",
+      "title": ["Ne pas", "lâcher"],
+      "text": "Un refus, c'est normal. ==Chaque candidature== te rapproche du oui",
+      "objectif": "Objectif",
+      "items": [
+        { "icon": "rocket", "label": "décrocher ton contrat" }
+      ]
+    },
+    {
+      "type": "cta",
+      "title": ["Trouve ton", "alternance"],
+      "lead": "Va sur ==stageio.fr== : tape-le sur Google",
+      "bullets": [
+        "Des milliers d'offres d'alternance et de stage",
+        "Tu swipes, tu likes, tu postules",
+        "Inscription gratuite"
+      ]
+    }
+  ]
+}
