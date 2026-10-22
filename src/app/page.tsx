@@ -108,7 +108,7 @@ const FAQ = [
   {
     question: "Est-ce que Stageio est gratuit ?",
     answer:
-      "L'inscription et la création de profil sont gratuites, et tu peux parcourir tout le catalogue d'offres sans limite. Liker une offre, candidater et générer une lettre de motivation par IA sont réservés aux membres Premium : 12,79€/mois sans engagement, ou 63,99€ en paiement unique pour un accès à vie. Prix de bienvenue de 7,99€/mois ou 39,99€ à vie pendant 20 minutes, à compter de la première fois où tu vois la page Premium.",
+      "L'inscription et la création de profil sont gratuites, et tu peux parcourir tout le catalogue d'offres sans limite. Liker une offre, candidater et générer une lettre de motivation par IA sont réservés aux membres Premium : 12,79€/mois sans engagement, ou 63,99€ en paiement unique pour un accès à vie. Prix de bienvenue de 7,99€/mois ou 39,99€ à vie pendant 10 minutes, à compter de la première fois où tu vois la page Premium.",
   },
   {
     question: "Stageio propose des stages ou des alternances ?",
@@ -1226,7 +1226,7 @@ export default async function LandingPage() {
                     39,99 €<span style={{ fontSize: 14, fontWeight: 600, color: "var(--color-neutral-400)" }}> une seule fois</span>
                   </p>
                   <p style={{ position: "relative", margin: "6px 0 0", fontSize: 12.5, color: "var(--color-neutral-400)" }}>
-                    Prix de bienvenue pendant 20 min après ton inscription, ensuite 63,99 €
+                    Prix de bienvenue pendant 10 min après ton inscription, ensuite 63,99 €
                   </p>
                   <div className="flex flex-col gap-2.5" style={{ position: "relative", margin: "20px 0 24px", flex: 1 }}>
                     {[...PREMIUM_FEATURES, "Jamais de renouvellement"].map((line) => (
@@ -1267,7 +1267,7 @@ export default async function LandingPage() {
                   <span style={{ fontSize: 14, fontWeight: 600, color: lifetimeAvailable ? mutedText : "var(--color-neutral-400)" }}> /mois</span>
                 </p>
                 <p style={{ position: "relative", margin: "6px 0 0", fontSize: 12.5, color: lifetimeAvailable ? mutedText : "var(--color-neutral-400)" }}>
-                  Prix de bienvenue pendant 20 min après ton inscription, ensuite 12,79 €/mois
+                  Prix de bienvenue pendant 10 min après ton inscription, ensuite 12,79 €/mois
                 </p>
                 <div className="flex flex-col gap-2.5" style={{ position: "relative", margin: "20px 0 24px", flex: 1 }}>
                   {PREMIUM_FEATURES.map((line) => (

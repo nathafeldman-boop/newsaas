@@ -1,13 +1,13 @@
 import { requestRefundAction } from "@/app/(app)/premium/guarantee-actions";
 import type { GuaranteeStatus } from "@/lib/premium/refundGuarantee";
-import { GUARANTEE_MIN_LIKES, GUARANTEE_REFUND_DAYS, formatParis } from "@/lib/premium/guaranteeTerms";
+import { GUARANTEE_MIN_LIKES, GUARANTEE_MONTHS, GUARANTEE_REFUND_DAYS, formatParis } from "@/lib/premium/guaranteeTerms";
 
 export type GuaranteePhase = "before" | "open" | "closed";
 
 const REFUND_MESSAGES: Record<string, string> = {
   confirm_required: "Coche la case pour certifier que tu n'as obtenu aucun entretien.",
   outside_window: "La demande n'est possible que pendant ta fenêtre de 12 h (dates ci-dessous).",
-  not_enough_likes: `Il faut au moins ${GUARANTEE_MIN_LIKES} offres likées pendant tes 3 mois.`,
+  not_enough_likes: `Il faut au moins ${GUARANTEE_MIN_LIKES} offres likées pendant tes ${GUARANTEE_MONTHS} mois.`,
   unavailable: "Aucune garantie n'est associée à ton achat.",
   error: "Un souci est survenu, réessaie dans une minute ou écris à contact@stageio.fr.",
 };
@@ -43,7 +43,7 @@ export function GuaranteeCard({
       ) : (
         <>
           <p style={{ margin: "6px 0 0" }}>
-            Aucun entretien après 3 mois ? Demande ton remboursement <strong>{period}</strong>. On t&apos;envoie un rappel par
+            Aucun entretien après {GUARANTEE_MONTHS} mois ? Demande ton remboursement <strong>{period}</strong>. On t&apos;envoie un rappel par
             email la veille.
           </p>
           <p style={{ margin: "8px 0 0", color: muted }}>
@@ -71,7 +71,7 @@ export function GuaranteeCard({
               </form>
             ) : (
               <p style={{ margin: "10px 0 0", color: muted }}>
-                Il fallait au moins {GUARANTEE_MIN_LIKES} offres likées pendant tes 3 mois : la garantie ne s&apos;applique pas.
+                Il fallait au moins {GUARANTEE_MIN_LIKES} offres likées pendant tes {GUARANTEE_MONTHS} mois : la garantie ne s&apos;applique pas.
               </p>
             ))}
         </>

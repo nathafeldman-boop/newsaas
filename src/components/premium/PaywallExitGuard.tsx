@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { offerRefundGuaranteeAction } from "@/app/(app)/premium/guarantee-actions";
-import { GUARANTEE_CONDITIONS, GUARANTEE_COOKIE, setBrowserCookie } from "@/lib/premium/guaranteeTerms";
+import { GUARANTEE_CONDITIONS, GUARANTEE_COOKIE, GUARANTEE_MONTHS, setBrowserCookie } from "@/lib/premium/guaranteeTerms";
 import { GuaranteeHero } from "@/components/premium/GuaranteeHero";
 
 export const GUARANTEE_EVENT = "stageio:guarantee";
@@ -158,7 +158,7 @@ export function GuaranteeBadge({ initialVisible }: { initialVisible: boolean }) 
         lineHeight: 1.45,
       }}
     >
-      <strong>🛡️ Ta garantie est activée :</strong> aucun entretien en 3 mois de Premium = remboursé, sur toutes les
+      <strong>🛡️ Ta garantie est activée :</strong> aucun entretien en {GUARANTEE_MONTHS} mois de Premium = remboursé, sur toutes les
       formules.{" "}
       <a href="/legal/cgv#garantie" target="_blank" rel="noopener" style={{ textDecoration: "underline" }}>
         Conditions

@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
   }
 
   const startedAt = Date.now();
-  // Achats dont les 3 mois tombent entre hier et après-demain.
+  // Achats dont les GUARANTEE_MONTHS mois tombent entre hier et après-demain.
   const from = new Date(startedAt - DAY_MS);
   from.setMonth(from.getMonth() - GUARANTEE_MONTHS);
   const to = new Date(startedAt + 2 * DAY_MS);
@@ -77,9 +77,9 @@ export async function GET(request: NextRequest) {
         to: profile.email!,
         subject: "Ta garantie remboursé : ta fenêtre de demande arrive",
         html: `<p>Salut${profile.full_name ? ` ${profile.full_name}` : ""},</p>
-<p>Tu as la garantie Stageio : si tu n'as obtenu aucun entretien après 3 mois de Premium, on te rembourse.</p>
+<p>Tu as la garantie Stageio : si tu n'as obtenu aucun entretien après ${GUARANTEE_MONTHS} mois de Premium, on te rembourse.</p>
 <p><strong>Tu peux faire ta demande du ${formatParis(status.opensAt)} au ${formatParis(status.closesAt)} (heure de Paris)</strong>, depuis ta page Premium : <a href="${SITE_URL}/premium">${SITE_URL}/premium</a></p>
-<p>Condition : au moins ${GUARANTEE_MIN_LIKES} offres likées pendant tes 3 mois. Tu en as ${status.likes}${
+<p>Condition : au moins ${GUARANTEE_MIN_LIKES} offres likées pendant tes ${GUARANTEE_MONTHS} mois. Tu en as ${status.likes}${
           missing > 0 && status.opensAt.getTime() > startedAt ? ` : il t'en manque ${missing}, tu as jusqu'au ${formatParis(status.opensAt)} pour les liker` : ""
         }.</p>
 <p>Et si tu as décroché un entretien entre-temps, bravo, ne lâche rien 💪</p>`,

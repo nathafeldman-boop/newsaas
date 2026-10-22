@@ -39,7 +39,7 @@ export default function CGVPage() {
           <li><strong>63,99&nbsp;€</strong>, en un paiement unique, donnant un accès Premium à vie (sans renouvellement, sans limite de durée).</li>
         </ul>
         <p style={{ marginTop: 8 }}>
-          <strong>Prix de bienvenue :</strong> pendant 20 minutes à compter du premier affichage de la page Premium
+          <strong>Prix de bienvenue :</strong> pendant 10 minutes à compter du premier affichage de la page Premium
           sur son compte, l&apos;utilisateur peut souscrire au prix de 7,99&nbsp;€ / mois ou de 39,99&nbsp;€ pour
           l&apos;accès à vie. Le prix de bienvenue souscrit pendant ce délai reste celui de l&apos;abonnement (pas
           d&apos;augmentation au renouvellement). Le délai restant est affiché sur la page Premium ; passé ce
@@ -121,22 +121,22 @@ export default function CGVPage() {
           </p>
           <ul style={{ margin: "8px 0 0", paddingLeft: 20, listStyle: "disc" }}>
             <li>
-              avoir gardé Premium pendant 3 mois consécutifs à compter de l&apos;achat (formule mensuelle : abonnement
-              ni résilié ni suspendu pendant ces 3 mois ; formule à vie : 3 mois après l&apos;achat) ;
+              avoir gardé Premium pendant 2 mois consécutifs à compter de l&apos;achat (formule mensuelle : abonnement
+              ni résilié ni suspendu pendant ces 2 mois ; formule à vie : 2 mois après l&apos;achat) ;
             </li>
             <li>
-              avoir liké au moins 50 offres sur Stageio pendant ces 3 mois (décompte enregistré par Stageio et affiché
+              avoir liké au moins 50 offres sur Stageio pendant ces 2 mois (décompte enregistré par Stageio et affiché
               sur la page Premium) ;
             </li>
             <li>
               n&apos;avoir obtenu aucun entretien d&apos;embauche (en personne, par téléphone ou en visio, pour une
-              alternance, un stage ou un emploi) pendant ces 3 mois, ce que l&apos;utilisateur certifie sur
+              alternance, un stage ou un emploi) pendant ces 2 mois, ce que l&apos;utilisateur certifie sur
               l&apos;honneur au moment de sa demande ; une fausse déclaration entraîne le refus ou la restitution du
               remboursement ;
             </li>
             <li>
               faire la demande avec le bouton &laquo;&nbsp;Demander mon remboursement&nbsp;&raquo; de la page Premium,{" "}
-              <strong>dans les 12 heures qui suivent la fin de ces 3 mois</strong>. La date et l&apos;heure exactes de
+              <strong>dans les 12 heures qui suivent la fin de ces 2 mois</strong>. La date et l&apos;heure exactes de
               début et de fin de cette période sont affichées sur la page Premium dès l&apos;achat, et un email de
               rappel est envoyé la veille à l&apos;adresse du compte. Aucune demande n&apos;est recevable en dehors de
               cette période.
@@ -147,7 +147,8 @@ export default function CGVPage() {
             toutes les mensualités payées ; formule à vie : le prix payé), sur le moyen de paiement utilisé, sous 14
             jours après la demande. Le remboursement met fin à l&apos;accès Premium et, pour la formule mensuelle,
             résilie l&apos;abonnement. Cette garantie s&apos;ajoute aux droits que la loi te reconnaît et ne les
-            réduit en rien.
+            réduit en rien. Depuis le 23 octobre 2026, la durée est de 2 mois au lieu de 3, y compris pour les achats
+            faits avant cette date : les dates affichées sur la page Premium en tiennent compte.
           </p>
         </Section>
       </div>

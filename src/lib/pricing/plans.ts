@@ -1,13 +1,13 @@
 // Tarifs Stageio (20/10, décision de Nathan) : prix réguliers 12,79 €/mois et
 // 63,99 € à vie (+60 %). Prix de bienvenue (les anciens prix, 7,99 € et
-// 39,99 €) pendant 20 minutes à compter de la première fois où la personne
+// 39,99 €) pendant 10 minutes (20 jusqu'au 22/10) à compter de la première fois où la personne
 // voit la page Premium -- un vrai délai, compté côté serveur, qui ne repart
 // jamais à zéro. Ni « −X % » ni prix barré : en France une réduction se
 // calcule depuis le prix le plus bas des 30 derniers jours (7,99 €), donc
 // on affiche le prix de bienvenue, le temps restant et le prix d'après.
 // Fichier sans import serveur : lu aussi par le paywall (composant client).
 
-export const WELCOME_WINDOW_MS = 20 * 60 * 1000;
+export const WELCOME_WINDOW_MS = 10 * 60 * 1000;
 
 export const PLAN_PRICES = {
   monthly: { welcome: "7,99 €", regular: "12,79 €" },

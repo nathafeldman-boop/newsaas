@@ -3,10 +3,10 @@ import { WELCOME_WINDOW_MS } from "@/lib/pricing/plans";
 
 // Mise en place des nouveaux tarifs : seuls les affichages de la page
 // Premium à partir de ce moment ouvrent un prix de bienvenue (chacun a ses
-// 20 minutes, même ceux qui avaient déjà vu le paywall avant).
+// 10 minutes, même ceux qui avaient déjà vu le paywall avant).
 const PRICING_CHANGE_AT = "2026-10-20T10:45:00Z";
 
-// Fin du prix de bienvenue (ms) : 20 min après le premier affichage de
+// Fin du prix de bienvenue (ms) : WELCOME_WINDOW_MS après le premier affichage de
 // /premium (événement paywall_viewed) depuis le changement de tarifs. Aucun
 // affichage encore enregistré : le délai commence maintenant.
 export async function getWelcomeEndsAt(userId: string): Promise<number> {

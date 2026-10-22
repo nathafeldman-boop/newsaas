@@ -85,7 +85,7 @@ export async function createCheckoutSessionAction(formData: FormData) {
     redirect("/premium?error=not_configured");
   }
   const isLifetime = plan === "lifetime";
-  // Prix de bienvenue (anciens prix) tant que ses 20 minutes ne sont pas
+  // Prix de bienvenue (anciens prix) tant que ses 10 minutes ne sont pas
   // écoulées, prix réguliers ensuite (voir lib/pricing/plans.ts). Une minute
   // de marge : un clic à 19:59 garde le prix affiché sur le bouton.
   const welcome = Date.now() <= (await getWelcomeEndsAt(user.id)) + 60_000;

@@ -1,4 +1,5 @@
-// Garantie « pas d'entretien en 3 mois = remboursé » (Nathan, 20/10) :
+// Garantie « pas d'entretien en 2 mois = remboursé » (Nathan, 20/10 ; 2 mois
+// au lieu de 3 depuis le 22/10) :
 // proposée uniquement à ceux qui l'ont vue sur /premium -- 3e écran avant le
 // paywall (21/10) ou message en quittant le paywall -- (événement
 // refund_guarantee_offered), sur n'importe quelle formule
@@ -8,7 +9,7 @@
 // l'app dès l'achat et un email de rappel part la veille (cron
 // refund-guarantee-reminder). Remboursement fait à la main dans Stripe.
 // Module sans dépendance serveur : importé aussi par les composants client.
-export const GUARANTEE_MONTHS = 3;
+export const GUARANTEE_MONTHS = 2;
 export const GUARANTEE_WINDOW_HOURS = 12;
 export const GUARANTEE_MIN_LIKES = 50;
 export const GUARANTEE_REFUND_DAYS = 14;
@@ -23,8 +24,8 @@ export const GUARANTEE_REMINDED_EVENT = "refund_reminder_sent";
 export const GUARANTEE_COOKIE = "stageio_guarantee";
 
 export const GUARANTEE_CONDITIONS =
-  `3 mois de Premium sans interruption (ou accès à vie), au moins ${GUARANTEE_MIN_LIKES} offres likées pendant ces 3 mois, ` +
-  `aucun entretien obtenu, et demande depuis ta page Premium dans les ${GUARANTEE_WINDOW_HOURS} h qui suivent tes 3 mois ` +
+  `${GUARANTEE_MONTHS} mois de Premium sans interruption (ou accès à vie), au moins ${GUARANTEE_MIN_LIKES} offres likées pendant ces ${GUARANTEE_MONTHS} mois, ` +
+  `aucun entretien obtenu, et demande depuis ta page Premium dans les ${GUARANTEE_WINDOW_HOURS} h qui suivent tes ${GUARANTEE_MONTHS} mois ` +
   `(dates exactes affichées dans l'app, rappel par email la veille).`;
 
 export function guaranteeWindow(activatedAt: string): { opensAt: Date; closesAt: Date } {

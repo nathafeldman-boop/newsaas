@@ -145,7 +145,7 @@ export default async function PremiumPage({
     !premium &&
     (profile?.subscription_status === "past_due" || profile?.subscription_status === "incomplete");
 
-  // Prix de bienvenue : 20 min à compter du premier affichage de cette page
+  // Prix de bienvenue : 10 min à compter du premier affichage de cette page
   // (lu avant d'enregistrer l'affichage en cours).
   const welcome = !premium && !paymentIssue ? await getWelcomeState(user.id) : null;
 
@@ -373,7 +373,7 @@ export default async function PremiumPage({
 
             {/* Nouveaux tarifs (20/10, décision de Nathan) : le bandeau
                 « Offre spéciale rentrée » (tarifs garantis 1 mois puis hausse,
-                22/09) laisse la place au prix de bienvenue de 20 minutes. Voir
+                22/09) laisse la place au prix de bienvenue de 10 minutes. Voir
                 lib/pricing/plans.ts : jamais de « −X % » ni de prix barré. */}
             <WelcomePriceBanner endsAt={welcome?.endsAt ?? null} initialActive={welcome?.active ?? false} />
 

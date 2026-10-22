@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { GUARANTEE_MONTHS } from "@/lib/premium/guaranteeTerms";
 
 // Carte « Remboursé » de la garantie : la même avant le paywall (3e écran)
 // et dans le message en quittant le paywall.
@@ -34,7 +35,7 @@ export function GuaranteeHero({ marginTop = 22 }: { marginTop?: number }) {
         Remboursé
       </p>
       <p style={{ fontSize: 16, fontWeight: 700, lineHeight: 1.4, margin: "10px 0 0" }}>
-        Pas d&apos;entretien au bout de 3 mois de Premium ? On te rembourse.
+        Pas d&apos;entretien au bout de {GUARANTEE_MONTHS} mois de Premium ? On te rembourse.
       </p>
       <span
         style={{

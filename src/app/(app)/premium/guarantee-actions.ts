@@ -5,6 +5,7 @@ import { logServerEvent } from "@/lib/analytics/logServerEvent";
 import { getGuaranteeStatus, type GuaranteeStatus } from "@/lib/premium/refundGuarantee";
 import {
   GUARANTEE_MIN_LIKES,
+  GUARANTEE_MONTHS,
   GUARANTEE_OFFERED_EVENT,
   GUARANTEE_REFUND_DAYS,
   GUARANTEE_REQUESTED_EVENT,
@@ -83,12 +84,12 @@ export async function requestRefundAction(formData: FormData) {
       from: `Stageio <${fromEmail}>`,
       to: SUPPORT_EMAIL,
       subject: `Garantie : demande de remboursement de ${profile.email ?? user.id}`,
-      html: `<p>Demande de remboursement (garantie « pas d'entretien en 3 mois ») le ${formatParis(new Date(now))}.</p>
+      html: `<p>Demande de remboursement (garantie « pas d'entretien en ${GUARANTEE_MONTHS} mois ») le ${formatParis(new Date(now))}.</p>
 <ul>
 <li>Compte : ${profile.full_name ?? "—"} — ${profile.email ?? "—"} (id ${user.id})</li>
 <li>Formule : ${plan}, Premium depuis le ${formatParis(new Date(profile.premium_activated_at!))}</li>
 <li>Payé au total : ${paid}</li>
-<li>Offres likées pendant les 3 mois : ${status.likes}</li>
+<li>Offres likées pendant les ${GUARANTEE_MONTHS} mois : ${status.likes}</li>
 <li>Client Stripe : ${profile.stripe_customer_id ?? "—"}</li>
 <li>Aucun entretien : certifié sur l'honneur</li>
 </ul>
