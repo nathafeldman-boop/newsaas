@@ -6,6 +6,7 @@ import { syncSubscriptionToProfile } from "@/lib/stripe/syncSubscription";
 import { creditCheckoutPayment, creditInvoicePayment } from "@/lib/stripe/creditInvoicePayment";
 import { notifyIncompletePaymentByCustomerId } from "@/lib/stripe/notifyIncompletePayment";
 import { creditAffiliateCommission } from "@/lib/affiliates/creditAffiliateCommission";
+import { cancelRemindersAfterPayment } from "@/lib/stripe/checkoutReminder";
 
 export const maxDuration = 30;
 
@@ -93,6 +94,10 @@ export async function POST(request: NextRequest) {
       // bas, plutôt que de laisser cette session tomber dans le vide comme
       // une "subscription_started" sans abonnement.
       const isLifetimePurchase = session.mode === "payment";
+
+      // Payé : la relance « tu y étais presque » programmée à l'ouverture du
+      // paiement ne doit jamais partir.
+      if (userId) await cancelRemindersAfterPayment(userId);
 
       if (userId && customerId) {
         const admin = createAdminClient();
