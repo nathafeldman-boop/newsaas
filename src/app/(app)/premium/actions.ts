@@ -89,8 +89,9 @@ export async function createCheckoutSessionAction(formData: FormData) {
   // écoulées, prix réguliers ensuite (voir lib/pricing/plans.ts). Une minute
   // de marge : un clic à 19:59 garde le prix affiché sur le bouton.
   const welcome = Date.now() <= (await getWelcomeEndsAt(user.id)) + 60_000;
-  // Offre 48 h : l'accès à vie à 30 € passe avant tout (même minute de marge).
-  const promo = isLifetime && Date.now() <= LIFETIME_PROMO.endsAt + 60_000;
+  // Promo accès à vie (30 € au lieu de 39,99 €) : pendant le prix de
+  // bienvenue seulement, tant que la promo dure (même minute de marge).
+  const promo = isLifetime && welcome && Date.now() <= LIFETIME_PROMO.endsAt + 60_000;
   const rawPriceId = promo
     ? LIFETIME_PROMO.priceId
     : welcome

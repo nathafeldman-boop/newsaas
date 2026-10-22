@@ -46,10 +46,10 @@ export default function CGVPage() {
           délai, les prix ci-dessus s&apos;appliquent.
         </p>
         <p style={{ marginTop: 8 }}>
-          <strong>Offre 48 h sur l&apos;accès à vie :</strong> du 23 octobre 2026 à 0 h 30 au 25 octobre 2026 à
-          0 h 30 (heure de Paris), l&apos;accès à vie est proposé à 30&nbsp;€ en paiement unique à tous les
-          utilisateurs, à la place du prix de bienvenue et du prix ci-dessus. Le temps restant est affiché sur la
-          page Premium ; passé ce délai, les prix habituels s&apos;appliquent à nouveau.
+          <strong>Promotion sur l&apos;accès à vie :</strong> du 23 octobre 2026 à 0 h 30 au 25 octobre 2026 à
+          0 h 30 (heure de Paris), le prix de bienvenue de l&apos;accès à vie est de 30&nbsp;€ au lieu de
+          39,99&nbsp;€ (prix le plus bas pratiqué au cours des 30 jours précédents), dans le même délai de 10
+          minutes ; passé ce délai, le prix de 63,99&nbsp;€ s&apos;applique.
         </p>
         <p style={{ marginTop: 8 }}>
           {" "}

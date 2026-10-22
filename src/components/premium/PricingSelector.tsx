@@ -17,6 +17,7 @@ function PlanRow({
   price,
   priceSuffix,
   afterPrice,
+  strikePrice,
   badge,
 }: {
   selected: boolean;
@@ -28,6 +29,9 @@ function PlanRow({
   // Prix de bienvenue en cours : le prix qui s'appliquera ensuite, en petit
   // (jamais barré ni en « −X % », voir lib/pricing/plans.ts).
   afterPrice?: string;
+  // Promo : ancien prix barré (le plus bas des 30 derniers jours, voir
+  // LIFETIME_PROMO dans lib/pricing/plans.ts).
+  strikePrice?: string;
   badge?: string;
 }) {
   return (
@@ -84,6 +88,18 @@ function PlanRow({
         </div>
       </div>
       <div style={{ textAlign: "right", flexShrink: 0 }}>
+        {strikePrice && (
+          <s
+            style={{
+              fontSize: 13.5,
+              fontWeight: 600,
+              marginRight: 6,
+              color: "color-mix(in srgb, var(--color-text) 50%, transparent)",
+            }}
+          >
+            {strikePrice}
+          </s>
+        )}
         <span style={{ fontSize: 19, fontWeight: 800, letterSpacing: "-0.01em" }}>{price}</span>
         {priceSuffix && (
           <span style={{ fontSize: 12.5, fontWeight: 500, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
@@ -119,15 +135,15 @@ export function PricingSelector({
   // Prix de bienvenue (voir lib/pricing/plans.ts) : fin fixée côté serveur.
   welcomeEndsAt?: number | null;
   welcomeActive?: boolean;
-  // Offre 48 h sur l'accès à vie (LIFETIME_PROMO) : lue côté serveur.
+  // Période de la promo accès à vie (LIFETIME_PROMO) : lue côté serveur.
   promoActive?: boolean;
 }) {
   const { active: welcome, remaining } = useWelcomeCountdown(welcomeEndsAt, welcomeActive);
-  const { active: promo, msLeft: promoMsLeft } = useWelcomeCountdown(LIFETIME_PROMO.endsAt, promoActive);
+  const { active: promoPeriod } = useWelcomeCountdown(LIFETIME_PROMO.endsAt, promoActive);
   const tier = welcome ? "welcome" : "regular";
+  // Promo : 30 € (39,99 € barré) tant que le chrono de bienvenue tourne.
+  const promo = promoPeriod && welcome;
   const lifetimePrice = promo ? LIFETIME_PROMO.price : PLAN_PRICES.lifetime[tier];
-  const promoLeft =
-    promoMsLeft === null ? null : `${Math.floor(promoMsLeft / 3_600_000)} h ${String(Math.floor((promoMsLeft % 3_600_000) / 60_000)).padStart(2, "0")} min`;
   const monthlyPrice = PLAN_PRICES.monthly[tier];
   // Accès à vie affiché en premier et présélectionné (demande de Nathan,
   // 14/10) ; le prix du plan choisi est écrit sur le bouton pour qu'il n'y
@@ -144,8 +160,9 @@ export function PricingSelector({
             label="Accès à vie"
             sublabel="Paiement unique, jamais de renouvellement"
             price={lifetimePrice}
-            afterPrice={promo || welcome ? PLAN_PRICES.lifetime.regular : undefined}
-            badge={promo ? "🔥 Offre 48 h" : "Le prix de 5 mois"}
+            strikePrice={promo ? LIFETIME_PROMO.referencePrice : undefined}
+            afterPrice={welcome ? PLAN_PRICES.lifetime.regular : undefined}
+            badge={promo ? "Promo" : "Le prix de 5 mois"}
           />
         )}
         <PlanRow
@@ -174,16 +191,7 @@ export function PricingSelector({
         </p>
       )}
 
-      {promo && plan === "lifetime" ? (
-        <p style={{ margin: "14px 0 0", fontSize: 14, fontWeight: 700, textAlign: "center", color: "var(--color-accent-700)" }}>
-          🔥 Accès à vie à {LIFETIME_PROMO.price} encore{" "}
-          <span style={{ fontSize: 20, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{promoLeft ?? "–– h –– min"}</span>
-          <br />
-          <span style={{ fontSize: 12.5, fontWeight: 600 }}>
-            jusqu&apos;au {LIFETIME_PROMO.endsLabel}, ensuite {PLAN_PRICES.lifetime.regular}
-          </span>
-        </p>
-      ) : welcome && (
+      {welcome && (
         <p style={{ margin: "14px 0 0", fontSize: 14, fontWeight: 700, textAlign: "center", color: "var(--color-accent-700)" }}>
           🎁 Prix de bienvenue encore{" "}
           <span style={{ fontSize: 20, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{remaining ?? "––:––"}</span>

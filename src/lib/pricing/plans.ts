@@ -9,15 +9,16 @@
 
 export const WELCOME_WINDOW_MS = 10 * 60 * 1000;
 
-// Offre 48 h sur l'accès à vie (Nathan, nuit du 22 au 23/10) : 30 € pour
-// tout le monde pendant 48 h, jusqu'au dimanche 25/10 à 0 h 30 (Paris), à la place du prix de
-// bienvenue (39,99 €) comme du prix normal (63,99 €). Vrai délai, puis retour
-// aux prix habituels. Mêmes règles : ni « −X % » ni prix barré.
+// Promo sur l'accès à vie (Nathan, nuit du 22 au 23/10) : pendant 48 h,
+// jusqu'au dimanche 25/10 à 0 h 30 (Paris), le prix de bienvenue de l'accès
+// à vie passe de 39,99 € à 30 €, toujours avec le chrono de 10 min (ensuite
+// 63,99 €). Affichée « Promo » avec 39,99 € barré, sans parler des 48 h
+// (choix de Nathan). Prix barré légal : 39,99 € est bien le prix le plus bas
+// de l'accès à vie sur les 30 jours d'avant (vérifié dans Stripe le 23/10).
 export const LIFETIME_PROMO = {
   price: "30 €",
-  startsAt: Date.parse("2026-10-22T22:30:00Z"),
+  referencePrice: "39,99 €",
   endsAt: Date.parse("2026-10-24T22:30:00Z"),
-  endsLabel: "dimanche 25 octobre à 0 h 30",
   priceId: process.env.STRIPE_PRICE_ID_LIFETIME_PROMO?.trim() || "price_1UTUL8Rd6r34OMU6yx7sViTI",
 };
 

@@ -377,7 +377,7 @@ export default async function PremiumPage({
                 « Offre spéciale rentrée » (tarifs garantis 1 mois puis hausse,
                 22/09) laisse la place au prix de bienvenue de 10 minutes. Voir
                 lib/pricing/plans.ts : jamais de « −X % » ni de prix barré. */}
-            <WelcomePriceBanner endsAt={welcome?.endsAt ?? null} initialActive={welcome?.active ?? false} promoActive={promoActive} />
+            <WelcomePriceBanner endsAt={welcome?.endsAt ?? null} initialActive={welcome?.active ?? false} />
 
             <h1
               className="animate-in"
