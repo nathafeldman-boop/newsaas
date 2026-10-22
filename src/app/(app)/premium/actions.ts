@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { logServerEvent } from "@/lib/analytics/logServerEvent";
-import { REGULAR_PRICE_IDS } from "@/lib/pricing/plans";
+import { LIFETIME_PROMO, REGULAR_PRICE_IDS } from "@/lib/pricing/plans";
 import { getWelcomeEndsAt } from "@/lib/pricing/welcome";
 import { createClient } from "@/lib/supabase/server";
 import { getStripeClient } from "@/lib/stripe/client";
@@ -89,7 +89,11 @@ export async function createCheckoutSessionAction(formData: FormData) {
   // écoulées, prix réguliers ensuite (voir lib/pricing/plans.ts). Une minute
   // de marge : un clic à 19:59 garde le prix affiché sur le bouton.
   const welcome = Date.now() <= (await getWelcomeEndsAt(user.id)) + 60_000;
-  const rawPriceId = welcome
+  // Offre 48 h : l'accès à vie à 30 € passe avant tout (même minute de marge).
+  const promo = isLifetime && Date.now() <= LIFETIME_PROMO.endsAt + 60_000;
+  const rawPriceId = promo
+    ? LIFETIME_PROMO.priceId
+    : welcome
     ? isLifetime
       ? process.env.STRIPE_PRICE_ID_LIFETIME
       : process.env.STRIPE_PRICE_ID
@@ -151,7 +155,7 @@ export async function createCheckoutSessionAction(formData: FormData) {
 
   if (!session.url) redirect("/premium?error=checkout_failed");
   // Mesure seulement (tableau « Chemin de Léo » de l'admin), rien de visible.
-  after(() => logServerEvent(supabase, user.id, "checkout_opened", { plan: isLifetime ? "lifetime" : "monthly", welcome }));
+  after(() => logServerEvent(supabase, user.id, "checkout_opened", { plan: isLifetime ? "lifetime" : "monthly", welcome, promo }));
   redirect(session.url);
 }
 

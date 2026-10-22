@@ -1,5 +1,5 @@
 import type Stripe from "stripe";
-import { REGULAR_PRICE_IDS } from "@/lib/pricing/plans";
+import { LIFETIME_PROMO, REGULAR_PRICE_IDS } from "@/lib/pricing/plans";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 // 50% sur mensuel et à vie (formule hebdomadaire retirée le 26/09, voir
@@ -17,7 +17,12 @@ function planLabelForPriceId(priceId: string | null): "week" | "month" | "lifeti
   if (!priceId) return null;
   if (priceId === process.env.STRIPE_PRICE_ID_WEEKLY?.trim()) return "week";
   if (priceId === process.env.STRIPE_PRICE_ID?.trim() || priceId === REGULAR_PRICE_IDS.monthly) return "month";
-  if (priceId === process.env.STRIPE_PRICE_ID_LIFETIME?.trim() || priceId === REGULAR_PRICE_IDS.lifetime) return "lifetime";
+  if (
+    priceId === process.env.STRIPE_PRICE_ID_LIFETIME?.trim() ||
+    priceId === REGULAR_PRICE_IDS.lifetime ||
+    priceId === LIFETIME_PROMO.priceId
+  )
+    return "lifetime";
   return null;
 }
 

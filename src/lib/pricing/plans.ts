@@ -9,6 +9,23 @@
 
 export const WELCOME_WINDOW_MS = 10 * 60 * 1000;
 
+// Offre 48 h sur l'accès à vie (Nathan, nuit du 22 au 23/10) : 30 € pour
+// tout le monde pendant 48 h, jusqu'au dimanche 25/10 à 0 h 30 (Paris), à la place du prix de
+// bienvenue (39,99 €) comme du prix normal (63,99 €). Vrai délai, puis retour
+// aux prix habituels. Mêmes règles : ni « −X % » ni prix barré.
+export const LIFETIME_PROMO = {
+  price: "30 €",
+  startsAt: Date.parse("2026-10-22T22:30:00Z"),
+  endsAt: Date.parse("2026-10-24T22:30:00Z"),
+  endsLabel: "dimanche 25 octobre à 0 h 30",
+  priceId: process.env.STRIPE_PRICE_ID_LIFETIME_PROMO?.trim() || "price_1UTUL8Rd6r34OMU6yx7sViTI",
+};
+
+// Lu hors du rendu (page serveur, action de paiement) : l'heure courante.
+export function isLifetimePromoActive(now: number = Date.now()): boolean {
+  return now < LIFETIME_PROMO.endsAt;
+}
+
 export const PLAN_PRICES = {
   monthly: { welcome: "7,99 €", regular: "12,79 €" },
   lifetime: { welcome: "39,99 €", regular: "63,99 €" },

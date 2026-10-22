@@ -5,7 +5,7 @@ import Link from "next/link";
 import { createCheckoutSessionAction } from "@/app/(app)/premium/actions";
 import { AccessCodeForm } from "@/components/premium/AccessCodeForm";
 import { useWelcomeCountdown } from "@/components/premium/WelcomeCountdown";
-import { PLAN_PRICES } from "@/lib/pricing/plans";
+import { LIFETIME_PROMO, PLAN_PRICES } from "@/lib/pricing/plans";
 
 type Plan = "monthly" | "lifetime";
 
@@ -112,16 +112,22 @@ export function PricingSelector({
   errorMessage,
   welcomeEndsAt = null,
   welcomeActive = false,
+  promoActive = false,
 }: {
   lifetimeAvailable: boolean;
   errorMessage: string | null;
   // Prix de bienvenue (voir lib/pricing/plans.ts) : fin fixée côté serveur.
   welcomeEndsAt?: number | null;
   welcomeActive?: boolean;
+  // Offre 48 h sur l'accès à vie (LIFETIME_PROMO) : lue côté serveur.
+  promoActive?: boolean;
 }) {
   const { active: welcome, remaining } = useWelcomeCountdown(welcomeEndsAt, welcomeActive);
+  const { active: promo, msLeft: promoMsLeft } = useWelcomeCountdown(LIFETIME_PROMO.endsAt, promoActive);
   const tier = welcome ? "welcome" : "regular";
-  const lifetimePrice = PLAN_PRICES.lifetime[tier];
+  const lifetimePrice = promo ? LIFETIME_PROMO.price : PLAN_PRICES.lifetime[tier];
+  const promoLeft =
+    promoMsLeft === null ? null : `${Math.floor(promoMsLeft / 3_600_000)} h ${String(Math.floor((promoMsLeft % 3_600_000) / 60_000)).padStart(2, "0")} min`;
   const monthlyPrice = PLAN_PRICES.monthly[tier];
   // Accès à vie affiché en premier et présélectionné (demande de Nathan,
   // 14/10) ; le prix du plan choisi est écrit sur le bouton pour qu'il n'y
@@ -138,8 +144,8 @@ export function PricingSelector({
             label="Accès à vie"
             sublabel="Paiement unique, jamais de renouvellement"
             price={lifetimePrice}
-            afterPrice={welcome ? PLAN_PRICES.lifetime.regular : undefined}
-            badge="Le prix de 5 mois"
+            afterPrice={promo || welcome ? PLAN_PRICES.lifetime.regular : undefined}
+            badge={promo ? "🔥 Offre 48 h" : "Le prix de 5 mois"}
           />
         )}
         <PlanRow
@@ -168,7 +174,16 @@ export function PricingSelector({
         </p>
       )}
 
-      {welcome && (
+      {promo && plan === "lifetime" ? (
+        <p style={{ margin: "14px 0 0", fontSize: 14, fontWeight: 700, textAlign: "center", color: "var(--color-accent-700)" }}>
+          🔥 Accès à vie à {LIFETIME_PROMO.price} encore{" "}
+          <span style={{ fontSize: 20, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{promoLeft ?? "–– h –– min"}</span>
+          <br />
+          <span style={{ fontSize: 12.5, fontWeight: 600 }}>
+            jusqu&apos;au {LIFETIME_PROMO.endsLabel}, ensuite {PLAN_PRICES.lifetime.regular}
+          </span>
+        </p>
+      ) : welcome && (
         <p style={{ margin: "14px 0 0", fontSize: 14, fontWeight: 700, textAlign: "center", color: "var(--color-accent-700)" }}>
           🎁 Prix de bienvenue encore{" "}
           <span style={{ fontSize: 20, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{remaining ?? "––:––"}</span>
