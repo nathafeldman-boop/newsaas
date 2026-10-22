@@ -505,9 +505,12 @@ export default async function LandingPage() {
                 textWrap: "balance" as React.CSSProperties["textWrap"],
               }}
             >
-              Trouve ta prochaine expérience{" "}
+              {/* Checklist « landing qui convertit » (22/10) : le bénéfice
+                  (l'alternance, le stage) plutôt que le mécanisme seul, en
+                  gardant le vocabulaire des vidéos (le swipe). */}
+              Trouve ton alternance ou ton stage{" "}
               <span className="lp-wiggle" style={{ display: "inline-block" }}>
-                <Highlight>en swipant</Highlight>
+                <Highlight>en quelques swipes</Highlight>
               </span>
             </h1>
             <p
