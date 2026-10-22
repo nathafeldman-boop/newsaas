@@ -21,8 +21,6 @@ export const GUARANTEE_REMINDED_EVENT = "refund_reminder_sent";
 // seulement à montrer le badge « garantie activée » sur le paywall sans
 // requête en base. Le droit à la garantie, lui, vient de l'événement.
 export const GUARANTEE_COOKIE = "stageio_guarantee";
-// Engagement signé (empreinte) : l'écran ne repasse plus avant le paywall.
-export const PLEDGE_COOKIE = "stageio_pledge";
 
 export const GUARANTEE_CONDITIONS =
   `3 mois de Premium sans interruption (ou accès à vie), au moins ${GUARANTEE_MIN_LIKES} offres likées pendant ces 3 mois, ` +

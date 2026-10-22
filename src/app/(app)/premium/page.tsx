@@ -15,7 +15,7 @@ import { PaywallPledge } from "@/components/premium/PaywallPledge";
 import { GuaranteeBadge, PaywallExitGuard } from "@/components/premium/PaywallExitGuard";
 import { GuaranteeCard, type GuaranteePhase } from "@/components/premium/GuaranteeCard";
 import { getGuaranteeStatus, type GuaranteeStatus } from "@/lib/premium/refundGuarantee";
-import { GUARANTEE_COOKIE, PLEDGE_COOKIE } from "@/lib/premium/guaranteeTerms";
+import { GUARANTEE_COOKIE } from "@/lib/premium/guaranteeTerms";
 import { getTrustCount } from "@/lib/premium/trustCount";
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -105,9 +105,9 @@ async function loadGuarantee(
 export default async function PremiumPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; source?: string; refund?: string }>;
+  searchParams: Promise<{ error?: string; source?: string; refund?: string; retour?: string }>;
 }) {
-  const { error, source, refund } = await searchParams;
+  const { error, source, refund, retour } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -151,11 +151,12 @@ export default async function PremiumPage({
 
   const guarantee = premium && profile ? await loadGuarantee(user.id, profile) : null;
 
-  // Avant le paywall : engagement (empreinte) puis vrai nombre d'inscrits,
-  // une seule fois (cookie posé à la signature). Garantie : badge si le
-  // message de sortie a déjà été vu.
+  // Avant le paywall, à chaque arrivée (Nathan, 22/10) : engagement
+  // (empreinte), vrai nombre d'inscrits, garantie. Pas après une erreur de
+  // paiement ni au retour de Stripe sans payer : le paywall directement.
+  // Garantie : badge si elle a déjà été vue.
   const cookieStore = await cookies();
-  const showPledge = !premium && !paymentIssue && !cookieStore.get(PLEDGE_COOKIE);
+  const showPledge = !premium && !paymentIssue && !error && retour !== "paiement";
   const guaranteeShown = !!cookieStore.get(GUARANTEE_COOKIE);
   const trustCount = showPledge ? await getTrustCount().catch(() => 0) : 0;
 

@@ -5,29 +5,14 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { offerRefundGuaranteeAction } from "@/app/(app)/premium/guarantee-actions";
 import { GUARANTEE_CONDITIONS, GUARANTEE_COOKIE, setBrowserCookie } from "@/lib/premium/guaranteeTerms";
+import { GuaranteeHero } from "@/components/premium/GuaranteeHero";
 
-const SHOWN_KEY = "stageio:paywall-exit-shown";
 export const GUARANTEE_EVENT = "stageio:guarantee";
 
-function alreadyShown(): boolean {
-  try {
-    return sessionStorage.getItem(SHOWN_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
-function markShown() {
-  try {
-    sessionStorage.setItem(SHOWN_KEY, "1");
-  } catch {
-    // Stockage bloqué : le message pourra réapparaître, sans gravité.
-  }
-}
-
 // Message en quittant le paywall (Nathan, 20/10) : un clic sur un lien qui
-// sort de /premium (croix, menu) ouvre ce message une fois par session et
-// accorde la garantie remboursé. Le bouton retour du navigateur n'est
+// sort de /premium (croix, menu) ouvre ce message, une fois à chaque passage
+// sur le paywall (22/10, avant : une fois par session), avec la même carte
+// « Remboursé » qu'avant le paywall, et accorde la garantie remboursé. Le bouton retour du navigateur n'est
 // jamais détourné. Les CGV restent ouvrables sans passer par ici.
 export function PaywallExitGuard() {
   const router = useRouter();
@@ -39,7 +24,7 @@ export function PaywallExitGuard() {
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
-      if (shown.current || alreadyShown()) return;
+      if (shown.current) return;
       if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       const link = (e.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
       if (!link || link.target === "_blank") return;
@@ -49,7 +34,6 @@ export function PaywallExitGuard() {
       e.preventDefault();
       e.stopPropagation();
       shown.current = true;
-      markShown();
       setAlreadyGranted(document.cookie.split("; ").some((c) => c.startsWith(`${GUARANTEE_COOKIE}=`)));
       setBrowserCookie(GUARANTEE_COOKIE);
       void offerRefundGuaranteeAction();
@@ -82,8 +66,6 @@ export function PaywallExitGuard() {
             zIndex: 90,
             background: "color-mix(in srgb, var(--color-text) 45%, transparent)",
             display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
             padding: 16,
             overflowY: "auto",
           }}
@@ -94,6 +76,8 @@ export function PaywallExitGuard() {
             className="flex w-full flex-col items-center text-center"
             style={{
               maxWidth: 400,
+              // Centré, et défilable sur petit écran (jamais coupé en haut).
+              margin: "auto",
               background: "var(--color-bg)",
               borderRadius: "var(--radius-lg)",
               boxShadow: "var(--shadow-lg)",
@@ -108,22 +92,10 @@ export function PaywallExitGuard() {
               On est vraiment déçus de te voir partir.{" "}
               {alreadyGranted ? "Et n'oublie pas, tu as notre garantie :" : "Alors on va plus loin pour toi :"}
             </p>
-            <div
-              style={{
-                marginTop: 16,
-                width: "100%",
-                borderRadius: 16,
-                padding: "16px 16px",
-                background: "linear-gradient(135deg, var(--color-accent), var(--color-accent-2))",
-                color: "var(--color-bg)",
-                textAlign: "left",
-              }}
-            >
-              <p style={{ margin: 0, fontSize: 16, fontWeight: 800 }}>🛡️ Garantie remboursé</p>
-              <p style={{ margin: "6px 0 0", fontSize: 14, lineHeight: 1.45, fontWeight: 600 }}>
-                Aucun entretien après 3 mois de Premium ? On te rembourse. Valable sur toutes les formules.
-              </p>
-            </div>
+            <p style={{ fontSize: 18, fontWeight: 800, lineHeight: 1.25, margin: "14px 0 0" }}>
+              Des résultats, ou on te rembourse.
+            </p>
+            <GuaranteeHero marginTop={12} />
             <p style={{ fontSize: 11.5, lineHeight: 1.45, margin: "10px 0 0", textAlign: "left", color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
               Conditions : {GUARANTEE_CONDITIONS}{" "}
               <a href="/legal/cgv#garantie" target="_blank" rel="noopener" style={{ textDecoration: "underline" }}>

@@ -4,8 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { offerRefundGuaranteeAction } from "@/app/(app)/premium/guarantee-actions";
-import { GUARANTEE_COOKIE, PLEDGE_COOKIE, setBrowserCookie } from "@/lib/premium/guaranteeTerms";
+import { GUARANTEE_COOKIE, setBrowserCookie } from "@/lib/premium/guaranteeTerms";
 import { GUARANTEE_EVENT } from "@/components/premium/PaywallExitGuard";
+import { GuaranteeHero } from "@/components/premium/GuaranteeHero";
 
 // Avant le paywall (Nathan, 20/10) : l'étudiant « signe » son engagement en
 // maintenant son doigt sur une empreinte, puis voit combien de personnes
@@ -13,6 +14,7 @@ import { GUARANTEE_EVENT } from "@/components/premium/PaywallExitGuard";
 // symbolique : aucune donnée biométrique n'est lue, et c'est écrit à l'écran.
 // 3e écran (21/10) : la garantie remboursé, accordée à qui la voit (CGV
 // « Garantie »), conditions renvoyées aux CGV.
+// À chaque arrivée sur le paywall (Nathan, 22/10), plus seulement la 1re fois.
 const HOLD_MS = 1600;
 const RING_RADIUS = 58;
 const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
@@ -101,7 +103,6 @@ export function PaywallPledge({ userId, trustCount }: { userId: string; trustCou
     holdStart.current = null;
     setProgress(1);
     navigator.vibrate?.(60);
-    setBrowserCookie(PLEDGE_COOKIE);
     void createClient()
       .from("user_events")
       .insert({ user_id: userId, event_type: "pledge_signed", metadata: null })
@@ -151,8 +152,6 @@ export function PaywallPledge({ userId, trustCount }: { userId: string; trustCou
             overflowY: "auto",
             background: "linear-gradient(180deg,#f7fbfa 0%,var(--color-bg) 45%,#e2f0ee 100%)",
             display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
             padding: "24px 16px",
           }}
         >
@@ -164,7 +163,7 @@ export function PaywallPledge({ userId, trustCount }: { userId: string; trustCou
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -16 }}
                 className="flex w-full flex-col items-center text-center"
-                style={{ maxWidth: 380 }}
+                style={{ maxWidth: 380, margin: "auto" }}
               >
                 <div aria-hidden style={{ fontSize: 44 }}>🤝</div>
                 <p style={{ fontSize: 15, fontWeight: 600, margin: "14px 0 0", color: "color-mix(in srgb, var(--color-text) 65%, transparent)" }}>
@@ -174,10 +173,10 @@ export function PaywallPledge({ userId, trustCount }: { userId: string; trustCou
                   <CountUp target={trustTarget} />
                 </p>
                 <p style={{ fontSize: 20, fontWeight: 800, lineHeight: 1.3, margin: "8px 0 0" }}>
-                  personnes nous ont fait confiance
+                  étudiants comme toi
                 </p>
                 <p style={{ fontSize: 14, margin: "8px 0 0", color: "color-mix(in srgb, var(--color-text) 62%, transparent)" }}>
-                  pour trouver leur alternance ou leur stage.
+                  accompagnés par Stageio pour trouver leur alternance ou leur stage.
                 </p>
                 <button type="button" className="btn btn-primary" onClick={showGuarantee} style={{ marginTop: 28, height: 50, borderRadius: 999, padding: "0 28px", fontWeight: 700 }}>
                   Continuer →
@@ -190,7 +189,7 @@ export function PaywallPledge({ userId, trustCount }: { userId: string; trustCou
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -16 }}
                 className="flex w-full flex-col items-center text-center"
-                style={{ maxWidth: 400 }}
+                style={{ maxWidth: 400, margin: "auto" }}
               >
                 <p style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", margin: 0, color: "var(--color-accent-700)" }}>
                   Notre garantie
@@ -200,49 +199,7 @@ export function PaywallPledge({ userId, trustCount }: { userId: string; trustCou
                   <br />
                   ou on te rembourse.
                 </h1>
-                <motion.div
-                  initial={{ scale: 0.92, rotate: -2 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ type: "spring", stiffness: 220, damping: 14 }}
-                  style={{
-                    position: "relative",
-                    marginTop: 22,
-                    width: "100%",
-                    borderRadius: 28,
-                    padding: "30px 22px 26px",
-                    background: "linear-gradient(140deg, var(--color-accent), var(--color-accent-2))",
-                    color: "var(--color-bg)",
-                    boxShadow: "0 18px 40px color-mix(in srgb, var(--color-accent) 35%, transparent)",
-                    overflow: "hidden",
-                  }}
-                >
-                  <svg aria-hidden width="220" height="220" viewBox="0 0 24 24" style={{ position: "absolute", right: -50, top: -40, opacity: 0.12 }}>
-                    <path d="M12 2l8 3v6c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5l8-3z" fill="currentColor" />
-                  </svg>
-                  <svg aria-hidden width="92" height="92" viewBox="0 0 24 24" fill="none" style={{ margin: "0 auto", display: "block" }}>
-                    <path d="M12 2l8 3v6c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5l8-3z" fill="currentColor" fillOpacity="0.95" />
-                    <path d="M8.2 12.2l2.6 2.6 5-5.4" stroke="var(--color-accent-700)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  <p style={{ fontFamily: "var(--font-heading)", fontSize: 34, fontWeight: 800, lineHeight: 1.05, margin: "14px 0 0" }}>
-                    Remboursé
-                  </p>
-                  <p style={{ fontSize: 16, fontWeight: 700, lineHeight: 1.4, margin: "10px 0 0" }}>
-                    Pas d&apos;entretien au bout de 3 mois de Premium ? On te rembourse.
-                  </p>
-                  <span
-                    style={{
-                      display: "inline-block",
-                      marginTop: 14,
-                      padding: "6px 14px",
-                      borderRadius: 999,
-                      background: "color-mix(in srgb, var(--color-bg) 22%, transparent)",
-                      fontSize: 13,
-                      fontWeight: 800,
-                    }}
-                  >
-                    Sur toutes les formules
-                  </span>
-                </motion.div>
+                <GuaranteeHero />
                 <p style={{ fontSize: 14.5, lineHeight: 1.5, margin: "18px 0 0", color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
                   On met tout en œuvre pour que tu décroches ton alternance. Et si ça ne donne rien, tu ne perds pas ton argent.
                 </p>
@@ -263,7 +220,7 @@ export function PaywallPledge({ userId, trustCount }: { userId: string; trustCou
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -16 }}
                 className="flex w-full flex-col items-center text-center"
-                style={{ maxWidth: 400 }}
+                style={{ maxWidth: 400, margin: "auto" }}
               >
                 <h1 style={{ fontSize: 26, fontWeight: 800, lineHeight: 1.2, margin: 0 }}>Ton engagement 🤝</h1>
                 <div

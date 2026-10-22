@@ -130,7 +130,8 @@ export async function createCheckoutSessionAction(formData: FormData) {
     // webhook Stripe n'est jamais arrivé ou a échoué (voir ce fichier pour
     // le contexte -- un paiement réel resté sans effet, découvert en prod).
     success_url: `${SITE_URL}/premium/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${SITE_URL}/premium`,
+    // Retour sans payer : droit au paywall, sans repasser par l'engagement.
+    cancel_url: `${SITE_URL}/premium?retour=paiement`,
     client_reference_id: user.id,
     ...(isLifetime
       ? {
