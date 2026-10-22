@@ -26,10 +26,14 @@ export function GoogleButton({
   referredByCode,
   affiliateCode,
   next = "/onboarding",
+  quietInApp = false,
 }: {
   referredByCode?: string | null;
   affiliateCode?: string | null;
   next?: string;
+  // Accueil : dans le navigateur de TikTok/Instagram, rien plutôt qu'un
+  // message d'erreur sous le bouton principal.
+  quietInApp?: boolean;
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +80,7 @@ export function GoogleButton({
   }
 
   if (blockedInAppBrowser) {
+    if (quietInApp) return null;
     return (
       <p
         className="text-sm"
