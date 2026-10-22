@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { after } from "next/server";
-import { logServerEvent } from "@/lib/analytics/logServerEvent";
+import { recordCheckoutOpened } from "@/lib/stripe/checkoutReminder";
 import { LIFETIME_PROMO, REGULAR_PRICE_IDS } from "@/lib/pricing/plans";
 import { getWelcomeEndsAt } from "@/lib/pricing/welcome";
 import { createClient } from "@/lib/supabase/server";
@@ -156,7 +156,10 @@ export async function createCheckoutSessionAction(formData: FormData) {
 
   if (!session.url) redirect("/premium?error=checkout_failed");
   // Mesure seulement (tableau « Chemin de Léo » de l'admin), rien de visible.
-  after(() => logServerEvent(supabase, user.id, "checkout_opened", { plan: isLifetime ? "lifetime" : "monthly", welcome, promo }));
+  // Noté (Chemin de Léo), et relance programmée à +10 min si le paiement
+  // n'aboutit pas (annulée par le webhook sinon). Après la redirection.
+  const checkoutUrl = session.url;
+  after(() => recordCheckoutOpened({ userId: user.id, email: user.email ?? null, checkoutUrl, lifetime: isLifetime, welcome, promo }));
   redirect(session.url);
 }
 
