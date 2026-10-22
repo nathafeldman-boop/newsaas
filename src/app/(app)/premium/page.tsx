@@ -293,7 +293,15 @@ export default async function PremiumPage({
         </div>
       ) : (
         <>
-          {showPledge && <PaywallPledge userId={user.id} trustCount={trustCount} />}
+          {showPledge && (
+            <PaywallPledge
+              userId={user.id}
+              trustCount={trustCount}
+              welcomeEndsAt={welcome?.endsAt ?? null}
+              welcomeActive={welcome?.active ?? false}
+              promoActive={promoActive}
+            />
+          )}
           <PaywallExitGuard />
           <div className="flex-1">
             {/* Header : marque + badge PREMIUM + fermeture -- maquette

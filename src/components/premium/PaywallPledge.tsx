@@ -7,6 +7,8 @@ import { offerRefundGuaranteeAction } from "@/app/(app)/premium/guarantee-action
 import { GUARANTEE_COOKIE, setBrowserCookie } from "@/lib/premium/guaranteeTerms";
 import { GUARANTEE_EVENT } from "@/components/premium/PaywallExitGuard";
 import { GuaranteeHero } from "@/components/premium/GuaranteeHero";
+import { useWelcomeCountdown } from "@/components/premium/WelcomeCountdown";
+import { LIFETIME_PROMO, PLAN_PRICES } from "@/lib/pricing/plans";
 
 // Avant le paywall (Nathan, 20/10) : l'étudiant « signe » son engagement en
 // maintenant son doigt sur une empreinte, puis voit combien de personnes
@@ -15,11 +17,22 @@ import { GuaranteeHero } from "@/components/premium/GuaranteeHero";
 // 3e écran (21/10) : la garantie remboursé, accordée à qui la voit (CGV
 // « Garantie »), conditions renvoyées aux CGV.
 // À chaque arrivée sur le paywall (Nathan, 22/10), plus seulement la 1re fois.
+// 4e écran (23/10) : le chrono du prix de bienvenue expliqué avec les vrais
+// prix (maintenant / après), seulement tant que ce prix est encore ouvert.
 const HOLD_MS = 1600;
 const RING_RADIUS = 58;
 const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
 
-type Phase = "pledge" | "signed" | "trust" | "guarantee" | "done";
+type Phase = "pledge" | "signed" | "trust" | "guarantee" | "countdown" | "done";
+
+// « 7,99 € » -> 7.99
+function euros(price: string): number {
+  return Number(price.replace(/[^0-9,]/g, "").replace(",", "."));
+}
+
+function increase(from: string, to: string): string {
+  return `+${Math.round((euros(to) / euros(from) - 1) * 100)} %`;
+}
 
 // « Plus de 3 200 » : arrondi vers le bas, pour que « plus de » reste vrai.
 function trustFloor(count: number): number {
@@ -59,8 +72,22 @@ function CountUp({ target }: { target: number }) {
   return <>{value.toLocaleString("fr-FR")}</>;
 }
 
-export function PaywallPledge({ userId, trustCount }: { userId: string; trustCount: number }) {
+export function PaywallPledge({
+  userId,
+  trustCount,
+  welcomeEndsAt = null,
+  welcomeActive = false,
+  promoActive = false,
+}: {
+  userId: string;
+  trustCount: number;
+  welcomeEndsAt?: number | null;
+  welcomeActive?: boolean;
+  promoActive?: boolean;
+}) {
   const [phase, setPhase] = useState<Phase>("pledge");
+  const welcome = useWelcomeCountdown(welcomeEndsAt, welcomeActive);
+  const lifetimeNow = promoActive ? LIFETIME_PROMO.price : PLAN_PRICES.lifetime.welcome;
   const [progress, setProgress] = useState(0);
   const holdStart = useRef<number | null>(null);
   const frame = useRef(0);
@@ -182,6 +209,75 @@ export function PaywallPledge({ userId, trustCount }: { userId: string; trustCou
                   Continuer →
                 </button>
               </motion.div>
+            ) : phase === "countdown" ? (
+              <motion.div
+                key="countdown"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -16 }}
+                className="flex w-full flex-col items-center text-center"
+                style={{ maxWidth: 400, margin: "auto" }}
+              >
+                <p style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", margin: 0, color: "var(--color-accent-700)" }}>
+                  ⏳ Ton prix de bienvenue
+                </p>
+                <h1 style={{ fontSize: 28, fontWeight: 800, lineHeight: 1.15, margin: "8px 0 0" }}>
+                  Il te reste{" "}
+                  <span style={{ color: "var(--color-accent-700)", fontVariantNumeric: "tabular-nums" }}>{welcome.remaining ?? "10:00"}</span>
+                </h1>
+                <p style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.45, margin: "8px 0 0", color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
+                  pour payer le prix de bienvenue. Après, c&apos;est <strong style={{ color: "#c2262b" }}>au moins 60 % plus cher</strong>.
+                </p>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, width: "100%", marginTop: 20 }}>
+                  <div
+                    style={{
+                      borderRadius: 20,
+                      padding: "16px 12px",
+                      background: "linear-gradient(140deg, var(--color-accent), var(--color-accent-2))",
+                      color: "var(--color-bg)",
+                      boxShadow: "0 14px 30px color-mix(in srgb, var(--color-accent) 32%, transparent)",
+                    }}
+                  >
+                    <p style={{ margin: 0, fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em" }}>Maintenant</p>
+                    <p style={{ margin: "10px 0 0", fontFamily: "var(--font-heading)", fontSize: 30, fontWeight: 800, lineHeight: 1 }}>
+                      {PLAN_PRICES.monthly.welcome}
+                    </p>
+                    <p style={{ margin: "2px 0 0", fontSize: 12.5, fontWeight: 700 }}>par mois</p>
+                    <div style={{ height: 1, margin: "12px 6px", background: "color-mix(in srgb, var(--color-bg) 35%, transparent)" }} />
+                    <p style={{ margin: 0, fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 800, lineHeight: 1 }}>{lifetimeNow}</p>
+                    <p style={{ margin: "2px 0 0", fontSize: 12.5, fontWeight: 700 }}>à vie</p>
+                  </div>
+                  <div
+                    style={{
+                      borderRadius: 20,
+                      padding: "16px 12px",
+                      background: "var(--color-surface)",
+                      border: "1.5px solid color-mix(in srgb, #e5484d 45%, transparent)",
+                    }}
+                  >
+                    <p style={{ margin: 0, fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em", color: "#c2262b" }}>
+                      Ensuite
+                    </p>
+                    <p style={{ margin: "10px 0 0", fontFamily: "var(--font-heading)", fontSize: 30, fontWeight: 800, lineHeight: 1 }}>
+                      {PLAN_PRICES.monthly.regular}
+                    </p>
+                    <p style={{ margin: "2px 0 0", fontSize: 12.5, fontWeight: 700, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
+                      par mois · <span style={{ color: "#c2262b" }}>{increase(PLAN_PRICES.monthly.welcome, PLAN_PRICES.monthly.regular)}</span>
+                    </p>
+                    <div style={{ height: 1, margin: "12px 6px", background: "var(--color-divider)" }} />
+                    <p style={{ margin: 0, fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 800, lineHeight: 1 }}>{PLAN_PRICES.lifetime.regular}</p>
+                    <p style={{ margin: "2px 0 0", fontSize: 12.5, fontWeight: 700, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
+                      à vie · <span style={{ color: "#c2262b" }}>{increase(lifetimeNow, PLAN_PRICES.lifetime.regular)}</span>
+                    </p>
+                  </div>
+                </div>
+                <p style={{ fontSize: 13, lineHeight: 1.5, margin: "16px 0 0", color: "color-mix(in srgb, var(--color-text) 62%, transparent)" }}>
+                  Le chrono a démarré à ta première visite de cette page et ne repart pas à zéro : ce prix n&apos;est proposé qu&apos;une fois.
+                </p>
+                <button type="button" className="btn btn-primary" onClick={() => setPhase("done")} style={{ marginTop: 20, height: 50, borderRadius: 999, padding: "0 28px", fontWeight: 700 }}>
+                  J&apos;en profite →
+                </button>
+              </motion.div>
             ) : phase === "guarantee" ? (
               <motion.div
                 key="guarantee"
@@ -203,8 +299,8 @@ export function PaywallPledge({ userId, trustCount }: { userId: string; trustCou
                 <p style={{ fontSize: 14.5, lineHeight: 1.5, margin: "18px 0 0", color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
                   On met tout en œuvre pour que tu décroches ton alternance. Et si ça ne donne rien, tu ne perds pas ton argent.
                 </p>
-                <button type="button" className="btn btn-primary" onClick={() => setPhase("done")} style={{ marginTop: 22, height: 50, borderRadius: 999, padding: "0 28px", fontWeight: 700 }}>
-                  Voir mon offre →
+                <button type="button" className="btn btn-primary" onClick={() => setPhase(welcome.active ? "countdown" : "done")} style={{ marginTop: 22, height: 50, borderRadius: 999, padding: "0 28px", fontWeight: 700 }}>
+                  {welcome.active ? "Continuer →" : "Voir mon offre →"}
                 </button>
                 <p style={{ fontSize: 12, margin: "12px 0 0", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
                   Sous conditions.{" "}
