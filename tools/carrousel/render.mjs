@@ -1,6 +1,6 @@
 // Usine à carrousels Stageio : un fichier JSON (voir carrousels/) -> une
 // image PNG 1080 x 1350 par slide, au style « fiches » (gros titres en
-// capitales, surlignage jaune, fond papier). Lancement :
+// capitales, identité Stageio vert et blanc). Lancement :
 //   node tools/carrousel/render.mjs tools/carrousel/carrousels/<slug>.json [dossier-de-sortie]
 // Icônes : Lucide (licence ISC), récupérées sur unpkg et gardées en cache.
 // Photos : URL d'une photo libre de droits (Unsplash) ou chemin local.
@@ -21,7 +21,18 @@ async function loadChromium() {
 
 const W = 1080;
 const H = 1350;
-const YELLOW = "#FFE14A";
+// Identité Stageio (src/app/globals.css) : vert et blanc.
+const C = {
+  paper: "#FFFFFF",
+  ink: "#132B33",
+  muted: "#4A5F66",
+  green: "#0F9C56",
+  greenDark: "#085A32",
+  mint: "#C9F0D7",
+  mintStrong: "#97E0B3",
+  glow: "#5CC98A",
+  icon: "#0C7A44",
+};
 
 // Le navigateur de rendu n'a pas forcément accès au réseau : police et
 // photos sont téléchargées ici (Node) puis intégrées en data URI.
@@ -86,7 +97,7 @@ function esc(s) {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-// ==mot== -> surligné jaune ; **mot** -> gras.
+// ==mot== -> surligné vert ; **mot** -> gras.
 function rich(s) {
   return esc(s)
     .replace(/==(.+?)==/g, '<span class="hl">$1</span>')
@@ -96,26 +107,24 @@ function rich(s) {
 const BASE_CSS = `
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { width: ${W}px; height: ${H}px; }
-body { font-family: 'Montserrat', sans-serif; color: #111; overflow: hidden; }
+body { font-family: 'Montserrat', sans-serif; color: ${C.ink}; overflow: hidden; }
 .slide { position: relative; width: ${W}px; height: ${H}px; overflow: hidden; }
 .paper {
-  background-color: #ECEBE7;
+  background-color: ${C.paper};
   background-image:
-    radial-gradient(ellipse at 20% 15%, rgba(255,255,255,.75), transparent 55%),
-    radial-gradient(ellipse at 85% 80%, rgba(0,0,0,.06), transparent 50%),
-    linear-gradient(115deg, transparent 48%, rgba(0,0,0,.035) 49%, transparent 51%),
-    linear-gradient(28deg, transparent 60%, rgba(255,255,255,.5) 61%, transparent 63%),
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .09 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    radial-gradient(circle at 100% 0%, rgba(15,156,86,.10), transparent 38%),
+    radial-gradient(circle at 0% 100%, rgba(15,156,86,.08), transparent 42%),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .05 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
 }
 .chip { display: inline-block; font-weight: 900; text-transform: uppercase; letter-spacing: -0.01em; line-height: 1; border-radius: 22px; padding: 22px 30px 18px; }
-.chip.black { background: #111; color: #fff; }
-.chip.yellow { background: ${YELLOW}; color: #111; }
-.hl { background: linear-gradient(180deg, transparent 12%, #FFEB8A 12%, #FFEB8A 92%, transparent 92%); padding: 0 6px; border-radius: 6px; }
+.chip.dark { background: ${C.greenDark}; color: #fff; }
+.chip.green { background: ${C.green}; color: #fff; }
+.hl { background: linear-gradient(180deg, transparent 12%, ${C.mint} 12%, ${C.mint} 92%, transparent 92%); padding: 0 6px; border-radius: 6px; }
 .brand { display: flex; align-items: center; gap: 12px; font-weight: 800; letter-spacing: -0.02em; }
-.brand .dot { width: 18px; height: 18px; border-radius: 50%; background: #16A34A; box-shadow: 0 0 0 5px rgba(22,163,74,.25); }
-.tab { position: absolute; right: -10px; bottom: -10px; width: 210px; height: 120px; background: ${YELLOW}; border-top-left-radius: 120px 110px; display: flex; align-items: center; justify-content: flex-end; padding-right: 50px; }
+.brand .dot { width: 18px; height: 18px; border-radius: 50%; background: ${C.green}; box-shadow: 0 0 0 5px rgba(15,156,86,.25); }
+.tab { position: absolute; right: -10px; bottom: -10px; width: 210px; height: 120px; background: ${C.green}; color: #fff; border-top-left-radius: 120px 110px; display: flex; align-items: center; justify-content: flex-end; padding-right: 50px; }
 .tab svg { width: 64px; height: 64px; stroke-width: 2.6; }
-.circle { flex-shrink: 0; width: 92px; height: 92px; border-radius: 50%; background: ${YELLOW}; display: flex; align-items: center; justify-content: center; }
+.circle { flex-shrink: 0; width: 92px; height: 92px; border-radius: 50%; background: ${C.green}; color: #fff; display: flex; align-items: center; justify-content: center; }
 .circle svg { width: 52px; height: 52px; stroke-width: 2.6; }
 `;
 
@@ -130,19 +139,19 @@ async function coverSlide(s) {
     <div class="brand cover-brand"><span class="dot"></span>stageio.fr</div>
     <div class="cover-text">
       ${lines}
-      ${s.highlight ? `<div class="chip yellow cover-hl">${esc(s.highlight)}</div>` : ""}
+      ${s.highlight ? `<div class="chip green cover-hl">${esc(s.highlight)}</div>` : ""}
       <div class="glow">${arrow}</div>
     </div>
   </div>
   <style>
-    .cover { background: #0c0c0c; }
-    .cover .photo { position: absolute; inset: 0; background-size: cover; filter: brightness(.62) contrast(1.05) saturate(.9); }
-    .cover .shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,0) 28%, rgba(0,0,0,.15) 50%, rgba(0,0,0,.88) 78%, #000 100%); }
+    .cover { background: #03160D; }
+    .cover .photo { position: absolute; inset: 0; background-size: cover; filter: brightness(.62) contrast(1.05) saturate(.75); }
+    .cover .shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(3,22,13,.55) 0%, rgba(3,22,13,0) 28%, rgba(3,22,13,.2) 50%, rgba(3,22,13,.9) 78%, #03160D 100%); }
     .cover-brand { position: absolute; top: 64px; left: 64px; color: #fff; font-size: 46px; }
     .cover-text { position: absolute; left: 60px; right: 60px; bottom: 140px; }
     .cover-text .line { color: #fff; font-weight: 900; font-size: ${s.titleSize || 88}px; line-height: 1.02; text-transform: uppercase; letter-spacing: -0.02em; text-shadow: 0 4px 30px rgba(0,0,0,.5); }
     .cover-hl { margin-top: 18px; font-size: ${s.highlightSize || 92}px; padding: 18px 26px 12px; border-radius: 26px; white-space: nowrap; }
-    .glow { margin: 56px auto 0; width: 150px; color: ${YELLOW}; filter: drop-shadow(0 0 22px rgba(255,225,74,.85)); }
+    .glow { margin: 56px auto 0; width: 150px; color: ${C.glow}; filter: drop-shadow(0 0 22px rgba(92,201,138,.85)); }
     .glow svg { width: 150px; height: 90px; stroke-width: 3; }
   </style>`;
 }
@@ -156,8 +165,8 @@ async function tipSlide(s) {
   return `
   <div class="slide paper tip">
     <div class="titles">
-      <div class="chip black t1">${esc(t1)}</div><br/>
-      ${t2 ? `<div class="chip yellow t2">${esc(t2)}</div>` : ""}
+      <div class="chip dark t1">${esc(t1)}</div><br/>
+      ${t2 ? `<div class="chip green t2">${esc(t2)}</div>` : ""}
     </div>
     <div class="point"><div class="circle">${arrow}</div><p>${rich(s.text)}</p></div>
     ${s.objectif ? `<div class="obj"><span>${esc(s.objectif)}</span></div>` : ""}
@@ -173,14 +182,14 @@ async function tipSlide(s) {
     .point { display: flex; align-items: center; gap: 34px; margin: 84px 0 0 ${s.pointIndent ?? 40}px; }
     .point p { font-size: 50px; font-weight: 700; line-height: 1.28; letter-spacing: -0.01em; }
     .obj { text-align: center; margin-top: 90px; }
-    .obj span { display: inline-block; font-weight: 900; font-size: 78px; text-transform: uppercase; letter-spacing: -0.01em; line-height: 1; padding: 0 22px; background: linear-gradient(180deg, transparent 52%, ${YELLOW} 52%, ${YELLOW} 96%, transparent 96%); border-radius: 12px; }
+    .obj span { display: inline-block; font-weight: 900; font-size: 78px; text-transform: uppercase; letter-spacing: -0.01em; line-height: 1; padding: 0 22px; background: linear-gradient(180deg, transparent 52%, ${C.mintStrong} 52%, ${C.mintStrong} 96%, transparent 96%); border-radius: 12px; }
     .items { display: flex; justify-content: space-around; margin-top: 64px; }
     .item { width: 300px; text-align: center; }
     .items.n1 .item { width: 700px; }
-    .ico svg { width: 132px; height: 132px; stroke-width: 1.9; color: #111; }
+    .ico svg { width: 132px; height: 132px; stroke-width: 1.9; color: ${C.icon}; }
     .lbl { font-size: 42px; font-weight: 500; line-height: 1.2; margin-top: 18px; }
-    .note { position: absolute; left: 64px; right: 260px; bottom: 120px; font-size: 26px; font-weight: 500; color: #555; line-height: 1.35; }
-    .foot { position: absolute; left: 64px; bottom: 48px; font-size: 32px; color: #111; }
+    .note { position: absolute; left: 64px; right: 260px; bottom: 120px; font-size: 26px; font-weight: 500; color: ${C.muted}; line-height: 1.35; }
+    .foot { position: absolute; left: 64px; bottom: 48px; font-size: 32px; color: ${C.ink}; }
     .foot .dot { width: 14px; height: 14px; }
   </style>`;
 }
@@ -194,8 +203,8 @@ async function ctaSlide(s) {
   return `
   <div class="slide paper cta">
     <div class="titles">
-      <div class="chip black t1">${esc(t1)}</div><br/>
-      ${t2 ? `<div class="chip yellow t2">${esc(t2)}</div>` : ""}
+      <div class="chip dark t1">${esc(t1)}</div><br/>
+      ${t2 ? `<div class="chip green t2">${esc(t2)}</div>` : ""}
     </div>
     <p class="lead">${rich(s.lead || "Tape-le directement sur Google :")}</p>
     <div class="searchbar"><span class="mag">${search}</span><span class="url">stageio.fr</span></div>
@@ -208,12 +217,12 @@ async function ctaSlide(s) {
     .cta .titles .chip { font-size: ${s.titleSize || 92}px; }
     .cta .titles .t2 { margin-top: -8px; }
     .lead { margin-top: 76px; font-size: 44px; font-weight: 700; }
-    .searchbar { margin-top: 28px; display: flex; align-items: center; gap: 26px; background: #fff; border-radius: 999px; padding: 34px 46px; box-shadow: 0 14px 40px rgba(0,0,0,.14); border: 4px solid #111; }
-    .mag svg { width: 60px; height: 60px; stroke-width: 2.6; }
-    .url { font-size: 76px; font-weight: 900; letter-spacing: -0.02em; }
+    .searchbar { margin-top: 28px; display: flex; align-items: center; gap: 26px; background: #fff; border-radius: 999px; padding: 34px 46px; box-shadow: 0 14px 40px rgba(15,156,86,.18); border: 4px solid ${C.green}; }
+    .mag svg { width: 60px; height: 60px; stroke-width: 2.6; color: ${C.green}; }
+    .url { font-size: 76px; font-weight: 900; letter-spacing: -0.02em; color: ${C.greenDark}; }
     ul { list-style: none; margin-top: 70px; display: flex; flex-direction: column; gap: 30px; }
     li { display: flex; align-items: center; gap: 24px; font-size: 42px; font-weight: 600; line-height: 1.25; }
-    .ok { flex-shrink: 0; width: 64px; height: 64px; border-radius: 50%; background: ${YELLOW}; display: flex; align-items: center; justify-content: center; }
+    .ok { flex-shrink: 0; width: 64px; height: 64px; border-radius: 50%; background: ${C.green}; color: #fff; display: flex; align-items: center; justify-content: center; }
     .ok svg { width: 38px; height: 38px; stroke-width: 3; }
     .foot { position: absolute; left: 64px; bottom: 48px; font-size: 32px; }
     .foot .dot { width: 14px; height: 14px; }
