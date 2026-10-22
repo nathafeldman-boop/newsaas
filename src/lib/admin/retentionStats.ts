@@ -113,7 +113,7 @@ export const getRetentionStats = unstable_cache(
     return { cohorts: [...byMonth.values()].sort((a, b) => b.month.localeCompare(a.month)), first48h, refunds };
   },
   ["admin-retention-stats-v1"],
-  { revalidate: 1800 },
+  { revalidate: 600 },
 );
 
 // Ventes du jour : nouvelles ventes et renouvellements séparés (« ne jamais
@@ -167,5 +167,5 @@ export const getDailySales = unstable_cache(
     return [...days.values()].sort((a, b) => b.day.localeCompare(a.day));
   },
   ["admin-daily-sales-v1"],
-  { revalidate: 900 },
+  { revalidate: 600 },
 );

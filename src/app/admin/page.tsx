@@ -2,7 +2,7 @@ import Link from "next/link";
 import { submitIndexNowAction } from "@/app/admin/seo-actions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchAllRows } from "@/lib/supabase/public";
-import { FUNNEL_WINDOW_DAYS, getHeardFromStats, getLeoFunnel, getOnboardingFunnelStats, getTodayVisitorsBySource, getWeekdayAverages, withTimeout } from "@/lib/admin/dashboardStats";
+import { getHeardFromStats, getLeoFunnel, getOnboardingFunnelStats, getTodayVisitorsBySource, getWeekdayAverages, withTimeout } from "@/lib/admin/dashboardStats";
 import { startOfTodayParis } from "@/lib/date";
 import { STEP_IDS, STEP_LABELS, type StepId } from "@/lib/onboarding/steps";
 import { LineAreaChart } from "@/components/admin/charts/LineAreaChart";
@@ -388,7 +388,7 @@ export default async function AdminDashboardPage({
 
   const stepStats = new Map<StepId, { viewed: number; completed: number }>();
   for (const id of STEP_IDS) stepStats.set(id, { viewed: 0, completed: 0 });
-  for (const row of funnelStats?.rows ?? []) {
+  for (const row of funnelStats ?? []) {
     const step = row.step as StepId | null;
     if (!step || !stepStats.has(step)) continue;
     stepStats.set(step, { viewed: row.viewed_count, completed: row.completed_count });
@@ -518,7 +518,7 @@ export default async function AdminDashboardPage({
 
       <SectionCard
         title="Acquisition — aujourd'hui"
-        subtitle="Visiteurs distincts et inscriptions du jour, par source. Liens ?utm_source=... (pubs, partages) + détection automatique du site d'origine : google / bing = référencement, chatgpt, perplexity, gemini, meta-ai, grok, deepseek, mistral = IA ; tiktok / instagram = réseaux. Inscriptions Google incluses depuis le 08/10. « direct / inconnu » = lien tapé ou appli sans référent. Visiteurs mis à jour toutes les 5 min (comptés depuis le 08/10 14 h 15 : avant, chaque préchargement de lien comptait comme une visite), inscriptions en direct."
+        subtitle="Visiteurs distincts et inscriptions du jour, par source. Liens ?utm_source=... (pubs, partages) + détection automatique du site d'origine : google / bing = référencement, chatgpt, perplexity, gemini, meta-ai, grok, deepseek, mistral = IA ; tiktok / instagram = réseaux. Inscriptions Google incluses depuis le 08/10. « direct / inconnu » = lien tapé ou appli sans référent. Visiteurs mis à jour toutes les 2 min (comptés depuis le 08/10 14 h 15 : avant, chaque préchargement de lien comptait comme une visite), inscriptions en direct."
       >
         {visitorsBySourceRows === null && (
           <p style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "0 0 8px" }}>
@@ -591,7 +591,7 @@ export default async function AdminDashboardPage({
 
       <SectionCard
         title="Tu nous as connus comment ? — inscrits des 30 derniers jours"
-        subtitle="Réponse donnée dans l'onboarding (question ajoutée le 20/10 : les inscrits d'avant n'ont pas répondu). Payants = ont payé au moins une fois, revenu encaissé depuis l'inscription. Recalculé toutes les 30 min."
+        subtitle="Réponse donnée dans l'onboarding (question ajoutée le 20/10 : les inscrits d'avant n'ont pas répondu). Payants = ont payé au moins une fois, revenu encaissé depuis l'inscription. Recalculé toutes les 10 min."
       >
         {heardFrom === null ? (
           <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>
@@ -636,7 +636,7 @@ export default async function AdminDashboardPage({
 
       <SectionCard
         title="Jours avec le plus de monde"
-        subtitle="Visiteurs distincts par jour de semaine, sur la période sélectionnée, depuis le 08/10 14 h 15 (avant, chaque préchargement de lien comptait comme une visite). Recalculé toutes les heures."
+        subtitle="Visiteurs distincts par jour de semaine, sur la période sélectionnée, depuis le 08/10 14 h 15 (avant, chaque préchargement de lien comptait comme une visite). Recalculé toutes les 15 min."
       >
         {weekdayAverages ? (
           <WeekdayBarChart averages={weekdayAverages} />
@@ -649,9 +649,7 @@ export default async function AdminDashboardPage({
 
       <SectionCard
         title="Funnel onboarding"
-        subtitle={`Vus / terminés par étape, ${
-          funnelStats?.since === null ? "sur tout l'historique" : `sur les ${FUNNEL_WINDOW_DAYS} derniers jours`
-        }. Recalculé toutes les 30 min.`}
+        subtitle="Vus / terminés par étape, tous comptes connectés confondus. Recalculé toutes les 10 min."
       >
         {funnelStats === null && (
           <p style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "0 0 8px" }}>

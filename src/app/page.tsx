@@ -1,6 +1,4 @@
 import Link from "next/link";
-import { GoogleButton } from "@/components/auth/GoogleButton";
-import { getTrustCount } from "@/lib/premium/trustCount";
 import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { CONTACT_EMAIL, SITE_URL, SOCIAL_PROFILES } from "@/lib/site";
@@ -318,22 +316,13 @@ const POPULAR_GUIDES = [
   { href: "/guides/stage-de-fin-d-etudes", label: "Stage de fin d'études 2027" },
 ];
 
-// Pied de page (checklist « landing qui convertit » : logo + année).
-const COPYRIGHT_YEAR = new Date().getFullYear();
-
-// « Plus de 3 200 » : arrondi vers le bas, pour que « plus de » reste vrai.
-function signupFloor(count: number): string {
-  const step = count >= 1000 ? 100 : 10;
-  return (Math.floor(count / step) * step).toLocaleString("fr-FR");
-}
-
 export default async function LandingPage() {
   // Client admin plutôt que le client lié aux cookies (@/lib/supabase/server) :
   // cette page n'affiche rien de spécifique au visiteur, et cookies() forcerait
   // un rendu dynamique par requête, rendant `revalidate` ci-dessus inopérant --
   // exactement le genre de lenteur que ce passage SEO cherche à éviter.
   const admin = createAdminClient();
-  const [{ count: activeOffersCount }, { count: alternanceCount }, reviewStats, testimonials, discovery, latestOffers, signupCount] =
+  const [{ count: activeOffersCount }, { count: alternanceCount }, reviewStats, testimonials, discovery, latestOffers] =
     await Promise.all([
       admin.from("offers").select("id", { count: "exact", head: true }).eq("is_active", true),
       admin
@@ -345,8 +334,6 @@ export default async function LandingPage() {
       getPublicTestimonials(6),
       getDiscoveryLinks(),
       getLatestOfferLinks(),
-      // Vrai nombre d'inscrits (onboarding terminé), même chiffre qu'avant le paywall.
-      getTrustCount().catch(() => 0),
     ]);
 
   const alternanceShare =
@@ -505,12 +492,9 @@ export default async function LandingPage() {
                 textWrap: "balance" as React.CSSProperties["textWrap"],
               }}
             >
-              {/* Checklist « landing qui convertit » (22/10) : le bénéfice
-                  (l'alternance, le stage) plutôt que le mécanisme seul, en
-                  gardant le vocabulaire des vidéos (le swipe). */}
-              Trouve ton alternance ou ton stage{" "}
+              Trouve ta prochaine expérience{" "}
               <span className="lp-wiggle" style={{ display: "inline-block" }}>
-                <Highlight>en quelques swipes</Highlight>
+                <Highlight>en swipant</Highlight>
               </span>
             </h1>
             <p
@@ -532,12 +516,6 @@ export default async function LandingPage() {
               <a href="#comment" className="btn btn-secondary" style={{ whiteSpace: "nowrap" }}>
                 ▶ Voir comment
               </a>
-            </div>
-            {/* Checklist « landing qui convertit » : Google dès l'accueil.
-                Masqué dans le navigateur de TikTok/Instagram (Google y bloque
-                la connexion), où le bouton principal suffit. */}
-            <div style={{ marginTop: 12, maxWidth: 340 }}>
-              <GoogleButton quietInApp />
             </div>
             <div className="mt-7 flex items-center gap-3.5">
               <div className="flex">
@@ -580,19 +558,9 @@ export default async function LandingPage() {
                 </span>
               </div>
               <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.4, color: mutedText }}>
-                {signupCount >= 100 ? (
-                  <>
-                    <strong style={{ color: "var(--color-text)" }}>Plus de {signupFloor(signupCount)} étudiants inscrits</strong>
-                    <br />
-                    Gratuit à l&apos;inscription · CV facultatif
-                  </>
-                ) : (
-                  <>
-                    <strong style={{ color: "var(--color-text)" }}>Gratuit à l&apos;inscription</strong>
-                    <br />
-                    CV facultatif · partout en France
-                  </>
-                )}
+                <strong style={{ color: "var(--color-text)" }}>Gratuit à l&apos;inscription</strong>
+                <br />
+                CV facultatif · partout en France
               </p>
             </div>
           </div>
@@ -1505,7 +1473,6 @@ export default async function LandingPage() {
           <span className="flex items-center gap-2" style={{ marginRight: "auto", fontSize: 14, fontWeight: 800 }}>
             <span aria-hidden style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--color-accent)" }} />
             Stageio
-            <span style={{ fontSize: 12.5, fontWeight: 500, color: mutedText }}>© {COPYRIGHT_YEAR}</span>
           </span>
           {[
             { href: "/a-propos", label: "Stageio, c'est quoi ?" },

@@ -15,7 +15,7 @@ import { fetchAllRows, POSTGREST_MAX_ROWS } from "@/lib/supabase/public";
 // - on ne lit que les visites propres, depuis VISITS_CLEAN_SINCE ;
 // - au plus MAX_ROWS lignes, en fenêtres (jour, ou heure pour aujourd'hui)
 //   lues 6 à la fois ;
-// - résultat en cache (1 h graphique, 5 min sources du jour) ;
+// - résultat en cache (15 min graphique, 2 min sources du jour) ;
 // - et la page n'attend jamais plus de quelques secondes (withTimeout).
 // Le vrai correctif est une fonction SQL d'agrégation (proposée dans
 // SEO_ROADMAP.md, migration à valider par Nathan).
@@ -115,7 +115,7 @@ export const getWeekdayAverages = unstable_cache(
     return computeWeekdayAverages(visits);
   }),
   ["admin-weekday-averages-v2"],
-  { revalidate: 3600 },
+  { revalidate: 900 },
 );
 
 // Visiteurs distincts du jour par source (utm_source), du plus gros au plus petit.
@@ -136,37 +136,21 @@ export const getTodayVisitorsBySource = unstable_cache(
     return [...bySource.entries()].map(([source, visitors]): [string, number] => [source, visitors.size]).sort((a, b) => b[1] - a[1]);
   }),
   ["admin-today-visitors-by-source-v2"],
-  { revalidate: 300 },
+  { revalidate: 120 },
 );
 
-// Entonnoir d'onboarding sur les 30 derniers jours (22/10 : sur tout
-// l'historique, la fonction SQL dépassait le délai de la base même avec
-// l'index user_events (event_type, created_at)). Utilise
-// onboarding_funnel_stats_since (SQL donné à Nathan le 22/10) ; tant qu'elle
-// n'existe pas, retombe sur l'ancienne fonction (tout l'historique) et le
-// dit (since: null). En cache 30 min ; une erreur n'est jamais mise en cache
+// Entonnoir d'onboarding : la fonction SQL filtre user_events sur event_type
+// sans index adapté (index proposé dans SEO_ROADMAP.md) et a déjà dépassé le
+// délai de la base. En cache 10 min ; une erreur n'est jamais mise en cache
 // (exception levée) : nouvel essai au plus tôt 5 min après (guarded).
-export type OnboardingFunnelStats = {
-  rows: { step: string | null; viewed_count: number; completed_count: number }[];
-  since: string | null;
-};
-
-export const FUNNEL_WINDOW_DAYS = 30;
-
 export const getOnboardingFunnelStats = unstable_cache(
-  guarded("onboarding funnel", async (): Promise<OnboardingFunnelStats> => {
-    const admin = createAdminClient();
-    const since = new Date(Date.now() - FUNNEL_WINDOW_DAYS * DAY_MS).toISOString();
-    const recent = await admin.rpc("onboarding_funnel_stats_since", { p_since: since });
-    if (!recent.error) return { rows: recent.data ?? [], since };
-    // PGRST202 : fonction absente de la base (SQL pas encore lancé).
-    if (recent.error.code !== "PGRST202") throw new Error(recent.error.message);
-    const { data, error } = await admin.rpc("onboarding_funnel_stats");
+  guarded("onboarding funnel", async (): Promise<{ step: string | null; viewed_count: number; completed_count: number }[]> => {
+    const { data, error } = await createAdminClient().rpc("onboarding_funnel_stats");
     if (error) throw new Error(error.message);
-    return { rows: data ?? [], since: null };
+    return data ?? [];
   }),
-  ["admin-onboarding-funnel-v2"],
-  { revalidate: 1800 },
+  ["admin-onboarding-funnel-v1"],
+  { revalidate: 600 },
 );
 
 // Le tableau de bord n'attend jamais une statistique lourde plus de `ms` :
@@ -234,7 +218,7 @@ export const getLeoFunnel = unstable_cache(
     };
   }),
   ["admin-leo-funnel-v2"],
-  { revalidate: 1800 },
+  { revalidate: 600 },
 );
 
 // « Tu nous as connus comment ? » (onboarding, depuis le 20/10) : dernière
@@ -288,7 +272,7 @@ export const getHeardFromStats = unstable_cache(
     };
   }),
   ["admin-heard-from-v1"],
-  { revalidate: 1800 },
+  { revalidate: 600 },
 );
 
 // RPM par source (SOP 16) : sur les 7 jours qui finissent `endIso` (même
@@ -354,7 +338,7 @@ export const getRpmWindowStats = unstable_cache(
     return stats;
   }),
   ["admin-rpm-window-v1"],
-  { revalidate: 1800 },
+  { revalidate: 600 },
 );
 
 // Attribution par corrélation (SOP 17) : heure par heure sur 72 h, arrivées,
@@ -429,5 +413,5 @@ export const getHourlyAttribution = unstable_cache(
       }));
   }),
   ["admin-hourly-attribution-v1"],
-  { revalidate: 600 },
+  { revalidate: 300 },
 );
