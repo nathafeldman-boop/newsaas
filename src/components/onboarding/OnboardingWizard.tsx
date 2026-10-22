@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { markReferralGrantedAction } from "@/app/onboarding/actions";
@@ -19,7 +19,7 @@ import {
   AVAILABILITY_OPTIONS,
   HEARD_FROM_OPTIONS,
 } from "@/lib/onboarding/options";
-import { STEP_IDS, STEP_LABELS, type StepId } from "@/lib/onboarding/steps";
+import { QUESTION_SCREEN, STEP_IDS, STEP_LABELS, type QuestionId, type StepId } from "@/lib/onboarding/steps";
 import { forgetSignupCity, readSignupCity } from "@/lib/signup/intentStorage";
 
 // Onboarding "sans clavier" : tout se fait au tap (tuiles/chips), avec un
@@ -35,38 +35,7 @@ import { forgetSignupCity, readSignupCity } from "@/lib/signup/intentStorage";
 // (pénalité de localisation) : un profil qui ne la renseigne jamais se fait
 // pénaliser par défaut comme s'il n'était mobile pour rien, même quand ce
 // n'est pas vrai — d'où son caractère obligatoire comme les autres.
-const PROGRESS_STEPS: StepId[] = STEP_IDS.filter(
-  (s) => s !== "intro" && s !== "outro" && s !== "trust",
-);
-const SKIPPABLE: StepId[] = ["cv"];
-
-// Écran de réassurance sociale juste après le choix stage/alternance/les
-// deux -- traité comme "intro"/"outro" (pas de chrome, pas de progression
-// dans la barre) puisqu'il ne demande aucune donnée, juste une transition.
-function trustContractLabel(lookingFor: ContractType[]): string {
-  const hasAlternance = lookingFor.includes("alternance");
-  const hasStage = lookingFor.includes("stage");
-  if (hasAlternance && !hasStage) return "leur alternance";
-  if (hasStage && !hasAlternance) return "leur stage";
-  return "leur alternance ou leur stage";
-}
-
-function AnimatedCount({ target, durationMs }: { target: number; durationMs: number }) {
-  const [value, setValue] = useState(0);
-  useEffect(() => {
-    let raf: number;
-    const startTime = performance.now();
-    function tick(now: number) {
-      const progress = Math.min((now - startTime) / durationMs, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setValue(Math.round(eased * target));
-      if (progress < 1) raf = requestAnimationFrame(tick);
-    }
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [target, durationMs]);
-  return <>{value.toLocaleString("fr-FR")}</>;
-}
+const PROGRESS_STEPS: StepId[] = STEP_IDS.filter((s) => s !== "outro");
 
 // Sous-textes des tuiles de mobilité (voir design) -- gardés ici plutôt que
 // dans lib/onboarding/options.ts pour ne pas ajouter un champ que
@@ -95,8 +64,8 @@ const slideVariants: Variants = {
 
 function StepHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
-    <div style={{ marginBottom: 22 }}>
-      <h1 style={{ fontSize: 28, margin: 0, lineHeight: 1.15 }}>{title}</h1>
+    <div style={{ marginBottom: 14 }}>
+      <h1 style={{ fontSize: 22, margin: 0, lineHeight: 1.2 }}>{title}</h1>
       {subtitle && (
         <p
           style={{
@@ -256,16 +225,16 @@ async function logHeardFrom(userId: string, source: string) {
 export function OnboardingWizard({
   userId,
   initialProfile,
-  trustCount,
 }: {
   userId: string;
   initialProfile: Profile | null;
-  trustCount: number;
 }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [direction, setDirection] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const stepId = STEP_IDS[stepIndex];
+  // Plusieurs questions par écran (voir lib/onboarding/steps.ts).
+  const onScreen = (question: QuestionId) => QUESTION_SCREEN[question] === stepId;
 
   // Séquence de l'étape "outro" (voir design mobile) : sauvegarde réelle du
   // profil en tâche de fond pendant une petite animation de chargement,
@@ -336,71 +305,47 @@ export function OnboardingWizard({
   }
 
   function validateCurrentStep(): string | null {
-    if (stepId === "looking_for" && lookingFor.length === 0) {
+    if (onScreen("looking_for") && lookingFor.length === 0) {
       return "Sélectionne alternance et/ou stage.";
     }
-    if (stepId === "city" && !city.trim()) {
+    if (onScreen("city") && !city.trim()) {
       return "Indique au moins ta ville.";
     }
-    if (stepId === "sectors" && sectors.length === 0) {
+    if (onScreen("sectors") && sectors.length === 0) {
       return "Sélectionne au moins un secteur.";
     }
-    if (stepId === "skills" && skills.length === 0) {
+    if (onScreen("skills") && skills.length === 0) {
       return "Sélectionne au moins une compétence.";
     }
-    if (stepId === "jobs" && targetJobs.length === 0) {
+    if (onScreen("jobs") && targetJobs.length === 0) {
       return "Sélectionne au moins un métier visé.";
     }
-    if (stepId === "mobility" && !mobility) {
+    if (onScreen("mobility") && !mobility) {
       return "Indique ta mobilité.";
     }
-    if (stepId === "level" && !educationLevel) {
+    if (onScreen("level") && !educationLevel) {
       return "Indique ton niveau d'études.";
     }
-    if (stepId === "level" && !experienceLevel) {
+    if (onScreen("level") && !experienceLevel) {
       return "Indique ton niveau d'expérience.";
     }
-    if (stepId === "dispo" && !availabilityLabel) {
+    if (onScreen("dispo") && !availabilityLabel) {
       return "Indique ta disponibilité.";
     }
-    if (stepId === "source" && !heardFrom) {
+    if (onScreen("source") && !heardFrom) {
       return "Dis-nous comment tu nous as connus.";
     }
     return null;
   }
 
-  // Garde-fou pour advanceStep ci-dessous : un second tap sur une autre
-  // tuile de la même étape avant l'écoulement du délai, ou un "Continuer"
-  // manuel tapé entre-temps, ne doit jamais déclencher DEUX avances
-  // (sauterait carrément l'étape suivante -- sans state, deux setStepIndex
-  // fonctionnels programmés s'additionneraient l'un après l'autre).
-  const pendingAdvanceRef = useRef<number | null>(null);
-  useEffect(() => {
-    return () => {
-      if (pendingAdvanceRef.current) window.clearTimeout(pendingAdvanceRef.current);
-    };
-  }, []);
-  function cancelPendingAdvance() {
-    if (pendingAdvanceRef.current) {
-      window.clearTimeout(pendingAdvanceRef.current);
-      pendingAdvanceRef.current = null;
-    }
-  }
-
-  function goToStep(id: StepId) {
-    // Pas de cancelPendingAdvance() ici : goToStep ne sert qu'aux liens
-    // "modifier" du récap (étape "outro"), bien après qu'un éventuel délai
-    // d'auto-avance (320ms, voir advanceStep) d'une étape à choix unique
-    // soit de toute façon déjà écoulé -- l'ajouter ferait lire la ref
-    // depuis ce tableau de closures construit pendant le rendu (voir
-    // react-hooks/refs), pour un cas qui ne peut pas se produire ici.
+  // Liens « modifier » du récap : retour à l'écran de cette question.
+  function goToStep(question: QuestionId) {
     setError(null);
     setDirection(-1);
-    setStepIndex(STEP_IDS.indexOf(id));
+    setStepIndex(STEP_IDS.indexOf(QUESTION_SCREEN[question]));
   }
 
   function goNext() {
-    cancelPendingAdvance();
     const err = validateCurrentStep();
     if (err) {
       setError(err);
@@ -413,29 +358,9 @@ export function OnboardingWizard({
   }
 
   function goBack() {
-    cancelPendingAdvance();
     setError(null);
     setDirection(-1);
     setStepIndex((i) => Math.max(i - 1, 0));
-  }
-
-  // Avance sans repasser par validateCurrentStep() (qui lirait l'ancienne
-  // valeur du state React -- setMobility()/etc. n'a pas encore été
-  // appliqué au moment où ce callback est programmé) : utilisé uniquement
-  // juste après avoir tapé une tuile à choix unique (mobilité, dispo,
-  // niveau), où on sait déjà avec certitude que l'étape vient de devenir
-  // valide grâce à la valeur tout juste posée. Délai court pour laisser le
-  // temps de voir la tuile passer à l'état "actif" avant que l'écran ne
-  // change -- sans ça la sélection est invisible, la transition mange tout.
-  function advanceStep(completedStepId: StepId) {
-    cancelPendingAdvance();
-    pendingAdvanceRef.current = window.setTimeout(() => {
-      pendingAdvanceRef.current = null;
-      setError(null);
-      void logOnboardingEvent(userId, "onboarding_step_completed", completedStepId);
-      setDirection(1);
-      setStepIndex((i) => Math.min(i + 1, STEP_IDS.length - 1));
-    }, 320);
   }
 
   async function persistProfile(): Promise<
@@ -561,8 +486,7 @@ export function OnboardingWizard({
   }, [stepId]);
 
   const progressIndex = PROGRESS_STEPS.indexOf(stepId);
-  const showChrome = stepId !== "intro" && stepId !== "outro" && stepId !== "trust";
-  const skippable = SKIPPABLE.includes(stepId);
+  const showChrome = stepId !== "outro";
   const currentStepValid = validateCurrentStep() === null;
 
   // Jauge "Matching précis à X%" : reflète en direct à quel point le profil
@@ -653,200 +577,9 @@ export function OnboardingWizard({
             animate="center"
             exit="exit"
             transition={{ duration: 0.26, ease: "easeInOut" }}
-            style={{ display: "flex", flexDirection: "column", flex: 1 }}
+            style={{ display: "flex", flexDirection: "column", flex: 1, gap: 34 }}
           >
-            {stepId === "intro" && (
-              <div className="flex flex-1 flex-col px-2" style={{ position: "relative", overflow: "hidden" }}>
-                <div
-                  aria-hidden
-                  style={{
-                    position: "absolute",
-                    top: -60,
-                    right: -60,
-                    width: 180,
-                    height: 180,
-                    borderRadius: "50%",
-                    background: "radial-gradient(circle, color-mix(in srgb, var(--color-accent-2) 25%, transparent), transparent 70%)",
-                    pointerEvents: "none",
-                  }}
-                />
-                <div
-                  aria-hidden
-                  style={{
-                    position: "relative",
-                    height: 190,
-                    marginTop: 4,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <div
-                    className="lp-spin"
-                    style={{
-                      position: "absolute",
-                      width: 150,
-                      height: 150,
-                      borderRadius: "50%",
-                      border: "1px dashed color-mix(in srgb, var(--color-accent) 40%, transparent)",
-                    }}
-                  />
-                  <div
-                    style={{
-                      position: "absolute",
-                      width: 100,
-                      height: 128,
-                      borderRadius: 18,
-                      background: "var(--color-surface)",
-                      transform: "rotate(-11deg) translateX(-28px)",
-                    }}
-                  />
-                  <div
-                    style={{
-                      position: "absolute",
-                      width: 100,
-                      height: 128,
-                      borderRadius: 18,
-                      background: "var(--color-surface)",
-                      boxShadow: "var(--shadow-sm)",
-                      transform: "rotate(8deg) translateX(28px)",
-                    }}
-                  />
-                  <div
-                    className="lp-float"
-                    style={{
-                      position: "relative",
-                      width: 108,
-                      height: 134,
-                      borderRadius: 20,
-                      background: "var(--color-surface)",
-                      boxShadow: "var(--shadow-lg)",
-                      overflow: "hidden",
-                      ["--r" as string]: "-2deg",
-                    }}
-                  >
-                    <div style={{ height: 42, background: "linear-gradient(125deg, var(--color-accent), var(--color-accent-2))" }} />
-                    <div style={{ padding: 8 }}>
-                      <div style={{ height: 6, width: "85%", borderRadius: 3, background: "var(--color-text)" }} />
-                      <div style={{ height: 6, width: "55%", borderRadius: 3, background: "var(--color-text)", marginTop: 4 }} />
-                      <div className="flex gap-1" style={{ marginTop: 8 }}>
-                        <div style={{ flex: 1, height: 18, borderRadius: 5, background: "var(--color-bg)" }} />
-                        <div style={{ flex: 1, height: 18, borderRadius: 5, background: "var(--color-bg)" }} />
-                        <div style={{ flex: 1, height: 18, borderRadius: 5, background: "var(--color-bg)" }} />
-                      </div>
-                    </div>
-                  </div>
-                  <div
-                    className="lp-float"
-                    style={{
-                      position: "absolute",
-                      right: 4,
-                      top: 18,
-                      border: "2.5px solid var(--color-accent)",
-                      color: "var(--color-accent)",
-                      background: "var(--color-accent-100)",
-                      borderRadius: 8,
-                      padding: "1px 8px",
-                      fontSize: 13,
-                      fontWeight: 800,
-                      ["--r" as string]: "9deg",
-                    }}
-                  >
-                    LIKE
-                  </div>
-                  <div
-                    className="lp-float"
-                    style={{
-                      position: "absolute",
-                      left: 6,
-                      bottom: 22,
-                      width: 36,
-                      height: 36,
-                      borderRadius: 12,
-                      background: "linear-gradient(135deg, var(--color-accent), var(--color-accent-2))",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      boxShadow: "0 8px 18px color-mix(in srgb, var(--color-accent) 35%, transparent)",
-                      ["--r" as string]: "-7deg",
-                      animationDelay: "0.6s",
-                    }}
-                  >
-                    <span aria-hidden style={{ fontSize: 16 }}>❤️</span>
-                  </div>
-                  <div
-                    className="lp-float"
-                    style={{
-                      position: "absolute",
-                      right: 0,
-                      bottom: 6,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 4,
-                      background: "var(--color-neutral-900)",
-                      color: "var(--color-bg)",
-                      padding: "4px 9px",
-                      borderRadius: 999,
-                      fontSize: 10.5,
-                      fontWeight: 700,
-                      ["--r" as string]: "3deg",
-                      animationDelay: "0.3s",
-                    }}
-                  >
-                    ⚡ 2 minutes
-                  </div>
-                </div>
-                <div style={{ position: "relative", marginTop: 8 }}>
-                  <h1 style={{ fontSize: 30, margin: 0, lineHeight: 1.15, letterSpacing: "-0.01em" }}>
-                    Bienvenue sur Stageio
-                  </h1>
-                  <p
-                    style={{
-                      fontSize: 15,
-                      marginTop: 10,
-                      lineHeight: 1.55,
-                      color: "color-mix(in srgb, var(--color-text) 68%, transparent)",
-                      maxWidth: "34ch",
-                    }}
-                  >
-                    En <Highlight delay={0.4}>2 minutes</Highlight>, dis-nous ce que tu cherches. Zéro
-                    lettre de motivation à rédiger — juste des tuiles à taper.
-                  </p>
-                </div>
-                <div className="flex flex-col gap-3.5" style={{ position: "relative", marginTop: 28 }}>
-                  {[
-                    ["👆", "Swipe les offres qui te correspondent"],
-                    ["⚡", "Postule en un geste, sans paperasse"],
-                    ["📬", "Suis les réponses des recruteurs au même endroit"],
-                  ].map(([icon, text]) => (
-                    <div
-                      key={text}
-                      className="flex items-center gap-3.5"
-                      style={{
-                        background: "var(--color-surface)",
-                        borderRadius: 18,
-                        padding: 16,
-                        fontSize: 14.5,
-                        fontWeight: 600,
-                        lineHeight: 1.4,
-                        textAlign: "left",
-                      }}
-                    >
-                      <span aria-hidden style={{ fontSize: 22, flexShrink: 0 }}>
-                        {icon}
-                      </span>
-                      {text}
-                    </div>
-                  ))}
-                </div>
-                <div className="flex-1" style={{ minHeight: 20 }} />
-                <button type="button" onClick={goNext} className="btn btn-primary btn-block">
-                  Commencer
-                </button>
-              </div>
-            )}
-
-            {stepId === "looking_for" && (
+            {onScreen("looking_for") && (
               <div className="flex flex-col gap-5">
                 <StepHeader title="Tu cherches quoi ?" subtitle="Tu peux sélectionner les deux." />
                 <div className="flex flex-col gap-3.5">
@@ -869,119 +602,7 @@ export function OnboardingWizard({
               </div>
             )}
 
-            {stepId === "trust" && (
-              <div className="flex flex-1 flex-col px-2" style={{ position: "relative", overflow: "hidden" }}>
-                <div
-                  aria-hidden
-                  style={{
-                    position: "absolute",
-                    top: -50,
-                    left: -50,
-                    width: 170,
-                    height: 170,
-                    borderRadius: "50%",
-                    background: "radial-gradient(circle, color-mix(in srgb, var(--color-accent) 25%, transparent), transparent 70%)",
-                    pointerEvents: "none",
-                  }}
-                />
-                <div
-                  aria-hidden
-                  style={{
-                    position: "absolute",
-                    bottom: -60,
-                    right: -60,
-                    width: 190,
-                    height: 190,
-                    borderRadius: "50%",
-                    background: "radial-gradient(circle, color-mix(in srgb, var(--color-accent-2) 22%, transparent), transparent 70%)",
-                    pointerEvents: "none",
-                  }}
-                />
-                <div
-                  className="flex flex-1 flex-col items-center justify-center text-center"
-                  style={{ position: "relative" }}
-                >
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.1 }}
-                    className="flex"
-                    aria-hidden
-                  >
-                    {["L", "T", "I"].map((letter, i) => (
-                      <span
-                        key={letter}
-                        className="flex items-center justify-center"
-                        style={{
-                          width: 52,
-                          height: 52,
-                          borderRadius: "50%",
-                          background: i === 0 ? "var(--color-accent)" : i === 1 ? "var(--color-accent-2)" : "var(--color-neutral-700)",
-                          color: "var(--color-bg)",
-                          border: "4px solid var(--color-bg)",
-                          marginLeft: i === 0 ? 0 : -14,
-                          fontSize: 17,
-                          fontWeight: 800,
-                        }}
-                      >
-                        {letter}
-                      </span>
-                    ))}
-                    <span
-                      className="flex items-center justify-center"
-                      style={{
-                        width: 52,
-                        height: 52,
-                        borderRadius: "50%",
-                        background: "var(--color-accent-200)",
-                        color: "var(--color-accent-800)",
-                        border: "4px solid var(--color-bg)",
-                        marginLeft: -14,
-                        fontSize: 18,
-                        fontWeight: 800,
-                      }}
-                    >
-                      +
-                    </span>
-                  </motion.div>
-                  <p
-                    style={{
-                      fontFamily: "var(--font-heading)",
-                      fontSize: 40,
-                      fontWeight: 800,
-                      margin: "22px 0 0",
-                      letterSpacing: "-0.01em",
-                    }}
-                  >
-                    +<AnimatedCount target={trustCount} durationMs={1400} />
-                  </p>
-                  <p style={{ fontSize: 16, fontWeight: 700, margin: "6px 0 0", lineHeight: 1.4, maxWidth: "28ch" }}>
-                    personnes nous ont fait confiance pour trouver {trustContractLabel(lookingFor)}
-                  </p>
-                  <motion.p
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5, duration: 0.4 }}
-                    style={{
-                      fontSize: 14,
-                      fontWeight: 700,
-                      margin: "18px 0 0",
-                      padding: "8px 16px",
-                      borderRadius: 999,
-                      background: "var(--color-accent-100)",
-                      color: "var(--color-accent-700)",
-                    }}
-                  >
-                    ✨ Tu as fait le bon choix
-                  </motion.p>
-                </div>
-                <button type="button" onClick={goNext} className="btn btn-primary btn-block">
-                  Continuer
-                </button>
-              </div>
-            )}
-
-            {stepId === "city" && (
+            {onScreen("city") && (
               <div className="flex flex-col gap-4">
                 <StepHeader
                   title="Tu veux travailler où ?"
@@ -1017,7 +638,7 @@ export function OnboardingWizard({
               </div>
             )}
 
-            {stepId === "sectors" && (
+            {onScreen("sectors") && (
               <div className="flex flex-col gap-4">
                 <StepHeader title="Quels secteurs te font envie ?" subtitle="Choisis-en autant que tu veux." />
                 <ChipMultiSelectWithCustom
@@ -1030,14 +651,14 @@ export function OnboardingWizard({
               </div>
             )}
 
-            {stepId === "skills" && (
+            {onScreen("skills") && (
               <div className="flex flex-col gap-4">
                 <StepHeader title="Tu es bon·ne en quoi ?" subtitle="Outils, langues, soft skills : tout compte." />
                 <ChipMultiSelectWithCustom options={SKILLS} value={skills} onChange={setSkills} />
               </div>
             )}
 
-            {stepId === "jobs" && (
+            {onScreen("jobs") && (
               <div className="flex flex-col gap-4">
                 <StepHeader
                   title="Quel métier tu vises ?"
@@ -1047,7 +668,7 @@ export function OnboardingWizard({
               </div>
             )}
 
-            {stepId === "mobility" && (
+            {onScreen("mobility") && (
               <div className="flex flex-col gap-5">
                 <StepHeader
                   title="Tu peux bouger jusqu'où ?"
@@ -1063,7 +684,6 @@ export function OnboardingWizard({
                       active={mobility === opt.value}
                       onClick={() => {
                         setMobility(opt.value);
-                        advanceStep("mobility");
                       }}
                     />
                   ))}
@@ -1071,7 +691,7 @@ export function OnboardingWizard({
               </div>
             )}
 
-            {stepId === "level" && (
+            {onScreen("level") && (
               <div className="flex flex-col gap-7">
                 <StepHeader title="Où en es-tu dans ton parcours ?" subtitle="Niveau d'études et expérience." />
 
@@ -1086,11 +706,6 @@ export function OnboardingWizard({
                         type="button"
                         onClick={() => {
                           setEducationLevel(level);
-                          // L'autre champ de cette même étape (voir plus bas)
-                          // -- s'il est déjà rempli, ce tap complète la paire
-                          // et l'étape devient valide ; sinon on attend
-                          // encore le niveau d'expérience.
-                          if (experienceLevel) advanceStep("level");
                         }}
                         className={educationLevel === level ? "tag flex items-center gap-1.5" : "tag tag-neutral flex items-center gap-1.5"}
                         style={{
@@ -1119,7 +734,6 @@ export function OnboardingWizard({
                         active={experienceLevel === opt.value}
                         onClick={() => {
                           setExperienceLevel(opt.value);
-                          if (educationLevel) advanceStep("level");
                         }}
                       />
                     ))}
@@ -1128,7 +742,7 @@ export function OnboardingWizard({
               </div>
             )}
 
-            {stepId === "dispo" && (
+            {onScreen("dispo") && (
               <div className="flex flex-col gap-5">
                 <StepHeader
                   title="Tu peux commencer quand ?"
@@ -1143,7 +757,6 @@ export function OnboardingWizard({
                       active={availabilityLabel === opt.label}
                       onClick={() => {
                         setAvailabilityLabel(opt.label);
-                        advanceStep("dispo");
                       }}
                     />
                   ))}
@@ -1151,7 +764,7 @@ export function OnboardingWizard({
               </div>
             )}
 
-            {stepId === "source" && (
+            {onScreen("source") && (
               <div className="flex flex-col gap-5">
                 <StepHeader title="Tu nous as connus comment ?" subtitle="Ça nous aide à savoir où parler de Stageio." />
                 <div className="grid grid-cols-2 gap-3">
@@ -1165,7 +778,6 @@ export function OnboardingWizard({
                       onClick={() => {
                         setHeardFrom(opt.value);
                         void logHeardFrom(userId, opt.value);
-                        advanceStep("source");
                       }}
                     />
                   ))}
@@ -1173,7 +785,7 @@ export function OnboardingWizard({
               </div>
             )}
 
-            {stepId === "cv" && (
+            {onScreen("cv") && (
               <div className="flex flex-col gap-5">
                 <StepHeader
                   title="Ajoute ton CV"
@@ -1561,13 +1173,7 @@ export function OnboardingWizard({
                   </p>
                 )}
                 <div className="flex items-center justify-between gap-3" style={{ marginTop: error ? 12 : 14 }}>
-                  {skippable ? (
-                    <button type="button" onClick={goNext} className="btn btn-ghost">
-                      Passer
-                    </button>
-                  ) : (
-                    <span />
-                  )}
+                  <span />
                   <button type="button" onClick={goNext} className="btn btn-primary">
                     Continuer
                   </button>
