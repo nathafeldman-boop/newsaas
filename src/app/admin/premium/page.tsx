@@ -6,6 +6,7 @@ import {
   reconcileAllSubscriptionsAction,
   syncUserPaymentsAction,
   sendCheckoutAbandonedReminderAction,
+  scheduleTestCheckoutReminderAction,
   sendIncompletePaymentReminderAction,
 } from "@/app/admin/users/actions";
 
@@ -68,6 +69,8 @@ export default async function AdminPremiumPage({
     abandoned_sent?: string;
     abandoned_failed?: string;
     abandoned_error?: string;
+    test_reminder?: string;
+    test_reminder_min?: string;
   }>;
 }) {
   const {
@@ -88,6 +91,8 @@ export default async function AdminPremiumPage({
     abandoned_sent: abandonedSent,
     abandoned_failed: abandonedFailed,
     abandoned_error: abandonedError,
+    test_reminder: testReminder,
+    test_reminder_min: testReminderMin,
   } = await searchParams;
   const admin = createAdminClient();
 
@@ -143,6 +148,30 @@ export default async function AdminPremiumPage({
       <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "0 0 20px" }}>
         {rows.length} abonné(s) payant(s) (mensuel, essai ou à vie, hors codes offerts).
       </p>
+
+      <form action={scheduleTestCheckoutReminderAction} className="card" style={{ padding: "var(--space-4)", marginBottom: 20, gap: 10 }}>
+        <p style={{ fontWeight: 600, margin: 0, fontSize: 14 }}>Tester la relance « paiement pas finalisé »</p>
+        <p style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>
+          Programme le vrai email « Tu y étais presque » vers un compte Stageio (son email d&apos;inscription), dans
+          quelques minutes. Le lien du test mène à /premium.
+        </p>
+        {testReminder && (
+          <p style={{ fontSize: 13, fontWeight: 600, margin: 0, color: "var(--color-accent-700)" }}>
+            {testReminder === "ok"
+              ? `✅ Relance programmée : elle part dans ${testReminderMin ?? "2"} min.`
+              : testReminder === "no_profile"
+                ? "Aucun compte Stageio avec cet email."
+                : testReminder === "invalid"
+                  ? "Email invalide."
+                  : "Resend a refusé l'envoi (voir les logs)."}
+          </p>
+        )}
+        <div className="flex flex-wrap items-center gap-2">
+          <input type="email" name="email" required placeholder="email du compte" className="input" style={{ flex: "1 1 220px" }} />
+          <input type="number" name="minutes" defaultValue={2} min={1} max={60} className="input" style={{ width: 80 }} aria-label="Minutes" />
+          <button type="submit" className="btn btn-secondary">Programmer</button>
+        </div>
+      </form>
 
       {paymentIssueRows.length > 0 && (
         <div className="card" style={{ padding: "var(--space-4)", marginBottom: 20, border: "1.5px solid var(--color-accent-2)" }}>

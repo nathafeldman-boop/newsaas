@@ -42,6 +42,8 @@ export async function scheduleCheckoutReminder(params: {
   profileId: string;
   checkoutUrl: string;
   lifetime: boolean;
+  // Délai avant l'envoi : 10 min par défaut (2 min pour le test de l'admin).
+  delayMs?: number;
 }): Promise<string | null> {
   const resend = getResendClient();
   const fromEmail = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
@@ -52,7 +54,7 @@ export async function scheduleCheckoutReminder(params: {
     from: `Stageio <${fromEmail}>`,
     to: params.email,
     subject: "Tu y étais presque 👀",
-    scheduledAt: new Date(Date.now() + CHECKOUT_REMINDER_DELAY_MS).toISOString(),
+    scheduledAt: new Date(Date.now() + (params.delayMs ?? CHECKOUT_REMINDER_DELAY_MS)).toISOString(),
     html: `<p>Salut${firstName ? ` ${firstName}` : ""},</p>
 <p>Tu étais à deux doigts de débloquer ${plan}. Le paiement n'a pas été finalisé : rien n'a été débité.</p>
 <p>Ce qui t'attend :</p>

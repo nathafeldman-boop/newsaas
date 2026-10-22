@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import { assertAdminSession } from "@/lib/admin/accessCode";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notifyPremiumFixed } from "@/lib/resend/notifyPremiumFixed";
-import { notifyCheckoutAbandoned } from "@/lib/resend/notifyCheckoutAbandoned";
+import { notifyCheckoutAbandoned, scheduleCheckoutReminder } from "@/lib/resend/notifyCheckoutAbandoned";
+import { SITE_URL } from "@/lib/site";
 import { notifyIncompletePaymentOnce } from "@/lib/stripe/notifyIncompletePayment";
 import { getStripeClient } from "@/lib/stripe/client";
 import { creditCheckoutPayment, creditInvoicePayment } from "@/lib/stripe/creditInvoicePayment";
@@ -421,3 +422,32 @@ export async function sendIncompletePaymentReminderAction(formData: FormData) {
 // pointait vers une offre qui n'existe plus sur /premium -- la garder
 // aurait été un vrai bug (email actif faisant la publicité d'un plan qui ne
 // peut plus être acheté), pas juste du code mort inoffensif.
+
+// Relance « paiement pas finalisé » de test (Nathan, 23/10) : le vrai email,
+// programmé chez Resend vers un compte Stageio au choix dans quelques
+// minutes, pour le voir avant de payer. Lien vers /premium (pas de session
+// Stripe réelle derrière).
+export async function scheduleTestCheckoutReminderAction(formData: FormData) {
+  await assertAdminSession();
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const minutes = Math.min(60, Math.max(1, Math.round(Number(formData.get("minutes")) || 2)));
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) redirect("/admin/premium?test_reminder=invalid");
+  const { data: profile } = await createAdminClient()
+    .from("profiles")
+    .select("id, full_name")
+    .eq("email", email)
+    .maybeSingle();
+  if (!profile) redirect("/admin/premium?test_reminder=no_profile");
+  const emailId = await scheduleCheckoutReminder({
+    email,
+    fullName: profile.full_name,
+    profileId: profile.id,
+    checkoutUrl: `${SITE_URL}/premium`,
+    lifetime: false,
+    delayMs: minutes * 60_000,
+  }).catch((err) => {
+    console.error("scheduleTestCheckoutReminderAction failed", err);
+    return null;
+  });
+  redirect(`/admin/premium?test_reminder=${emailId ? "ok" : "error"}&test_reminder_min=${minutes}`);
+}
