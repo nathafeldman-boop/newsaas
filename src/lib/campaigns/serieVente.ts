@@ -8,6 +8,7 @@ import { isPremium } from "@/lib/subscription/isPremium";
 import { GUARANTEE_MONTHS } from "@/lib/premium/guaranteeTerms";
 import { LIFETIME_PROMO, PLAN_PRICES } from "@/lib/pricing/plans";
 import { SITE_URL } from "@/lib/site";
+import { getTrustCount } from "@/lib/premium/trustCount";
 import { campaignSender } from "@/lib/campaigns/sendBatch";
 import { SALES_SERIES_EVENT } from "@/lib/campaigns/serieEvents";
 import { CHECKOUT_RELANCE_EVENT } from "@/lib/campaigns/relanceCheckout";
@@ -145,7 +146,14 @@ const fmt = (n: number) => n.toLocaleString("fr-FR");
 
 export type RenderedSeriesEmail = { subject: string; html: string; text: string };
 
-export function renderSeriesEmail(p: CampaignProfile, step: number, catalog: Catalog, now: number = Date.now()): RenderedSeriesEmail {
+// trustCount : vrai nombre de comptes inscrits (même chiffre que le paywall).
+export function renderSeriesEmail(
+  p: CampaignProfile,
+  step: number,
+  catalog: Catalog,
+  now: number = Date.now(),
+  trustCount = 0,
+): RenderedSeriesEmail {
   const name = firstName(p.full_name);
   const greeting = name ? `Salut ${name},` : "Salut,";
   const kind = typePhrase(p.looking_for);
@@ -153,6 +161,7 @@ export function renderSeriesEmail(p: CampaignProfile, step: number, catalog: Cat
   const where = zonePhrase(counts.zone);
   const whereHtml = escapeHtml(where);
   const showCounts = counts.hasCriteria && counts.matching >= MIN_COUNT_TO_SHOW;
+  const wantsAlternance = p.looking_for.length === 0 || p.looking_for.includes("alternance");
   // Au moins 30 min pour en profiter avant la fin de la vraie promo.
   const promo = step === 1 && now < LIFETIME_PROMO.endsAt - 30 * 60_000;
   const utm = `utm_source=email&utm_medium=serie&utm_campaign=${seriesUtmCampaign(step)}`;
@@ -175,51 +184,66 @@ export function renderSeriesEmail(p: CampaignProfile, step: number, catalog: Cat
   let hook: string[];
   let picks: { title: string; company: string }[] = [];
 
+  // Les leviers sont vrais : délai légal du contrat d'apprentissage (guide
+  // « calendrier de l'alternance », article L6222-12), offres réellement
+  // masquées sans Premium, garantie, vrais prix et vrai nombre d'inscrits.
   if (step === 1 && promo) {
-    subject = `${name ? `${name}, l'` : "L'"}accès Premium à vie à ${LIFETIME_PROMO.price}, c'est jusqu'à cette nuit`;
+    subject = `⏳ ${name ? `${name}, l'` : "L'"}accès Premium à vie à ${LIFETIME_PROMO.price}, c'est jusqu'à cette nuit`;
     hook = [
-      `Dernier jour de la promo : l'accès Premium <strong>à vie</strong> passe à <strong>${LIFETIME_PROMO.price}</strong> au lieu de ${LIFETIME_PROMO.referencePrice}, jusqu'à cette nuit 0&nbsp;h&nbsp;30.`,
-      `Tu paies une fois, et c'est fini : pas d'abonnement, Premium pour toujours. Et en ce moment, il y a ${offersLineHtml} qui t'attendent sur Stageio.`,
+      "Des candidatures envoyées, et pas de réponse ? Des heures sur chaque lettre de motivation ? C'est exactement ce que Premium règle.",
+      `Et c'est le dernier jour de la promo : l'accès Premium <strong>à vie</strong> est à <strong>${LIFETIME_PROMO.price}</strong> au lieu de ${LIFETIME_PROMO.referencePrice}, jusqu'à cette nuit 0&nbsp;h&nbsp;30. Tu paies une fois, et c'est fini : pas d'abonnement, Premium pour toujours.`,
+      `En ce moment, ${offersLineHtml} t'attendent sur Stageio.`,
     ];
   } else if (step === 1) {
     subject = showCounts
-      ? `${name ? `${name}, ` : ""}${fmt(counts.matching)} offres ${kind} t'attendent`
-      : "Ton accès Premium t'attend sur Stageio";
+      ? `${name ? `${name}, ` : ""}${fmt(counts.matching)} offres ${kind} t'attendent… mais tu ne les vois pas en entier`
+      : "Tes offres t'attendent… mais tu ne les vois pas en entier";
     hook = [
       `En ce moment, il y a ${offersLineHtml} sur Stageio.`,
-      "En Premium, tu les vois en entier et tu postules en quelques secondes, lettre de motivation comprise.",
+      "Sans Premium, tu ne vois ni l'entreprise ni l'analyse de chaque offre. Avec Premium, tu vois tout, et tu postules en quelques secondes, lettre de motivation comprise.",
     ];
   } else if (step === 2) {
-    subject = "Tu postules encore sans lettre de motivation ?";
+    subject = `${name ? `${name}, e` : "E"}ncore une candidature sans réponse ?`;
     hook = [
-      "Le plus long dans une candidature, c'est la lettre de motivation.",
-      "En Premium, elle s'écrit en direct pour l'offre que tu choisis, à partir de ton profil : tu relis, tu ajustes, tu envoies. Une offre, une lettre, quelques secondes.",
+      "Envoyer des candidatures, attendre, et ne rien recevoir : c'est le plus frustrant dans la recherche. Et une lettre de motivation générique, un recruteur la repère tout de suite.",
+      "En Premium, ta lettre s'écrit en direct pour l'offre que tu choisis, à partir de ton profil : tu relis, tu ajustes, tu envoies. Une offre, une lettre, quelques secondes.",
     ];
   } else if (step === 3) {
-    subject = `Pas d'entretien en ${GUARANTEE_MONTHS} mois ? On te rembourse`;
+    subject = `Pas d'entretien en ${GUARANTEE_MONTHS} mois ? On te rembourse. Point.`;
     hook = [
-      "Tu hésites ? Prends Premium sans risque.",
-      `Si tu n'as décroché aucun entretien au bout de ${GUARANTEE_MONTHS} mois de Premium, on te rembourse (<a href="${termsUrl}" style="color:#0c7a44">conditions</a>).`,
+      "Tu hésites encore ? Alors prends Premium sans aucun risque.",
+      `Si tu n'as décroché aucun entretien au bout de ${GUARANTEE_MONTHS} mois de Premium, on te rembourse (<a href="${termsUrl}" style="color:#0c7a44">conditions</a>). Soit tu décroches des entretiens, soit tu récupères ton argent.`,
     ];
   } else if (step === 4) {
     const weekAgo = new Date(now - 7 * DAY).toISOString();
     const week = countForProfile(catalog, p, weekAgo);
     const fresh = counts.hasCriteria && week.newSinceSignup >= MIN_COUNT_TO_SHOW;
-    subject = fresh ? `${fmt(week.newSinceSignup)} nouvelles offres ${kind} pour toi cette semaine` : "Les nouvelles offres de la semaine";
+    subject = fresh
+      ? `${fmt(week.newSinceSignup)} nouvelles offres ${kind} cette semaine : les autres postulent déjà`
+      : "Les nouvelles offres de la semaine : les autres postulent déjà";
     const { offers } = pickOffers(catalog, p, weekAgo, 3);
     picks = offers.map((o) => ({ title: o.title, company: o.company }));
     hook = [
       fresh
-        ? `Cette semaine, <strong>${fmt(week.newSinceSignup)} nouvelles offres ${kind}</strong>${whereHtml} sont arrivées sur Stageio. Postule tant qu'elles sont fraîches :`
-        : "Voilà quelques offres arrivées récemment sur Stageio. Postule tant qu'elles sont fraîches :",
+        ? `Cette semaine, <strong>${fmt(week.newSinceSignup)} nouvelles offres ${kind}</strong>${whereHtml} sont arrivées sur Stageio. Pendant que tu hésites, d'autres candidats postulent, et une offre ne reste pas en ligne éternellement :`
+        : "Voilà des offres arrivées récemment sur Stageio. Pendant que tu hésites, d'autres candidats postulent, et une offre ne reste pas en ligne éternellement :",
     ];
   } else {
-    subject = `${name ? `${name}, d` : "D"}ernier email de ma part`;
+    subject = `${name ? `${name}, d` : "D"}ernier email (et dernière fois pour ton prix de bienvenue)`;
     hook = [
-      "C'est le dernier email de cette série.",
-      "Le prix de bienvenue t'attend une dernière fois, 10 minutes à partir de ton clic. Ensuite, je ne t'en parle plus.",
+      "C'est mon dernier email de cette série, je ne vais pas te relancer encore et encore.",
+      `Ton prix de bienvenue (${PLAN_PRICES.monthly.welcome.replace(" ", "&nbsp;")}/mois ou ${PLAN_PRICES.lifetime.welcome.replace(" ", "&nbsp;")} à vie) t'attend une dernière fois, 10 minutes à partir de ton clic. Après, ce sera ${PLAN_PRICES.monthly.regular.replace(" ", "&nbsp;")}/mois ou ${PLAN_PRICES.lifetime.regular.replace(" ", "&nbsp;")}. Si tu cherches encore, c'est maintenant.`,
     ];
   }
+
+  // Délai légal (L6222-12) : contrat d'apprentissage au plus tard 3 mois
+  // après le début de la formation, d'où « début décembre » pour une
+  // rentrée de septembre (même formulation que le guide du site).
+  const deadline =
+    wantsAlternance && now < Date.parse("2026-12-01T00:00:00Z")
+      ? "⏳ Si ta formation a démarré en septembre, la loi te laisse en général jusqu'à début décembre pour démarrer ton contrat d'apprentissage. Chaque semaine compte."
+      : null;
+  const social = trustCount >= 1000 ? `Déjà plus de ${fmt(Math.floor(trustCount / 100) * 100)} étudiants inscrits sur Stageio.` : null;
 
   const benefits = [
     "Toutes les offres en clair : entreprise, analyse, description",
@@ -237,13 +261,15 @@ export function renderSeriesEmail(p: CampaignProfile, step: number, catalog: Cat
   const cards = `<div style="border:2px solid #0c7a44;border-radius:16px;padding:16px 18px;margin:16px 0 12px;background:#f2fbf6">
 <p style="margin:0;font-size:12px;font-weight:bold;letter-spacing:.04em;color:#0c7a44;text-transform:uppercase">${promo ? "Promo · " : ""}Accès à vie · paiement unique</p>
 <p style="margin:6px 0 0;font-size:28px;font-weight:bold;color:#132b33">${lifetimePrice}</p>
-<p style="margin:4px 0 14px;font-size:14px;color:#444">Une fois, et Premium pour toujours. Pas d'abonnement.</p>
+<p style="margin:4px 0 14px;font-size:14px;color:#444">Une fois, et Premium pour toujours. Pas d'abonnement, rien d'autre à payer.${
+    wantsAlternance ? " Ton premier salaire d'alternant le rembourse plusieurs fois." : ""
+  }</p>
 ${button(go("lifetime"), `Je prends l'accès à vie →`, true)}
 </div>
 <div style="border:1px solid #d6e4dc;border-radius:16px;padding:16px 18px;margin:0 0 12px">
 <p style="margin:0;font-size:12px;font-weight:bold;letter-spacing:.04em;color:#4a5f66;text-transform:uppercase">Mensuel · sans engagement</p>
 <p style="margin:6px 0 0;font-size:28px;font-weight:bold;color:#132b33">${PLAN_PRICES.monthly.welcome.replace(" ", "&nbsp;")} <span style="font-size:15px;font-weight:normal;color:#444">/ mois</span></p>
-<p style="margin:4px 0 14px;font-size:14px;color:#444">Ce prix reste le tien tant que tu restes abonné.</p>
+<p style="margin:4px 0 14px;font-size:14px;color:#444">Moins de 30 centimes par jour. Ce prix reste le tien tant que tu restes abonné.</p>
 ${button(go("monthly"), "Je prends le mensuel →", false)}
 </div>
 <p style="margin:0 0 4px;font-size:13px;color:#555">⏱ Prix de bienvenue valables 10 minutes à partir de ton clic${
@@ -262,9 +288,11 @@ ${
         .join("\n")}\n</ul>`
     : ""
 }
+${deadline ? `<p style="background:#fff7e6;border-radius:10px;padding:10px 12px;margin:14px 0">${deadline}</p>` : ""}
 <p style="margin:18px 0 6px;font-weight:bold">Avec Premium :</p>
 <p style="margin:0">${benefits.map((b) => `✅ ${b}`).join("<br>")}</p>
 ${cards}
+${social ? `<p style="margin:10px 0 0;font-size:14px">👥 ${social}</p>` : ""}
 <p style="margin-top:20px">Bonne recherche,<br>Nathan, de Stageio</p>
 <p style="font-size:12px;color:#888;margin-top:28px">${footer} <a href="${unsubscribeUrl}" style="color:#888">Ne plus recevoir d'emails de Stageio</a>.</p>
 </div>`;
@@ -274,15 +302,17 @@ ${cards}
     "",
     ...hook.map(strip),
     ...picks.map((o) => `- ${o.title}${o.company ? ` · ${o.company}` : ""}`),
+    ...(deadline ? ["", deadline] : []),
     "",
     "Avec Premium :",
     ...benefits.map((b) => `- ${b}`),
     "",
     `Accès à vie, paiement unique : ${strip(promo ? `${LIFETIME_PROMO.price} au lieu de ${LIFETIME_PROMO.referencePrice}` : PLAN_PRICES.lifetime.welcome)} → ${go("lifetime")}`,
-    `Mensuel sans engagement : ${PLAN_PRICES.monthly.welcome} / mois → ${go("monthly")}`,
+    `Mensuel sans engagement : ${PLAN_PRICES.monthly.welcome} / mois, moins de 30 centimes par jour → ${go("monthly")}`,
     strip(
       `Prix de bienvenue valables 10 minutes à partir de ton clic${promo ? " (promo à 30 € jusqu'à cette nuit 0 h 30)" : ""}. Ensuite : ${PLAN_PRICES.monthly.regular}/mois ou ${PLAN_PRICES.lifetime.regular} à vie.`,
     ),
+    ...(social ? ["", social] : []),
     "",
     "Bonne recherche,",
     "Nathan, de Stageio",
@@ -316,7 +346,7 @@ export async function sendSeriesRun(now: number = Date.now()): Promise<SeriesRun
   const failures: string[] = [];
   if (batch.length === 0) return { kind: "sent", sent: 0, due: due.length, quota, byStep, failures };
 
-  const catalog = await loadCatalog(db);
+  const [catalog, trustCount] = await Promise.all([loadCatalog(db), getTrustCount().catch(() => 0)]);
   const resend = getResendClient();
   const runKey = new Date(now).toISOString().slice(0, 13);
   let sent = 0;
@@ -343,7 +373,7 @@ export async function sendSeriesRun(now: number = Date.now()): Promise<SeriesRun
       chunk.map((d) => ({
         from,
         to: d.profile.email as string,
-        ...renderSeriesEmail(d.profile, d.step, catalog, now),
+        ...renderSeriesEmail(d.profile, d.step, catalog, now, trustCount),
         headers: unsubscribeHeaders(d.profile.id),
         tags: [
           { name: "campaign", value: TAG },
