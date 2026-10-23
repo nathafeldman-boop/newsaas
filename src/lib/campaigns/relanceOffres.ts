@@ -398,7 +398,8 @@ ${cityFirst ? `<p>${cityFirst}</p>` : ""}
   return { subject, html, text };
 }
 
-const NEWS_UTM = "utm_source=email&utm_medium=relance&utm_campaign=nouveautes-octobre";
+export const NEWS_UTM_CAMPAIGN = "nouveautes-octobre";
+const NEWS_UTM = `utm_source=email&utm_medium=relance&utm_campaign=${NEWS_UTM_CAMPAIGN}`;
 
 // Campagne « nouveautés » (23/10) : les nouvelles offres pour lui depuis sa
 // dernière visite, puis ce qui a vraiment changé. Pas de prix : ils

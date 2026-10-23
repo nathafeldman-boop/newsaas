@@ -2,7 +2,7 @@ import Link from "next/link";
 import { submitIndexNowAction } from "@/app/admin/seo-actions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchAllRows } from "@/lib/supabase/public";
-import { FUNNEL_WINDOW_DAYS, getHeardFromStats, getLeoFunnel, getOnboardingFunnelStats, getTodayVisitorsBySource, getWeekdayAverages, withTimeout } from "@/lib/admin/dashboardStats";
+import { FUNNEL_WINDOW_DAYS, getHeardFromStats, getLeoFunnel, getNewsCampaignStats, getOnboardingFunnelStats, getTodayVisitorsBySource, getWeekdayAverages, withTimeout } from "@/lib/admin/dashboardStats";
 import { startOfTodayParis } from "@/lib/date";
 import { STEP_IDS, STEP_LABELS, type StepId } from "@/lib/onboarding/steps";
 import { LineAreaChart } from "@/components/admin/charts/LineAreaChart";
@@ -176,6 +176,14 @@ export default async function AdminDashboardPage({
     HEAVY_STAT_BUDGET_MS,
     null,
   );
+  const newsCampaignPromise = withTimeout(
+    getNewsCampaignStats(todayStart.toISOString()).catch((err) => {
+      console.error("AdminDashboardPage: news campaign query failed", err);
+      return null;
+    }),
+    HEAVY_STAT_BUDGET_MS,
+    null,
+  );
   const heardFromPromise = withTimeout(
     getHeardFromStats().catch((err) => {
       console.error("AdminDashboardPage: heard from query failed", err);
@@ -323,12 +331,8 @@ export default async function AdminDashboardPage({
     period,
   );
 
-  const [{ value: weekdayAverages }, { value: visitorsBySourceRows }, { value: leoFunnel }, { value: heardFrom }] = await Promise.all([
-    weekdayAveragesPromise,
-    visitorsBySourcePromise,
-    leoFunnelPromise,
-    heardFromPromise,
-  ]);
+  const [{ value: weekdayAverages }, { value: visitorsBySourceRows }, { value: leoFunnel }, { value: heardFrom }, { value: newsCampaign }] =
+    await Promise.all([weekdayAveragesPromise, visitorsBySourcePromise, leoFunnelPromise, heardFromPromise, newsCampaignPromise]);
 
   // Chemin de Léo (SOP 26) : chaque taux comparé au bas de son benchmark ;
   // le maillon faible est celui qui en est le plus loin (un seul chantier).
@@ -461,6 +465,31 @@ export default async function AdminDashboardPage({
         « Dont payant réel » = abonnement Stripe actif ou en essai uniquement — exclut les codes d&apos;accès offerts.
         « ARR » = abonnements actifs/essai annualisés selon leur vraie cadence (mensuel/hebdo), hors codes offerts.
       </p>
+
+      <SectionCard
+        title="Relance email « nouveautés »"
+        subtitle="Envoyée depuis le 23/10, 250 par heure de 8 h à 20 h. Venus depuis l'email = personnes distinctes arrivées par un lien de l'email. Revenus = destinataires revenus sur Stageio après leur email, par n'importe quel chemin. Recalculé toutes les 5 min."
+      >
+        {newsCampaign === null ? (
+          <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>
+            Calcul en cours, recharge dans une minute.
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <StatTile label={`Emails envoyés · ${newsCampaign.sent} au total`} value={String(newsCampaign.sentToday)} />
+            <StatTile
+              label={`Venus depuis l'email aujourd'hui · ${newsCampaign.clickers} au total`}
+              value={String(newsCampaign.clickersToday)}
+              accent
+            />
+            <StatTile
+              label="Destinataires revenus"
+              value={`${newsCampaign.cameBack} (${pct(newsCampaign.cameBack, newsCampaign.sent)})`}
+            />
+            <StatTile label={`Payants depuis · ${euros(newsCampaign.payersCents)}`} value={String(newsCampaign.payers)} accent />
+          </div>
+        )}
+      </SectionCard>
 
       <SectionCard
         title="Chemin de Léo · 7 derniers jours"

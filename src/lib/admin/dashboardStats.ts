@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import { computeWeekdayAverages, periodStart, type Period } from "@/lib/admin/analytics";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchAllRows, POSTGREST_MAX_ROWS } from "@/lib/supabase/public";
+import { NEWS_CAMPAIGN_EVENT, NEWS_UTM_CAMPAIGN } from "@/lib/campaigns/relanceOffres";
 
 // Statistiques lourdes du tableau de bord : bornées, en cache, et jamais
 // bloquantes.
@@ -289,6 +290,82 @@ export const getHeardFromStats = unstable_cache(
   }),
   ["admin-heard-from-v1"],
   { revalidate: 1800 },
+);
+
+// Relance email « nouveautés » (envoyée depuis le 23/10) : emails partis,
+// personnes arrivées par un lien de l'email (visiteurs distincts, d'après
+// utm_campaign), destinataires revenus sur Stageio après leur email (par
+// n'importe quel chemin), et ceux qui ont payé après. « Aujourd'hui » =
+// depuis minuit (heure de Paris).
+export type NewsCampaignStats = {
+  sent: number;
+  sentToday: number;
+  clickers: number;
+  clickersToday: number;
+  cameBack: number;
+  payers: number;
+  payersCents: number;
+};
+
+const NEWS_CAMPAIGN_START = "2026-10-22T22:00:00Z";
+
+export const getNewsCampaignStats = unstable_cache(
+  guarded("news campaign", async (todayStartIso: string): Promise<NewsCampaignStats> => {
+    const admin = createAdminClient();
+    const [events, visits] = await Promise.all([
+      fetchAllRows<{ user_id: string; created_at: string }>((from, to) =>
+        admin
+          .from("user_events")
+          .select("user_id, created_at")
+          .eq("event_type", NEWS_CAMPAIGN_EVENT)
+          .order("created_at")
+          .range(from, to),
+      ),
+      fetchAllRows<{ visitor_id: string; created_at: string }>((from, to) =>
+        admin
+          .from("site_visits")
+          .select("visitor_id, created_at")
+          .gte("created_at", NEWS_CAMPAIGN_START)
+          .eq("utm_campaign", NEWS_UTM_CAMPAIGN)
+          .order("created_at")
+          .range(from, to),
+      ),
+    ]);
+
+    const sentAt = new Map(events.map((e) => [e.user_id, e.created_at]));
+    const ids = [...sentAt.keys()];
+    let cameBack = 0;
+    let payers = 0;
+    let payersCents = 0;
+    for (let i = 0; i < ids.length; i += 200) {
+      const { data, error } = await admin
+        .from("profiles")
+        .select("id, last_active_at, premium_activated_at, total_paid_cents")
+        .in("id", ids.slice(i, i + 200));
+      if (error) throw new Error(error.message);
+      for (const p of data ?? []) {
+        const at = sentAt.get(p.id);
+        if (!at) continue;
+        if (p.last_active_at && p.last_active_at > at) cameBack++;
+        if (p.premium_activated_at && p.premium_activated_at > at && (p.total_paid_cents ?? 0) > 0) {
+          payers++;
+          payersCents += p.total_paid_cents ?? 0;
+        }
+      }
+    }
+
+    return {
+      sent: events.length,
+      sentToday: events.filter((e) => e.created_at >= todayStartIso).length,
+      clickers: new Set(visits.map((v) => v.visitor_id)).size,
+      clickersToday: new Set(visits.filter((v) => v.created_at >= todayStartIso).map((v) => v.visitor_id)).size,
+      cameBack,
+      payers,
+      payersCents,
+    };
+  }),
+  ["admin-news-campaign-v1"],
+  { revalidate: 300 },
 );
 
 // RPM par source (SOP 16) : sur les 7 jours qui finissent `endIso` (même
