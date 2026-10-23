@@ -4,6 +4,7 @@ import { notifyInactiveWinback } from "@/lib/resend/notifyInactiveWinback";
 import { INACTIVE_WINBACK_EMAILS } from "@/lib/resend/inactiveWinbackContent";
 import { isPremium } from "@/lib/subscription/isPremium";
 import { CAMPAIGN_EVENT, NEWS_CAMPAIGN_EVENT } from "@/lib/campaigns/relanceOffres";
+import { SALES_SERIES_EVENT } from "@/lib/campaigns/serieEvents";
 import { fetchAllRowsByIdCursor } from "@/lib/supabase/public";
 
 export const maxDuration = 60;
@@ -62,7 +63,7 @@ export async function GET(request: NextRequest) {
       let q = admin
         .from("user_events")
         .select("id, user_id")
-        .in("event_type", [CAMPAIGN_EVENT, NEWS_CAMPAIGN_EVENT])
+        .in("event_type", [CAMPAIGN_EVENT, NEWS_CAMPAIGN_EVENT, SALES_SERIES_EVENT])
         .gte("created_at", campaignCutoff);
       if (afterId) q = q.gt("id", afterId);
       return q.order("id").limit(limit);

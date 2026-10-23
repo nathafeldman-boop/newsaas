@@ -315,7 +315,7 @@ export function countForProfile(catalog: Catalog, p: CampaignProfile, since: str
   return { matching, newSinceSignup, newOverall, hasCriteria, zone };
 }
 
-function escapeHtml(value: string): string {
+export function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -324,7 +324,7 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
-function firstName(fullName: string | null): string | null {
+export function firstName(fullName: string | null): string | null {
   const first = fullName?.trim().split(/\s+/)[0] ?? "";
   if (!first || first.length > 30) return null;
   return first;
@@ -332,14 +332,14 @@ function firstName(fullName: string | null): string | null {
 
 const fmt = (n: number) => n.toLocaleString("fr-FR");
 
-function typePhrase(lookingFor: ContractType[]): string {
+export function typePhrase(lookingFor: ContractType[]): string {
   const types = new Set(lookingFor);
   if (types.size === 1 && types.has("alternance")) return "d'alternance";
   if (types.size === 1 && types.has("stage")) return "de stage";
   return "d'alternance et de stage";
 }
 
-function zonePhrase(zone: Zone): string {
+export function zonePhrase(zone: Zone): string {
   if (zone.kind === "ville") return ` à ${zone.label} et autour`;
   if (zone.kind === "departement") return ` côté ${zone.label}`;
   return " partout en France";
@@ -349,7 +349,7 @@ const CTA_URL = `${SITE_URL}/swipe?utm_source=email&utm_medium=relance&utm_campa
 const PREMIUM_URL = `${SITE_URL}/premium?utm_source=email&utm_medium=relance&utm_campaign=offres-octobre`;
 // En dessous, un chiffre « pour toi » fait plus de mal que de bien : on
 // parle alors du catalogue entier.
-const MIN_COUNT_TO_SHOW = 10;
+export const MIN_COUNT_TO_SHOW = 10;
 
 export type RenderedEmail = { subject: string; html: string; text: string };
 
@@ -454,7 +454,7 @@ export function newsUtmCampaign(variant: NewsVariant): string {
 // Les offres les plus récentes qui passent ses critères (arrivées depuis
 // sa dernière visite d'abord) ; sans offre qui colle, les plus récentes de
 // son type de contrat, et l'email ne dit alors pas « pour toi ».
-function pickOffers(catalog: Catalog, p: CampaignProfile, since: string, n: number) {
+export function pickOffers(catalog: Catalog, p: CampaignProfile, since: string, n: number) {
   const matches = profileFilter(p, zoneOf(p.city));
   const newest = (list: CatalogOffer[]) => [...list].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
   const matching = newest(catalog.offers.filter(matches));

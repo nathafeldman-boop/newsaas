@@ -77,6 +77,66 @@
       "schedule": "50 5 * * *"
     },
     {
+      "path": "/api/cron/serie-premium/h05",
+      "schedule": "30 5 * * *"
+    },
+    {
+      "path": "/api/cron/serie-premium/h06",
+      "schedule": "30 6 * * *"
+    },
+    {
+      "path": "/api/cron/serie-premium/h07",
+      "schedule": "30 7 * * *"
+    },
+    {
+      "path": "/api/cron/serie-premium/h08",
+      "schedule": "30 8 * * *"
+    },
+    {
+      "path": "/api/cron/serie-premium/h09",
+      "schedule": "30 9 * * *"
+    },
+    {
+      "path": "/api/cron/serie-premium/h10",
+      "schedule": "30 10 * * *"
+    },
+    {
+      "path": "/api/cron/serie-premium/h11",
+      "schedule": "30 11 * * *"
+    },
+    {
+      "path": "/api/cron/serie-premium/h12",
+      "schedule": "30 12 * * *"
+    },
+    {
+      "path": "/api/cron/serie-premium/h13",
+      "schedule": "30 13 * * *"
+    },
+    {
+      "path": "/api/cron/serie-premium/h14",
+      "schedule": "30 14 * * *"
+    },
+    {
+      "path": "/api/cron/serie-premium/h15",
+      "schedule": "30 15 * * *"
+    },
+    {
+      "path": "/api/cron/serie-premium/h16",
+      "schedule": "30 16 * * *"
+    },
+    {
+      "path": "/api/cron/serie-premium/h17",
+      "schedule": "30 17 * * *"
+    },
+    {
+      "path": "/api/cron/serie-premium/h18",
+      "schedule": "30 18 * * *"
+    },
+    {
+      "path": "/api/cron/serie-premium/h19",
+      "schedule": "30 19 * * *"
+    },
+    {
       "path": "/api/cron/relance-checkout",
       "schedule": "40 20 * * *"
     },

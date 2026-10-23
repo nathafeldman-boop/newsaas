@@ -21,6 +21,7 @@ const FIRST_UTC_HOUR = 8;
 const LAST_UTC_HOUR = 17;
 const COPY_DAY = "2026-10-26";
 const COPY_TO = "nathafeldman0@gmail.com";
+const NEWS_TEST_REPLACED = true;
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ run: string }> }) {
   const secret = process.env.CRON_SECRET;
@@ -32,6 +33,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 
   const { run } = await params;
+  // Test des 4 versions annulé le 24/10 : remplacé par la série Premium
+  // (Nathan : « je veux plus de conversion »), qui écrit aux mêmes comptes.
+  if (NEWS_TEST_REPLACED) return NextResponse.json({ kind: "skipped", reason: "série Premium" });
   if (run === "copie") {
     if (new Date().toISOString().slice(0, 10) !== COPY_DAY) return NextResponse.json({ kind: "skipped" });
     const copy = await sendCampaignCopy(CAMPAIGNS.nouveautes, COPY_TO);

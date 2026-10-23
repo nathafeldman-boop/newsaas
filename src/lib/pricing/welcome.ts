@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { WELCOME_WINDOW_MS } from "@/lib/pricing/plans";
 import { NEWS_CAMPAIGN_EVENT } from "@/lib/campaigns/relanceOffres";
+import { SALES_SERIES_EVENT } from "@/lib/campaigns/serieEvents";
 
 // Mise en place des nouveaux tarifs : seuls les affichages de la page
 // Premium à partir de ce moment ouvrent un prix de bienvenue (chacun a ses
@@ -13,14 +14,15 @@ const PRICING_CHANGE_AT = "2026-10-20T10:45:00Z";
 // Relance email « nouveautés » (Nathan, 23/10 : « remets les offres de
 // bienvenue pour ceux qui viendront de l'email ») : pour un destinataire, le
 // délai repart de zéro à sa première visite du paywall après l'email, une
-// seule fois (il ne reçoit cet email qu'une fois).
+// seule fois (il ne reçoit cet email qu'une fois). Même chose à chaque email
+// de la série Premium (24/10) : le délai repart après chaque email.
 export async function getWelcomeEndsAt(userId: string): Promise<number> {
   const admin = createAdminClient();
   const { data: email } = await admin
     .from("user_events")
     .select("created_at")
     .eq("user_id", userId)
-    .eq("event_type", NEWS_CAMPAIGN_EVENT)
+    .in("event_type", [NEWS_CAMPAIGN_EVENT, SALES_SERIES_EVENT])
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();

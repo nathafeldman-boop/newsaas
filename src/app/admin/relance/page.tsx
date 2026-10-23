@@ -15,6 +15,7 @@ import {
   type ExclusionReason,
 } from "@/lib/campaigns/relanceOffres";
 import { MIN_SENT_PER_VARIANT, WINNER_SHARE, loadVariantReport } from "@/lib/campaigns/newsTest";
+import { SERIES_STEPS, loadSeriesReport, seriesDailyCap } from "@/lib/campaigns/serieVente";
 import { sendCampaignBatchAction, sendCampaignTestAction } from "./actions";
 
 // L'envoi d'un lot lit le catalogue, les profils et envoie 2 requêtes à
@@ -33,7 +34,12 @@ export default async function AdminRelancePage({
   const isNews = campaign.id === "nouveautes";
   const variant = isNewsVariant(v) ? v : "a";
   const db = createAdminClient();
-  const [audience, report] = await Promise.all([loadAudience(db, campaign, audienceTime(campaign)), isNews ? loadVariantReport(db) : null]);
+  const [audience, report, series] = await Promise.all([
+    loadAudience(db, campaign, audienceTime(campaign)),
+    isNews ? loadVariantReport(db) : null,
+    loadSeriesReport(db),
+  ]);
+  const seriesCap = seriesDailyCap();
   const senderReady = Boolean(process.env.RESEND_FROM_EMAIL && process.env.RESEND_API_KEY);
   const room = Math.max(0, MAX_SENT_PER_24H - audience.sentLast24h);
 
@@ -61,6 +67,36 @@ export default async function AdminRelancePage({
             {camp.title}
           </a>
         ))}
+      </div>
+
+      <div className="card elev-sm flex flex-col gap-3" style={{ padding: "var(--space-5)" }}>
+        <p style={{ fontSize: 15, margin: 0, fontWeight: 600 }}>Série Premium (depuis le 24/10, automatique)</p>
+        <p style={{ fontSize: 13, margin: 0, ...muted }}>
+          {SERIES_STEPS} emails au plus par compte, un tous les 2-3 jours, de 7 h 30 à 20 h 30 ; {seriesCap} par
+          jour au plus aujourd&apos;hui. {series.recipients} comptes dans la série · {series.payers} ont payé après leur 1er email
+          {series.payersCents > 0 ? ` (${(series.payersCents / 100).toLocaleString("fr-FR")} €)` : ""}.
+        </p>
+        <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={{ textAlign: "left", ...muted }}>
+              <th style={{ padding: "4px 8px 4px 0" }}>Email</th>
+              <th style={{ padding: "4px 8px" }}>Envoyés</th>
+              <th style={{ padding: "4px 8px" }}>Arrivées via l&apos;email</th>
+            </tr>
+          </thead>
+          <tbody>
+            {series.steps.map((row) => (
+              <tr key={row.step} style={{ borderTop: "1px solid var(--color-divider)" }}>
+                <td style={{ padding: "6px 8px 6px 0" }}>Email {row.step}</td>
+                <td style={{ padding: "6px 8px" }}>{row.sent}</td>
+                <td style={{ padding: "6px 8px" }}>
+                  {row.clickers}
+                  {row.sent > 0 && <span style={muted}> ({Math.round((row.clickers / row.sent) * 1000) / 10} %)</span>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       <div>

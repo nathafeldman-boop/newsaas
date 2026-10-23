@@ -45,7 +45,9 @@ export default function CGVPage() {
           d&apos;augmentation au renouvellement). Le délai restant est affiché sur la page Premium ; passé ce
           délai, les prix ci-dessus s&apos;appliquent. Les destinataires de l&apos;email « nouveautés » envoyé à
           partir du 23 octobre 2026 bénéficient d&apos;un nouveau délai de 10 minutes, à compter de leur première
-          visite de la page Premium après cet email.
+          visite de la page Premium après cet email. Il en va de même pour chaque email de la série « Premium »
+          envoyée à partir du 24 octobre 2026 : un nouveau délai de 10 minutes à compter de la première visite de
+          la page Premium ou du premier clic sur un lien de paiement de l&apos;email, après chaque email.
         </p>
         <p style={{ marginTop: 8 }}>
           <strong>Promotion sur l&apos;accès à vie :</strong> du 23 octobre 2026 à 0 h 30 au 25 octobre 2026 à
