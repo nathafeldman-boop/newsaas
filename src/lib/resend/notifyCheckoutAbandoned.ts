@@ -78,6 +78,14 @@ ${unsubscribeFooterHtml(params.profileId)}`,
 export async function cancelCheckoutReminders(emailIds: string[]): Promise<void> {
   if (emailIds.length === 0) return;
   const resend = getResendClient();
-  // Déjà parti ou déjà annulé : Resend refuse, sans conséquence.
-  await Promise.all(emailIds.map((id) => resend.emails.cancel(id).catch(() => null)));
+  // Déjà parti ou déjà annulé : Resend refuse (422), sans conséquence. Tout
+  // autre refus est loggé : une clé « Sending access » répond 401 à chaque
+  // annulation, et la relance partait chez des clients qui venaient de payer
+  // sans que rien ne l'indique (23/10).
+  await Promise.all(
+    emailIds.map(async (id) => {
+      const { error } = await resend.emails.cancel(id).catch((err: unknown) => ({ error: err as { name?: string } }));
+      if (error && error.name !== "validation_error") console.error("cancelCheckoutReminders failed", error, { id });
+    }),
+  );
 }
