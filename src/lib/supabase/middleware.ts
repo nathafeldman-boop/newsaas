@@ -82,7 +82,9 @@ export async function updateSession(request: NextRequest) {
     }
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/login";
-    redirectUrl.searchParams.set("next", pathname);
+    // Retour exact après connexion, paramètres compris : les liens de
+    // paiement des emails (/premium/go?plan=…) doivent garder leur formule.
+    redirectUrl.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
     return NextResponse.redirect(redirectUrl);
   }
 
