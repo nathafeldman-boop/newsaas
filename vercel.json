@@ -77,6 +77,62 @@
       "schedule": "50 5 * * *"
     },
     {
+      "path": "/api/cron/relance-nouveautes/copie",
+      "schedule": "35 5 * * *"
+    },
+    {
+      "path": "/api/cron/relance-nouveautes/h06",
+      "schedule": "5 6 * * *"
+    },
+    {
+      "path": "/api/cron/relance-nouveautes/h07",
+      "schedule": "5 7 * * *"
+    },
+    {
+      "path": "/api/cron/relance-nouveautes/h08",
+      "schedule": "5 8 * * *"
+    },
+    {
+      "path": "/api/cron/relance-nouveautes/h09",
+      "schedule": "5 9 * * *"
+    },
+    {
+      "path": "/api/cron/relance-nouveautes/h10",
+      "schedule": "5 10 * * *"
+    },
+    {
+      "path": "/api/cron/relance-nouveautes/h11",
+      "schedule": "5 11 * * *"
+    },
+    {
+      "path": "/api/cron/relance-nouveautes/h12",
+      "schedule": "5 12 * * *"
+    },
+    {
+      "path": "/api/cron/relance-nouveautes/h13",
+      "schedule": "5 13 * * *"
+    },
+    {
+      "path": "/api/cron/relance-nouveautes/h14",
+      "schedule": "5 14 * * *"
+    },
+    {
+      "path": "/api/cron/relance-nouveautes/h15",
+      "schedule": "5 15 * * *"
+    },
+    {
+      "path": "/api/cron/relance-nouveautes/h16",
+      "schedule": "5 16 * * *"
+    },
+    {
+      "path": "/api/cron/relance-nouveautes/h17",
+      "schedule": "5 17 * * *"
+    },
+    {
+      "path": "/api/cron/relance-nouveautes/h18",
+      "schedule": "5 18 * * *"
+    },
+    {
       "path": "/api/cron/refund-guarantee-reminder",
       "schedule": "41 7 * * *"
     }
