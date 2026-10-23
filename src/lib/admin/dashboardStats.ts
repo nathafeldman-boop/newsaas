@@ -2,7 +2,7 @@ import { unstable_cache } from "next/cache";
 import { computeWeekdayAverages, periodStart, type Period } from "@/lib/admin/analytics";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchAllRows, POSTGREST_MAX_ROWS } from "@/lib/supabase/public";
-import { NEWS_CAMPAIGN_EVENT, NEWS_UTM_CAMPAIGN } from "@/lib/campaigns/relanceOffres";
+import { NEWS_CAMPAIGN_EVENT, NEWS_UTM_CAMPAIGN, NEWS_VARIANTS, newsUtmCampaign } from "@/lib/campaigns/relanceOffres";
 
 // Statistiques lourdes du tableau de bord : bornées, en cache, et jamais
 // bloquantes.
@@ -326,7 +326,8 @@ export const getNewsCampaignStats = unstable_cache(
           .from("site_visits")
           .select("visitor_id, created_at")
           .gte("created_at", NEWS_CAMPAIGN_START)
-          .eq("utm_campaign", NEWS_UTM_CAMPAIGN)
+          // 1re vague (23/10) et versions testées à partir du 26/10.
+          .in("utm_campaign", [NEWS_UTM_CAMPAIGN, ...NEWS_VARIANTS.map(newsUtmCampaign)])
           .order("created_at")
           .range(from, to),
       ),
@@ -364,7 +365,7 @@ export const getNewsCampaignStats = unstable_cache(
       payersCents,
     };
   }),
-  ["admin-news-campaign-v1"],
+  ["admin-news-campaign-v2"],
   { revalidate: 300 },
 );
 

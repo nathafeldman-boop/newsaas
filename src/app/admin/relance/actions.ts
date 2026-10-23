@@ -16,7 +16,13 @@ export async function sendCampaignTestAction(formData: FormData) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) back("Adresse de test invalide.", false, campaign.id);
   const result = await sendCampaignCopy(campaign, to);
   if (!result.ok) back(result.reason, false, campaign.id);
-  back(`Test envoyé à ${to} (rendu du compte éligible le plus récent).`, true, campaign.id);
+  back(
+    campaign.id === "nouveautes"
+      ? `4 tests envoyés à ${to}, un par version (rendu du compte éligible le plus récent).`
+      : `Test envoyé à ${to} (rendu du compte éligible le plus récent).`,
+    true,
+    campaign.id,
+  );
 }
 
 export async function sendCampaignBatchAction(formData: FormData) {

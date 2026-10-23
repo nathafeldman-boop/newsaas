@@ -1,23 +1,25 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { CAMPAIGNS } from "@/lib/campaigns/relanceOffres";
+import { CAMPAIGNS, NEWS_TEST_END, NEWS_TEST_START } from "@/lib/campaigns/relanceOffres";
 import { sendCampaignCopy, sendNextCampaignBatch } from "@/lib/campaigns/sendBatch";
 
 // Campagne « nouveautés » envoyée toute seule (23/10, Nathan : « relance
-// toi-même », « à partir de 8 h, 200-300 emails par heure », forfait Resend
-// payant). vercel.json : un passage par heure de 8 h à 20 h (heure d'été),
-// chacun envoie le lot suivant (250 le matin, 400 à partir de 13 h : Nathan,
-// 23/10) avec les garde-fous de /admin/relance
-// (jamais deux fois le même compte, plafond par 24 h, payants, désabonnés et
-// actifs récents exclus) ; ne fait rien quand il ne reste personne.
-// Le passage « copie » du 23/10 (7 h 35) envoie seulement une copie de
-// contrôle à Nathan avant le premier lot.
+// toi-même »). vercel.json : un passage par heure ; chacun envoie le lot
+// suivant avec les garde-fous de /admin/relance (jamais deux fois le même
+// compte, plafond par 24 h, payants, désabonnés et actifs récents exclus).
+// 1re vague le 23/10 (250 puis 400 par heure) : tout le monde l'a reçue.
+// Le cron ne repart que pour le test des 4 versions (Nathan, 23/10 : « 400 à
+// 500 emails par jour, pendant une semaine ») : du lundi 26/10 au dimanche
+// 1/11, 50 emails par passage de 9 h à 18 h (heure de Paris), donc 500 par
+// jour au plus, moins s'il reste moins de comptes à prévenir.
+// Le passage « copie » du 26/10 (6 h 35) envoie à Nathan une copie de
+// chaque version avant le premier lot.
 export const maxDuration = 300;
 
-const MORNING_BATCH = 250;
-const AFTERNOON_BATCH = 400;
-// Passages « hNN » à l'heure NN UTC : 11 h UTC = 13 h à Paris (heure d'été).
-const AFTERNOON_FROM_UTC_HOUR = 11;
-const COPY_DAY = "2026-10-23";
+const RUN_BATCH = 50;
+// Passages « hNN » à l'heure NN UTC (Paris = UTC+1 à partir du 25/10).
+const FIRST_UTC_HOUR = 8;
+const LAST_UTC_HOUR = 17;
+const COPY_DAY = "2026-10-26";
 const COPY_TO = "nathafeldman0@gmail.com";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ run: string }> }) {
@@ -38,8 +40,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 
   const hour = Number(run.replace(/^h/, ""));
-  const batchSize = Number.isFinite(hour) && hour >= AFTERNOON_FROM_UTC_HOUR ? AFTERNOON_BATCH : MORNING_BATCH;
-  const result = await sendNextCampaignBatch(CAMPAIGNS.nouveautes, batchSize);
+  const now = Date.now();
+  if (now < NEWS_TEST_START || now > NEWS_TEST_END || !(hour >= FIRST_UTC_HOUR && hour <= LAST_UTC_HOUR)) {
+    return NextResponse.json({ kind: "skipped" });
+  }
+  const result = await sendNextCampaignBatch(CAMPAIGNS.nouveautes, RUN_BATCH);
   if (result.kind === "sent" && result.failures.length > 0) {
     console.error("relance-nouveautes: problèmes", result.failures.slice(0, 5));
   }

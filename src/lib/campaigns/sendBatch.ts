@@ -4,11 +4,15 @@ import { unsubscribeHeaders } from "@/lib/resend/unsubscribe";
 import {
   BATCH_SIZE,
   MAX_SENT_PER_24H,
+  NEWS_VARIANTS,
+  audienceTime,
   loadAudience,
   loadCatalog,
   renderForCampaign,
   type CampaignDef,
+  type NewsVariant,
 } from "@/lib/campaigns/relanceOffres";
+import { allocateVariants, loadVariantCounts } from "@/lib/campaigns/newsTest";
 
 // Envoi du lot suivant d'une campagne de relance : depuis /admin/relance
 // (bouton) ou tout seul (cron relance-nouveautes, 23/10, demande de
@@ -33,13 +37,20 @@ export async function sendNextCampaignBatch(campaign: CampaignDef, batchSize = B
   if (!from) return { kind: "no_sender" };
 
   const db = createAdminClient();
-  const audience = await loadAudience(db, campaign);
+  const audience = await loadAudience(db, campaign, audienceTime(campaign));
   const room = MAX_SENT_PER_24H - audience.sentLast24h;
   if (room <= 0) return { kind: "limit" };
   const batch = audience.eligible.slice(0, Math.min(batchSize, room));
   if (batch.length === 0) return { kind: "done" };
 
-  const catalog = await loadCatalog(db);
+  // Relance « nouveautés » : chaque compte reçoit une des versions testées
+  // (newsTest.ts), notée avec l'envoi pour compter les résultats par version.
+  const isNews = campaign.id === "nouveautes";
+  const [catalog, variantCounts] = await Promise.all([loadCatalog(db), isNews ? loadVariantCounts(db) : null]);
+  const variantOf = new Map<string, NewsVariant>();
+  if (variantCounts) {
+    allocateVariants(variantCounts, batch.length).forEach((v, i) => variantOf.set(batch[i].id, v));
+  }
   const resend = getResendClient();
   let sent = 0;
   const failures: string[] = [];
@@ -53,7 +64,12 @@ export async function sendNextCampaignBatch(campaign: CampaignDef, batchSize = B
     const chunk = batch.slice(i, i + 100);
     const { data: reserved, error: reserveError } = await db
       .from("user_events")
-      .insert(chunk.map((p) => ({ user_id: p.id, event_type: campaign.event, metadata: {} })))
+      .insert(
+        chunk.map((p) => {
+          const variant = variantOf.get(p.id);
+          return { user_id: p.id, event_type: campaign.event, metadata: variant ? { variant } : {} };
+        }),
+      )
       .select("id, user_id");
     if (reserveError || !reserved) {
       failures.push(`Base indisponible, rien envoyé : ${reserveError?.message ?? "réponse vide"}`);
@@ -68,7 +84,8 @@ export async function sendNextCampaignBatch(campaign: CampaignDef, batchSize = B
     };
 
     const payload = chunk.map((p) => {
-      const email = renderForCampaign(campaign, p, catalog);
+      const variant = variantOf.get(p.id);
+      const email = renderForCampaign(campaign, p, catalog, variant);
       return {
         from,
         to: p.email as string,
@@ -76,7 +93,7 @@ export async function sendNextCampaignBatch(campaign: CampaignDef, batchSize = B
         html: email.html,
         text: email.text,
         headers: unsubscribeHeaders(p.id),
-        tags: [{ name: "campaign", value: campaign.tag }],
+        tags: [{ name: "campaign", value: campaign.tag }, ...(variant ? [{ name: "variant", value: variant }] : [])],
       };
     });
 
@@ -103,6 +120,7 @@ export async function sendNextCampaignBatch(campaign: CampaignDef, batchSize = B
 
 // Copie de test : l'email tel que le recevra le compte éligible le plus
 // récent (vrais chiffres), envoyé à une adresse de contrôle, sans rien noter.
+// Relance « nouveautés » : une copie de chaque version testée.
 export async function sendCampaignCopy(
   campaign: CampaignDef,
   to: string,
@@ -110,18 +128,25 @@ export async function sendCampaignCopy(
   const from = campaignSender();
   if (!from) return { ok: false, reason: "RESEND_FROM_EMAIL manquant dans Vercel : rien envoyé." };
   const db = createAdminClient();
-  const [audience, catalog] = await Promise.all([loadAudience(db, campaign), loadCatalog(db)]);
+  const isNews = campaign.id === "nouveautes";
+  const [audience, catalog] = await Promise.all([
+    loadAudience(db, campaign, audienceTime(campaign)),
+    loadCatalog(db),
+  ]);
   const sample = audience.eligible[0];
   if (!sample) return { ok: false, reason: "Aucun compte éligible pour construire l'aperçu." };
-  const email = renderForCampaign(campaign, sample, catalog);
-  const { error } = await getResendClient().emails.send({
-    from,
-    to,
-    subject: `[TEST] ${email.subject}`,
-    html: email.html,
-    text: email.text,
-    tags: [{ name: "campaign", value: `${campaign.tag}_test` }],
-  });
-  if (error) return { ok: false, reason: `Resend a refusé le test : ${error.message}` };
+  const variants: (NewsVariant | undefined)[] = isNews ? [...NEWS_VARIANTS] : [undefined];
+  for (const variant of variants) {
+    const email = renderForCampaign(campaign, sample, catalog, variant);
+    const { error } = await getResendClient().emails.send({
+      from,
+      to,
+      subject: `[TEST${variant ? ` ${variant.toUpperCase()}` : ""}] ${email.subject}`,
+      html: email.html,
+      text: email.text,
+      tags: [{ name: "campaign", value: `${campaign.tag}_test` }],
+    });
+    if (error) return { ok: false, reason: `Resend a refusé le test : ${error.message}` };
+  }
   return { ok: true };
 }

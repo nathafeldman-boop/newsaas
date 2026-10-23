@@ -4,12 +4,17 @@ import {
   CAMPAIGNS,
   EXCLUSION_LABELS,
   MAX_SENT_PER_24H,
+  NEWS_VARIANTS,
+  NEWS_VARIANT_LABELS,
+  audienceTime,
   campaignFrom,
+  isNewsVariant,
   loadAudience,
   loadCatalog,
   renderForCampaign,
   type ExclusionReason,
 } from "@/lib/campaigns/relanceOffres";
+import { MIN_SENT_PER_VARIANT, WINNER_SHARE, loadVariantReport } from "@/lib/campaigns/newsTest";
 import { sendCampaignBatchAction, sendCampaignTestAction } from "./actions";
 
 // L'envoi d'un lot lit le catalogue, les profils et envoie 2 requêtes à
@@ -21,12 +26,14 @@ const muted = { color: "color-mix(in srgb, var(--color-text) 65%, transparent)" 
 export default async function AdminRelancePage({
   searchParams,
 }: {
-  searchParams: Promise<{ ok?: string; erreur?: string; apercu?: string; c?: string }>;
+  searchParams: Promise<{ ok?: string; erreur?: string; apercu?: string; c?: string; v?: string }>;
 }) {
-  const { ok, erreur, apercu, c } = await searchParams;
+  const { ok, erreur, apercu, c, v } = await searchParams;
   const campaign = campaignFrom(c);
+  const isNews = campaign.id === "nouveautes";
+  const variant = isNewsVariant(v) ? v : "a";
   const db = createAdminClient();
-  const audience = await loadAudience(db, campaign);
+  const [audience, report] = await Promise.all([loadAudience(db, campaign, audienceTime(campaign)), isNews ? loadVariantReport(db) : null]);
   const senderReady = Boolean(process.env.RESEND_FROM_EMAIL && process.env.RESEND_API_KEY);
   const room = Math.max(0, MAX_SENT_PER_24H - audience.sentLast24h);
 
@@ -35,7 +42,7 @@ export default async function AdminRelancePage({
   if (apercu && audience.eligible[0]) {
     const catalog = await loadCatalog(db);
     const sample = audience.eligible[Math.min(Number(apercu) || 0, audience.eligible.length - 1)];
-    const rendered = renderForCampaign(campaign, sample, catalog);
+    const rendered = renderForCampaign(campaign, sample, catalog, variant);
     preview = { subject: rendered.subject, html: rendered.html, email: sample.email ?? "" };
   }
 
@@ -81,6 +88,50 @@ export default async function AdminRelancePage({
         </p>
       )}
 
+      {report && (
+        <div className="card elev-sm flex flex-col gap-3" style={{ padding: "var(--space-5)" }}>
+          <p style={{ fontSize: 15, margin: 0, fontWeight: 600 }}>Test des 4 versions (26/10 → 1/11)</p>
+          <p style={{ fontSize: 13, margin: 0, ...muted }}>
+            Parts égales au début. Après un jour, et dès que chaque version a {MIN_SENT_PER_VARIANT} envois, la meilleure
+            (arrivées par un lien de l&apos;email / envois) prend {Math.round(WINNER_SHARE * 100)} % des envois.
+            {report.leader
+              ? ` En tête : ${NEWS_VARIANT_LABELS[report.leader]}.`
+              : " Pas encore assez de recul pour choisir."}
+          </p>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ textAlign: "left", ...muted }}>
+                  <th style={{ padding: "4px 8px 4px 0" }}>Version</th>
+                  <th style={{ padding: "4px 8px" }}>Envois</th>
+                  <th style={{ padding: "4px 8px" }}>Arrivées via l&apos;email</th>
+                  <th style={{ padding: "4px 8px" }}>Revenus connectés</th>
+                  <th style={{ padding: "4px 8px" }}>Ont payé</th>
+                </tr>
+              </thead>
+              <tbody>
+                {report.rows.map((row) => (
+                  <tr key={row.variant} style={{ borderTop: "1px solid var(--color-divider)", fontWeight: row.variant === report.leader ? 700 : 400 }}>
+                    <td style={{ padding: "6px 8px 6px 0" }}>
+                      <a href={`/admin/relance?c=nouveautes&apercu=0&v=${row.variant}`}>{NEWS_VARIANT_LABELS[row.variant]}</a>
+                    </td>
+                    <td style={{ padding: "6px 8px" }}>{row.sent}</td>
+                    <td style={{ padding: "6px 8px" }}>
+                      {row.clickers} {row.sent > 0 && <span style={muted}>({Math.round(row.rate * 1000) / 10} %)</span>}
+                    </td>
+                    <td style={{ padding: "6px 8px" }}>{row.cameBack}</td>
+                    <td style={{ padding: "6px 8px" }}>
+                      {row.payers}
+                      {row.payersCents > 0 && <span style={muted}> ({(row.payersCents / 100).toLocaleString("fr-FR")} €)</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       <div className="card elev-sm" style={{ padding: "var(--space-5)" }}>
         <p style={{ fontSize: 32, fontFamily: "var(--font-heading)", margin: 0 }}>{audience.eligible.length}</p>
         <p style={{ fontSize: 14, margin: "2px 0 12px" }}>comptes à relancer (sur {audience.totalAccounts})</p>
@@ -100,11 +151,28 @@ export default async function AdminRelancePage({
 
       <div className="card elev-sm flex flex-col gap-3" style={{ padding: "var(--space-5)" }}>
         <p style={{ fontSize: 15, margin: 0, fontWeight: 600 }}>1. Regarder l&apos;email</p>
+        {isNews && (
+          <div className="flex flex-wrap gap-2">
+            {NEWS_VARIANTS.map((each) => (
+              <a
+                key={each}
+                className={each === variant ? "btn btn-primary" : "btn btn-secondary"}
+                style={{ fontSize: 13 }}
+                href={`/admin/relance?c=${campaign.id}&apercu=${apercu ?? 0}&v=${each}`}
+              >
+                Version {each.toUpperCase()}
+              </a>
+            ))}
+          </div>
+        )}
         <div className="flex flex-wrap gap-2">
-          <a className="btn btn-secondary" href={`/admin/relance?c=${campaign.id}&apercu=0`}>
+          <a className="btn btn-secondary" href={`/admin/relance?c=${campaign.id}&apercu=0&v=${variant}`}>
             Aperçu (inscrit le plus récent)
           </a>
-          <a className="btn btn-secondary" href={`/admin/relance?c=${campaign.id}&apercu=${Math.floor(audience.eligible.length / 2)}`}>
+          <a
+            className="btn btn-secondary"
+            href={`/admin/relance?c=${campaign.id}&apercu=${Math.floor(audience.eligible.length / 2)}&v=${variant}`}
+          >
             Aperçu (un autre profil)
           </a>
         </div>
