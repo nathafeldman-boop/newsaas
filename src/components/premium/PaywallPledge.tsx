@@ -272,7 +272,7 @@ export function PaywallPledge({
                   </div>
                 </div>
                 <p style={{ fontSize: 13, lineHeight: 1.5, margin: "16px 0 0", color: "color-mix(in srgb, var(--color-text) 62%, transparent)" }}>
-                  Le chrono a démarré à ta première visite de cette page et ne repart pas à zéro : ce prix n&apos;est proposé qu&apos;une fois.
+                  Le chrono ne repart pas à zéro : quand il est fini, le prix de bienvenue disparaît.
                 </p>
                 <button type="button" className="btn btn-primary" onClick={() => setPhase("done")} style={{ marginTop: 20, height: 50, borderRadius: 999, padding: "0 28px", fontWeight: 700 }}>
                   J&apos;en profite →

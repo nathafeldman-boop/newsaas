@@ -43,7 +43,9 @@ export default function CGVPage() {
           sur son compte, l&apos;utilisateur peut souscrire au prix de 7,99&nbsp;€ / mois ou de 39,99&nbsp;€ pour
           l&apos;accès à vie. Le prix de bienvenue souscrit pendant ce délai reste celui de l&apos;abonnement (pas
           d&apos;augmentation au renouvellement). Le délai restant est affiché sur la page Premium ; passé ce
-          délai, les prix ci-dessus s&apos;appliquent.
+          délai, les prix ci-dessus s&apos;appliquent. Les destinataires de l&apos;email « nouveautés » envoyé à
+          partir du 23 octobre 2026 bénéficient d&apos;un nouveau délai de 10 minutes, à compter de leur première
+          visite de la page Premium après cet email.
         </p>
         <p style={{ marginTop: 8 }}>
           <strong>Promotion sur l&apos;accès à vie :</strong> du 23 octobre 2026 à 0 h 30 au 25 octobre 2026 à
