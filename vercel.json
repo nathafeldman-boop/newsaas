@@ -77,6 +77,10 @@
       "schedule": "50 5 * * *"
     },
     {
+      "path": "/api/cron/relance-checkout",
+      "schedule": "40 20 * * *"
+    },
+    {
       "path": "/api/cron/relance-nouveautes/copie",
       "schedule": "35 5 * * *"
     },
