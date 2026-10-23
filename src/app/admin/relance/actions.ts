@@ -6,13 +6,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getResendClient } from "@/lib/resend/client";
 import {
   BATCH_SIZE,
-  CAMPAIGN_EVENT,
-  CAMPAIGN_TAG,
   MAX_SENT_PER_24H,
-  countForProfile,
+  campaignFrom,
   loadAudience,
   loadCatalog,
-  renderCampaignEmail,
+  renderForCampaign,
+  type CampaignId,
 } from "@/lib/campaigns/relanceOffres";
 import { unsubscribeHeaders } from "@/lib/resend/unsubscribe";
 
@@ -24,48 +23,50 @@ function senderAddress(): string | null {
   return from ? `Stageio <${from}>` : null;
 }
 
-function back(message: string, ok: boolean): never {
-  redirect(`/admin/relance?${ok ? "ok" : "erreur"}=${encodeURIComponent(message)}`);
+function back(message: string, ok: boolean, campaign: CampaignId): never {
+  redirect(`/admin/relance?c=${campaign}&${ok ? "ok" : "erreur"}=${encodeURIComponent(message)}`);
 }
 
 export async function sendCampaignTestAction(formData: FormData) {
   await assertAdminSession();
+  const campaign = campaignFrom(formData.get("c"));
   const to = String(formData.get("to") ?? "").trim();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) back("Adresse de test invalide.", false);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) back("Adresse de test invalide.", false, campaign.id);
   const from = senderAddress();
-  if (!from) back("RESEND_FROM_EMAIL manquant dans Vercel : rien envoyé.", false);
+  if (!from) back("RESEND_FROM_EMAIL manquant dans Vercel : rien envoyé.", false, campaign.id);
 
   const db = createAdminClient();
-  const [audience, catalog] = await Promise.all([loadAudience(db), loadCatalog(db)]);
+  const [audience, catalog] = await Promise.all([loadAudience(db, campaign), loadCatalog(db)]);
   const sample = audience.eligible[0];
-  if (!sample) back("Aucun compte éligible pour construire l'aperçu.", false);
+  if (!sample) back("Aucun compte éligible pour construire l'aperçu.", false, campaign.id);
 
-  const email = renderCampaignEmail(sample, countForProfile(catalog, sample), catalog.offers.length);
+  const email = renderForCampaign(campaign, sample, catalog);
   const { error } = await getResendClient().emails.send({
     from,
     to,
     subject: `[TEST] ${email.subject}`,
     html: email.html,
     text: email.text,
-    tags: [{ name: "campaign", value: `${CAMPAIGN_TAG}_test` }],
+    tags: [{ name: "campaign", value: `${campaign.tag}_test` }],
   });
-  if (error) back(`Resend a refusé le test : ${error.message}`, false);
-  back(`Test envoyé à ${to} (rendu du compte éligible le plus récent).`, true);
+  if (error) back(`Resend a refusé le test : ${error.message}`, false, campaign.id);
+  back(`Test envoyé à ${to} (rendu du compte éligible le plus récent).`, true, campaign.id);
 }
 
-export async function sendCampaignBatchAction() {
+export async function sendCampaignBatchAction(formData: FormData) {
   await assertAdminSession();
+  const campaign = campaignFrom(formData.get("c"));
   const from = senderAddress();
-  if (!from) back("RESEND_FROM_EMAIL manquant dans Vercel : rien envoyé.", false);
+  if (!from) back("RESEND_FROM_EMAIL manquant dans Vercel : rien envoyé.", false, campaign.id);
 
   const db = createAdminClient();
-  const audience = await loadAudience(db);
+  const audience = await loadAudience(db, campaign);
   const room = MAX_SENT_PER_24H - audience.sentLast24h;
   if (room <= 0) {
-    back(`Limite du jour atteinte (${MAX_SENT_PER_24H} en 24 h) : reprends demain.`, false);
+    back(`Limite du jour atteinte (${MAX_SENT_PER_24H} en 24 h) : reprends demain.`, false, campaign.id);
   }
   const batch = audience.eligible.slice(0, Math.min(BATCH_SIZE, room));
-  if (batch.length === 0) back("Plus personne à relancer : campagne terminée.", true);
+  if (batch.length === 0) back("Plus personne à relancer : campagne terminée.", true, campaign.id);
 
   const catalog = await loadCatalog(db);
   const resend = getResendClient();
@@ -77,7 +78,7 @@ export async function sendCampaignBatchAction() {
   for (let i = 0; i < batch.length; i += 100) {
     const chunk = batch.slice(i, i + 100);
     const payload = chunk.map((p) => {
-      const email = renderCampaignEmail(p, countForProfile(catalog, p), catalog.offers.length);
+      const email = renderForCampaign(campaign, p, catalog);
       return {
         from,
         to: p.email as string,
@@ -85,13 +86,13 @@ export async function sendCampaignBatchAction() {
         html: email.html,
         text: email.text,
         headers: unsubscribeHeaders(p.id),
-        tags: [{ name: "campaign", value: CAMPAIGN_TAG }],
+        tags: [{ name: "campaign", value: campaign.tag }],
       };
     });
 
     const { data, error } = await resend.batch.send(payload, {
       batchValidation: "permissive",
-      idempotencyKey: `${CAMPAIGN_TAG}-${chunk[0].id}-${chunk[chunk.length - 1].id}`,
+      idempotencyKey: `${campaign.tag}-${chunk[0].id}-${chunk[chunk.length - 1].id}`,
     });
     if (error || !data) {
       failures.push(error?.message ?? "réponse vide de Resend");
@@ -108,7 +109,7 @@ export async function sendCampaignBatchAction() {
       if (rejected.has(j)) continue;
       rows.push({
         user_id: chunk[j].id,
-        event_type: CAMPAIGN_EVENT,
+        event_type: campaign.event,
         metadata: { email_id: ids[next]?.id ?? null },
       });
       next++;
@@ -129,6 +130,6 @@ export async function sendCampaignBatchAction() {
 
   const left = audience.eligible.length - sent;
   const summary = `${sent} emails envoyés, ${left} restants.`;
-  if (failures.length > 0) back(`${summary} Problèmes : ${failures.slice(0, 5).join(" · ")}`, false);
-  back(summary, true);
+  if (failures.length > 0) back(`${summary} Problèmes : ${failures.slice(0, 5).join(" · ")}`, false, campaign.id);
+  back(summary, true, campaign.id);
 }

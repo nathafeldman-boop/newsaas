@@ -1,12 +1,13 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   BATCH_SIZE,
+  CAMPAIGNS,
   EXCLUSION_LABELS,
   MAX_SENT_PER_24H,
-  countForProfile,
+  campaignFrom,
   loadAudience,
   loadCatalog,
-  renderCampaignEmail,
+  renderForCampaign,
   type ExclusionReason,
 } from "@/lib/campaigns/relanceOffres";
 import { sendCampaignBatchAction, sendCampaignTestAction } from "./actions";
@@ -20,11 +21,12 @@ const muted = { color: "color-mix(in srgb, var(--color-text) 65%, transparent)" 
 export default async function AdminRelancePage({
   searchParams,
 }: {
-  searchParams: Promise<{ ok?: string; erreur?: string; apercu?: string }>;
+  searchParams: Promise<{ ok?: string; erreur?: string; apercu?: string; c?: string }>;
 }) {
-  const { ok, erreur, apercu } = await searchParams;
+  const { ok, erreur, apercu, c } = await searchParams;
+  const campaign = campaignFrom(c);
   const db = createAdminClient();
-  const audience = await loadAudience(db);
+  const audience = await loadAudience(db, campaign);
   const senderReady = Boolean(process.env.RESEND_FROM_EMAIL && process.env.RESEND_API_KEY);
   const room = Math.max(0, MAX_SENT_PER_24H - audience.sentLast24h);
 
@@ -33,7 +35,7 @@ export default async function AdminRelancePage({
   if (apercu && audience.eligible[0]) {
     const catalog = await loadCatalog(db);
     const sample = audience.eligible[Math.min(Number(apercu) || 0, audience.eligible.length - 1)];
-    const rendered = renderCampaignEmail(sample, countForProfile(catalog, sample), catalog.offers.length);
+    const rendered = renderForCampaign(campaign, sample, catalog);
     preview = { subject: rendered.subject, html: rendered.html, email: sample.email ?? "" };
   }
 
@@ -41,11 +43,25 @@ export default async function AdminRelancePage({
 
   return (
     <div className="flex flex-col gap-5">
+      <div className="flex flex-wrap gap-2">
+        {Object.values(CAMPAIGNS).map((camp) => (
+          <a
+            key={camp.id}
+            href={`/admin/relance?c=${camp.id}`}
+            className={camp.id === campaign.id ? "btn btn-primary" : "btn btn-secondary"}
+            style={{ fontSize: 13 }}
+          >
+            {camp.title}
+          </a>
+        ))}
+      </div>
+
       <div>
-        <h1 style={{ fontSize: 26, margin: "0 0 6px" }}>Relance « nouvelles offres »</h1>
+        <h1 style={{ fontSize: 26, margin: "0 0 6px" }}>{campaign.title}</h1>
+        <p style={{ fontSize: 13, margin: "0 0 6px", ...muted }}>{campaign.description}</p>
         <p style={{ fontSize: 13, margin: 0, ...muted }}>
-          Un seul email par compte, jamais renvoyé. Envoi par lots de {BATCH_SIZE}, {MAX_SENT_PER_24H} maximum par 24 h.
-          Les chiffres de chaque email sont calculés sur son profil (type, secteurs, ville).
+          Un seul email par compte, jamais renvoyé. Envoi par lots de {BATCH_SIZE}, {MAX_SENT_PER_24H} maximum par 24 h
+          (les deux campagnes ensemble). Les chiffres de chaque email sont calculés sur son profil (type, secteurs, ville).
         </p>
       </div>
 
@@ -85,10 +101,10 @@ export default async function AdminRelancePage({
       <div className="card elev-sm flex flex-col gap-3" style={{ padding: "var(--space-5)" }}>
         <p style={{ fontSize: 15, margin: 0, fontWeight: 600 }}>1. Regarder l&apos;email</p>
         <div className="flex flex-wrap gap-2">
-          <a className="btn btn-secondary" href="/admin/relance?apercu=0">
+          <a className="btn btn-secondary" href={`/admin/relance?c=${campaign.id}&apercu=0`}>
             Aperçu (inscrit le plus récent)
           </a>
-          <a className="btn btn-secondary" href={`/admin/relance?apercu=${Math.floor(audience.eligible.length / 2)}`}>
+          <a className="btn btn-secondary" href={`/admin/relance?c=${campaign.id}&apercu=${Math.floor(audience.eligible.length / 2)}`}>
             Aperçu (un autre profil)
           </a>
         </div>
@@ -109,6 +125,7 @@ export default async function AdminRelancePage({
       </div>
 
       <form action={sendCampaignTestAction} className="card elev-sm flex flex-col gap-3" style={{ padding: "var(--space-5)" }}>
+        <input type="hidden" name="c" value={campaign.id} />
         <p style={{ fontSize: 15, margin: 0, fontWeight: 600 }}>2. M&apos;envoyer un test</p>
         <div className="field">
           <label htmlFor="to">Ton adresse</label>
@@ -123,6 +140,7 @@ export default async function AdminRelancePage({
       </form>
 
       <form action={sendCampaignBatchAction} className="card elev-sm flex flex-col gap-3" style={{ padding: "var(--space-5)" }}>
+        <input type="hidden" name="c" value={campaign.id} />
         <p style={{ fontSize: 15, margin: 0, fontWeight: 600 }}>3. Envoyer le lot suivant</p>
         <p style={{ fontSize: 13, margin: 0, ...muted }}>
           {Math.min(BATCH_SIZE, room, audience.eligible.length)} emails partiront maintenant, aux inscrits les plus récents
