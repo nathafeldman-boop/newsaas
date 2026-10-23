@@ -27,11 +27,12 @@ export const CAMPAIGN_TAG = "relance_offres_2026_10";
 export const NEWS_CAMPAIGN_EVENT = "email_relance_nouveautes_2026_10";
 export const NEWS_CAMPAIGN_TAG = "relance_nouveautes_2026_10";
 const NEWS_INACTIVE_DAYS = 7;
-// Au-delà, l'envoi du jour est refusé. 1 000 jusqu'au 22/10 ; 3 000 depuis
-// le 23/10 (Nathan, forfait Resend payant : « 200-300 emails par heure à
-// partir de 8 h »). Risque connu : un domaine qui passe d'un coup de
-// quelques centaines à 3 000 emails par jour peut finir en spam.
-export const MAX_SENT_PER_24H = 3000;
+// Au-delà, l'envoi du jour est refusé. 1 000 jusqu'au 22/10 ; 5 000 depuis
+// le 23/10 (Nathan, forfait Resend payant : 250 emails par heure de 8 h à
+// 12 h, puis 400 par heure de 13 h à 20 h). Risque connu : un domaine qui
+// passe d'un coup de quelques centaines à plusieurs milliers d'emails par
+// jour peut finir en spam.
+export const MAX_SENT_PER_24H = 5000;
 export const BATCH_SIZE = 200;
 const MIN_ACCOUNT_AGE_DAYS = 3;
 
