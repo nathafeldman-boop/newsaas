@@ -95,10 +95,6 @@ export async function POST(request: NextRequest) {
       // une "subscription_started" sans abonnement.
       const isLifetimePurchase = session.mode === "payment";
 
-      // Payé : la relance « tu y étais presque » programmée à l'ouverture du
-      // paiement ne doit jamais partir.
-      if (userId) await cancelRemindersAfterPayment(userId);
-
       if (userId && customerId) {
         const admin = createAdminClient();
         const { error, count } = await admin
@@ -172,6 +168,12 @@ export async function POST(request: NextRequest) {
           customerId,
         });
       }
+
+      // Payé : la relance « tu y étais presque » programmée à l'ouverture du
+      // paiement ne doit jamais partir. Après l'activation du profil, pas
+      // avant : recordCheckoutOpened relit ce profil après avoir noté la
+      // relance, et l'annule lui-même si le webhook est passé trop tôt.
+      if (userId) await cancelRemindersAfterPayment(userId);
 
       if (subscriptionId) {
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
