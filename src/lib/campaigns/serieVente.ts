@@ -87,6 +87,10 @@ function parisClock(now: number): { hour: number; midnight: number } {
 
 type Due = { profile: SeriesProfile; step: number };
 
+// Adresses que Resend refuse d'office (point juste avant le @, deux points
+// de suite…) : sinon retentées, et refusées, à chaque passage.
+const SENDABLE_EMAIL = /^(?!\.)(?!.*\.\.)[^\s@]+(?<!\.)@[^\s@]+\.[^\s@]+$/;
+
 async function loadDue(db: Db, now: number, midnight: number): Promise<{ due: Due[]; sentToday: number }> {
   const [profiles, seriesEvents, otherEvents] = await Promise.all([
     fetchAllRowsByIdCursor<SeriesProfile>((afterId, limit) => {
@@ -124,7 +128,7 @@ async function loadDue(db: Db, now: number, midnight: number): Promise<{ due: Du
   const continuing: (Due & { last: number })[] = [];
   const starting: Due[] = [];
   for (const p of profiles) {
-    if (!p.email || isAdminEmail(p.email)) continue;
+    if (!p.email || isAdminEmail(p.email) || !SENDABLE_EMAIL.test(p.email)) continue;
     if (p.notify_new_offers === false || p.search_completed_at) continue;
     if (isPremium(p) || (p.total_paid_cents ?? 0) > 0) continue;
     if (now - Date.parse(p.created_at) < MIN_ACCOUNT_AGE_MS) continue;
