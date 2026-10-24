@@ -5,6 +5,7 @@ import {
   searchFranceTravailPage,
   PAGE_SIZE,
   MAX_RANGE_END,
+  type FranceTravailJob,
   type FranceTravailQuery,
 } from "@/lib/franceTravail/client";
 import { mapFranceTravailJob } from "@/lib/franceTravail/mapOffer";
@@ -31,8 +32,6 @@ export type StreamResult = {
   truncated: boolean;
   ineffective?: boolean;
   capped?: boolean;
-  /** external_id des offres enregistrées (option collectIds, sinon vide). */
-  ids: string[];
 };
 
 let contactEmailColumnMissing = false;
@@ -40,6 +39,20 @@ function withoutContactEmail<T extends { contact_email?: string | null }>(row: T
   const { contact_email: _omit, ...rest } = row;
   void _omit;
   return rest;
+}
+
+// Offres France Travail prêtes pour l'upsert dans "offers" (aussi utilisé
+// par la synchro des offres fraîches, offresFraiches.ts).
+export function toOfferRows(jobs: FranceTravailJob[], syncStartedAt: string) {
+  return jobs
+    .map(mapFranceTravailJob)
+    .filter((o): o is NonNullable<typeof o> => o !== null)
+    .map((o) => ({
+      ...o,
+      last_seen_at: syncStartedAt,
+      content_fingerprint: computeOfferFingerprint(o.title, o.company),
+      quality_score: computeOfferQualityScore(o),
+    }));
 }
 
 // Part minimale d'offres d'alternance (champs structurés) sur la première
@@ -50,9 +63,8 @@ export async function runFranceTravailStream(
   admin: ReturnType<typeof createAdminClient>,
   syncStartedAt: string,
   what: string | FranceTravailQuery,
-  options: { departement?: string; deadline?: number; expectAlternance?: boolean; collectIds?: boolean } = {},
+  options: { departement?: string; deadline?: number; expectAlternance?: boolean } = {},
 ): Promise<StreamResult> {
-  const ids: string[] = [];
   let fetched = 0;
   let mapped = 0;
   let upserted = 0;
@@ -60,7 +72,7 @@ export async function runFranceTravailStream(
   const label = options.departement ? `${queryLabel(what)} (${options.departement})` : queryLabel(what);
 
   for (let page = 0; page < MAX_PAGES; page++) {
-    if (options.deadline && Date.now() > options.deadline) return { ids, fetched, mapped, upserted, errors, truncated: true };
+    if (options.deadline && Date.now() > options.deadline) return { fetched, mapped, upserted, errors, truncated: true };
     const rangeStart = page * PAGE_SIZE;
     const rangeEnd = Math.min(rangeStart + PAGE_SIZE - 1, MAX_RANGE_END);
 
@@ -73,29 +85,21 @@ export async function runFranceTravailStream(
       // Page suivante inutile si celle-ci a échoué (ex: quota, auth). Une
       // recherche par nature de contrat refusée dès la première page compte
       // comme inefficace : l'appelant repasse aux mots-clés.
-      if (options.expectAlternance && page === 0) return { ids, fetched, mapped, upserted, errors, truncated: false, ineffective: true };
+      if (options.expectAlternance && page === 0) return { fetched, mapped, upserted, errors, truncated: false, ineffective: true };
       break;
     }
 
-    if (jobs.length === 0) return { ids, fetched, mapped, upserted, errors, truncated: false }; // plus de résultats
+    if (jobs.length === 0) return { fetched, mapped, upserted, errors, truncated: false }; // plus de résultats
     if (options.expectAlternance && page === 0) {
       const share = jobs.filter(isStructuredAlternance).length / jobs.length;
       if (share < MIN_ALTERNANCE_SHARE) {
         errors.push(`${label}: ${Math.round(share * 100)} % d'offres d'alternance en première page, filtre ignoré, repli sur les mots-clés`);
-        return { ids, fetched, mapped, upserted, errors, truncated: false, ineffective: true };
+        return { fetched, mapped, upserted, errors, truncated: false, ineffective: true };
       }
     }
     fetched += jobs.length;
 
-    const rows = jobs
-      .map(mapFranceTravailJob)
-      .filter((o): o is NonNullable<typeof o> => o !== null)
-      .map((o) => ({
-        ...o,
-        last_seen_at: syncStartedAt,
-        content_fingerprint: computeOfferFingerprint(o.title, o.company),
-        quality_score: computeOfferQualityScore(o),
-      }));
+    const rows = toOfferRows(jobs, syncStartedAt);
     mapped += rows.length;
     const withEmail = rows.filter((r) => r.contact_email).length;
     if (withEmail > 0) console.log(`France Travail ${label} : ${withEmail}/${rows.length} offres avec email recruteur`);
@@ -116,16 +120,15 @@ export async function runFranceTravailStream(
         errors.push(`upsert ${label} range ${rangeStart}-${rangeEnd}: ${error.message}`);
       } else {
         upserted += rows.length;
-        if (options.collectIds) ids.push(...rows.map((r) => r.external_id));
       }
     }
 
     // Dernière page : moins de résultats que demandé (la fenêtre au plafond
     // de l'API est plus courte que PAGE_SIZE, d'où la taille demandée).
-    if (jobs.length < rangeEnd - rangeStart + 1) return { ids, fetched, mapped, upserted, errors, truncated: false };
+    if (jobs.length < rangeEnd - rangeStart + 1) return { fetched, mapped, upserted, errors, truncated: false };
   }
 
   // Toutes les pages pleines jusqu'au plafond de l'API (ou sortie sur
   // erreur : pas de plafond dans ce cas).
-  return { ids, fetched, mapped, upserted, errors, truncated: false, capped: errors.length === 0 && fetched > 0 };
+  return { fetched, mapped, upserted, errors, truncated: false, capped: errors.length === 0 && fetched > 0 };
 }

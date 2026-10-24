@@ -3,7 +3,8 @@ import { syncFreshFranceTravailOffers } from "@/lib/franceTravail/offresFraiches
 
 // Offres fraîches France Travail, voir lib/franceTravail/offresFraiches.ts.
 // vercel.json : /api/cron/offres-fraiches/live, chaque minute (Vercel Pro).
-// Log seulement quand il se passe quelque chose : 1 440 passages par jour.
+// Log quand il se passe quelque chose, plus une ligne par heure : 1 440
+// passages par jour.
 export const maxDuration = 60;
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ run: string }> }) {
@@ -24,7 +25,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
   const { run } = await params;
   const result = await syncFreshFranceTravailOffers();
-  if (result.added > 0 || result.capped > 0 || result.truncated > 0) {
+  // Une ligne par heure même sans nouveauté : preuve que le cron tourne.
+  if (result.added > 0 || result.capped > 0 || result.errors.length > 0 || utc.getUTCMinutes() === 0) {
     console.log("offres-fraiches", run, JSON.stringify({ ...result, errors: result.errors.length }));
   }
   if (result.errors.length > 0) console.error("offres-fraiches errors", result.errors.slice(0, 5).join(" | "));
