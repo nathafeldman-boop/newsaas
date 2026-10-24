@@ -233,7 +233,7 @@ export function FreshOffersInbox({ items, isPremium, userId }: { items: FreshInb
               <p style={{ margin: "4px 0 14px", fontSize: 13, color: "color-mix(in srgb, var(--color-text) 65%, transparent)" }}>
                 {items.length > 0
                   ? "Publiées ces dernières 24 h, et qui matchent ton profil. Le recruteur peut les retirer à tout moment : postule tant qu'elles sont en ligne."
-                  : "Rien de neuf pour ton profil depuis 24 h. On ajoute les nouvelles offres toutes les heures : reviens un peu plus tard."}
+                  : "Rien de neuf pour ton profil depuis 24 h. On ajoute les nouvelles offres en continu, à la minute : reviens un peu plus tard."}
               </p>
 
               <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>

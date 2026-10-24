@@ -6,13 +6,13 @@ import type { FranceTravailQuery } from "@/lib/franceTravail/client";
 // sont très vite épuisées, il faut les toutes dernières »). La synchro de
 // nuit par département revoit tout le catalogue une fois par jour : une
 // offre publiée à 9 h n'arrivait chez nous que la nuit suivante. Ici,
-// chaque heure, les offres créées dans les WINDOW_HOURS dernières heures,
-// France entière (le volume tient sous le plafond de 1 150 résultats par
-// recherche). Fenêtre plus large que l'intervalle : un passage manqué est
-// rattrapé par le suivant, et l'upsert ne crée jamais de doublon.
+// chaque minute (Vercel Pro), les offres créées dans les WINDOW_MINUTES
+// dernières minutes, France entière. Fenêtre plus large que l'intervalle :
+// des passages manqués sont rattrapés par les suivants, l'upsert ne crée
+// jamais de doublon, et la synchro de nuit rattrape le reste.
 
-const WINDOW_HOURS = 3;
-const TIME_BUDGET_MS = 45_000;
+const WINDOW_MINUTES = 15;
+const TIME_BUDGET_MS = 40_000;
 
 // Format attendu par l'API : sans millisecondes.
 function ftDate(ms: number): string {
@@ -20,32 +20,42 @@ function ftDate(ms: number): string {
 }
 
 export async function syncFreshFranceTravailOffers(now: number = Date.now()) {
-  const window = { minCreationDate: ftDate(now - WINDOW_HOURS * 3600_000), maxCreationDate: ftDate(now) };
-  const queries: { what: FranceTravailQuery; expectAlternance: boolean }[] = [
-    { what: { natureContrat: "E2,FS", ...window }, expectAlternance: true },
-    { what: { motsCles: "alternance", ...window }, expectAlternance: false },
-    { what: { motsCles: "apprentissage", ...window }, expectAlternance: false },
-    { what: { motsCles: "stage", ...window }, expectAlternance: false },
+  const window = { minCreationDate: ftDate(now - WINDOW_MINUTES * 60_000), maxCreationDate: ftDate(now) };
+  // Pas de contrôle « filtre efficace » (expectAlternance) : sur quelques
+  // offres en première page, il écarterait la page à tort ; le filtre E2/FS
+  // est vérifié chaque nuit (natureIneffective à 0).
+  const queries: FranceTravailQuery[] = [
+    { natureContrat: "E2,FS", ...window },
+    { motsCles: "alternance", ...window },
+    { motsCles: "apprentissage", ...window },
+    { motsCles: "stage", ...window },
   ];
   const admin = createAdminClient();
   const syncStartedAt = new Date(now).toISOString();
   const deadline = now + TIME_BUDGET_MS;
   const results: StreamResult[] = await Promise.all(
-    queries.map(({ what, expectAlternance }) => runFranceTravailStream(admin, syncStartedAt, what, { deadline, expectAlternance })),
+    queries.map((what) => runFranceTravailStream(admin, syncStartedAt, what, { deadline, collectIds: true })),
   );
 
   // Nouvelles chez nous (pas seulement revues) : créées pendant ce passage.
-  const { count: added } = await admin
-    .from("offers")
-    .select("id", { count: "exact", head: true })
-    .eq("source", "france_travail")
-    .gte("created_at", syncStartedAt);
+  // Lu sur les offres de ce passage seulement (index unique source +
+  // external_id), jamais un comptage de toute la table chaque minute.
+  const ids = [...new Set(results.flatMap((r) => r.ids))];
+  let added = 0;
+  for (let i = 0; i < ids.length; i += 200) {
+    const { data } = await admin
+      .from("offers")
+      .select("created_at")
+      .eq("source", "france_travail")
+      .in("external_id", ids.slice(i, i + 200));
+    added += (data ?? []).filter((o) => Date.parse(o.created_at) >= now).length;
+  }
 
   return {
     window: `${window.minCreationDate} → ${window.maxCreationDate}`,
     fetched: results.reduce((sum, r) => sum + r.fetched, 0),
     upserted: results.reduce((sum, r) => sum + r.upserted, 0),
-    added: added ?? null,
+    added,
     capped: results.filter((r) => r.capped).length,
     truncated: results.filter((r) => r.truncated).length,
     errors: results.flatMap((r) => r.errors),
