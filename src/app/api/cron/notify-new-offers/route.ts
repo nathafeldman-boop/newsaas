@@ -1,129 +1,229 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getResendClient } from "@/lib/resend/client";
+import { unsubscribeHeaders } from "@/lib/resend/unsubscribe";
+import { campaignSender } from "@/lib/campaigns/sendBatch";
 import { computeMatchScore } from "@/lib/matching/score";
 import { fetchActiveOffers } from "@/lib/offers/fetchActiveOffers";
-import { SITE_URL } from "@/lib/site";
-import { unsubscribeFooterHtml, unsubscribeHeaders } from "@/lib/resend/unsubscribe";
+import { knownProfileSectors } from "@/lib/offers/sectors";
+import {
+  ALERT_SENT_EVENT,
+  ALERT_TAG,
+  DEFAULT_DAILY_CAP,
+  MAX_OFFERS_PER_EMAIL,
+  alertFrequency,
+  isDue,
+  renderOfferAlert,
+  windowStart,
+  type AlertFrequency,
+} from "@/lib/alerts/offerAlert";
 import type { Profile } from "@/types/database";
 
-// Cron quotidien (voir vercel.json) : digest email "nouvelles offres qui te
-// correspondent" pour les utilisateurs ayant activé la préférence
-// notify_new_offers (réglage "Alertes nouvelles offres" dans /profil).
-// Tourne après sync-adzuna (4h) et discover-offers (5h) pour avoir de
-// nouvelles offres fraîches à annoncer.
+// Cron quotidien (voir vercel.json) : alerte e-mail « nouvelles offres qui
+// te correspondent » pour les comptes qui l'ont laissée activée
+// (notify_new_offers, réglage du profil ; fréquence quotidienne ou
+// hebdomadaire depuis le 24/10).
+//
+// Refait le 24/10 : l'ancienne version traitait les comptes un par un
+// (4 requêtes chacun, dans l'ordre des id) et s'arrêtait au bout des 60 s
+// (« Task timed out », journal Vercel du 24/10) : toujours les mêmes
+// premiers comptes servis, les autres jamais. Elle filtrait aussi sur la
+// date de publication chez la source : une offre arrivée chez Stageio avec
+// quelques heures de retard n'était jamais annoncée.
+// Maintenant : les comptes servis depuis le plus longtemps passent d'abord,
+// 6 en parallèle, dans un budget de temps ; les offres sont prises sur leur
+// date d'arrivée chez Stageio ; envoi par lots de 100 (clé d'idempotence) ;
+// chaque envoi noté (offer_alert_sent) et plafonné par 24 h
+// (OFFER_ALERTS_DAILY_CAP, 300 par défaut) pour ne jamais faire grimper le
+// volume sans décision. Un passage relancé le même matin ne renvoie rien
+// (compte déjà traité depuis moins de 20 h).
 
 export const maxDuration = 60;
 
-// Aligné sur le seuil de pertinence strict de /swipe (voir relevanceThreshold
-// dans src/app/(app)/swipe/page.tsx) : n'annoncer par email que ce qui
-// vaudrait aussi sa place dans le deck une fois assez d'historique accumulé.
 const MIN_SCORE = 58;
-const MAX_OFFERS_PER_EMAIL = 5;
-// Un premier run n'annonce que les offres publiées récemment plutôt que tout
-// l'historique du catalogue -- sinon un compte qui active juste la préférence
-// reçoit un email listant des mois d'offres d'un coup.
-const FIRST_RUN_WINDOW_HOURS = 24;
+const TIME_BUDGET_MS = 40_000;
+const PROFILE_PAGE = 600;
+const CONCURRENCY = 6;
+
+type Candidate = { profile: Profile; frequency: AlertFrequency };
+type Prepared = { profile: Profile; frequency: AlertFrequency; matches: { offer: Awaited<ReturnType<typeof fetchActiveOffers>>[number]; score: number }[] };
 
 export async function GET(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
-  if (secret) {
-    const authHeader = request.headers.get("authorization");
-    if (authHeader !== `Bearer ${secret}`) {
-      return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
-    }
+  if (secret && request.headers.get("authorization") !== `Bearer ${secret}`) {
+    return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
+  }
+  const from = campaignSender();
+  if (!from) return NextResponse.json({ error: "RESEND_FROM_EMAIL manquant : aucune alerte envoyée." }, { status: 500 });
+
+  const started = Date.now();
+  const now = started;
+  const nowIso = new Date(now).toISOString();
+  const admin = createAdminClient();
+  const cap = Number(process.env.OFFER_ALERTS_DAILY_CAP) > 0 ? Number(process.env.OFFER_ALERTS_DAILY_CAP) : DEFAULT_DAILY_CAP;
+
+  const { count: sentLast24h, error: countError } = await admin
+    .from("user_events")
+    .select("id", { count: "exact", head: true })
+    .eq("event_type", ALERT_SENT_EVENT)
+    .gte("created_at", new Date(now - 86_400_000).toISOString());
+  if (countError) return NextResponse.json({ error: countError.message }, { status: 500 });
+  let room = cap - (sentLast24h ?? 0);
+  if (room <= 0) {
+    console.log("notify-new-offers", JSON.stringify({ capped: true, cap, sentLast24h }));
+    return NextResponse.json({ capped: true, cap, sentLast24h });
   }
 
-  const now = new Date();
-  const admin = createAdminClient();
-
-  // "profiles" grossit indéfiniment (déjà >1000 lignes) -- bornée par
-  // prudence même si ce sous-ensemble opt-in est aujourd'hui bien plus
-  // petit que la table entière, pour ne jamais silencieusement sauter des
-  // comptes au-delà du Max Rows Supabase sans aucune erreur visible.
-  const { data: profiles, error: profilesError } = await admin
-    .from("profiles")
-    .select("*")
-    .eq("notify_new_offers", true)
-    .eq("onboarding_completed", true)
-    .is("search_completed_at", null)
-    .not("email", "is", null)
-    .order("id")
-    .limit(5000);
-
-  if (profilesError) {
-    return NextResponse.json({ error: profilesError.message }, { status: 500 });
+  // Comptes dus d'abord (jamais traités, puis les plus anciens). Le filtre
+  // des 20 h est fait en base ; la fréquence hebdomadaire ici, page par
+  // page, pour qu'une longue liste d'abonnés hebdomadaires pas encore dus
+  // ne cache pas les quotidiens.
+  const queue: Candidate[] = [];
+  const due20h = new Date(now - 20 * 3600_000).toISOString();
+  for (let page = 0; page < 5 && queue.length < room && Date.now() - started < 10_000; page++) {
+    const { data: profiles, error: profilesError } = await admin
+      .from("profiles")
+      .select("*")
+      .eq("notify_new_offers", true)
+      .eq("onboarding_completed", true)
+      .is("search_completed_at", null)
+      .not("email", "is", null)
+      .or(`last_offer_alert_sent_at.is.null,last_offer_alert_sent_at.lt.${due20h}`)
+      .order("last_offer_alert_sent_at", { ascending: true, nullsFirst: true })
+      .order("id")
+      .range(page * PROFILE_PAGE, (page + 1) * PROFILE_PAGE - 1);
+    if (profilesError) return NextResponse.json({ error: profilesError.message }, { status: 500 });
+    for (const p of (profiles ?? []) as Profile[]) {
+      const frequency = alertFrequency((p as Profile & { offer_alert_frequency?: string }).offer_alert_frequency);
+      if (isDue(p.last_offer_alert_sent_at, frequency, now)) queue.push({ profile: p, frequency });
+    }
+    if ((profiles ?? []).length < PROFILE_PAGE) break;
   }
 
   const resend = getResendClient();
-  const fromEmail = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
-
+  let checked = 0;
   let emailed = 0;
-  const errors: string[] = [];
+  let noMatch = 0;
+  const failures: string[] = [];
+  const dayKey = nowIso.slice(0, 10);
 
-  for (const profile of (profiles ?? []) as Profile[]) {
-    try {
-      const sinceIso = profile.last_offer_alert_sent_at
-        ? profile.last_offer_alert_sent_at
-        : new Date(now.getTime() - FIRST_RUN_WINDOW_HOURS * 3600 * 1000).toISOString();
-
-      const [newOffers, { data: swiped }] = await Promise.all([
-        fetchActiveOffers(admin, { publishedAfter: sinceIso, limit: 200 }),
-        admin.from("swipes").select("offer_id").eq("user_id", profile.id),
-      ]);
-
-      // Toujours avancer le curseur, même sans offre à annoncer, pour ne
-      // jamais re-scanner la même fenêtre à l'infini pour un compte inactif.
-      const { error: cursorError } = await admin
-        .from("profiles")
-        .update({ last_offer_alert_sent_at: now.toISOString() })
-        .eq("id", profile.id);
-      if (cursorError) {
-        console.error("notify-new-offers: cursor update failed", cursorError, { profileId: profile.id });
-      }
-
-      if (!newOffers || newOffers.length === 0) continue;
-
-      const swipedIds = new Set((swiped ?? []).map((s) => s.offer_id));
-      const matches = newOffers
-        .filter((o) => !swipedIds.has(o.id))
-        .map((offer) => ({ offer, score: computeMatchScore(profile, offer) }))
-        .filter((m) => m.score >= MIN_SCORE)
-        .sort((a, b) => b.score - a.score)
-        .slice(0, MAX_OFFERS_PER_EMAIL);
-
-      if (matches.length === 0) continue;
-      if (!profile.email) continue;
-
-      const itemsHtml = matches
-        .map(
-          ({ offer, score }) =>
-            `<li><strong>${offer.title}</strong> — ${offer.company} (${offer.location}) · ${score}% compatible</li>`,
-        )
-        .join("");
-
-      await resend.emails.send({
-        from: `Stageio <${fromEmail}>`,
-        to: profile.email,
-        subject:
-          matches.length === 1
-            ? "Une nouvelle offre qui te correspond 👀"
-            : `${matches.length} nouvelles offres qui te correspondent 👀`,
-        html: `<p>Salut${profile.full_name ? ` ${profile.full_name}` : ""},</p>
-<p>De nouvelles offres viennent d'arriver et matchent ton profil :</p>
-<ul>${itemsHtml}</ul>
-<p><a href="${SITE_URL}/swipe">Voir mes offres sur Stageio</a></p>
-${unsubscribeFooterHtml(profile.id)}`,
-        headers: unsubscribeHeaders(profile.id),
-      });
-
-      emailed++;
-    } catch (err) {
-      errors.push(
-        `profile ${profile.id}: ${err instanceof Error ? err.message : String(err)}`,
+  // Un compte : ses offres arrivées depuis son dernier passage, moins celles
+  // déjà swipées, notées comme dans le deck.
+  const prepare = async ({ profile, frequency }: Candidate): Promise<Prepared> => {
+    const offers = await fetchActiveOffers(admin, {
+      createdAfter: windowStart(profile.last_offer_alert_sent_at, now),
+      sectors: knownProfileSectors(profile.sectors ?? []),
+      limit: 150,
+    });
+    if (offers.length === 0) return { profile, frequency, matches: [] };
+    const scored = offers
+      .map((offer) => ({ offer, score: computeMatchScore(profile, offer) }))
+      .filter((m) => m.score >= MIN_SCORE)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, MAX_OFFERS_PER_EMAIL * 4);
+    if (scored.length === 0) return { profile, frequency, matches: [] };
+    const { data: swiped } = await admin
+      .from("swipes")
+      .select("offer_id")
+      .eq("user_id", profile.id)
+      .in(
+        "offer_id",
+        scored.map((m) => m.offer.id),
       );
-    }
-  }
+    const seen = new Set((swiped ?? []).map((s) => s.offer_id));
+    return { profile, frequency, matches: scored.filter((m) => !seen.has(m.offer.id)).slice(0, MAX_OFFERS_PER_EMAIL) };
+  };
 
-  return NextResponse.json({ profilesChecked: profiles?.length ?? 0, emailed, errors });
+  // Curseur : le compte est traité (même sans offre), il ne repasse pas avant sa prochaine échéance.
+  const markProcessed = async (ids: string[]) => {
+    if (ids.length === 0) return;
+    const { error } = await admin.from("profiles").update({ last_offer_alert_sent_at: nowIso }).in("id", ids);
+    if (error) console.error("notify-new-offers: curseur non avancé", error.message, { count: ids.length });
+  };
+
+  const sendChunk = async (chunk: Prepared[]) => {
+    // Noté AVANT l'envoi, dé-noté si Resend refuse : jamais deux fois le même e-mail.
+    const { data: reserved, error: reserveError } = await admin
+      .from("user_events")
+      .insert(chunk.map((c) => ({ user_id: c.profile.id, event_type: ALERT_SENT_EVENT, metadata: { v: 1, offers: c.matches.length, frequency: c.frequency } })))
+      .select("id, user_id");
+    if (reserveError || !reserved) {
+      failures.push(`base indisponible, lot non envoyé : ${reserveError?.message ?? "réponse vide"}`);
+      return 0;
+    }
+    const reservedId = new Map(reserved.map((r) => [r.user_id, r.id]));
+    const release = async (userIds: string[]) => {
+      const ids = userIds.map((u) => reservedId.get(u)).filter((id): id is string => Boolean(id));
+      if (ids.length) await admin.from("user_events").delete().in("id", ids);
+    };
+    const { data, error } = await resend.batch.send(
+      chunk.map((c) => ({
+        from,
+        to: c.profile.email as string,
+        ...renderOfferAlert({ profileId: c.profile.id, firstName: c.profile.full_name, matches: c.matches, frequency: c.frequency }),
+        headers: unsubscribeHeaders(c.profile.id),
+        tags: [{ name: "campaign", value: ALERT_TAG }],
+      })),
+      { batchValidation: "permissive", idempotencyKey: `${ALERT_TAG}-${dayKey}-${chunk[0].profile.id}-${chunk[chunk.length - 1].profile.id}` },
+    );
+    if (error || !data) {
+      await release(chunk.map((c) => c.profile.id));
+      failures.push(error?.message ?? "réponse vide de Resend");
+      return 0;
+    }
+    const rejected = (data.errors ?? []).map((e) => chunk[e.index]).filter(Boolean);
+    await release(rejected.map((c) => c.profile.id));
+    for (const e of data.errors ?? []) failures.push(`envoi refusé : ${e.message}`);
+    return chunk.length - rejected.length;
+  };
+
+  const ready: Prepared[] = [];
+  const flush = async () => {
+    while (ready.length > 0) {
+      const chunk = ready.splice(0, 100);
+      emailed += await sendChunk(chunk);
+    }
+  };
+
+  let i = 0;
+  while (i < queue.length && room > 0 && Date.now() - started < TIME_BUDGET_MS) {
+    const slice = queue.slice(i, i + Math.min(CONCURRENCY, room));
+    i += slice.length;
+    const results = await Promise.allSettled(slice.map(prepare));
+    const processed: string[] = [];
+    results.forEach((r, k) => {
+      if (r.status === "rejected") {
+        failures.push(`compte ${slice[k].profile.id} : ${r.reason instanceof Error ? r.reason.message : String(r.reason)}`);
+        return;
+      }
+      if (r.value.matches.length === 0) {
+        noMatch++;
+        processed.push(r.value.profile.id);
+      } else if (room > 0) {
+        ready.push(r.value);
+        room--;
+        processed.push(r.value.profile.id);
+      }
+      // Plafond atteint : compte non marqué, il passera en tête la prochaine fois.
+    });
+    checked += processed.length;
+    await markProcessed(processed);
+    if (ready.length >= 100) await flush();
+  }
+  await flush();
+
+  const summary = {
+    due: queue.length,
+    checked,
+    emailed,
+    noMatch,
+    left: queue.length - i,
+    capped: room <= 0,
+    cap,
+    sentLast24h: (sentLast24h ?? 0) + emailed,
+    ms: Date.now() - started,
+    failures: failures.slice(0, 5),
+  };
+  console.log("notify-new-offers", JSON.stringify(summary));
+  return NextResponse.json(summary);
 }

@@ -59,8 +59,9 @@ export type Profile = {
   premium_activated_at: string | null;
   total_paid_cents: number;
   notify_new_offers: boolean;
-  // Optionnelle (24/10) : rappels de relance de candidature par e-mail.
-  application_reminders?: boolean;
+  // Optionnelle (24/10) : fréquence des alertes d'offres ("daily" | "weekly"),
+  // absente tant que le SQL n'a pas été lancé.
+  offer_alert_frequency?: string;
   last_offer_alert_sent_at: string | null;
   last_active_at: string | null;
   last_active_path: string | null;

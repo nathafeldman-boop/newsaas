@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import type { QuizResult } from "@/lib/interview/session";
 import { isPremium } from "@/lib/subscription/isPremium";
 import { refreshStaleSubscription } from "@/lib/stripe/refreshStaleSubscription";
 import { InterviewSimulator } from "@/components/dashboard/InterviewSimulator";
@@ -60,7 +62,7 @@ export default async function DashboardPage() {
     );
   }
 
-  const [{ data: applications }, cvSignedUrlResult, { data: likedSwipes }, todayOffers] =
+  const [{ data: applications }, cvSignedUrlResult, { data: likedSwipes }, todayOffers, quizEvents] =
     await Promise.all([
       supabase.from("applications").select("*").eq("user_id", user.id),
       profile?.cv_path
@@ -76,7 +78,26 @@ export default async function DashboardPage() {
           limit: 300,
         });
       })(),
+      // Progression du simulateur : parties terminées, lues en service_role
+      // (pas de lecture côté étudiant sur user_events), sur son seul compte.
+      premium
+        ? createAdminClient()
+            .from("user_events")
+            .select("metadata, created_at")
+            .eq("user_id", user.id)
+            .eq("event_type", "interview_quiz_completed")
+            .order("created_at", { ascending: true })
+            .limit(500)
+            .then(({ data }) => data ?? [])
+        : Promise.resolve([]),
     ]);
+  const pastResults: QuizResult[] = [];
+  for (const e of quizEvents as { metadata: Record<string, unknown> | null; created_at: string }[]) {
+    const m = e.metadata ?? {};
+    if (m.mode === "review" || typeof m.domain !== "string" || typeof m.score !== "number") continue;
+    if (m.level !== "facile" && m.level !== "medium" && m.level !== "difficile") continue;
+    pastResults.push({ domain: m.domain, level: m.level, score: m.score, at: e.created_at });
+  }
 
   // « À envoyer » (lettre prête, pas encore partie) n'est pas compté comme
   // une candidature envoyée (24/10).
@@ -150,7 +171,7 @@ export default async function DashboardPage() {
       )}
 
       <div id="simulateur" className="mt-6" style={{ scrollMarginTop: 80 }}>
-        <InterviewSimulator userId={user.id} isPremium={premium} defaultJobHint={defaultJobHint} />
+        <InterviewSimulator userId={user.id} isPremium={premium} defaultJobHint={defaultJobHint} pastResults={pastResults} />
       </div>
 
       <div className="card elev-sm mt-5" style={{ padding: "var(--space-6)" }}>

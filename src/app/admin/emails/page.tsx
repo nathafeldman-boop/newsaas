@@ -10,6 +10,7 @@ import { SALES_SERIES_EVENT } from "@/lib/campaigns/serieEvents";
 import { CHECKOUT_RELANCE_EVENT } from "@/lib/campaigns/relanceCheckout";
 import { CAMPAIGN_EVENT, NEWS_CAMPAIGN_EVENT } from "@/lib/campaigns/relanceOffres";
 import { GUARANTEE_REMINDED_EVENT } from "@/lib/premium/guaranteeTerms";
+import { ALERT_SENT_EVENT } from "@/lib/alerts/offerAlert";
 
 // E-mails et relances : ce que Stageio envoie, à qui, et ce qui revient.
 // Envois : registre user_events (campagnes) et dates de dernier envoi des
@@ -24,10 +25,11 @@ const CAMPAIGNS = [
   { event: NEWS_CAMPAIGN_EVENT, label: "Relance « nouveautés »" },
   { event: CHECKOUT_RELANCE_EVENT, label: "Relance paiement non finalisé (23/10)" },
   { event: GUARANTEE_REMINDED_EVENT, label: "Rappel de garantie remboursement" },
+  { event: ALERT_SENT_EVENT, label: "Alertes nouvelles offres (notées depuis le 24/10)" },
 ];
 
 const REMINDERS = [
-  { column: "last_offer_alert_sent_at", label: "Alertes nouvelles offres (quotidiennes)" },
+  { column: "last_offer_alert_sent_at", label: "Alertes nouvelles offres : comptes passés en revue (avec ou sans e-mail)" },
   { column: "no_swipe_reminder_sent_at", label: "Rappel « tu n'as pas encore swipé »" },
   { column: "swipe_relance_sent_at", label: "Relance après swipes" },
   { column: "checkout_abandoned_reminder_sent_at", label: "« Tu y étais presque » (paiement abandonné)" },
@@ -101,7 +103,7 @@ const loadEmailStats = unstable_cache(
       accounts: accounts ?? 0,
     };
   },
-  ["cockpit-email-stats-v1"],
+  ["cockpit-email-stats-v2"],
   { revalidate: 900 },
 );
 

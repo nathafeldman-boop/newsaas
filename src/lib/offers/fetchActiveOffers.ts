@@ -7,6 +7,8 @@ type Filters = {
   sectors?: string[];
   /** Ne renvoyer que les offres publiées APRÈS cette date ISO. */
   publishedAfter?: string;
+  /** Ne renvoyer que les offres arrivées chez Stageio APRÈS cette date ISO (alertes e-mail). */
+  createdAfter?: string;
   /** Ne renvoyer que les offres dont le lieu contient l'un de ces noms. */
   locations?: string[];
   limit?: number;
@@ -36,7 +38,7 @@ export async function fetchActiveOffers(
   supabase: SupabaseClient<Database>,
   filters: Filters,
 ): Promise<Offer[]> {
-  const { excludeIds = [], sectors = [], publishedAfter, locations, limit = 600 } = filters;
+  const { excludeIds = [], sectors = [], publishedAfter, createdAfter, locations, limit = 600 } = filters;
   const locationOr = locations ? locationsFilter(locations) : null;
   if (locations && !locationOr) return [];
 
@@ -45,6 +47,7 @@ export async function fetchActiveOffers(
     if (excludeIds.length > 0) q = q.not("id", "in", `(${excludeIds.join(",")})`);
     if (sectors.length > 0) q = q.in("sector", sectors);
     if (publishedAfter) q = q.gt("published_at", publishedAfter);
+    if (createdAfter) q = q.gt("created_at", createdAfter);
     if (locationOr) q = q.or(locationOr);
     return q;
   }

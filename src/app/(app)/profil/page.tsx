@@ -128,7 +128,11 @@ export default async function ProfilPage({
       </div>
 
 
-      <SettingsPanel userId={user.id} initialNotifyNewOffers={profile.notify_new_offers} />
+      <SettingsPanel
+        userId={user.id}
+        initialNotifyNewOffers={profile.notify_new_offers}
+        initialFrequency={"offer_alert_frequency" in profile ? (profile.offer_alert_frequency === "weekly" ? "weekly" : "daily") : null}
+      />
 
       <ReviewPanel userId={user.id} initialReview={review ?? null} />
 

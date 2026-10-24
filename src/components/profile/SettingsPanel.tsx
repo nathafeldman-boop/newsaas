@@ -6,12 +6,33 @@ import { createClient } from "@/lib/supabase/client";
 export function SettingsPanel({
   userId,
   initialNotifyNewOffers,
+  initialFrequency,
 }: {
   userId: string;
   initialNotifyNewOffers: boolean;
+  /** null : réglage pas encore disponible en base (SQL du 24/10 non lancé). */
+  initialFrequency: "daily" | "weekly" | null;
 }) {
   const [notify, setNotify] = useState(initialNotifyNewOffers);
   const [saving, setSaving] = useState(false);
+  const [frequency, setFrequency] = useState(initialFrequency);
+  const [frequencyError, setFrequencyError] = useState<string | null>(null);
+
+  // Fréquence des alertes (24/10) : un réglage intermédiaire entre « tout »
+  // et « rien », pour qu'un étudiant qui trouve les e-mails trop fréquents
+  // ne coupe pas toutes les alertes.
+  async function changeFrequency(next: "daily" | "weekly") {
+    if (!frequency || next === frequency) return;
+    const previous = frequency;
+    setFrequency(next);
+    setFrequencyError(null);
+    const supabase = createClient();
+    const { error } = await supabase.from("profiles").update({ offer_alert_frequency: next }).eq("id", userId);
+    if (error) {
+      setFrequency(previous);
+      setFrequencyError("Pas enregistré, réessaie dans un instant.");
+    }
+  }
 
   async function toggle() {
     const next = !notify;
@@ -68,6 +89,20 @@ export function SettingsPanel({
           />
         </button>
       </div>
+
+      {notify && frequency && (
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <span style={{ fontSize: 12.5, color: "color-mix(in srgb, var(--color-text) 65%, transparent)" }}>Fréquence</span>
+          <div className="seg" role="group" aria-label="Fréquence des alertes">
+            {(["daily", "weekly"] as const).map((f) => (
+              <button key={f} type="button" onClick={() => void changeFrequency(f)} className={`seg-opt${frequency === f ? " is-active" : ""}`} aria-pressed={frequency === f}>
+                {f === "daily" ? "Chaque jour" : "Une fois par semaine"}
+              </button>
+            ))}
+          </div>
+          {frequencyError && <span style={{ fontSize: 12, color: "var(--color-accent-700)" }}>{frequencyError}</span>}
+        </div>
+      )}
 
       <a
         href="mailto:contact@stageio.fr?subject=Aide%20Stageio"
