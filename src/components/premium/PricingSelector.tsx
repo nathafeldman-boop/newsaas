@@ -117,13 +117,9 @@ function PlanRow({
   );
 }
 
-// Sélecteur des offres (24/10, demande de Nathan) : en haut, « Mensuel » /
-// « À vie » ; en dessous, les offres de la durée choisie l'une sous
-// l'autre (Premium, puis Stageio Auto quand elle est disponible), et un seul
-// bouton qui soumet l'offre cochée. Le prix de l'offre choisie est écrit sur
-// le bouton pour qu'il n'y ait aucune surprise au paiement. Remplace le
-// radio Accès à vie / Mensuel (maquette « Paywall Stageio — 1b », 26/09)
-// et la carte Stageio Auto à part.
+// Avec Stageio Auto (24/10, demande de Nathan) : en haut, « Mensuel » /
+// « À vie » ; en dessous, Premium puis Stageio Auto de la durée choisie, et
+// un seul bouton qui soumet l'offre cochée, son prix écrit dessus.
 type Offer = "premium" | "auto";
 
 const CHECKOUT_PLAN: Record<Plan, Record<Offer, string>> = {
@@ -131,7 +127,7 @@ const CHECKOUT_PLAN: Record<Plan, Record<Offer, string>> = {
   lifetime: { premium: "lifetime", auto: "auto_lifetime" },
 };
 
-export function PricingSelector({
+function OfferTabs({
   lifetimeAvailable,
   autoAvailable = false,
   initialOffer = "premium",
@@ -344,4 +340,159 @@ export function PricingSelector({
       </p>
     </div>
   );
+}
+
+// Sélecteur unique (radio Mensuel / Accès à vie) + un seul bouton "Débloquer
+// Premium" qui soumet le plan choisi -- remplace les deux cartes avec chacune
+// leur propre bouton (une par plan) : design fourni par Nathan (maquette
+// "Paywall Stageio — 1b", 26/09). Nécessite un état côté client pour savoir
+// quel plan est sélectionné au moment de soumettre, d'où ce composant "use
+// client" plutôt qu'un simple form server-only comme le reste de la page.
+function ClassicPricing({
+  lifetimeAvailable,
+  errorMessage,
+  welcomeEndsAt = null,
+  welcomeActive = false,
+  promoActive = false,
+}: {
+  lifetimeAvailable: boolean;
+  errorMessage: string | null;
+  // Prix de bienvenue (voir lib/pricing/plans.ts) : fin fixée côté serveur.
+  welcomeEndsAt?: number | null;
+  welcomeActive?: boolean;
+  // Période de la promo accès à vie (LIFETIME_PROMO) : lue côté serveur.
+  promoActive?: boolean;
+}) {
+  const { active: welcome, remaining } = useWelcomeCountdown(welcomeEndsAt, welcomeActive);
+  const { active: promoPeriod } = useWelcomeCountdown(LIFETIME_PROMO.endsAt, promoActive);
+  const tier = welcome ? "welcome" : "regular";
+  // Promo : 30 € (39,99 € barré) tant que le chrono de bienvenue tourne.
+  const promo = promoPeriod && welcome;
+  const lifetimePrice = promo ? LIFETIME_PROMO.price : PLAN_PRICES.lifetime[tier];
+  const monthlyPrice = PLAN_PRICES.monthly[tier];
+  // Accès à vie affiché en premier et présélectionné (demande de Nathan,
+  // 14/10) ; le prix du plan choisi est écrit sur le bouton pour qu'il n'y
+  // ait aucune surprise au paiement.
+  const [plan, setPlan] = useState<Plan>(lifetimeAvailable ? "lifetime" : "monthly");
+
+  return (
+    <div className="animate-in" style={{ marginTop: 18 }}>
+      <div className="flex flex-col gap-2.5">
+        {lifetimeAvailable && (
+          <PlanRow
+            selected={plan === "lifetime"}
+            onSelect={() => setPlan("lifetime")}
+            label="Accès à vie"
+            sublabel="Paiement unique, jamais de renouvellement"
+            price={lifetimePrice}
+            strikePrice={promo ? LIFETIME_PROMO.referencePrice : undefined}
+            afterPrice={welcome ? PLAN_PRICES.lifetime.regular : undefined}
+            badge={promo ? "Promo" : "Le prix de 5 mois"}
+          />
+        )}
+        <PlanRow
+          selected={plan === "monthly"}
+          onSelect={() => setPlan("monthly")}
+          label="Mensuel"
+          sublabel="Résiliable à tout moment"
+          price={monthlyPrice}
+          afterPrice={welcome ? `${PLAN_PRICES.monthly.regular}/mois` : undefined}
+          priceSuffix="/mois"
+        />
+      </div>
+
+      {errorMessage && (
+        <p
+          style={{
+            fontSize: 12,
+            marginTop: 12,
+            background: "var(--color-surface)",
+            border: "1px solid var(--color-divider)",
+            padding: 10,
+            borderRadius: 8,
+          }}
+        >
+          {errorMessage}
+        </p>
+      )}
+
+      {welcome && (
+        <p style={{ margin: "14px 0 0", fontSize: 14, fontWeight: 700, textAlign: "center", color: "var(--color-accent-700)" }}>
+          🎁 Prix de bienvenue encore{" "}
+          <span style={{ fontSize: 20, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{remaining ?? "––:––"}</span>
+          <br />
+          <span style={{ fontSize: 12.5, fontWeight: 600 }}>
+            ensuite {plan === "lifetime" ? PLAN_PRICES.lifetime.regular : `${PLAN_PRICES.monthly.regular}/mois`}
+          </span>
+        </p>
+      )}
+
+      <form action={createCheckoutSessionAction} style={{ marginTop: 14 }}>
+        <input type="hidden" name="plan" value={plan} />
+        <button
+          type="submit"
+          className="btn btn-block"
+          style={{
+            height: 52,
+            border: "none",
+            borderRadius: 999,
+            background: "linear-gradient(135deg, var(--color-accent), var(--color-accent-700))",
+            color: "var(--color-bg)",
+            fontSize: 15.5,
+            fontWeight: 700,
+            letterSpacing: "-0.01em",
+            boxShadow: "0 10px 22px color-mix(in srgb, var(--color-accent) 35%, transparent)",
+          }}
+        >
+          {plan === "lifetime" ? `Débloquer à vie · ${lifetimePrice}` : `Débloquer Premium · ${monthlyPrice}/mois`}
+        </button>
+      </form>
+
+      <div
+        className="flex flex-wrap items-center justify-center gap-2"
+        style={{ marginTop: 10, fontSize: 11.5, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}
+      >
+        <span>🔒 Paiement sécurisé</span>
+        <span style={{ opacity: 0.5 }}>·</span>
+        <span>{plan === "lifetime" ? "Paiement unique" : "Résiliable à tout moment"}</span>
+        <span style={{ opacity: 0.5 }}>·</span>
+        <AccessCodeForm />
+      </div>
+
+      <p
+        style={{
+          fontSize: 10.5,
+          textAlign: "center",
+          lineHeight: 1.4,
+          margin: "12px 0 0",
+          color: "color-mix(in srgb, var(--color-text) 50%, transparent)",
+        }}
+      >
+        En continuant, tu acceptes les{" "}
+        <Link href="/legal/cgv" style={{ color: "var(--color-accent-700)", textDecoration: "underline" }}>
+          CGV
+        </Link>
+        .
+      </p>
+    </div>
+  );
+}
+
+type SelectorProps = {
+  lifetimeAvailable: boolean;
+  // Stageio Auto proposée seulement si elle peut servir (isAutoOfferAvailable).
+  autoAvailable?: boolean;
+  // Arrivée depuis « Découvrir Stageio Auto » (?offre=auto) : Auto cochée.
+  initialOffer?: "premium" | "auto";
+  errorMessage: string | null;
+  welcomeEndsAt?: number | null;
+  welcomeActive?: boolean;
+  promoActive?: boolean;
+};
+
+// Paywall : onglets Mensuel / À vie avec Stageio Auto quand elle est en
+// vente ; sinon le sélecteur d'avant, inchangé (Nathan, 25/10 : « s'il n'y
+// a pas l'offre à 17,99 € et celle à 80 €, remets le paywall comme avant »).
+export function PricingSelector({ autoAvailable = false, initialOffer, ...props }: SelectorProps) {
+  return autoAvailable ? <OfferTabs {...props} autoAvailable initialOffer={initialOffer} /> : <ClassicPricing {...props} />;
 }
