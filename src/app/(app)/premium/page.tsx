@@ -110,9 +110,9 @@ async function loadGuarantee(
 export default async function PremiumPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; source?: string; refund?: string; retour?: string }>;
+  searchParams: Promise<{ error?: string; source?: string; refund?: string; retour?: string; offre?: string }>;
 }) {
-  const { error, source, refund, retour } = await searchParams;
+  const { error, source, refund, retour, offre } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -120,11 +120,9 @@ export default async function PremiumPage({
 
   if (!user) redirect("/login?next=/premium");
 
-  const { data: rawProfile } = await supabase
-    .from("profiles")
-    .select("subscription_status, current_period_end, stripe_subscription_id, premium_activated_at, total_paid_cents")
-    .eq("id", user.id)
-    .single();
+  // select("*") : premium_tier (formule Auto, SQL du 24/10) n'existe pas
+  // forcément encore ; le nommer ferait échouer toute la lecture.
+  const { data: rawProfile } = await supabase.from("profiles").select("*").eq("id", user.id).single();
 
   const profile = rawProfile ? await refreshStaleSubscription(rawProfile) : rawProfile;
   const premium = isPremium(profile);
@@ -455,10 +453,10 @@ export default async function PremiumPage({
               welcomeActive={welcome?.active ?? false}
               promoActive={promoActive}
               lifetimeAvailable={!!process.env.STRIPE_PRICE_ID_LIFETIME}
+              autoAvailable={isAutoOfferAvailable(profile)}
+              initialOffer={offre === "auto" ? "auto" : "premium"}
               errorMessage={error ? (ERROR_MESSAGES[error] ?? "Une erreur est survenue.") : null}
             />
-
-            {isAutoOfferAvailable(profile) && <AutoPlanCard context="paywall" />}
           </div>
         </>
       )}

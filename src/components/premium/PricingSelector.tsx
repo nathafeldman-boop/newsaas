@@ -5,7 +5,7 @@ import Link from "next/link";
 import { createCheckoutSessionAction } from "@/app/(app)/premium/actions";
 import { AccessCodeForm } from "@/components/premium/AccessCodeForm";
 import { useWelcomeCountdown } from "@/components/premium/WelcomeCountdown";
-import { LIFETIME_PROMO, PLAN_PRICES } from "@/lib/pricing/plans";
+import { AUTO_DAILY_LIMIT, AUTO_PRICES, LIFETIME_PROMO, PLAN_PRICES } from "@/lib/pricing/plans";
 
 type Plan = "monthly" | "lifetime";
 
@@ -117,20 +117,34 @@ function PlanRow({
   );
 }
 
-// Sélecteur unique (radio Mensuel / Accès à vie) + un seul bouton "Débloquer
-// Premium" qui soumet le plan choisi -- remplace les deux cartes avec chacune
-// leur propre bouton (une par plan) : design fourni par Nathan (maquette
-// "Paywall Stageio — 1b", 26/09). Nécessite un état côté client pour savoir
-// quel plan est sélectionné au moment de soumettre, d'où ce composant "use
-// client" plutôt qu'un simple form server-only comme le reste de la page.
+// Sélecteur des offres (24/10, demande de Nathan) : en haut, « Mensuel » /
+// « À vie » ; en dessous, les offres de la durée choisie l'une sous
+// l'autre (Premium, puis Stageio Auto quand elle est disponible), et un seul
+// bouton qui soumet l'offre cochée. Le prix de l'offre choisie est écrit sur
+// le bouton pour qu'il n'y ait aucune surprise au paiement. Remplace le
+// radio Accès à vie / Mensuel (maquette « Paywall Stageio — 1b », 26/09)
+// et la carte Stageio Auto à part.
+type Offer = "premium" | "auto";
+
+const CHECKOUT_PLAN: Record<Plan, Record<Offer, string>> = {
+  monthly: { premium: "monthly", auto: "auto_monthly" },
+  lifetime: { premium: "lifetime", auto: "auto_lifetime" },
+};
+
 export function PricingSelector({
   lifetimeAvailable,
+  autoAvailable = false,
+  initialOffer = "premium",
   errorMessage,
   welcomeEndsAt = null,
   welcomeActive = false,
   promoActive = false,
 }: {
   lifetimeAvailable: boolean;
+  // Stageio Auto proposée seulement si elle peut servir (isAutoOfferAvailable).
+  autoAvailable?: boolean;
+  // Arrivée depuis « Découvrir Stageio Auto » (?offre=auto) : Auto cochée.
+  initialOffer?: Offer;
   errorMessage: string | null;
   // Prix de bienvenue (voir lib/pricing/plans.ts) : fin fixée côté serveur.
   welcomeEndsAt?: number | null;
@@ -145,36 +159,115 @@ export function PricingSelector({
   const promo = promoPeriod && welcome;
   const lifetimePrice = promo ? LIFETIME_PROMO.price : PLAN_PRICES.lifetime[tier];
   const monthlyPrice = PLAN_PRICES.monthly[tier];
-  // Accès à vie affiché en premier et présélectionné (demande de Nathan,
-  // 14/10) ; le prix du plan choisi est écrit sur le bouton pour qu'il n'y
-  // ait aucune surprise au paiement.
-  const [plan, setPlan] = useState<Plan>(lifetimeAvailable ? "lifetime" : "monthly");
+  // Mensuel affiché d'abord (Nathan, 24/10) ; « À vie » s'il n'y a que ça.
+  const hasLifetime = lifetimeAvailable || autoAvailable;
+  const [plan, setPlan] = useState<Plan>("monthly");
+  const [offer, setOffer] = useState<Offer>(autoAvailable ? initialOffer : "premium");
+  // Premium à vie absent (prix Stripe non configuré) : seule Auto reste.
+  const chosen: Offer = plan === "lifetime" && !lifetimeAvailable ? "auto" : !autoAvailable ? "premium" : offer;
+  const auto = chosen === "auto";
+
+  const ctaLabel = auto
+    ? plan === "lifetime"
+      ? `Stageio Auto à vie · ${AUTO_PRICES.lifetime}`
+      : `Activer Stageio Auto · ${AUTO_PRICES.monthly}/mois`
+    : plan === "lifetime"
+      ? `Débloquer à vie · ${lifetimePrice}`
+      : `Débloquer Premium · ${monthlyPrice}/mois`;
 
   return (
-    <div className="animate-in" style={{ marginTop: 18 }}>
+    <div id="auto" className="animate-in" style={{ marginTop: 18, scrollMarginTop: 80 }}>
+      {hasLifetime && (
+        <div
+          role="tablist"
+          aria-label="Durée"
+          className="grid grid-cols-2"
+          style={{ padding: 4, borderRadius: 999, background: "var(--color-surface)", border: "1.5px solid var(--color-divider)", marginBottom: 12 }}
+        >
+          {(["monthly", "lifetime"] as const).map((p) => (
+            <button
+              key={p}
+              type="button"
+              role="tab"
+              aria-selected={plan === p}
+              onClick={() => setPlan(p)}
+              style={{
+                height: 38,
+                borderRadius: 999,
+                border: "none",
+                cursor: "pointer",
+                fontSize: 14,
+                fontWeight: 700,
+                background: plan === p ? "var(--color-accent)" : "transparent",
+                color: plan === p ? "var(--color-bg)" : "var(--color-text)",
+                transition: "background-color 0.15s ease, color 0.15s ease",
+              }}
+            >
+              {p === "monthly" ? "Mensuel" : "À vie"}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="flex flex-col gap-2.5">
-        {lifetimeAvailable && (
-          <PlanRow
-            selected={plan === "lifetime"}
-            onSelect={() => setPlan("lifetime")}
-            label="Accès à vie"
-            sublabel="Paiement unique, jamais de renouvellement"
-            price={lifetimePrice}
-            strikePrice={promo ? LIFETIME_PROMO.referencePrice : undefined}
-            afterPrice={welcome ? PLAN_PRICES.lifetime.regular : undefined}
-            badge={promo ? "Promo" : "Le prix de 5 mois"}
-          />
+        {plan === "monthly" ? (
+          <>
+            <PlanRow
+              selected={!auto}
+              onSelect={() => setOffer("premium")}
+              label="Premium"
+              sublabel="Résiliable à tout moment"
+              price={monthlyPrice}
+              afterPrice={welcome ? `${PLAN_PRICES.monthly.regular}/mois` : undefined}
+              priceSuffix="/mois"
+            />
+            {autoAvailable && (
+              <PlanRow
+                selected={auto}
+                onSelect={() => setOffer("auto")}
+                label="Stageio Auto"
+                sublabel="Ta candidature part à chaque like"
+                price={AUTO_PRICES.monthly}
+                priceSuffix="/mois"
+                badge="Nouveau"
+              />
+            )}
+          </>
+        ) : (
+          <>
+            {lifetimeAvailable && (
+              <PlanRow
+                selected={!auto}
+                onSelect={() => setOffer("premium")}
+                label="Premium à vie"
+                sublabel="Paiement unique"
+                price={lifetimePrice}
+                strikePrice={promo ? LIFETIME_PROMO.referencePrice : undefined}
+                afterPrice={welcome ? PLAN_PRICES.lifetime.regular : undefined}
+                badge={promo ? "Promo" : "Le prix de 5 mois"}
+              />
+            )}
+            {autoAvailable && (
+              <PlanRow
+                selected={auto}
+                onSelect={() => setOffer("auto")}
+                label="Stageio Auto à vie"
+                sublabel="Paiement unique · candidature à chaque like"
+                price={AUTO_PRICES.lifetime}
+                badge="Nouveau"
+              />
+            )}
+          </>
         )}
-        <PlanRow
-          selected={plan === "monthly"}
-          onSelect={() => setPlan("monthly")}
-          label="Mensuel"
-          sublabel="Résiliable à tout moment"
-          price={monthlyPrice}
-          afterPrice={welcome ? `${PLAN_PRICES.monthly.regular}/mois` : undefined}
-          priceSuffix="/mois"
-        />
       </div>
+
+      {auto && (
+        <p style={{ fontSize: 12, lineHeight: 1.5, margin: "10px 2px 0", color: "color-mix(in srgb, var(--color-text) 62%, transparent)" }}>
+          Tout Premium, plus ta candidature (lettre et CV) envoyée à chaque like, jusqu&apos;à {AUTO_DAILY_LIMIT} par jour, depuis une
+          adresse à ton nom, avec une boîte pour lire les réponses. Envoi quand le recruteur a laissé une adresse ou passe par La bonne
+          alternance ; sinon, le like reste un favori.
+        </p>
+      )}
 
       {errorMessage && (
         <p
@@ -191,7 +284,7 @@ export function PricingSelector({
         </p>
       )}
 
-      {welcome && (
+      {welcome && !auto && (
         <p style={{ margin: "14px 0 0", fontSize: 14, fontWeight: 700, textAlign: "center", color: "var(--color-accent-700)" }}>
           🎁 Prix de bienvenue encore{" "}
           <span style={{ fontSize: 20, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{remaining ?? "––:––"}</span>
@@ -203,7 +296,7 @@ export function PricingSelector({
       )}
 
       <form action={createCheckoutSessionAction} style={{ marginTop: 14 }}>
-        <input type="hidden" name="plan" value={plan} />
+        <input type="hidden" name="plan" value={CHECKOUT_PLAN[plan][chosen]} />
         <button
           type="submit"
           className="btn btn-block"
@@ -219,7 +312,7 @@ export function PricingSelector({
             boxShadow: "0 10px 22px color-mix(in srgb, var(--color-accent) 35%, transparent)",
           }}
         >
-          {plan === "lifetime" ? `Débloquer à vie · ${lifetimePrice}` : `Débloquer Premium · ${monthlyPrice}/mois`}
+          {ctaLabel}
         </button>
       </form>
 
