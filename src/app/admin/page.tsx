@@ -10,6 +10,7 @@ import { WeekdayBarChart } from "@/components/admin/charts/WeekdayBarChart";
 import { bucketizeSignups, periodStart, type Period } from "@/lib/admin/analytics";
 import { moderateReviewAction } from "./reviews-actions";
 import { loadSeriesReport } from "@/lib/campaigns/serieVente";
+import { getStripeTotals } from "@/lib/admin/stripeTotals";
 
 const PERIODS: Period[] = ["7j", "30j", "90j", "tout"];
 const PERIOD_LABELS: Record<Period, string> = {
@@ -177,6 +178,10 @@ export default async function AdminDashboardPage({
     HEAVY_STAT_BUDGET_MS,
     null,
   );
+  // Ventes réelles (Stripe) : lues dans le cache rempli par /admin/stripe ;
+  // sinon, les comptes qui ont au moins un paiement noté en base.
+  const stripeTotalsPromise = withTimeout(getStripeTotals().catch(() => null), 2500, null);
+  const paidEverPromise = admin.from("profiles").select("id", { count: "exact", head: true }).gt("total_paid_cents", 0);
   const seriesPromise = withTimeout(
     loadSeriesReport(createAdminClient(), todayStart.toISOString()).catch((err) => {
       console.error("AdminDashboardPage: series report query failed", err);
@@ -340,8 +345,9 @@ export default async function AdminDashboardPage({
     period,
   );
 
-  const [{ value: weekdayAverages }, { value: visitorsBySourceRows }, { value: leoFunnel }, { value: heardFrom }, { value: newsCampaign }, { value: series }] =
-    await Promise.all([weekdayAveragesPromise, visitorsBySourcePromise, leoFunnelPromise, heardFromPromise, newsCampaignPromise, seriesPromise]);
+  const [{ value: weekdayAverages }, { value: visitorsBySourceRows }, { value: leoFunnel }, { value: heardFrom }, { value: newsCampaign }, { value: series }, { value: stripeTotals }, { count: paidEverCount }] =
+    await Promise.all([weekdayAveragesPromise, visitorsBySourcePromise, leoFunnelPromise, heardFromPromise, newsCampaignPromise, seriesPromise, stripeTotalsPromise, paidEverPromise]);
+  const paidEver = stripeTotals?.payers ?? paidEverCount ?? 0;
 
   // Chemin de Léo (SOP 26) : chaque taux comparé au bas de son benchmark ;
   // le maillon faible est celui qui en est le plus loin (un seul chantier).
@@ -457,11 +463,18 @@ export default async function AdminDashboardPage({
         <StatTile label="Inscrits (7 jours)" value={String(signupsWeek ?? 0)} />
         <StatTile label="Total utilisateurs" value={String(totalUsers ?? 0)} />
         <StatTile label="Premium (avec bonus)" value={`${premiumTotal} (${totalUsers && totalUsers > 0 ? Math.round((premiumTotal / totalUsers) * 100) : 0}%)`} accent />
-        <StatTile label="Dont payant réel" value={String(paidPremium)} accent href="/admin/premium" />
+        <StatTile
+          label={`Ont payé au moins une fois${stripeTotals ? " (Stripe)" : ""} · inscrits → payants`}
+          value={`${paidEver} (${totalUsers && totalUsers > 0 ? ((paidEver / totalUsers) * 100).toLocaleString("fr-FR", { maximumFractionDigits: 1 }) : 0} %)`}
+          accent
+          href="/admin/stripe"
+        />
+        <StatTile label="Accès payant en cours" value={String(paidPremium)} href="/admin/premium" />
         <StatTile label="Gratuit" value={`${freePct}%`} />
         <StatTile
-          label="Revenu cumulé"
-          value={`${(totalRevenueCents / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €`}
+          label={stripeTotals ? "Encaissé (Stripe, net des remboursements)" : "Revenu cumulé"}
+          value={`${((stripeTotals ? stripeTotals.revenueCents - stripeTotals.refundedCents : totalRevenueCents) / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €`}
+          href="/admin/stripe"
         />
         <StatTile
           label="ARR"
@@ -471,7 +484,9 @@ export default async function AdminDashboardPage({
         <StatTile label="Offres actives" value={String(activeOffers ?? 0)} />
       </div>
       <p style={{ fontSize: 11, marginTop: 10, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-        « Dont payant réel » = abonnement Stripe actif ou en essai uniquement — exclut les codes d&apos;accès offerts.
+        « Ont payé au moins une fois » = toutes les ventes réelles, même si l&apos;abonnement s&apos;est arrêté depuis (lu dans
+        Stripe, détail sur /admin/stripe). « Accès payant en cours » = abonnement Stripe actif ou en essai, ou accès à vie —
+        exclut les codes d&apos;accès offerts.
         « ARR » = abonnements actifs/essai annualisés selon leur vraie cadence (mensuel/hebdo), hors codes offerts.
       </p>
 
