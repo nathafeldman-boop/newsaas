@@ -31,16 +31,19 @@ export async function creditInvoicePayment(
   return { credited: data === true };
 }
 
-// Achat à vie (checkout en mode "payment") : aucune facture Stripe, donc
-// rien ne passait par invoice.paid -- le paiement est crédité sous l'id du
-// PaymentIntent, dans le même registre idempotent que les factures.
+// Achat à vie (checkout en mode "payment"). invoice_creation y crée une
+// facture, créditée aussi par invoice.paid : on crédite donc sous l'id de
+// cette facture, pour que les deux chemins tombent sur la même ligne du
+// registre. Jusqu'au 24/10, la clé était l'id du PaymentIntent : chaque
+// achat à vie était compté deux fois (30 € payés, 60 € de LTV). Sans
+// facture (anciennes sessions), l'id du PaymentIntent.
 export async function creditCheckoutPayment(
   session: Stripe.Checkout.Session,
   customerId: string,
 ): Promise<{ credited: boolean; error?: string }> {
   const amount = session.amount_total ?? 0;
   if (session.mode !== "payment" || session.payment_status !== "paid" || amount <= 0) return { credited: false };
-  const key =
-    typeof session.payment_intent === "string" ? session.payment_intent : (session.payment_intent?.id ?? session.id);
-  return creditInvoicePayment(key, customerId, amount);
+  const invoiceId = typeof session.invoice === "string" ? session.invoice : session.invoice?.id;
+  const paymentIntentId = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id;
+  return creditInvoicePayment(invoiceId ?? paymentIntentId ?? session.id, customerId, amount);
 }
