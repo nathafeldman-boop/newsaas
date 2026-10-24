@@ -51,7 +51,10 @@ export const SERIES_STEPS = 5;
 const DAY = 86_400_000;
 const STEP_GAP_MS = 2 * DAY;
 const OTHER_GAP_MS = DAY;
-const MIN_ACCOUNT_AGE_MS = 2 * DAY;
+// Nouveaux inscrits (Nathan, 24/10) : 1er email 1 h après l'inscription,
+// le prix de bienvenue de leur 1re visite ayant expiré entre-temps.
+const MIN_ACCOUNT_AGE_MS = 60 * 60 * 1000;
+const FRESH_SIGNUP_MS = 2 * DAY;
 export const SERIES_START = Date.parse("2026-10-24T05:30:00Z");
 // Lundi 26/10 à 0 h, heure de Paris (heure d'hiver depuis le 25/10).
 const DOUBLE_FROM = Date.parse("2026-10-25T23:00:00Z");
@@ -138,12 +141,17 @@ async function loadDue(db: Db, now: number, midnight: number): Promise<{ due: Du
     if (h) continuing.push({ profile: p, step: h.count + 1, last: h.last });
     else starting.push({ profile: p, step: 1 });
   }
-  // La suite de la série d'abord (les plus en retard en tête), puis les
-  // nouveaux : venus le plus récemment d'abord, ce sont les plus chauds.
+  // Les inscrits des 2 derniers jours d'abord (les plus chauds, les plus
+  // récents en tête), puis la suite de la série (les plus en retard en
+  // tête), puis les autres comptes, venus le plus récemment d'abord.
   continuing.sort((a, b) => a.last - b.last);
   const recency = (p: SeriesProfile) => Date.parse(p.last_active_at ?? p.created_at);
   starting.sort((a, b) => recency(b.profile) - recency(a.profile));
-  return { due: [...continuing, ...starting], sentToday };
+  const fresh = starting
+    .filter((d) => now - Date.parse(d.profile.created_at) < FRESH_SIGNUP_MS)
+    .sort((a, b) => Date.parse(b.profile.created_at) - Date.parse(a.profile.created_at));
+  const others = starting.filter((d) => now - Date.parse(d.profile.created_at) >= FRESH_SIGNUP_MS);
+  return { due: [...fresh, ...continuing, ...others], sentToday };
 }
 
 const fmt = (n: number) => n.toLocaleString("fr-FR");
@@ -197,6 +205,13 @@ export function renderSeriesEmail(
       "Des candidatures envoyées, et pas de réponse ? Des heures sur chaque lettre de motivation ? C'est exactement ce que Premium règle.",
       `Et c'est le dernier jour de la promo : l'accès Premium <strong>à vie</strong> est à <strong>${LIFETIME_PROMO.price}</strong> au lieu de ${LIFETIME_PROMO.referencePrice}, jusqu'à cette nuit 0&nbsp;h&nbsp;30. Tu paies une fois, et c'est fini : pas d'abonnement, Premium pour toujours.`,
       `En ce moment, ${offersLineHtml} t'attendent sur Stageio.`,
+    ];
+  } else if (step === 1 && now - Date.parse(p.created_at) < FRESH_SIGNUP_MS) {
+    subject = `${name ? `${name}, t` : "T"}on prix de bienvenue t'attend encore (10 min)`;
+    hook = [
+      "Tu viens de t'inscrire sur Stageio, mais tu n'as pas encore débloqué tes offres.",
+      `Bonne nouvelle : ton prix de bienvenue est de nouveau disponible, pendant 10 minutes à partir de ton clic. Et en ce moment, ${offersLineHtml} t'attendent.`,
+      "Sans Premium, tu ne vois ni l'entreprise ni l'analyse de chaque offre. Avec Premium, tu vois tout, et tu postules en quelques secondes, lettre de motivation comprise.",
     ];
   } else if (step === 1) {
     subject = showCounts
