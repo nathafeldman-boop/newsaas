@@ -9,6 +9,7 @@ import { LineAreaChart } from "@/components/admin/charts/LineAreaChart";
 import { WeekdayBarChart } from "@/components/admin/charts/WeekdayBarChart";
 import { bucketizeSignups, periodStart, type Period } from "@/lib/admin/analytics";
 import { moderateReviewAction } from "./reviews-actions";
+import { loadSeriesReport } from "@/lib/campaigns/serieVente";
 
 const PERIODS: Period[] = ["7j", "30j", "90j", "tout"];
 const PERIOD_LABELS: Record<Period, string> = {
@@ -176,6 +177,14 @@ export default async function AdminDashboardPage({
     HEAVY_STAT_BUDGET_MS,
     null,
   );
+  const seriesPromise = withTimeout(
+    loadSeriesReport(createAdminClient(), todayStart.toISOString()).catch((err) => {
+      console.error("AdminDashboardPage: series report query failed", err);
+      return null;
+    }),
+    HEAVY_STAT_BUDGET_MS,
+    null,
+  );
   const newsCampaignPromise = withTimeout(
     getNewsCampaignStats(todayStart.toISOString()).catch((err) => {
       console.error("AdminDashboardPage: news campaign query failed", err);
@@ -331,8 +340,8 @@ export default async function AdminDashboardPage({
     period,
   );
 
-  const [{ value: weekdayAverages }, { value: visitorsBySourceRows }, { value: leoFunnel }, { value: heardFrom }, { value: newsCampaign }] =
-    await Promise.all([weekdayAveragesPromise, visitorsBySourcePromise, leoFunnelPromise, heardFromPromise, newsCampaignPromise]);
+  const [{ value: weekdayAverages }, { value: visitorsBySourceRows }, { value: leoFunnel }, { value: heardFrom }, { value: newsCampaign }, { value: series }] =
+    await Promise.all([weekdayAveragesPromise, visitorsBySourcePromise, leoFunnelPromise, heardFromPromise, newsCampaignPromise, seriesPromise]);
 
   // Chemin de Léo (SOP 26) : chaque taux comparé au bas de son benchmark ;
   // le maillon faible est celui qui en est le plus loin (un seul chantier).
@@ -465,6 +474,27 @@ export default async function AdminDashboardPage({
         « Dont payant réel » = abonnement Stripe actif ou en essai uniquement — exclut les codes d&apos;accès offerts.
         « ARR » = abonnements actifs/essai annualisés selon leur vraie cadence (mensuel/hebdo), hors codes offerts.
       </p>
+
+      <SectionCard
+        title="Série email Premium"
+        subtitle="Depuis le 24/10 : 5 emails au plus par compte, un tous les 2-3 jours, de 7 h 30 à 20 h 30 (1 500 par jour le week-end, 3 000 à partir de lundi). Venus depuis l'email = personnes distinctes arrivées par un lien de la série."
+      >
+        {series === null ? (
+          <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>
+            Calcul en cours, recharge dans une minute.
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <StatTile
+              label={`Emails envoyés aujourd'hui · ${series.steps.reduce((n, s) => n + s.sent, 0)} au total`}
+              value={String(series.sentToday)}
+            />
+            <StatTile label="Venus depuis l'email aujourd'hui" value={String(series.clickersToday)} accent />
+            <StatTile label="Comptes dans la série" value={String(series.recipients)} />
+            <StatTile label={`Payants depuis · ${euros(series.payersCents)}`} value={String(series.payers)} accent />
+          </div>
+        )}
+      </SectionCard>
 
       <SectionCard
         title="Relance email « nouveautés »"

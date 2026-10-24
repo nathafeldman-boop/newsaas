@@ -405,6 +405,8 @@ export async function sendSeriesRun(now: number = Date.now()): Promise<SeriesRun
 
 export type SeriesReport = {
   steps: { step: number; sent: number; clickers: number }[];
+  sentToday: number;
+  clickersToday: number;
   recipients: number;
   payers: number;
   payersCents: number;
@@ -412,7 +414,7 @@ export type SeriesReport = {
 
 // Pour /admin/relance : envois et arrivées par email de la série, et les
 // destinataires qui ont payé après leur premier email.
-export async function loadSeriesReport(db: Db): Promise<SeriesReport> {
+export async function loadSeriesReport(db: Db, todayStartIso?: string): Promise<SeriesReport> {
   const campaigns = Array.from({ length: SERIES_STEPS }, (_, i) => seriesUtmCampaign(i + 1));
   const [events, visits] = await Promise.all([
     fetchAllRows<{ user_id: string; metadata: Record<string, unknown> | null; created_at: string }>((from, to) =>
@@ -423,10 +425,10 @@ export async function loadSeriesReport(db: Db): Promise<SeriesReport> {
         .order("created_at")
         .range(from, to),
     ),
-    fetchAllRows<{ visitor_id: string; utm_campaign: string | null }>((from, to) =>
+    fetchAllRows<{ visitor_id: string; utm_campaign: string | null; created_at: string }>((from, to) =>
       db
         .from("site_visits")
-        .select("visitor_id, utm_campaign")
+        .select("visitor_id, utm_campaign, created_at")
         .gte("created_at", new Date(SERIES_START).toISOString())
         .in("utm_campaign", campaigns)
         .order("created_at")
@@ -460,5 +462,13 @@ export async function loadSeriesReport(db: Db): Promise<SeriesReport> {
       }
     }
   }
-  return { steps, recipients: firstSent.size, payers, payersCents };
+  const today = todayStartIso ?? new Date(0).toISOString();
+  return {
+    steps,
+    sentToday: events.filter((e) => e.created_at >= today).length,
+    clickersToday: new Set(visits.filter((v) => v.created_at >= today).map((v) => v.visitor_id)).size,
+    recipients: firstSent.size,
+    payers,
+    payersCents,
+  };
 }
