@@ -15,6 +15,10 @@ import { logButtonClick } from "@/lib/analytics/logButtonClick";
 import { PremiumCtaLink } from "@/components/premium/PremiumCtaLink";
 import { OfferCardContent } from "@/components/swipe/OfferCard";
 import { FreshOffersInbox, type FreshInboxItem } from "@/components/swipe/FreshOffersInbox";
+import { LikeChoiceSheet } from "@/components/swipe/LikeChoiceSheet";
+import { AutoUpsellSheet } from "@/components/swipe/AutoUpsellSheet";
+import { useApplyOnLike, type AutoApplySetup } from "@/components/swipe/ApplyOnLike";
+import { markAutoUpsellShown, readLikeAction, saveLikeAction, shouldShowAutoUpsell, type LikeAction } from "@/lib/swipe/likePreference";
 import { Icon } from "@/components/ui/Icon";
 import { cn } from "@/lib/utils";
 import type { ContractType, Offer, SwipeDirection } from "@/types/database";
@@ -296,6 +300,9 @@ function SwipeDeckInner({
   userId,
   initialTotalSwipes,
   isPremium,
+  isAuto,
+  autoOfferAvailable,
+  autoApplySetup,
   onStackChange,
   onSwipesUsedChange,
 }: {
@@ -305,10 +312,19 @@ function SwipeDeckInner({
   userId: string;
   initialTotalSwipes: number;
   isPremium: boolean;
+  isAuto: boolean;
+  autoOfferAvailable: boolean;
+  autoApplySetup?: AutoApplySetup;
   onStackChange?: (count: number) => void;
   onSwipesUsedChange?: (count: number) => void;
 }) {
   const router = useRouter();
+  // Formule Auto (24/10) : au premier like, on demande si un like envoie la
+  // candidature ou met juste en favori ; ensuite le réglage s'applique. Un
+  // compte Premium sans Auto voit la proposition une fois par jour au plus.
+  const [likeChoiceOffer, setLikeChoiceOffer] = useState<Offer | null>(null);
+  const [upsellOffer, setUpsellOffer] = useState<Offer | null>(null);
+  const { applyOnLike, ui: applyUi } = useApplyOnLike(autoApplySetup, userId);
   const [stack, setStack] = useState(offers);
   const [swipesUsed, setSwipesUsed] = useState(initialTotalSwipes);
 
@@ -390,10 +406,44 @@ function SwipeDeckInner({
     setSwipesUsed((n) => n + 1);
     topCardRef.current?.swipeOut(direction);
 
+    if (direction === "like" && isAuto) {
+      const likeAction = readLikeAction();
+      if (likeAction === "candidature") {
+        void logButtonClick(userId, "like_apply", { mode: "auto" });
+        applyOnLike(offer);
+        return true;
+      }
+      if (likeAction === null) {
+        setLikeChoiceOffer(offer);
+        return true;
+      }
+    }
+    if (direction === "like" && !isAuto && autoOfferAvailable) {
+      const today = new Date().toISOString().slice(0, 10);
+      if (shouldShowAutoUpsell(today)) {
+        markAutoUpsellShown(today);
+        void logButtonClick(userId, "auto_upsell_shown", { offerId: offer.id });
+        setUpsellOffer(offer);
+        return true;
+      }
+    }
     if (direction === "like" && (scores[offer.id] ?? 0) >= CELEBRATION_THRESHOLD) {
       setCelebratingOffer(offer);
     }
     return true;
+  }
+
+  function handleLikeChoice(action: LikeAction, remember: boolean) {
+    const offer = likeChoiceOffer;
+    setLikeChoiceOffer(null);
+    if (remember) saveLikeAction(action);
+    if (!offer) return;
+    void logButtonClick(userId, "like_choice", { action, remember });
+    if (action === "candidature") {
+      applyOnLike(offer);
+    } else if ((scores[offer.id] ?? 0) >= CELEBRATION_THRESHOLD) {
+      setCelebratingOffer(offer);
+    }
   }
 
   // Bouton "postuler" du milieu (voir design mobile) : réservé aux Premium
@@ -426,6 +476,7 @@ function SwipeDeckInner({
   if (visible.length === 0) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center text-center px-6 py-20">
+        {applyUi}
         <p className="text-4xl">🎉</p>
         <h2 style={{ fontSize: 22, marginTop: 16 }}>Tu as vu toutes les offres du moment</h2>
         <p style={{ marginTop: 8, color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
@@ -470,6 +521,13 @@ function SwipeDeckInner({
           }}
           onClose={() => setCelebratingOffer(null)}
         />
+        <LikeChoiceSheet offer={likeChoiceOffer} onChoose={handleLikeChoice} />
+        <AutoUpsellSheet
+          offer={upsellOffer}
+          onClose={() => setUpsellOffer(null)}
+          onDiscover={() => void logButtonClick(userId, "premium_cta", { source: "auto_upsell", offerId: upsellOffer?.id })}
+        />
+        {applyUi}
         {visible
           .slice()
           .reverse()
@@ -562,6 +620,9 @@ export function SwipeDeck({
   sectorLabel = null,
   applicationStreak = 0,
   freshInbox = [],
+  isAuto = false,
+  autoOfferAvailable = false,
+  autoApplySetup,
 }: {
   offers: Offer[];
   scores: Record<string, number>;
@@ -573,6 +634,11 @@ export function SwipeDeck({
   sectorLabel?: string | null;
   applicationStreak?: number;
   freshInbox?: FreshInboxItem[];
+  /** Formule Stageio Auto : le like envoie la candidature (100 par jour). */
+  isAuto?: boolean;
+  /** Formule Auto vendable (SQL passé, boîte configurée) : proposition au like. */
+  autoOfferAvailable?: boolean;
+  autoApplySetup?: AutoApplySetup;
 }) {
   const [contractFilter, setContractFilter] = useState<ContractType | "all">("all");
   // Compteur d'offres restantes DANS LE DECK EN COURS, affiché juste
@@ -696,6 +762,9 @@ export function SwipeDeck({
         userId={userId}
         initialTotalSwipes={swipesUsed}
         isPremium={isPremium}
+        isAuto={isAuto}
+        autoOfferAvailable={autoOfferAvailable}
+        autoApplySetup={autoApplySetup}
         onStackChange={setCardsLeft}
         onSwipesUsedChange={setSwipesUsed}
       />

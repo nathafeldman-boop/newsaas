@@ -37,9 +37,12 @@ import type { Database } from "@/types/database";
 // - Chaque email reprend le paywall : avantages, prix, garantie, et deux
 //   boutons qui mènent droit au paiement Stripe (/premium/go). Le prix de
 //   bienvenue repart de zéro après chaque email (voir pricing/welcome.ts).
-// - Volume : 1 500 emails par jour le week-end, 3 000 à partir du lundi
-//   26/10, répartis sur les passages de 7 h 30 à 20 h 30 (heure de Paris) ;
-//   moins s'il y a moins de comptes à relancer ce jour-là.
+// - Volume : 1 000 emails par jour au plus (Nathan, 24/10 : « au lieu
+//   d'en envoyer 3000, tu en envoies 1000 », pour laisser au quota Resend la
+//   place des candidatures envoyées par l'offre Auto ; avant : 1 500, et
+//   3 000 prévus à partir du lundi 26/10), répartis sur les passages de
+//   7 h 30 à 20 h 30 (heure de Paris) ; moins s'il y a moins de comptes à
+//   relancer ce jour-là.
 // Pas de fausse urgence : le seul compte à rebours est celui de la vraie
 // promo (accès à vie à 30 €, fin le 25/10 à 0 h 30) et des 10 minutes du
 // prix de bienvenue.
@@ -56,13 +59,13 @@ const OTHER_GAP_MS = DAY;
 const MIN_ACCOUNT_AGE_MS = 60 * 60 * 1000;
 const FRESH_SIGNUP_MS = 2 * DAY;
 export const SERIES_START = Date.parse("2026-10-24T05:30:00Z");
-// Lundi 26/10 à 0 h, heure de Paris (heure d'hiver depuis le 25/10).
-const DOUBLE_FROM = Date.parse("2026-10-25T23:00:00Z");
 const FIRST_PARIS_HOUR = 7;
 const LAST_PARIS_HOUR = 20;
 
-export function seriesDailyCap(now: number = Date.now()): number {
-  return now >= DOUBLE_FROM ? 3000 : 1500;
+export const SERIES_DAILY_CAP = 1000;
+
+export function seriesDailyCap(): number {
+  return SERIES_DAILY_CAP;
 }
 
 export function seriesUtmCampaign(step: number): string {
@@ -359,7 +362,7 @@ export async function sendSeriesRun(now: number = Date.now()): Promise<SeriesRun
   const db = createAdminClient();
   const { due, sentToday } = await loadDue(db, now, clock.midnight);
   const runsLeft = LAST_PARIS_HOUR - clock.hour + 1;
-  const quota = Math.max(0, Math.ceil((seriesDailyCap(now) - sentToday) / runsLeft));
+  const quota = Math.max(0, Math.ceil((seriesDailyCap() - sentToday) / runsLeft));
   const batch = due.slice(0, quota);
   const byStep: Record<number, number> = {};
   const failures: string[] = [];

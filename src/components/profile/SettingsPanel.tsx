@@ -1,15 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { readLikeAction, saveLikeAction, type LikeAction } from "@/lib/swipe/likePreference";
 import { createClient } from "@/lib/supabase/client";
 
 export function SettingsPanel({
   userId,
   initialNotifyNewOffers,
   initialFrequency,
+  isAuto = false,
 }: {
   userId: string;
   initialNotifyNewOffers: boolean;
+  /** Formule Stageio Auto : réglage « Quand je like ». */
+  isAuto?: boolean;
   /** null : réglage pas encore disponible en base (SQL du 24/10 non lancé). */
   initialFrequency: "daily" | "weekly" | null;
 }) {
@@ -17,6 +21,13 @@ export function SettingsPanel({
   const [saving, setSaving] = useState(false);
   const [frequency, setFrequency] = useState(initialFrequency);
   const [frequencyError, setFrequencyError] = useState<string | null>(null);
+  // Réglage du navigateur (voir lib/swipe/likePreference.ts), lu après le
+  // montage : localStorage n'existe pas au rendu serveur.
+  const [likeAction, setLikeAction] = useState<LikeAction | "">("");
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLikeAction(readLikeAction() ?? "");
+  }, []);
 
   // Fréquence des alertes (24/10) : un réglage intermédiaire entre « tout »
   // et « rien », pour qu'un étudiant qui trouve les e-mails trop fréquents
@@ -89,6 +100,36 @@ export function SettingsPanel({
           />
         </button>
       </div>
+
+      {isAuto && (
+        <div className="mt-4 flex items-center justify-between gap-4" style={{ paddingTop: 14, borderTop: "1px solid var(--color-divider)" }}>
+          <div>
+            <label htmlFor="like-action" style={{ fontSize: 14, margin: 0, display: "block" }}>
+              Quand je like une offre
+            </label>
+            <p style={{ fontSize: 12, margin: "2px 0 0", color: "color-mix(in srgb, var(--color-text) 65%, transparent)" }}>
+              Stageio Auto : envoyer ma candidature tout de suite (100 par jour), ou garder l&apos;offre en favori.
+            </p>
+          </div>
+          <select
+            id="like-action"
+            className="input"
+            style={{ width: "auto", flexShrink: 0 }}
+            value={likeAction}
+            onChange={(e) => {
+              const next = e.target.value as LikeAction;
+              setLikeAction(next);
+              saveLikeAction(next);
+            }}
+          >
+            <option value="" disabled>
+              Me demander
+            </option>
+            <option value="candidature">Envoyer ma candidature</option>
+            <option value="favori">Mettre en favori</option>
+          </select>
+        </div>
+      )}
 
       {notify && frequency && (
         <div className="mt-3 flex flex-wrap items-center gap-3">

@@ -19,6 +19,7 @@ export const FEATURES = [
   { key: "application_marked_sent", label: "Candidature confirmée envoyée", since: "2026-10-24" },
   { key: "application_tracking_updated", label: "Suivi mis à jour (note, relance)", since: "2026-10-24" },
   { key: "cover_letter_template_used", label: "Modèle de lettre utilisé", since: "2026-10-24" },
+  { key: "application_emailed", label: "Candidature envoyée au like (Stageio Auto)", since: "2026-10-24" },
 ] as const;
 export type FeatureKey = (typeof FEATURES)[number]["key"];
 
@@ -31,6 +32,7 @@ const EVENT_FEATURES = [
   "application_marked_sent",
   "application_tracking_updated",
   "cover_letter_template_used",
+  "application_emailed",
 ] as const;
 
 export type UserFacts = {

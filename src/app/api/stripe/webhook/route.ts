@@ -7,6 +7,7 @@ import { creditCheckoutPayment, creditInvoicePayment } from "@/lib/stripe/credit
 import { notifyIncompletePaymentByCustomerId } from "@/lib/stripe/notifyIncompletePayment";
 import { creditAffiliateCommission } from "@/lib/affiliates/creditAffiliateCommission";
 import { cancelRemindersAfterPayment } from "@/lib/stripe/checkoutReminder";
+import { applyAutoCheckout } from "@/lib/stripe/autoPlan";
 
 export const maxDuration = 30;
 
@@ -174,6 +175,8 @@ export async function POST(request: NextRequest) {
       // avant : recordCheckoutOpened relit ce profil après avoir noté la
       // relance, et l'annule lui-même si le webhook est passé trop tôt.
       if (userId) await cancelRemindersAfterPayment(userId);
+      // Formule Auto (24/10) : accès à vie Auto, arrêt de l'ancien abonnement Premium.
+      if (userId) await applyAutoCheckout(session, userId);
 
       if (subscriptionId) {
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);

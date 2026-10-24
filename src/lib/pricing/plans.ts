@@ -39,3 +39,16 @@ export const REGULAR_PRICE_IDS = {
   monthly: process.env.STRIPE_PRICE_ID_REGULAR?.trim() || "price_1USaRfRd6r34OMU6D3mrspqO",
   lifetime: process.env.STRIPE_PRICE_ID_LIFETIME_REGULAR?.trim() || "price_1USaRjRd6r34OMU6JhNZAkDw",
 };
+
+// Formule « Stageio Auto » (24/10, demande de Nathan) : Premium + chaque
+// like envoie la candidature tout seul (jusqu'à 100 par jour, au-delà le
+// like redevient un favori) + boîte mail de candidature. 17,99 €/mois ou
+// 80 € à vie. Prix créés le 24/10 sur le produit Stripe « Stageio Auto »
+// (clés de recherche stageio_auto_monthly_1799 / stageio_auto_lifetime_8000).
+export const AUTO_PRICES = { monthly: "17,99 €", lifetime: "80 €" } as const;
+export const AUTO_MONTHLY_CENTS = 1799;
+export const AUTO_DAILY_LIMIT = 100;
+export const AUTO_PRICE_IDS = {
+  monthly: process.env.STRIPE_PRICE_ID_AUTO_MONTHLY?.trim() || "price_1UU96mRd6r34OMU6vrO0Mhln",
+  lifetime: process.env.STRIPE_PRICE_ID_AUTO_LIFETIME?.trim() || "price_1UU96qRd6r34OMU6aTrAx6Ho",
+};

@@ -56,6 +56,21 @@ export default function CGVPage() {
           minutes ; passé ce délai, le prix de 63,99&nbsp;€ s&apos;applique.
         </p>
         <p style={{ marginTop: 8 }}>
+          <strong>Formule Stageio Auto</strong> (à partir du 24 octobre 2026) : <strong>17,99&nbsp;€ / mois</strong>,
+          renouvelable automatiquement chaque mois, ou <strong>80&nbsp;€</strong> en un paiement unique pour un accès
+          à vie. Elle comprend tous les avantages Premium et, en plus : l&apos;envoi automatique de la candidature
+          de l&apos;utilisateur (lettre de motivation et CV) quand il like une offre, dans la limite de 100 envois
+          par jour (heure de Paris) ; une adresse de candidature à son nom et une boîte de réception pour les
+          réponses. L&apos;envoi automatique n&apos;est possible que pour les offres dont le recruteur a publié une
+          adresse de candidature ou qui sont transmises par La bonne alternance (service public) ; pour les autres
+          offres, et au-delà de la limite quotidienne, le like enregistre l&apos;offre en favori et l&apos;utilisateur
+          postule lui-même. Les candidatures sont envoyées au nom de l&apos;utilisateur, avec la lettre qu&apos;il a
+          préparée pour l&apos;offre ou, à défaut, une lettre rédigée à partir de son profil. Un abonné Premium
+          mensuel qui passe à la formule Stageio Auto mensuelle voit son abonnement modifié immédiatement, la
+          différence de prix pour la période en cours étant facturée au prorata ; s&apos;il choisit l&apos;accès à
+          vie Stageio Auto, son abonnement Premium s&apos;arrête à la fin de la période déjà payée.
+        </p>
+        <p style={{ marginTop: 8 }}>
           {" "}
           <ToComplete>TVA applicable (montants ci-dessus TTC) ou &laquo; TVA non applicable, art. 293 B du CGI &raquo; selon ton statut fiscal — à préciser</ToComplete>
           . Ces deux formules donnent accès aux mêmes avantages Premium, sans

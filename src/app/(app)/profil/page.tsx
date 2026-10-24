@@ -7,7 +7,7 @@ import { ReviewPanel } from "@/components/profile/ReviewPanel";
 import { SearchCompletedToggle } from "@/components/profile/SearchCompletedToggle";
 import { DeleteAccountPanel } from "@/components/profile/DeleteAccountPanel";
 import { PremiumCtaLink } from "@/components/premium/PremiumCtaLink";
-import { isPremium } from "@/lib/subscription/isPremium";
+import { isPremium, isAutoTier } from "@/lib/subscription/isPremium";
 import { refreshStaleSubscription } from "@/lib/stripe/refreshStaleSubscription";
 import type { ApplicationStatus } from "@/types/database";
 
@@ -132,6 +132,7 @@ export default async function ProfilPage({
         userId={user.id}
         initialNotifyNewOffers={profile.notify_new_offers}
         initialFrequency={"offer_alert_frequency" in profile ? (profile.offer_alert_frequency === "weekly" ? "weekly" : "daily") : null}
+        isAuto={isAutoTier(profile)}
       />
 
       <ReviewPanel userId={user.id} initialReview={review ?? null} />

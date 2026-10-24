@@ -1,8 +1,13 @@
 import { after } from "next/server";
 import { recordCheckoutOpened } from "@/lib/stripe/checkoutReminder";
-import { LIFETIME_PROMO, REGULAR_PRICE_IDS } from "@/lib/pricing/plans";
+import { AUTO_PRICE_IDS, LIFETIME_PROMO, REGULAR_PRICE_IDS } from "@/lib/pricing/plans";
+import { syncSubscriptionToProfile } from "@/lib/stripe/syncSubscription";
+import { isAutoTier } from "@/lib/subscription/isPremium";
+import { isAutoOfferAvailable } from "@/lib/subscription/autoAvailability";
+import type { Profile } from "@/types/database";
 import { getWelcomeEndsAt } from "@/lib/pricing/welcome";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripeClient } from "@/lib/stripe/client";
 import { SITE_URL } from "@/lib/site";
 
@@ -22,7 +27,9 @@ async function getOrCreateStripeCustomer(userId: string, email: string | null) {
     metadata: { supabase_user_id: userId },
   });
 
-  await supabase
+  // Client admin : les colonnes de paiement ne sont écrites que par le
+  // serveur (trigger protect_paid_profile_columns, SQL du 24/10).
+  await createAdminClient()
     .from("profiles")
     .update({ stripe_customer_id: customer.id })
     .eq("id", userId);
@@ -30,7 +37,7 @@ async function getOrCreateStripeCustomer(userId: string, email: string | null) {
   return customer.id;
 }
 
-export type CheckoutError = "already_subscribed" | "not_configured" | "checkout_failed";
+export type CheckoutError = "already_subscribed" | "not_configured" | "checkout_failed" | "upgrade_failed";
 
 // Création de la session Stripe Checkout, commune au bouton de /premium
 // (server action) et au lien direct des emails de vente (/premium/go).
@@ -39,6 +46,8 @@ export async function startCheckout(
   plan: unknown,
 ): Promise<{ url: string } | { error: CheckoutError }> {
   const supabase = await createClient();
+
+  if (plan === "auto_monthly" || plan === "auto_lifetime") return startAutoCheckout(user, plan);
 
   // Garde-fou serveur : /premium masque déjà le bouton "Débloquer Premium"
   // pour un profil Premium (voir isPremium() côté page), mais c'est
@@ -159,4 +168,86 @@ export async function startCheckout(
   const checkoutUrl = session.url;
   after(() => recordCheckoutOpened({ userId: user.id, email: user.email, checkoutUrl, lifetime: isLifetime, welcome, promo }));
   return { url: checkoutUrl };
+}
+
+// Formule « Stageio Auto » (24/10) : 17,99 €/mois ou 80 € à vie, ouverte
+// aussi aux comptes déjà Premium (c'est une montée en gamme) :
+// - abonné Premium mensuel qui prend l'Auto mensuel : son abonnement passe
+//   au prix Auto, au prorata, payé tout de suite avec sa carte enregistrée
+//   (et rien ne change si le paiement échoue : pending_if_incomplete) ;
+// - abonné Premium mensuel qui prend l'Auto à vie : paiement unique, puis
+//   son abonnement s'arrête à la fin de la période déjà payée ;
+// - accès à vie Premium : il peut prendre l'Auto, mensuel ou à vie.
+// Jamais deux abonnements Auto ; rien ne part tant que la colonne
+// premium_tier (SQL du 24/10) n'existe pas.
+async function startAutoCheckout(
+  user: { id: string; email: string | null },
+  plan: "auto_monthly" | "auto_lifetime",
+): Promise<{ url: string } | { error: CheckoutError }> {
+  const supabase = await createClient();
+  const { data: profile, error } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+  if (error || !profile || !isAutoOfferAvailable(profile)) {
+    if (error) console.error("startAutoCheckout: profil illisible", error.message);
+    return { error: "not_configured" };
+  }
+  if (isAutoTier(profile as Profile)) return { error: "already_subscribed" };
+
+  const lifetime = plan === "auto_lifetime";
+  const priceId = lifetime ? AUTO_PRICE_IDS.lifetime : AUTO_PRICE_IDS.monthly;
+  const activeSubscription =
+    profile.stripe_subscription_id && (profile.subscription_status === "active" || profile.subscription_status === "trialing")
+      ? profile.stripe_subscription_id
+      : null;
+  const stripe = getStripeClient();
+
+  if (!lifetime && activeSubscription) {
+    try {
+      const subscription = await stripe.subscriptions.retrieve(activeSubscription);
+      const item = subscription.items.data[0];
+      if (!item) return { error: "upgrade_failed" };
+      const updated = await stripe.subscriptions.update(activeSubscription, {
+        items: [{ id: item.id, price: priceId }],
+        proration_behavior: "always_invoice",
+        payment_behavior: "pending_if_incomplete",
+        metadata: { ...subscription.metadata, tier: "auto" },
+      });
+      if (updated.pending_update) return { error: "upgrade_failed" };
+      await syncSubscriptionToProfile(updated);
+      after(() => logAutoUpgrade(user.id, activeSubscription));
+      return { url: `${SITE_URL}/premium/success?auto=1` };
+    } catch (err) {
+      console.error("startAutoCheckout: passage à Auto en échec", err instanceof Error ? err.message : err, { userId: user.id });
+      return { error: "upgrade_failed" };
+    }
+  }
+
+  const customerId = await getOrCreateStripeCustomer(user.id, user.email);
+  const metadata: Record<string, string> = { tier: "auto", supabase_user_id: user.id };
+  if (lifetime && activeSubscription) metadata.replace_subscription = activeSubscription;
+  const session = await stripe.checkout.sessions.create({
+    mode: lifetime ? "payment" : "subscription",
+    customer: customerId,
+    line_items: [{ price: priceId, quantity: 1 }],
+    payment_method_types: ["card"],
+    success_url: `${SITE_URL}/premium/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${SITE_URL}/premium?retour=paiement`,
+    client_reference_id: user.id,
+    metadata,
+    ...(lifetime
+      ? { payment_intent_data: { metadata: { supabase_user_id: user.id, tier: "auto" } }, invoice_creation: { enabled: true } }
+      : { subscription_data: { metadata: { supabase_user_id: user.id, tier: "auto" } } }),
+  });
+  if (!session.url) return { error: "checkout_failed" };
+  // Mesure seulement : la relance « paiement pas finalisé » parle des prix
+  // Premium, elle n'est pas programmée pour l'offre Auto.
+  after(async () => {
+    await createAdminClient()
+      .from("user_events")
+      .insert({ user_id: user.id, event_type: "checkout_opened", metadata: { plan: plan, welcome: false, promo: false, reminderEmailId: null } });
+  });
+  return { url: session.url };
+}
+
+async function logAutoUpgrade(userId: string, subscriptionId: string) {
+  await createAdminClient().from("user_events").insert({ user_id: userId, event_type: "auto_plan_purchased", metadata: { subscriptionId, mode: "upgrade" } });
 }

@@ -43,6 +43,7 @@ const GROUPS = [
     links: [
       { href: "/admin/sante", label: "Santé et données" },
       { href: "/admin/offres", label: "Offres" },
+      { href: "/admin/la-bonne-alternance", label: "La bonne alternance" },
       { href: "/admin/codes", label: "Codes" },
       { href: "/admin/online", label: "En ligne" },
     ],

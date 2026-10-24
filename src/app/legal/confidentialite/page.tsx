@@ -17,7 +17,7 @@ export default function ConfidentialitePage() {
 
       <Section title="Données que nous collectons">
         <ul style={{ margin: 0, paddingLeft: 20, listStyle: "disc" }}>
-          <li>Compte : email, nom, mot de passe (haché) ou identité Google.</li>
+          <li>Compte : email, nom, téléphone (optionnel), mot de passe (haché) ou identité Google.</li>
           <li>
             Profil : ville, compétences, secteurs, formation, mobilité,
             CV (optionnel).
@@ -26,7 +26,41 @@ export default function ConfidentialitePage() {
             Activité : offres vues/likées, candidatures envoyées, statut
             de chaque candidature.
           </li>
+          <li>
+            Formule Stageio Auto : les candidatures envoyées depuis ton
+            adresse de candidature et les emails reçus sur cette adresse
+            (voir section dédiée ci-dessous).
+          </li>
           <li>Paiement (Premium) : géré entièrement par Stripe — nous ne stockons jamais ton numéro de carte.</li>
+        </ul>
+      </Section>
+
+      <Section title="Candidatures envoyées au like (formule Stageio Auto)">
+        <ul style={{ margin: "8px 0 0", paddingLeft: 20, listStyle: "disc" }}>
+          <li>
+            Avec la formule Stageio Auto, un like envoie ta candidature à ton
+            nom (jusqu&apos;à 100 par jour) : ta lettre de motivation et ton
+            CV, seulement vers l&apos;adresse de candidature publiée par le
+            recruteur dans son offre, ou par La bonne alternance (service
+            public de l&apos;alternance) qui la transmet au recruteur avec ton
+            prénom, ton nom, ton email et ton téléphone. Rien ne part sans ce
+            like, jamais deux fois à la même offre, et tu peux repasser
+            « Quand je like une offre » sur « Mettre en favori » à tout
+            moment.
+          </li>
+          <li>
+            Tu as une adresse de candidature à ton nom sur un sous-domaine de
+            Stageio. Les emails reçus sur cette adresse (réponses des
+            recruteurs) sont conservés dans ta boîte, visibles par toi seul·e,
+            et tu es prévenu·e par email à chaque nouveau message. Une réponse
+            claire (entretien, refus) met à jour le statut de la candidature
+            concernée, par analyse automatique du message.
+          </li>
+          <li>
+            Tu peux répondre depuis l&apos;appli ; ta réponse part à ton nom et
+            la suite de l&apos;échange revient dans ta boîte. Les messages sont
+            supprimés avec ton compte.
+          </li>
         </ul>
       </Section>
 
@@ -65,7 +99,9 @@ export default function ConfidentialitePage() {
           <li><strong>Supabase</strong> — hébergement de la base de données, authentification, stockage des CV.</li>
           <li><strong>Vercel</strong> — hébergement de l&apos;application.</li>
           <li><strong>Anthropic (Claude)</strong> — rédaction des lettres de motivation, analyse des CV et des offres.</li>
-          <li><strong>Resend</strong> — envoi des emails (compte, alertes nouvelles offres, relances).</li>
+          <li><strong>Resend</strong> — envoi des emails (compte, alertes nouvelles offres, relances, candidatures Stageio Auto).</li>
+          <li><strong>Cloudflare</strong> — réception des emails de ta boîte de candidature (Stageio Auto).</li>
+          <li><strong>La bonne alternance</strong> (service public) — offres d&apos;alternance, et transmission au recruteur des candidatures que tu envoies sur ses offres.</li>
           <li><strong>Stripe</strong> — traitement des paiements de l&apos;abonnement Premium.</li>
           <li><strong>Adzuna</strong> et sources publiques — sourcing des offres d&apos;alternance/stage.</li>
           <li><strong>Google</strong> — connexion avec ton compte Google.</li>
@@ -102,7 +138,9 @@ export default function ConfidentialitePage() {
           </li>
           <li>
             <strong>Droit de retrait du consentement</strong> : par exemple
-            en désactivant les alertes email depuis ton profil.
+            en désactivant les alertes email depuis ton profil, ou en
+            repassant « Quand je like une offre » sur « Mettre en favori »
+            pour qu&apos;aucune candidature ne parte toute seule.
           </li>
           <li>
             <strong>Droit d&apos;accès et à la portabilité</strong> : contacte-nous

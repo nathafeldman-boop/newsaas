@@ -5,7 +5,10 @@ import { after } from "next/server";
 import { logServerEvent } from "@/lib/analytics/logServerEvent";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { isPremium } from "@/lib/subscription/isPremium";
+import { isAutoTier, isPremium } from "@/lib/subscription/isPremium";
+import { AutoPlanCard } from "@/components/premium/AutoPlanCard";
+import { isAutoOfferAvailable } from "@/lib/subscription/autoAvailability";
+import { AUTO_DAILY_LIMIT } from "@/lib/pricing/plans";
 import { refreshStaleSubscription } from "@/lib/stripe/refreshStaleSubscription";
 import { createPortalSessionAction } from "./actions";
 import { PricingSelector } from "@/components/premium/PricingSelector";
@@ -24,6 +27,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   checkout_failed: "Impossible de démarrer le paiement, réessaie.",
   no_subscription: "Aucun abonnement actif à gérer.",
   already_subscribed: "Tu as déjà un abonnement Premium actif — gère-le avec le bouton ci-dessous plutôt que d'en recréer un.",
+  upgrade_failed: "Le passage à Stageio Auto n'a pas pu se faire (paiement refusé ou carte à mettre à jour). Rien n'a changé sur ton abonnement.",
 };
 
 const BENEFITS = [
@@ -217,6 +221,25 @@ export default async function PremiumPage({
             Like, favoris, candidatures illimitées et audit CV sont débloqués.
           </p>
           {guarantee && <GuaranteeCard status={guarantee.status} phase={guarantee.phase} refund={refund ?? null} />}
+          {error && ERROR_MESSAGES[error] && (
+            <p className="tag tag-accent-2" style={{ marginTop: 16, padding: "10px 14px", fontSize: 13, display: "block", lineHeight: 1.5 }}>
+              {ERROR_MESSAGES[error]}
+            </p>
+          )}
+          {isAutoTier(profile) ? (
+            <p className="tag tag-accent" style={{ marginTop: 20, padding: "10px 16px", fontSize: 13.5, display: "block", lineHeight: 1.5 }}>
+              ✉️ Stageio Auto est actif : tes likes envoient ta candidature ({AUTO_DAILY_LIMIT} par jour).{" "}
+              <Link href="/boite" style={{ fontWeight: 700 }}>
+                Ma boîte
+              </Link>
+            </p>
+          ) : (
+            isAutoOfferAvailable(profile) && (
+              <div style={{ width: "100%", maxWidth: 420, textAlign: "left" }}>
+                <AutoPlanCard context={profile?.subscription_status === "lifetime" ? "upgrade_lifetime" : "upgrade_monthly"} />
+              </div>
+            )
+          )}
           {profile?.subscription_status === "lifetime" ? (
             <p
               className="tag tag-accent"
@@ -434,6 +457,8 @@ export default async function PremiumPage({
               lifetimeAvailable={!!process.env.STRIPE_PRICE_ID_LIFETIME}
               errorMessage={error ? (ERROR_MESSAGES[error] ?? "Une erreur est survenue.") : null}
             />
+
+            {isAutoOfferAvailable(profile) && <AutoPlanCard context="paywall" />}
           </div>
         </>
       )}

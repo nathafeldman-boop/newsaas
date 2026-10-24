@@ -42,8 +42,15 @@ const SECTIONS: { title: string; items: { href: string; label: string; icon: Ico
 
 const muted = "color-mix(in srgb, var(--color-text) 55%, transparent)";
 
-function Sidebar({ open, onClose, favoritesBadge }: { open: boolean; onClose: () => void; favoritesBadge: number }) {
+function Sidebar({ open, onClose, favoritesBadge, inboxBadge }: { open: boolean; onClose: () => void; favoritesBadge: number; inboxBadge: number | null }) {
   const pathname = usePathname();
+  // « Ma boîte » seulement pour la formule Auto (inboxBadge non null).
+  const sections =
+    inboxBadge === null
+      ? SECTIONS
+      : SECTIONS.map((section) =>
+          section.title === "Trouver" ? { ...section, items: [...section.items, { href: "/boite", label: "Ma boîte", icon: "mail" as IconName }] } : section,
+        );
 
   return (
     <motion.aside
@@ -87,7 +94,7 @@ function Sidebar({ open, onClose, favoritesBadge }: { open: boolean; onClose: ()
       </div>
 
       <nav className="flex flex-1 flex-col" style={{ marginTop: 22, gap: 18, overflowY: "auto" }}>
-        {SECTIONS.map((section) => (
+        {sections.map((section) => (
           <div key={section.title}>
             <p
               style={{
@@ -132,7 +139,7 @@ function Sidebar({ open, onClose, favoritesBadge }: { open: boolean; onClose: ()
                       </span>
                       <span style={{ position: "relative" }}>
                         {item.label}
-                        {item.href === "/favoris" && favoritesBadge > 0 && (
+                        {((item.href === "/favoris" && favoritesBadge > 0) || (item.href === "/boite" && (inboxBadge ?? 0) > 0)) && (
                           <span
                             style={{
                               marginLeft: 8,
@@ -149,7 +156,7 @@ function Sidebar({ open, onClose, favoritesBadge }: { open: boolean; onClose: ()
                               background: "var(--color-accent)",
                             }}
                           >
-                            {favoritesBadge}
+                            {item.href === "/boite" ? inboxBadge : favoritesBadge}
                           </span>
                         )}
                       </span>
@@ -180,10 +187,12 @@ function Sidebar({ open, onClose, favoritesBadge }: { open: boolean; onClose: ()
 
 export function AppShell({
   favoritesBadge,
+  inboxBadge = null,
   initialOpen,
   children,
 }: {
   favoritesBadge: number;
+  inboxBadge?: number | null;
   initialOpen: boolean;
   children: React.ReactNode;
 }) {
@@ -196,7 +205,7 @@ export function AppShell({
 
   return (
     <>
-      <Sidebar open={open} onClose={() => toggle(false)} favoritesBadge={favoritesBadge} />
+      <Sidebar open={open} onClose={() => toggle(false)} favoritesBadge={favoritesBadge} inboxBadge={inboxBadge} />
       <AnimatePresence>
         {!open && (
           <motion.button

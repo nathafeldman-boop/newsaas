@@ -14,8 +14,11 @@ const ITEMS: { href: string; label: string; icon: IconName }[] = [
   { href: "/profil", label: "Profil", icon: "user" },
 ];
 
-export function BottomNav({ favoritesBadge = 0 }: { favoritesBadge?: number }) {
+// « Boîte » seulement pour la formule Auto (inboxBadge non null), à la place
+// de « Dashboard » pour garder 5 onglets lisibles sur téléphone.
+export function BottomNav({ favoritesBadge = 0, inboxBadge = null }: { favoritesBadge?: number; inboxBadge?: number | null }) {
   const pathname = usePathname();
+  const items = inboxBadge === null ? ITEMS : ITEMS.map((item) => (item.href === "/dashboard" ? { href: "/boite", label: "Boîte", icon: "mail" as IconName } : item));
 
   return (
     <nav
@@ -27,8 +30,8 @@ export function BottomNav({ favoritesBadge = 0 }: { favoritesBadge?: number }) {
         borderTop: "1px solid color-mix(in srgb, var(--color-text) 8%, transparent)",
       }}
     >
-      {ITEMS.map((item) => {
-        const active = pathname === item.href;
+      {items.map((item) => {
+        const active = pathname === item.href || (item.href === "/boite" && pathname.startsWith("/boite/"));
         return (
           <Link
             key={item.href}
@@ -64,7 +67,7 @@ export function BottomNav({ favoritesBadge = 0 }: { favoritesBadge?: number }) {
               >
                 <Icon name={item.icon} size={22} strokeWidth={active ? 2.2 : 1.8} />
               </motion.span>
-              {item.href === "/favoris" && favoritesBadge > 0 && (
+              {((item.href === "/favoris" && favoritesBadge > 0) || (item.href === "/boite" && (inboxBadge ?? 0) > 0)) && (
                 <span
                   aria-hidden
                   style={{
@@ -86,7 +89,7 @@ export function BottomNav({ favoritesBadge = 0 }: { favoritesBadge?: number }) {
                     border: "2px solid var(--color-surface)",
                   }}
                 >
-                  {favoritesBadge}
+                  {item.href === "/boite" ? inboxBadge : favoritesBadge}
                 </span>
               )}
             </span>

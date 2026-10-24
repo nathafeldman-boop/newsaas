@@ -1,5 +1,6 @@
 import type Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { AUTO_PRICE_IDS } from "@/lib/pricing/plans";
 
 export function periodEndOf(subscription: Stripe.Subscription): string | null {
   const ts = subscription.items.data[0]?.current_period_end;
@@ -67,6 +68,11 @@ export async function syncSubscriptionToProfile(
     .in("subscription_status", ["lifetime", "comp"]);
   const keeperIds = (keepers ?? []).map((k) => k.id);
 
+  // Formule Auto (24/10), à part et best-effort (colonne premium_tier du SQL
+  // du 24/10) : posée avant le retour anticipé des comptes à vie, qui
+  // peuvent prendre l'abonnement Auto en plus.
+  await syncAutoTier(admin, customerId, subscription, isHealthy, keeperIds.length > 0);
+
   let update = admin
     .from("profiles")
     .update(
@@ -103,4 +109,26 @@ export async function syncSubscriptionToProfile(
   }
 
   return { matched };
+}
+
+/**
+ * premium_tier selon l'abonnement : "auto" tant qu'un abonnement au prix
+ * Auto est sain, retiré sinon. Un abonnement Premium classique ne retire
+ * "auto" que pour un compte sans accès à vie (son seul abonnement est
+ * repassé au prix Premium). "auto_lifetime" n'est jamais touché.
+ */
+async function syncAutoTier(
+  admin: ReturnType<typeof createAdminClient>,
+  customerId: string,
+  subscription: Stripe.Subscription,
+  isHealthy: boolean,
+  isKeeper: boolean,
+) {
+  const isAuto = subscription.items.data.some((item) => item.price?.id === AUTO_PRICE_IDS.monthly);
+  if (!isAuto && isKeeper) return;
+  const next = isAuto && isHealthy ? "auto" : null;
+  let query = admin.from("profiles").update({ premium_tier: next }).eq("stripe_customer_id", customerId).or("premium_tier.is.null,premium_tier.eq.auto");
+  if (!isAuto) query = query.eq("premium_tier", "auto");
+  const { error } = await query;
+  if (error && !/premium_tier/.test(error.message)) console.error("syncSubscriptionToProfile: premium_tier non mis à jour", error.message, { customerId });
 }

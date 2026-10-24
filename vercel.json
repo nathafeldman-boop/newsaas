@@ -17,6 +17,10 @@
       "schedule": "0 6 * * *"
     },
     {
+      "path": "/api/cron/sync-la-bonne-alternance",
+      "schedule": "5 5 * * *"
+    },
+    {
       "path": "/api/cron/notify-new-offers",
       "schedule": "0 7 * * *"
     },

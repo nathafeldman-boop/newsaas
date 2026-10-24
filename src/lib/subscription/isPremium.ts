@@ -19,6 +19,7 @@ import type { Profile } from "@/types/database";
 export const PERIOD_GRACE_MS = 24 * 60 * 60 * 1000;
 
 type PremiumFields = Pick<Profile, "subscription_status"> & Partial<Pick<Profile, "current_period_end">>;
+type AutoFields = PremiumFields & Partial<Pick<Profile, "premium_tier" | "subscription_price_cents" | "subscription_interval">>;
 
 export function isSubscriptionPeriodOver(profile: PremiumFields, now = Date.now()): boolean {
   if (!profile.current_period_end) return false;
@@ -32,4 +33,18 @@ export function isPremium(profile: PremiumFields | null | undefined): boolean {
   if (status === "comp" || status === "lifetime") return true;
   if (status === "active" || status === "trialing") return !isSubscriptionPeriodOver(profile);
   return false;
+}
+
+// Formule « Stageio Auto » (24/10) : envoi de la candidature au like.
+// premium_tier est posé par le webhook Stripe ("auto" tant que l'abonnement
+// Auto est sain, "auto_lifetime" pour l'accès à vie Auto). Tant que la
+// colonne n'existe pas (SQL du 24/10), un abonnement mensuel à 17,99 € suffit.
+export function isAutoTier(profile: AutoFields | null | undefined): boolean {
+  if (!profile || !isPremium(profile)) return false;
+  if (profile.premium_tier === "auto" || profile.premium_tier === "auto_lifetime") return true;
+  return (
+    (profile.subscription_status === "active" || profile.subscription_status === "trialing") &&
+    profile.subscription_price_cents === 1799 &&
+    profile.subscription_interval === "month"
+  );
 }

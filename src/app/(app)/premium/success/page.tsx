@@ -5,6 +5,9 @@ import { syncSubscriptionToProfile } from "@/lib/stripe/syncSubscription";
 import { creditCheckoutPayment, creditInvoicePayment } from "@/lib/stripe/creditInvoicePayment";
 import { creditAffiliateCommission } from "@/lib/affiliates/creditAffiliateCommission";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { applyAutoCheckout } from "@/lib/stripe/autoPlan";
+import { isAutoTier } from "@/lib/subscription/isPremium";
+import { AUTO_DAILY_LIMIT } from "@/lib/pricing/plans";
 import type Stripe from "stripe";
 
 // Filet de secours : le webhook Stripe (/api/stripe/webhook) est la voie
@@ -79,6 +82,8 @@ async function reconcileFromSession(sessionId: string, userId: string) {
       }
     }
 
+    await applyAutoCheckout(session, userId);
+
     if (isLifetimePurchase && customerId) {
       const { error } = await creditCheckoutPayment(session, customerId);
       if (error) console.error("premium/success: lifetime payment credit failed", error, { userId });
@@ -122,30 +127,38 @@ async function reconcileFromSession(sessionId: string, userId: string) {
 export default async function PremiumSuccessPage({
   searchParams,
 }: {
-  searchParams: Promise<{ session_id?: string }>;
+  searchParams: Promise<{ session_id?: string; auto?: string }>;
 }) {
   const { session_id } = await searchParams;
 
-  if (session_id) {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user) {
-      await reconcileFromSession(session_id, user.id);
-    }
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (session_id && user) {
+    await reconcileFromSession(session_id, user.id);
   }
+  // Formule Auto (24/10) : message et premier pas propres à l'envoi au like.
+  const { data: profile } = user ? await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle() : { data: null };
+  const auto = isAutoTier(profile);
 
   return (
     <div className="mx-auto flex max-w-md flex-1 flex-col items-center justify-center px-5 py-16 text-center sm:px-9">
       <p className="text-4xl">🎉</p>
-      <h1 style={{ fontSize: 24, margin: "16px 0 0" }}>Bienvenue dans Premium</h1>
+      <h1 style={{ fontSize: 24, margin: "16px 0 0" }}>{auto ? "Bienvenue dans Stageio Auto" : "Bienvenue dans Premium"}</h1>
       <p style={{ fontSize: 14, margin: "10px 0 24px" }}>
-        Ton accès Premium est actif. Like, candidatures illimitées et audit CV sont débloqués.
+        {auto
+          ? `Tu peux maintenant postuler tout seul : chaque like envoie ta candidature, jusqu'à ${AUTO_DAILY_LIMIT} par jour. Vérifie ton CV (onglet CV) et ton téléphone (profil) : ils partent avec chaque candidature. Les réponses arriveront dans ta boîte.`
+          : "Ton accès Premium est actif. Like, candidatures illimitées et audit CV sont débloqués."}
       </p>
       <Link href="/swipe" className="btn btn-primary">
-        Retourner au swipe
+        {auto ? "Swiper et postuler" : "Retourner au swipe"}
       </Link>
+      {auto && (
+        <Link href="/profil" className="btn btn-ghost" style={{ marginTop: 8 }}>
+          Compléter mon CV et mon téléphone
+        </Link>
+      )}
     </div>
   );
 }

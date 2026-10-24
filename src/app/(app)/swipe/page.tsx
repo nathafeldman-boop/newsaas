@@ -10,7 +10,7 @@ import {
   localCitiesFor,
 } from "@/lib/matching/score";
 import { buildLearnedAffinity, type SwipeHistoryEntry } from "@/lib/matching/learning";
-import { isPremium } from "@/lib/subscription/isPremium";
+import { isPremium, isAutoTier } from "@/lib/subscription/isPremium";
 import { refreshStaleSubscription } from "@/lib/stripe/refreshStaleSubscription";
 import { computeApplicationStreak } from "@/lib/engagement/applicationStreak";
 import { fetchActiveOffers } from "@/lib/offers/fetchActiveOffers";
@@ -18,6 +18,8 @@ import { hotSinceIso, orderFreshFirst } from "@/lib/offers/freshness";
 import { knownProfileSectors } from "@/lib/offers/sectors";
 import { isSchoolOrJobBoard } from "@/lib/seo/schools";
 import { normalizeTitle } from "@/lib/seo/metiers";
+import { normalizePhone, splitFullName } from "@/lib/laBonneAlternance/applicant";
+import { isAutoOfferAvailable } from "@/lib/subscription/autoAvailability";
 
 export default async function SwipePage() {
   const supabase = await createClient();
@@ -380,6 +382,13 @@ export default async function SwipePage() {
         sectorLabel={sectorLabel}
         applicationStreak={applicationStreak}
         freshInbox={freshInbox}
+        isAuto={isAutoTier(profile)}
+        autoOfferAvailable={isAutoOfferAvailable(profile)}
+        autoApplySetup={{
+          hasCv: !!profile?.cv_path,
+          hasPhone: !!normalizePhone(profile?.phone),
+          hasFullName: !!splitFullName(profile?.full_name),
+        }}
       />
     </div>
   );
