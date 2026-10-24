@@ -8,6 +8,7 @@ import { CvQuickSend } from "@/components/dashboard/CvQuickSend";
 import { PremiumCtaLink } from "@/components/premium/PremiumCtaLink";
 import { computeMatchScore } from "@/lib/matching/score";
 import { fetchActiveOffers } from "@/lib/offers/fetchActiveOffers";
+import { knownProfileSectors } from "@/lib/offers/sectors";
 import { buildActionPlan } from "@/lib/dashboard/actionPlan";
 
 export default async function DashboardPage() {
@@ -69,7 +70,7 @@ export default async function DashboardPage() {
         const todayStart = new Date();
         todayStart.setHours(0, 0, 0, 0);
         return fetchActiveOffers(supabase, {
-          sectors: profile && profile.sectors.length > 0 ? profile.sectors : [],
+          sectors: profile ? knownProfileSectors(profile.sectors) : [],
           publishedAfter: todayStart.toISOString(),
           limit: 300,
         });

@@ -9,6 +9,7 @@ import { unsubscribeUrlFor } from "@/lib/resend/unsubscribe";
 import { offerPath } from "@/lib/offers/publicUrl";
 import { GUARANTEE_MONTHS } from "@/lib/premium/guaranteeTerms";
 import type { ContractType, Database } from "@/types/database";
+import { knownProfileSectors } from "@/lib/offers/sectors";
 
 // Relances ponctuelles des inscrits qui n'ont jamais payé : UN email par
 // campagne, envoyé par lots depuis /admin/relance, jamais automatiquement.
@@ -289,7 +290,7 @@ export type ProfileCounts = {
 // dernière visite pour la campagne nouveautés).
 function profileFilter(p: CampaignProfile, zone: Zone): (o: CatalogOffer) => boolean {
   const types = new Set(p.looking_for);
-  const sectors = new Set(p.sectors);
+  const sectors = new Set(knownProfileSectors(p.sectors));
   return (o) =>
     (types.size === 0 || types.has(o.contract_type)) &&
     (sectors.size === 0 || (Boolean(o.sector) && sectors.has(o.sector!))) &&
@@ -299,7 +300,7 @@ function profileFilter(p: CampaignProfile, zone: Zone): (o: CatalogOffer) => boo
 export function countForProfile(catalog: Catalog, p: CampaignProfile, since: string = p.created_at): ProfileCounts {
   const zone = zoneOf(p.city);
   const types = new Set(p.looking_for);
-  const sectors = new Set(p.sectors);
+  const sectors = new Set(knownProfileSectors(p.sectors));
   const matches = profileFilter(p, zone);
   let matching = 0;
   let newSinceSignup = 0;

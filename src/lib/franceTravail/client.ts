@@ -109,6 +109,10 @@ export interface FranceTravailJob {
   lieuTravail?: { libelle?: string };
   salaire?: { libelle?: string };
   typeContratLibelle?: string;
+  // Métier du référentiel ROME (« Réception en hôtellerie ») et appellation
+  // précise : bien plus fiables que l'intitulé pour le secteur.
+  romeLibelle?: string;
+  appellationlibelle?: string;
   // Champs structurés de l'offre : « alternance » (booléen) et
   // « natureContrat » (« Contrat apprentissage », « Cont.
   // professionnalisation »…). Optionnels : le code ne suppose jamais leur

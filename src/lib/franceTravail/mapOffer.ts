@@ -60,7 +60,7 @@ export function mapFranceTravailJob(job: FranceTravailJob): MappedOffer | null {
     company: company || "Entreprise non communiquée",
     location,
     contract_type: contractType,
-    sector: guessSector(job.typeContratLibelle, job.intitule, job.description),
+    sector: guessSector([job.romeLibelle, job.appellationlibelle].filter(Boolean).join(" "), job.intitule, job.description),
     description: job.description.slice(0, 4000),
     requirements: null,
     duration: null,

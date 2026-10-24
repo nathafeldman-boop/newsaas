@@ -15,6 +15,7 @@ import { refreshStaleSubscription } from "@/lib/stripe/refreshStaleSubscription"
 import { computeApplicationStreak } from "@/lib/engagement/applicationStreak";
 import { fetchActiveOffers } from "@/lib/offers/fetchActiveOffers";
 import { hotSinceIso, orderFreshFirst } from "@/lib/offers/freshness";
+import { knownProfileSectors } from "@/lib/offers/sectors";
 import { isSchoolOrJobBoard } from "@/lib/seo/schools";
 import { normalizeTitle } from "@/lib/seo/metiers";
 
@@ -150,7 +151,10 @@ export default async function SwipePage() {
   // secteur(s) choisi(s) plutôt que de le laisser peser juste sur le tri.
   // Les comptes créés avant que ce champ soit obligatoire (sectors vide)
   // ne sont pas filtrés, sinon leur deck se viderait d'un coup.
-  const hardSectors = profile && profile.sectors.length > 0 ? profile.sectors : [];
+  // Secteurs saisis à la main (« + Autre ») ramenés à la liste connue, voir
+  // knownProfileSectors : sinon le filtre ne trouvait aucune offre.
+  const hardSectors = profile ? knownProfileSectors(profile.sectors) : [];
+  const matchProfile = profile ? { ...profile, sectors: hardSectors } : profile;
 
   // Offres de la ville du profil (et de son agglomération), cherchées EN
   // PLUS du bassin ci-dessus. Le bassin prend les 600 offres les mieux
@@ -240,7 +244,7 @@ export default async function SwipePage() {
     // sans CV exploitable, donc sans effet sur le deck des non-abonnés.
     const cvText = premium ? (profile.cv_text ?? null) : null;
     for (const offer of offers) {
-      const base = computeMatchScore(profile, offer);
+      const base = computeMatchScore(matchProfile!, offer);
       const learnedBonus =
         affinity.sectorBonus(offer.sector) +
         affinity.remoteBonus(offer.remote_policy) +
@@ -327,7 +331,7 @@ export default async function SwipePage() {
   const reasons: Record<string, string[]> = {};
   if (profile) {
     for (const offer of sortedOffers) {
-      const offerReasons = computeMatchReasons(profile, offer);
+      const offerReasons = computeMatchReasons(matchProfile!, offer);
       if (offerReasons.length < 3 && affinity.isStrongContentMatch(offer)) {
         offerReasons.push("Proche d'offres que tu as aimées");
       }
