@@ -23,6 +23,7 @@ import {
 } from "@/lib/admin/cockpit/metrics";
 import { requireAdminPage } from "@/lib/admin/accessCode";
 import { TodayLive } from "@/components/admin/cockpit/TodayLive";
+import { autoOfferBlockers } from "@/lib/admin/autoStatus";
 
 // Vue d'ensemble du cockpit : « comment se porte Stageio aujourd'hui ? ».
 // Chiffres de paiement lus dans Stripe (instantané de 30 min max), comptes
@@ -37,12 +38,17 @@ export default async function CockpitOverviewPage({ searchParams }: { searchPara
   const { current, previous } = periodRanges(period, now);
   const { snap, error } = await loadSnapshot();
 
-  const [signupsCur, signupsPrev, active7, active30] = await Promise.all([
+  const [signupsCur, signupsPrev, active7, active30, autoBlockers] = await Promise.all([
     signupsIn(current).catch(() => null),
     signupsIn(previous).catch(() => null),
     activeSince(now - 7 * DAY_MS).catch(() => null),
     activeSince(now - 30 * DAY_MS).catch(() => null),
+    autoOfferBlockers().catch(() => [] as string[]),
   ]);
+  const autoAlert =
+    autoBlockers.length > 0
+      ? { tone: "is-bad", text: `Stageio Auto (17,99 € et 80 €) n'est pas proposée : ${autoBlockers.join(" ; ")}`, href: "/admin/sante" }
+      : null;
 
   if (!snap) {
     return (
@@ -51,6 +57,11 @@ export default async function CockpitOverviewPage({ searchParams }: { searchPara
         <Suspense fallback={null}>
           <TodayLive now={now} />
         </Suspense>
+        {autoAlert && (
+          <p className="cockpit-pill is-bad" style={{ fontSize: 13, padding: "6px 12px", borderRadius: 10, margin: "16px 0 0", display: "inline-block" }}>
+            <span aria-hidden>⛔</span> {autoAlert.text}
+          </p>
+        )}
         <div style={{ marginTop: 16 }} />
         <Card>
           <p style={{ margin: 0, fontSize: 14 }}>
@@ -92,6 +103,7 @@ export default async function CockpitOverviewPage({ searchParams }: { searchPara
   const cancels7 = movementIn(snap, { start: now - 7 * DAY_MS, end: now }, firstPaid).cancelRequests;
   const cancelsPrev7 = movementIn(snap, { start: now - 14 * DAY_MS, end: now - 7 * DAY_MS }, firstPaid).cancelRequests;
   const alerts = [
+    autoAlert,
     state.pastDue.count > 0 && { tone: "is-bad", text: `${state.pastDue.count} abonnement(s) en impayé (${euros(state.pastDue.mrr)} de MRR)`, href: "/admin/abonnements?statut=impaye" },
     mvCur.failedOpen > 0 && { tone: "is-bad", text: `${mvCur.failedOpen} paiement(s) échoué(s) non récupéré(s) sur la période`, href: "/admin/abonnements" },
     state.scheduled.count > 0 && { tone: "is-warn", text: `${state.scheduled.count} résiliation(s) programmée(s) (${euros(state.scheduled.mrr)} de MRR à risque)`, href: "/admin/abonnements?statut=programme" },

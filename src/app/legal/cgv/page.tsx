@@ -100,9 +100,9 @@ export default function CGVPage() {
       <Section title="Résiliation">
         <p>
           Formule mensuelle : tu peux résilier ton abonnement à tout moment,
-          sans justification ni frais, directement depuis la page
-          &laquo; Premium &raquo; de ton compte (bouton &laquo; Gérer mon
-          abonnement &raquo;, qui ouvre le portail de gestion Stripe). La
+          sans justification ni frais, directement depuis le
+          &laquo; Profil &raquo; de ton compte (&laquo; Gérer mon abonnement
+          Premium &raquo;, qui mène au portail de gestion Stripe). La
           résiliation prend effet à la fin de la période déjà payée : tu
           conserves l&apos;accès Premium jusqu&apos;à cette date, sans
           remboursement au prorata de la période entamée.

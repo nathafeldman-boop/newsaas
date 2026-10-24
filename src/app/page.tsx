@@ -123,7 +123,7 @@ const FAQ = [
   {
     question: "Comment résilier l'abonnement Premium ?",
     answer:
-      "Depuis la page Premium de ton compte, en un clic sur \"Gérer mon abonnement\" — aucun engagement, aucune justification à donner.",
+      "Depuis ton Profil, sur \"Gérer mon abonnement Premium\" — aucun engagement, aucune justification à donner.",
   },
   {
     question: "Stageio propose-t-il des offres partout en France ?",

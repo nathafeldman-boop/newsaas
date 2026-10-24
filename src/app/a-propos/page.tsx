@@ -51,7 +51,7 @@ const FAQ = [
   },
   {
     q: "Comment résilier l'abonnement Premium ?",
-    a: "À tout moment, depuis la page Premium de ton compte (« Gérer mon abonnement ») : l'abonnement mensuel est sans engagement.",
+    a: "À tout moment, depuis ton Profil (« Gérer mon abonnement Premium ») : l'abonnement mensuel est sans engagement.",
   },
   {
     q: "D'où viennent les offres de Stageio ? Sont-elles fiables ?",

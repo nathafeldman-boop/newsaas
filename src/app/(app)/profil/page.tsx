@@ -40,6 +40,11 @@ export default async function ProfilPage({
 
   const initial = (profile.full_name || user.email || "?").charAt(0).toUpperCase();
   const premium = isPremium(profile);
+  // Abonnement Stripe en cours (mensuel Premium ou Auto) : rien à résilier
+  // pour un accès à vie ou un accès offert par code.
+  const hasSubscription =
+    !!profile.stripe_subscription_id &&
+    (profile.subscription_status === "active" || profile.subscription_status === "trialing" || profile.subscription_status === "past_due");
 
   const [{ data: applications }, { data: review }] = await Promise.all([
     supabase.from("applications").select("status").eq("user_id", user.id),
@@ -138,15 +143,6 @@ export default async function ProfilPage({
       <ReviewPanel userId={user.id} initialReview={review ?? null} />
 
       <div className="flex flex-col gap-2.5 mt-5">
-        <PremiumCtaLink
-          userId={user.id}
-          source="profil_row"
-          className="card flex-row items-center justify-between no-underline"
-          style={{ color: "inherit", padding: "var(--space-3) var(--space-4)" }}
-        >
-          <span style={{ fontSize: 14 }}>{premium ? "🔓 Abonnement Premium actif" : "Passer Premium (39,99 € à vie ou 7,99 €/mois)"}</span>
-          <span>→</span>
-        </PremiumCtaLink>
         <SearchCompletedToggle
           completedAt={profile.search_completed_at}
           completedReason={profile.search_completed_reason}
@@ -159,6 +155,41 @@ export default async function ProfilPage({
           <span style={{ fontSize: 14 }}>Mes candidatures</span>
           <span>→</span>
         </Link>
+        {/* Abonnement (Nathan, 25/10) : géré d'ici, entre « Mes candidatures »
+            et « Parrainage », plus depuis la page « Tu es Premium ». Un
+            abonnement mène à l'étape avant résiliation puis au portail
+            Stripe (résiliation toujours à quelques clics). */}
+        {hasSubscription ? (
+          <Link
+            href="/premium/annuler"
+            className="card flex-row items-center justify-between no-underline"
+            style={{ color: "inherit", padding: "var(--space-3) var(--space-4)" }}
+          >
+            <span style={{ fontSize: 14 }}>{isAutoTier(profile) ? "Gérer mon abonnement Stageio Auto" : "Gérer mon abonnement Premium"}</span>
+            <span>→</span>
+          </Link>
+        ) : premium ? (
+          <Link
+            href="/premium"
+            className="card flex-row items-center justify-between no-underline"
+            style={{ color: "inherit", padding: "var(--space-3) var(--space-4)" }}
+          >
+            <span style={{ fontSize: 14 }}>
+              {profile.subscription_status === "lifetime" ? "🔓 Premium à vie" : "🔓 Premium actif"}
+            </span>
+            <span>→</span>
+          </Link>
+        ) : (
+          <PremiumCtaLink
+            userId={user.id}
+            source="profil_row"
+            className="card flex-row items-center justify-between no-underline"
+            style={{ color: "inherit", padding: "var(--space-3) var(--space-4)" }}
+          >
+            <span style={{ fontSize: 14 }}>Passer Premium</span>
+            <span>→</span>
+          </PremiumCtaLink>
+        )}
         <Link
           href="/parrainage"
           className="card flex-row items-center justify-between no-underline"

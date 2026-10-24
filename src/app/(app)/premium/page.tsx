@@ -238,33 +238,16 @@ export default async function PremiumPage({
               </div>
             )
           )}
-          {profile?.subscription_status === "lifetime" ? (
+          {/* Gestion et résiliation de l'abonnement : depuis le Profil
+              (Nathan, 25/10 : le lien d'ici menait trop vite à la
+              résiliation). */}
+          {profile?.subscription_status === "lifetime" && (
             <p
               className="tag tag-accent"
               style={{ marginTop: 28, padding: "10px 16px", fontSize: 13.5 }}
             >
               🎉 Accès à vie — paiement unique, rien à gérer ni à renouveler.
             </p>
-          ) : (
-            // Reste cliquable et visible (jamais caché) mais volontairement
-            // discret -- avant ce changement, "Gérer mon abonnement" (qui
-            // mène à l'écran de résiliation) était le seul CTA de la page,
-            // stylé comme un bouton principal plein-largeur. Nathan (29/09) :
-            // l'app ne doit pas pousser vers la résiliation dès qu'on arrive
-            // ici, sans pour autant la dissimuler.
-            <Link
-              href="/premium/annuler"
-              style={{
-                marginTop: 28,
-                fontSize: 13,
-                fontWeight: 600,
-                color: "color-mix(in srgb, var(--color-text) 55%, transparent)",
-                textDecoration: "underline",
-                textUnderlineOffset: 3,
-              }}
-            >
-              Gérer mon abonnement
-            </Link>
           )}
         </div>
       ) : paymentIssue ? (
