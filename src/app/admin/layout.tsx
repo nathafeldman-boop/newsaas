@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { hasAdminSession } from "@/lib/admin/accessCode";
 import { adminLogoutAction } from "@/app/admin/login/actions";
-import { AdminTabs } from "@/components/admin/AdminTabs";
+import { AdminNav } from "@/components/admin/AdminNav";
 
 // Hors du groupe (app) volontairement : pas de nav consommateur (Swipe/
 // Favoris/CV/Profil), pas de PageTransition, pas de redirection paywall, et
@@ -33,10 +33,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </button>
         </form>
       </header>
-      <main className="mx-auto w-full max-w-[900px] flex-1 px-4 py-8">
-        <AdminTabs />
-        {children}
-      </main>
+      <div className="admin-shell">
+        <aside className="admin-side">
+          <AdminNav />
+        </aside>
+        <main className="admin-main">{children}</main>
+      </div>
     </div>
   );
 }

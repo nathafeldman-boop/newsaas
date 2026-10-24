@@ -21,5 +21,5 @@ export async function submitIndexNowAction() {
   }
   const params = new URLSearchParams({ indexnow: result.error ? "error" : "ok", count: String(result.submitted) });
   if (result.error) params.set("message", result.error);
-  redirect(`/admin?${params.toString()}`);
+  redirect(`/admin/acquisition?${params.toString()}`);
 }

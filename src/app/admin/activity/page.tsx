@@ -74,7 +74,7 @@ export default async function AdminActivityPage({
         href="/admin"
         style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}
       >
-        ← Dashboard
+        ← Vue d&apos;ensemble
       </Link>
       <h1 style={{ fontSize: 26, margin: "10px 0 6px" }}>Activité récente</h1>
       <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "0 0 16px" }}>

@@ -14,5 +14,5 @@ export async function moderateReviewAction(formData: FormData) {
   const { error } = await db.from("reviews").update({ status }).eq("id", id);
   if (error) console.error("moderateReviewAction: update failed", error, { id, status });
 
-  revalidatePath("/admin");
+  revalidatePath("/admin/acquisition");
 }

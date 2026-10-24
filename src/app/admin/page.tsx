@@ -1,897 +1,242 @@
 import Link from "next/link";
-import { submitIndexNowAction } from "@/app/admin/seo-actions";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { fetchAllRows } from "@/lib/supabase/public";
-import { FUNNEL_WINDOW_DAYS, getHeardFromStats, getLeoFunnel, getNewsCampaignStats, getOnboardingFunnelStats, getTodayVisitorsBySource, getWeekdayAverages, withTimeout } from "@/lib/admin/dashboardStats";
-import { startOfTodayParis } from "@/lib/date";
-import { STEP_IDS, STEP_LABELS, type StepId } from "@/lib/onboarding/steps";
-import { LineAreaChart } from "@/components/admin/charts/LineAreaChart";
-import { WeekdayBarChart } from "@/components/admin/charts/WeekdayBarChart";
-import { bucketizeSignups, periodStart, type Period } from "@/lib/admin/analytics";
-import { moderateReviewAction } from "./reviews-actions";
-import { loadSeriesReport } from "@/lib/campaigns/serieVente";
-import { getStripeTotals } from "@/lib/admin/stripeTotals";
+import { Card, Insufficient, Kpi, KpiGrid, Section } from "@/components/admin/cockpit/Kpi";
+import { PeriodBar } from "@/components/admin/cockpit/PeriodBar";
+import { LineChart } from "@/components/admin/cockpit/LineChart";
+import { BarChart } from "@/components/admin/cockpit/BarChart";
+import { SERIES_COLORS } from "@/components/admin/cockpit/chartUtils";
+import { activeSince, profilesByIds, signupsIn } from "@/lib/admin/cockpit/db";
+import { delta, euros, int, parsePeriod, pct, periodRanges } from "@/lib/admin/cockpit/format";
+import { loadSnapshot, nowMs } from "@/lib/admin/cockpit/load";
+import {
+  DAY_MS,
+  churnIn,
+  currentState,
+  dailyRevenue,
+  duplicateSubs,
+  firstPaidBySub,
+  mrrAt,
+  mrrSeries,
+  movementIn,
+  paidSubs,
+  revenueIn,
+} from "@/lib/admin/cockpit/metrics";
 
-const PERIODS: Period[] = ["7j", "30j", "90j", "tout"];
-const PERIOD_LABELS: Record<Period, string> = {
-  "7j": "7 jours",
-  "30j": "30 jours",
-  "90j": "90 jours",
-  tout: "Tout",
-};
+// Vue d'ensemble du cockpit : « comment se porte Stageio aujourd'hui ? ».
+// Chiffres de paiement lus dans Stripe (instantané de 30 min max), comptes
+// et activité dans Supabase. Chaque tuile a sa définition et sa source.
+export const maxDuration = 60;
 
-const STATUS_LABEL: Record<string, string> = {
-  active: "Payant",
-  trialing: "Essai",
-  comp: "Offert",
-  lifetime: "À vie",
-};
+export default async function CockpitOverviewPage({ searchParams }: { searchParams: Promise<{ p?: string }> }) {
+  const { p } = await searchParams;
+  const period = parsePeriod(p);
+  const now = nowMs();
+  const { current, previous } = periodRanges(period, now);
+  const { snap, error } = await loadSnapshot();
 
-function fmtDate(date: string): string {
-  return new Date(date).toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" });
-}
+  const [signupsCur, signupsPrev, active7, active30] = await Promise.all([
+    signupsIn(current).catch(() => null),
+    signupsIn(previous).catch(() => null),
+    activeSince(now - 7 * DAY_MS).catch(() => null),
+    activeSince(now - 30 * DAY_MS).catch(() => null),
+  ]);
 
-function StatTile({
-  label,
-  value,
-  accent,
-  href,
-}: {
-  label: string;
-  value: string;
-  accent?: boolean;
-  href?: string;
-}) {
-  const content = (
-    <>
-      <p
-        style={{
-          fontFamily: "var(--font-heading)",
-          fontSize: 32,
-          margin: 0,
-          color: accent ? "var(--color-accent)" : "inherit",
-        }}
-      >
-        {value}
-      </p>
-      <p
-        style={{
-          fontSize: 12,
-          letterSpacing: "0.04em",
-          textTransform: "uppercase",
-          color: "color-mix(in srgb, var(--color-text) 65%, transparent)",
-          margin: "6px 0 0",
-        }}
-      >
-        {label}
-        {href && " →"}
-      </p>
-    </>
-  );
-
-  if (href) {
+  if (!snap) {
     return (
-      <Link
-        href={href}
-        className="card elev-sm no-underline"
-        style={{ padding: "var(--space-5)", color: "inherit", display: "block" }}
-      >
-        {content}
-      </Link>
+      <div>
+        <h1 style={{ fontSize: 24, fontWeight: 700, margin: "0 0 12px" }}>Vue d&apos;ensemble</h1>
+        <Card>
+          <p style={{ margin: 0, fontSize: 14 }}>
+            Lecture Stripe impossible pour l&apos;instant ({error}). Les chiffres de paiement ne sont pas affichés plutôt que d&apos;être faux.
+          </p>
+        </Card>
+      </div>
     );
   }
 
-  return (
-    <div className="card elev-sm" style={{ padding: "var(--space-5)" }}>
-      {content}
-    </div>
-  );
-}
+  const firstPaid = firstPaidBySub(snap.invoices);
+  const paid = paidSubs(snap, firstPaid);
+  const state = currentState(paid, now);
+  const mrrSeriesNow = mrrAt(paid, now);
+  const mrr7 = mrrAt(paid, now - 7 * DAY_MS);
+  const mrr30 = mrrAt(paid, now - 30 * DAY_MS);
+  const revCur = revenueIn(snap, current);
+  const revPrev = revenueIn(snap, previous);
+  const mvCur = movementIn(snap, current, firstPaid);
+  const mvPrev = movementIn(snap, previous, firstPaid);
+  const chCur = churnIn(paid, current);
+  const chPrev = churnIn(paid, previous);
+  const series = mrrSeries(paid, current);
+  const daily = dailyRevenue(snap, current);
 
-function SectionCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
-  return (
-    <div className="card elev-sm mt-6" style={{ padding: "var(--space-5)" }}>
-      <h2 style={{ fontSize: 16, margin: 0 }}>{title}</h2>
-      {subtitle && (
-        <p style={{ fontSize: 12, margin: "4px 0 0", color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
-          {subtitle}
-        </p>
-      )}
-      <div className="mt-4">{children}</div>
-    </div>
-  );
-}
-
-export default async function AdminDashboardPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ periode?: string; indexnow?: string; count?: string; message?: string }>;
-}) {
-  const { periode, indexnow, count: indexNowCount, message: indexNowMessage } = await searchParams;
-  const period: Period = (PERIODS as string[]).includes(periode ?? "") ? (periode as Period) : "30j";
-
-  const admin = createAdminClient();
-
-  // Minuit heure de Paris, pas heure du serveur (UTC sur Vercel) : sinon
-  // "Inscrits aujourd'hui" bascule vers le jour suivant avec 1-2h d'avance
-  // par rapport à l'heure française.
-  const todayStart = startOfTodayParis();
-  const weekAgo = new Date();
-  weekAgo.setDate(weekAgo.getDate() - 7);
-  // Fenêtre "en ligne" : chaque page ouverte par un compte connecté retape
-  // last_active_at toutes les 30 s et à chaque geste (voir PresencePing,
-  // 16/10), jamais depuis /admin -- 3 min tolèrent plusieurs signaux
-  // manqués (réseau mobile, Supabase lent) sans garder longtemps un parti.
-  const onlineSince = new Date();
-  onlineSince.setMinutes(onlineSince.getMinutes() - 3);
-
-  // "tout" doit quand même borner les requêtes site_visits et profiles (une
-  // ligne par visite/inscription depuis le lancement) -- 180 jours est
-  // largement au-delà de l'historique actuel du site, donc équivalent à
-  // "tout" en pratique, sans risquer de ramener une table qui grossit
-  // indéfiniment (déjà vu : "profiles" a dépassé le Max Rows de 1000 et
-  // tronqué silencieusement le calcul de LTV avant le fix RPC ci-dessous).
-  const periodFallback = new Date();
-  periodFallback.setDate(periodFallback.getDate() - 180);
-  const visitsSince = periodStart(period) ?? periodFallback;
-
-  // ARR = somme des abonnements actifs/essai annualisés selon leur vraie
-  // cadence Stripe (subscription_price_cents/interval, posés par le webhook
-  // -- voir syncSubscription.ts). "comp" (codes offerts) exclu : aucun
-  // revenu réel derrière. "lifetime" (paiement unique, voir premium/
-  // actions.ts) exclu aussi, pour la raison inverse : revenu bien réel, mais
-  // par définition non récurrent -- déjà compté une fois dans Revenu cumulé
-  // (total_paid_cents), l'inclure ici en l'annualisant surestimerait l'ARR
-  // chaque année suivante pour un paiement qui n'a eu lieu qu'une fois.
-  const ANNUALIZATION_BY_INTERVAL: Record<string, number> = { day: 365, week: 52, month: 12, year: 1 };
-  const DEFAULT_MONTHLY_PRICE_CENTS = 799;
-
-  // Statistiques lourdes (graphique par jour de semaine, visiteurs du jour,
-  // entonnoir) : en cache, bornées, et jamais attendues plus de
-  // HEAVY_STAT_BUDGET_MS (voir lib/admin/dashboardStats.ts). null = pas
-  // disponible (erreur ou calcul trop long) : le bloc l'indique, le reste du
-  // tableau de bord s'affiche normalement. Lancées avant le reste pour que
-  // tout parte en même temps.
-  const HEAVY_STAT_BUDGET_MS = 8000;
-  const UNKNOWN_SOURCE = "direct / inconnu";
-  const leoFunnelPromise = withTimeout(
-    getLeoFunnel().catch((err) => {
-      console.error("AdminDashboardPage: leo funnel failed", err);
-      return null;
-    }),
-    HEAVY_STAT_BUDGET_MS,
-    null,
-  );
-  const weekdayAveragesPromise = withTimeout(
-    getWeekdayAverages(period).catch((err) => {
-      console.error("AdminDashboardPage: visits query failed", err);
-      return null;
-    }),
-    HEAVY_STAT_BUDGET_MS,
-    null,
-  );
-  const visitorsBySourcePromise = withTimeout(
-    getTodayVisitorsBySource(todayStart.toISOString(), UNKNOWN_SOURCE).catch((err) => {
-      console.error("AdminDashboardPage: visits today query failed", err);
-      return null;
-    }),
-    HEAVY_STAT_BUDGET_MS,
-    null,
-  );
-  // Ventes réelles (Stripe) : lues dans le cache rempli par /admin/stripe ;
-  // sinon, les comptes qui ont au moins un paiement noté en base.
-  const stripeTotalsPromise = withTimeout(getStripeTotals().catch(() => null), 2500, null);
-  const paidEverPromise = admin.from("profiles").select("id", { count: "exact", head: true }).gt("total_paid_cents", 0);
-  const seriesPromise = withTimeout(
-    loadSeriesReport(createAdminClient(), todayStart.toISOString()).catch((err) => {
-      console.error("AdminDashboardPage: series report query failed", err);
-      return null;
-    }),
-    HEAVY_STAT_BUDGET_MS,
-    null,
-  );
-  const newsCampaignPromise = withTimeout(
-    getNewsCampaignStats(todayStart.toISOString()).catch((err) => {
-      console.error("AdminDashboardPage: news campaign query failed", err);
-      return null;
-    }),
-    HEAVY_STAT_BUDGET_MS,
-    null,
-  );
-  const heardFromPromise = withTimeout(
-    getHeardFromStats().catch((err) => {
-      console.error("AdminDashboardPage: heard from query failed", err);
-      return null;
-    }),
-    HEAVY_STAT_BUDGET_MS,
-    null,
-  );
-  const funnelStatsPromise = withTimeout(
-    getOnboardingFunnelStats().catch((err) => {
-      console.error("AdminDashboardPage: onboarding funnel query failed", err);
-      return null;
-    }),
-    HEAVY_STAT_BUDGET_MS,
-    null,
-  );
-
-  // Revenu par source (voir plus bas) : cohorte des inscrits des 30 derniers
-  // jours, paginée ("profiles" dépasse le Max Rows de 1000).
-  const cohortSince = new Date();
-  cohortSince.setDate(cohortSince.getDate() - 30);
-  const cohortPromise = fetchAllRows<{ utm_source: string | null; total_paid_cents: number }>((from, to) =>
-    admin
-      .from("profiles")
-      .select("utm_source, total_paid_cents")
-      .gte("created_at", cohortSince.toISOString())
-      .order("created_at")
-      .range(from, to),
-  ).catch((err) => {
-    console.error("AdminDashboardPage: revenue by source query failed", err);
-    return [] as { utm_source: string | null; total_paid_cents: number }[];
-  });
-
-  // Chaque stat vient désormais d'une requête ciblée (count exact côté
-  // Postgres, ou colonnes minimales + filtre de date) plutôt que d'un seul
-  // SELECT * sans limite sur toute la table profiles -- cette dernière
-  // grossit indéfiniment et a fini par déclencher des Gateway Timeout sur
-  // /admin en prod (vu le 11-12/09). Aucune des requêtes ci-dessous ne
-  // ramène plus de lignes que nécessaire pour la stat qu'elle sert.
-  const [
-    { count: totalUsers },
-    { count: signupsToday },
-    { count: signupsWeek },
-    { count: onlineNow },
-    { count: paidPremiumCount },
-    { count: compPremiumCount },
-    { data: totalRevenueCentsRpc, error: revenueError },
-    { data: periodSignups, error: periodSignupsError },
-    { data: recentProfiles, error: recentProfilesError },
-    { data: pricingRows, error: pricingError },
-    { count: activeOffers },
-    { count: swipesTotal },
-    { count: applicationsTotal },
-    { value: funnelStats },
-    { data: reviewRows, error: reviewsError },
-    { data: signupsTodayRows, error: signupsTodayRowsError },
-  ] = await Promise.all([
-    admin.from("profiles").select("id", { count: "exact", head: true }),
-    admin.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", todayStart.toISOString()),
-    admin.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", weekAgo.toISOString()),
-    admin.from("profiles").select("id", { count: "exact", head: true }).gte("last_active_at", onlineSince.toISOString()),
-    admin.from("profiles").select("id", { count: "exact", head: true }).in("subscription_status", ["active", "trialing", "lifetime"]),
-    admin.from("profiles").select("id", { count: "exact", head: true }).eq("subscription_status", "comp"),
-    // Agrégation côté base (voir migration 20260914000000) plutôt qu'un
-    // SELECT total_paid_cents sur toute la table : "profiles" a fini par
-    // dépasser le "Max Rows" par défaut de l'API Supabase (1000), ce qui
-    // tronquait silencieusement la somme calculée côté JS -- un RPC ne
-    // retourne qu'un scalaire, jamais soumis à cette limite.
-    admin.rpc("sum_total_paid_cents"),
-    // Toujours bornée dans le temps, "tout" compris (via periodFallback,
-    // 180 jours) : "profiles" grossit indéfiniment, un select sans borne
-    // ici retomberait dans le même piège que la tuile revenu (Max Rows
-    // 1000, tronqué en silence) -- reproductible aujourd'hui via
-    // /admin?periode=tout avant ce fix.
-    admin.from("profiles").select("created_at, subscription_status").gte("created_at", visitsSince.toISOString()),
-    // Table "derniers inscrits" : seulement les 25 affichés, jamais toute
-    // la base.
-    admin
-      .from("profiles")
-      .select("id, email, full_name, created_at, subscription_status, total_paid_cents")
-      .order("created_at", { ascending: false })
-      .limit(25),
-    // Colonnes ARR récentes : si jamais elles manquent encore en base
-    // (migration pas collée) ou que la requête échoue, ça ne doit affecter
-    // QUE l'ARR -- jamais Premium/Revenu cumulé/Gratuit, calculés à part.
-    admin
-      .from("profiles")
-      .select("subscription_price_cents, subscription_interval")
-      .in("subscription_status", ["active", "trialing"]),
-    admin.from("offers").select("id", { count: "exact", head: true }).eq("is_active", true),
-    admin.from("swipes").select("id", { count: "exact", head: true }),
-    admin.from("applications").select("id", { count: "exact", head: true }),
-    // Agrégation côté base (voir migration 20260915000001) plutôt qu'un
-    // SELECT brut sur user_events : avec 7 étapes x 2 événements, cette
-    // requête dépasse le Max Rows (1000) dès quelques centaines
-    // d'utilisateurs ayant traversé l'onboarding -- même piège que la LTV
-    // avant sum_total_paid_cents, ici probablement déjà actif vu le volume
-    // d'utilisateurs actuel.
-    funnelStatsPromise,
-    // Reviews : borné par prudence (une table qui devient un jour très
-    // grande ne doit jamais tronquer silencieusement avgRating) même si le
-    // volume actuel est très en dessous de 1000.
-    admin.from("reviews").select("*").order("created_at", { ascending: false }).limit(5000),
-    admin.from("profiles").select("utm_source").gte("created_at", todayStart.toISOString()),
+  // Conversion : inscrits de la période qui ont payé (abonnement ou accès à vie), à n'importe quelle date depuis.
+  const payerIds = new Set<string>([
+    ...paid.map((s) => s.userId).filter((id): id is string => !!id),
+    ...snap.oneTime.map((o) => o.userId),
   ]);
+  const conv = (ids: string[] | null) => (ids && ids.length > 0 ? ids.filter((id) => payerIds.has(id)).length / ids.length : null);
+  const convCur = conv(signupsCur);
+  const convPrev = conv(signupsPrev);
 
-  // supabase-js ne throw jamais sur une erreur Postgres (ex: colonne pas
-  // encore migrée en base) -- sans ces logs, une requête qui échoue ici
-  // retombe silencieusement sur `[]`/0, et les stats concernées affichent
-  // tout sans aucune trace pour comprendre pourquoi (déjà vu avec
-  // site_visits et la synchro Stripe -- même mésaventure, cause différente).
-  if (revenueError) console.error("AdminDashboardPage: revenue query failed", revenueError);
-  if (periodSignupsError) console.error("AdminDashboardPage: period signups query failed", periodSignupsError);
-  if (recentProfilesError) console.error("AdminDashboardPage: recent profiles query failed", recentProfilesError);
-  if (pricingError) console.error("AdminDashboardPage: ARR pricing query failed", pricingError);
-  if (reviewsError) console.error("AdminDashboardPage: reviews query failed", reviewsError);
-  if (signupsTodayRowsError) console.error("AdminDashboardPage: signups today query failed", signupsTodayRowsError);
+  // Alertes (règles fixes, détaillées sur « Abonnements et churn » et « Santé et données »).
+  const payerProfiles = await profilesByIds([...payerIds]).catch(() => null);
+  const missingCredit = payerProfiles ? [...payerIds].filter((id) => (payerProfiles.get(id)?.total_paid_cents ?? 0) <= 0).length : null;
+  const duplicates = duplicateSubs(paid, now).length;
+  const cancels7 = movementIn(snap, { start: now - 7 * DAY_MS, end: now }, firstPaid).cancelRequests;
+  const cancelsPrev7 = movementIn(snap, { start: now - 14 * DAY_MS, end: now - 7 * DAY_MS }, firstPaid).cancelRequests;
+  const alerts = [
+    state.pastDue.count > 0 && { tone: "is-bad", text: `${state.pastDue.count} abonnement(s) en impayé (${euros(state.pastDue.mrr)} de MRR)`, href: "/admin/abonnements?statut=impaye" },
+    mvCur.failedOpen > 0 && { tone: "is-bad", text: `${mvCur.failedOpen} paiement(s) échoué(s) non récupéré(s) sur la période`, href: "/admin/abonnements" },
+    state.scheduled.count > 0 && { tone: "is-warn", text: `${state.scheduled.count} résiliation(s) programmée(s) (${euros(state.scheduled.mrr)} de MRR à risque)`, href: "/admin/abonnements?statut=programme" },
+    cancels7 >= 3 && cancels7 >= 2 * Math.max(1, cancelsPrev7) && { tone: "is-bad", text: `Hausse des résiliations : ${cancels7} demandes en 7 jours contre ${cancelsPrev7} les 7 jours d'avant`, href: "/admin/abonnements" },
+    missingCredit && { tone: "is-warn", text: `${missingCredit} payeur(s) Stripe sans paiement noté en base`, href: "/admin/sante" },
+    duplicates > 0 && { tone: "is-warn", text: `${duplicates} client(s) avec deux abonnements en cours`, href: "/admin/sante" },
+    revCur.disputes > 0 && { tone: "is-bad", text: `${revCur.disputes} litige(s) bancaire(s) sur la période`, href: "/admin/sante" },
+  ].filter((a): a is { tone: string; text: string; href: string } => !!a);
 
-  const paidPremium = paidPremiumCount ?? 0;
-  const compPremium = compPremiumCount ?? 0;
-  const premiumTotal = paidPremium + compPremium;
-  const freePct = totalUsers && totalUsers > 0 ? Math.round(((totalUsers - premiumTotal) / totalUsers) * 100) : 0;
-  const totalRevenueCents = totalRevenueCentsRpc ?? 0;
-
-  // Un abonné actif depuis avant l'ajout de ces deux colonnes (ou si la
-  // requête ci-dessus a échoué) n'a encore ni l'un ni l'autre -- fallback
-  // sur le prix mensuel (799 = 7,99€), seule offre qui existait jusqu'ici,
-  // plutôt que de sous-compter silencieusement ces comptes.
-  const arrCents = (pricingRows ?? []).reduce((sum, p) => {
-    const priceCents = p.subscription_price_cents ?? DEFAULT_MONTHLY_PRICE_CENTS;
-    const multiplier = ANNUALIZATION_BY_INTERVAL[p.subscription_interval ?? "month"] ?? 12;
-    return sum + priceCents * multiplier;
-  }, 0);
-
-  const periodProfiles = periodSignups ?? [];
-  const chartData = bucketizeSignups(
-    periodProfiles.map((p) => ({
-      created_at: p.created_at,
-      isPremium:
-        p.subscription_status === "active" ||
-        p.subscription_status === "trialing" ||
-        p.subscription_status === "comp" ||
-        p.subscription_status === "lifetime",
-    })),
-    period,
-  );
-
-  const [{ value: weekdayAverages }, { value: visitorsBySourceRows }, { value: leoFunnel }, { value: heardFrom }, { value: newsCampaign }, { value: series }, { value: stripeTotals }, { count: paidEverCount }] =
-    await Promise.all([weekdayAveragesPromise, visitorsBySourcePromise, leoFunnelPromise, heardFromPromise, newsCampaignPromise, seriesPromise, stripeTotalsPromise, paidEverPromise]);
-  const paidEver = stripeTotals?.payers ?? paidEverCount ?? 0;
-
-  // Chemin de Léo (SOP 26) : chaque taux comparé au bas de son benchmark ;
-  // le maillon faible est celui qui en est le plus loin (un seul chantier).
-  const leoRows = leoFunnel
-    ? [
-        { step: "Arrivées sur l'accueil", from: null, to: leoFunnel.arrivals, bench: null, benchLabel: "vues TikTok → accueil ~1 % (voir TikTok)" },
-        { step: "Accueil → inscription commencée", from: leoFunnel.arrivals, to: leoFunnel.signupStarted, bench: null, benchLabel: "—" },
-        { step: "Accueil → inscription", from: leoFunnel.arrivals, to: leoFunnel.signups, bench: 0.3, benchLabel: "30-40 % (cible 50 %)" },
-        { step: "Inscription → onboarding fini", from: leoFunnel.signups, to: leoFunnel.onboarded, bench: null, benchLabel: "—" },
-        { step: "Inscription → paywall vu", from: leoFunnel.signups, to: leoFunnel.paywallViewed, bench: 0.9, benchLabel: "90 %" },
-        { step: "Paywall vu → paiement ouvert", from: leoFunnel.paywallViewed, to: leoFunnel.checkoutOpened, bench: 0.6, benchLabel: "60-70 %" },
-        { step: "Paywall vu → payé", from: leoFunnel.paywallViewed, to: leoFunnel.paid, bench: 0.1, benchLabel: "10-25 %" },
-        { step: "Arrivée → payé", from: leoFunnel.arrivals, to: leoFunnel.paid, bench: 0.03, benchLabel: "3-6 %" },
-      ].map((r) => ({ ...r, rate: r.from ? r.to / r.from : null }))
-    : [];
-  const weakestStep = leoRows
-    .filter((r) => r.bench !== null && r.rate !== null && r.rate < r.bench)
-    .sort((a, b) => a.rate! / a.bench! - b.rate! / b.bench!)[0]?.step;
-
-  // Répartition par source aujourd'hui : seul moyen de répondre à "j'ai eu
-  // 106 clics TikTok mais 6 inscrits" avec des vraies données plutôt qu'une
-  // supposition -- visiteurs distincts (une même personne qui recharge la
-  // page ne doit pas compter deux fois) vs inscriptions, groupés par
-  // utm_source (voir migration 20260927000000_utm_tracking.sql).
-  const visitorsBySource = new Map(visitorsBySourceRows ?? []);
-  // Taux visites → comptes du jour (checklist « landing qui convertit » :
-  // 30-40 % en organique, cible 50 %). Visiteurs = somme par source, donc
-  // un visiteur venu par deux sources compte deux fois (léger sous-taux).
-  const visitorsToday = [...visitorsBySource.values()].reduce((sum, n) => sum + n, 0);
-  const pct = (signups: number, visitors: number) => (visitors > 0 ? `${Math.round((signups / visitors) * 100)} %` : "—");
-  const signupsBySource = new Map<string, number>();
-  for (const p of signupsTodayRows ?? []) {
-    const source = p.utm_source || UNKNOWN_SOURCE;
-    signupsBySource.set(source, (signupsBySource.get(source) ?? 0) + 1);
-  }
-  const acquisitionSources = [...new Set([...visitorsBySource.keys(), ...signupsBySource.keys()])].sort(
-    (a, b) => (visitorsBySource.get(b) ?? 0) - (visitorsBySource.get(a) ?? 0),
-  );
-
-  // Revenu par source : la question n'est pas "combien de visites" mais
-  // "combien rapporte chaque canal" (audit SEO du 07/10, section KPI). Cohorte
-  // = inscrits des 30 derniers jours, revenu = ce qu'ils ont payé depuis
-  // (total_paid_cents). Paginé : "profiles" dépasse le Max Rows (1000).
-  // Lancée avec les autres requêtes (cohortPromise, plus haut).
-  const cohort = await cohortPromise;
-  const revenueBySource = new Map<string, { signups: number; payers: number; cents: number }>();
-  for (const p of cohort) {
-    const source = p.utm_source || UNKNOWN_SOURCE;
-    const entry = revenueBySource.get(source) ?? { signups: 0, payers: 0, cents: 0 };
-    entry.signups += 1;
-    if ((p.total_paid_cents ?? 0) > 0) entry.payers += 1;
-    entry.cents += p.total_paid_cents ?? 0;
-    revenueBySource.set(source, entry);
-  }
-  const revenueSources = [...revenueBySource.entries()].sort((a, b) => b[1].cents - a[1].cents || b[1].signups - a[1].signups);
-  const euros = (cents: number) => `${(cents / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
-
-  const stepStats = new Map<StepId, { viewed: number; completed: number }>();
-  for (const id of STEP_IDS) stepStats.set(id, { viewed: 0, completed: 0 });
-  for (const row of funnelStats?.rows ?? []) {
-    const step = row.step as StepId | null;
-    if (!step || !stepStats.has(step)) continue;
-    stepStats.set(step, { viewed: row.viewed_count, completed: row.completed_count });
-  }
-
-  const allReviews = reviewRows ?? [];
-  const avgRating =
-    allReviews.length > 0 ? allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length : 0;
-  const goodReviews = allReviews.filter((r) => r.rating >= 4).length;
-  const pendingReviews = allReviews.filter((r) => r.status === "pending");
-
-  // Auteurs des avis en attente uniquement (quelques lignes au plus),
-  // plutôt qu'un lookup dans toute la table profiles.
-  const pendingReviewUserIds = [...new Set(pendingReviews.map((r) => r.user_id))];
-  const profileById = new Map<string, { full_name: string | null; email: string | null }>();
-  if (pendingReviewUserIds.length > 0) {
-    const { data: reviewAuthors, error: reviewAuthorsError } = await admin
-      .from("profiles")
-      .select("id, full_name, email")
-      .in("id", pendingReviewUserIds);
-    if (reviewAuthorsError) {
-      console.error("AdminDashboardPage: review authors query failed", reviewAuthorsError);
-    } else {
-      for (const p of reviewAuthors ?? []) profileById.set(p.id, p);
-    }
-  }
+  const signed = (cents: number) => `${cents >= 0 ? "+" : "−"}${euros(Math.abs(cents))}`;
 
   return (
     <div>
-      <h1 style={{ fontSize: 26, margin: "0 0 20px" }}>Dashboard</h1>
-
-      {indexnow && (
-        <p className="card" style={{ padding: "var(--space-3)", marginBottom: 12, fontSize: 13 }}>
-          {indexnow === "ok"
-            ? `IndexNow : ${indexNowCount} URLs envoyées à Bing (indexation en quelques heures à quelques jours).`
-            : `IndexNow a échoué : ${indexNowMessage ?? "erreur inconnue"}.`}
-        </p>
-      )}
-      <form action={submitIndexNowAction} style={{ marginBottom: 16 }}>
-        <button type="submit" className="btn btn-secondary">
-          Envoyer le site à Bing (IndexNow)
-        </button>
-      </form>
-
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-        <StatTile label="En ligne maintenant" value={String(onlineNow ?? 0)} accent href="/admin/online" />
-        <StatTile label="Inscrits aujourd'hui" value={String(signupsToday ?? 0)} accent />
-        <StatTile
-          label="Visites → comptes (jour) · cible 30-40 %"
-          value={visitorsBySourceRows === null ? "—" : `${pct(signupsToday ?? 0, visitorsToday)} (${signupsToday ?? 0}/${visitorsToday})`}
-          accent
-        />
-        <StatTile label="Inscrits (7 jours)" value={String(signupsWeek ?? 0)} />
-        <StatTile label="Total utilisateurs" value={String(totalUsers ?? 0)} />
-        <StatTile label="Premium (avec bonus)" value={`${premiumTotal} (${totalUsers && totalUsers > 0 ? Math.round((premiumTotal / totalUsers) * 100) : 0}%)`} accent />
-        <StatTile
-          label={`Ont payé au moins une fois${stripeTotals ? " (Stripe)" : ""} · inscrits → payants`}
-          value={`${paidEver} (${totalUsers && totalUsers > 0 ? ((paidEver / totalUsers) * 100).toLocaleString("fr-FR", { maximumFractionDigits: 1 }) : 0} %)`}
-          accent
-          href="/admin/stripe"
-        />
-        <StatTile label="Accès payant en cours" value={String(paidPremium)} href="/admin/premium" />
-        <StatTile label="Gratuit" value={`${freePct}%`} />
-        <StatTile
-          label={stripeTotals ? "Encaissé (Stripe, net des remboursements)" : "Revenu cumulé"}
-          value={`${((stripeTotals ? stripeTotals.revenueCents - stripeTotals.refundedCents : totalRevenueCents) / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €`}
-          href="/admin/stripe"
-        />
-        <StatTile
-          label="ARR"
-          value={`${(arrCents / 100).toLocaleString("fr-FR", { minimumFractionDigits: 0 })} €`}
-          accent
-        />
-        <StatTile label="Offres actives" value={String(activeOffers ?? 0)} />
-      </div>
-      <p style={{ fontSize: 11, marginTop: 10, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-        « Ont payé au moins une fois » = toutes les ventes réelles, même si l&apos;abonnement s&apos;est arrêté depuis (lu dans
-        Stripe, détail sur /admin/stripe). « Accès payant en cours » = abonnement Stripe actif ou en essai, ou accès à vie —
-        exclut les codes d&apos;accès offerts.
-        « ARR » = abonnements actifs/essai annualisés selon leur vraie cadence (mensuel/hebdo), hors codes offerts.
+      <h1 style={{ fontSize: 24, fontWeight: 700, margin: "0 0 4px" }}>Vue d&apos;ensemble</h1>
+      <p style={{ margin: "0 0 16px", fontSize: 13, color: "var(--color-neutral-600)" }}>
+        Comment se porte Stageio : {period} derniers jours, comparés aux {period} jours d&apos;avant.
       </p>
+      <PeriodBar path="/admin" period={period} computedAt={snap.computedAt} />
 
-      <SectionCard
-        title="Série email Premium"
-        subtitle="Depuis le 24/10 : 5 emails au plus par compte, un tous les 2-3 jours, de 7 h 30 à 20 h 30 (1 500 par jour le week-end, 3 000 à partir de lundi). Venus depuis l'email = personnes distinctes arrivées par un lien de la série."
-      >
-        {series === null ? (
-          <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>
-            Calcul en cours, recharge dans une minute.
-          </p>
-        ) : (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <StatTile
-              label={`Emails envoyés aujourd'hui · ${series.steps.reduce((n, s) => n + s.sent, 0)} au total`}
-              value={String(series.sentToday)}
+      {alerts.length > 0 && (
+        <Section title="À regarder">
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {alerts.map((a) => (
+              <Link key={a.text} href={a.href} className={`cockpit-pill ${a.tone}`} style={{ fontSize: 13, padding: "6px 12px", borderRadius: 10, textDecoration: "none", alignSelf: "flex-start" }}>
+                <span aria-hidden>{a.tone === "is-bad" ? "⛔" : "⚠️"}</span> {a.text}
+              </Link>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      <Section title="Revenus">
+        <KpiGrid>
+          <Kpi
+            hero
+            label="MRR actuel"
+            value={euros(state.mrr)}
+            sub={
+              <>
+                {state.active} abonnement{state.active > 1 ? "s" : ""} payant{state.active > 1 ? "s" : ""} · 7 j : {signed(mrrSeriesNow - mrr7)} · 30 j : {signed(mrrSeriesNow - mrr30)}
+              </>
+            }
+            definition="Revenu récurrent mensuel des abonnements en cours et à jour de paiement, ramené au mois (hebdo × 52 / 12). Exclut les impayés, les pauses et l'accès à vie (paiement unique). Les variations comparent les abonnements en cours à chaque date, impayés compris (l'historique des impayés n'est pas reconstituable)."
+            source="Stripe, abonnements"
+          />
+          <Kpi
+            label="Encaissé sur la période"
+            value={euros(revCur.recurringCents + revCur.oneTimeCents)}
+            delta={delta(revCur.recurringCents + revCur.oneTimeCents, revPrev.recurringCents + revPrev.oneTimeCents, (n) => euros(n))}
+            sub={`Abonnements ${euros(revCur.recurringCents)} · à vie ${euros(revCur.oneTimeCents)}`}
+            definition="Paiements réussis pendant la période : factures d'abonnement payées et achats à vie. Brut, avant remboursements et frais Stripe."
+            source="Stripe, factures et sessions de paiement"
+          />
+          <Kpi
+            label="Remboursé"
+            value={euros(revCur.refundedCents)}
+            delta={delta(revCur.refundedCents, revPrev.refundedCents, (n) => euros(n))}
+            goodWhen="down"
+            sub={`${revCur.refunds} remboursement${revCur.refunds > 1 ? "s" : ""} · net ${euros(revCur.netCents)}`}
+            definition="Remboursements réussis pendant la période, quelle que soit la date du paiement d'origine. Net = encaissé − remboursé (frais Stripe non déduits)."
+            source="Stripe, remboursements"
+          />
+        </KpiGrid>
+      </Section>
+
+      <Section title="Abonnements">
+        <KpiGrid>
+          <Kpi
+            label="Nouveaux abonnements"
+            value={int(mvCur.newSubs)}
+            delta={delta(mvCur.newSubs, mvPrev.newSubs)}
+            sub={`+ ${mvCur.lifetimeBuyers} accès à vie`}
+            definition="Abonnements dont le premier paiement a eu lieu pendant la période. L'accès à vie est compté à part."
+            source="Stripe"
+          />
+          <Kpi
+            label="Renouvellements réussis"
+            value={int(mvCur.renewals)}
+            delta={delta(mvCur.renewals, mvPrev.renewals)}
+            sub={euros(mvCur.renewalCents)}
+            definition="Factures de renouvellement (2e paiement et suivants) payées pendant la période."
+            source="Stripe, factures subscription_cycle"
+          />
+          <Kpi
+            label="Clients perdus"
+            value={int(chCur.churned)}
+            delta={delta(chCur.churned, chPrev.churned)}
+            goodWhen="down"
+            sub={`Churn ${pct(chCur.rate)} · ${chCur.voluntary} volontaire${chCur.voluntary > 1 ? "s" : ""}, ${chCur.involuntary} impayé${chCur.involuntary > 1 ? "s" : ""}`}
+            definition="Abonnements en cours au début de la période et terminés pendant celle-ci. Une résiliation programmée ne compte qu'à la fin réelle de l'accès payé. Taux = perdus / abonnés au début de la période."
+            source="Stripe, fin réelle des abonnements"
+          />
+          <Kpi
+            label="Paiements échoués"
+            value={int(mvCur.failedOpen)}
+            delta={delta(mvCur.failedOpen, mvPrev.failedOpen)}
+            goodWhen="down"
+            sub={`${mvCur.recoveredAfterFailure} récupéré${mvCur.recoveredAfterFailure > 1 ? "s" : ""} après un échec`}
+            definition="Factures d'abonnement émises pendant la période, tentées et toujours impayées. « Récupérés » : payées après au moins un échec."
+            source="Stripe, factures"
+          />
+        </KpiGrid>
+      </Section>
+
+      <Section title="Utilisateurs">
+        <KpiGrid>
+          <Kpi
+            label="Nouveaux inscrits"
+            value={signupsCur ? int(signupsCur.length) : <Insufficient />}
+            delta={signupsCur && signupsPrev ? delta(signupsCur.length, signupsPrev.length) : null}
+            definition="Comptes créés pendant la période."
+            source="Supabase, profils"
+          />
+          <Kpi
+            label="Inscription → payant"
+            value={convCur === null ? <Insufficient /> : pct(convCur)}
+            delta={convCur !== null && convPrev !== null ? delta(Math.round(convCur * 1000), Math.round(convPrev * 1000), (n) => `${(n / 10).toLocaleString("fr-FR")} pt`) : null}
+            definition="Part des inscrits de la période qui ont payé au moins une fois (abonnement ou accès à vie), à ce jour. La période récente est sous-estimée : ses inscrits ont eu moins de temps pour payer."
+            source="Supabase (inscrits) + Stripe (payeurs)"
+          />
+          <Kpi
+            label="Actifs 7 jours"
+            value={active7 === null ? <Insufficient /> : int(active7)}
+            sub={active30 === null ? undefined : `${int(active30)} sur 30 jours`}
+            definition="Comptes dont la dernière activité dans l'appli date de moins de 7 jours (30 jours en dessous). Seule la dernière activité est enregistrée : l'évolution passée n'est pas disponible."
+            source="Supabase, profils.last_active_at"
+          />
+        </KpiGrid>
+      </Section>
+
+      <Section title="Évolution" subtitle="MRR des abonnements en cours chaque jour (impayés compris) et encaissements quotidiens.">
+        <div className="cockpit-grid-2">
+          <Card title="MRR">
+            <LineChart times={series.map((x) => x.t)} series={[{ name: "MRR", color: SERIES_COLORS[0], values: series.map((x) => x.mrr) }]} unit="eur" caption="MRR quotidien" />
+          </Card>
+          <Card title="Encaissements par jour">
+            <BarChart
+              times={daily.map((x) => x.t)}
+              series={[
+                { name: "Abonnements", color: SERIES_COLORS[0], values: daily.map((x) => x.recurring) },
+                { name: "Accès à vie", color: SERIES_COLORS[1], values: daily.map((x) => x.oneTime) },
+              ]}
+              unit="eur"
+              caption="Encaissements quotidiens par type"
             />
-            <StatTile label="Venus depuis l'email aujourd'hui" value={String(series.clickersToday)} accent />
-            <StatTile label="Comptes dans la série" value={String(series.recipients)} />
-            <StatTile label={`Payants depuis · ${euros(series.payersCents)}`} value={String(series.payers)} accent />
-          </div>
-        )}
-      </SectionCard>
-
-      <SectionCard
-        title="Relance email « nouveautés »"
-        subtitle="Envoyée depuis le 23/10, 250 par heure de 8 h à 20 h. Venus depuis l'email = personnes distinctes arrivées par un lien de l'email. Revenus = destinataires revenus sur Stageio après leur email, par n'importe quel chemin. Recalculé toutes les 5 min."
-      >
-        {newsCampaign === null ? (
-          <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>
-            Calcul en cours, recharge dans une minute.
-          </p>
-        ) : (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <StatTile label={`Emails envoyés · ${newsCampaign.sent} au total`} value={String(newsCampaign.sentToday)} />
-            <StatTile
-              label={`Venus depuis l'email aujourd'hui · ${newsCampaign.clickers} au total`}
-              value={String(newsCampaign.clickersToday)}
-              accent
-            />
-            <StatTile
-              label="Destinataires revenus"
-              value={`${newsCampaign.cameBack} (${pct(newsCampaign.cameBack, newsCampaign.sent)})`}
-            />
-            <StatTile label={`Payants depuis · ${euros(newsCampaign.payersCents)}`} value={String(newsCampaign.payers)} accent />
-          </div>
-        )}
-      </SectionCard>
-
-      <SectionCard
-        title="Chemin de Léo · 7 derniers jours"
-        subtitle="Vidéos → accueil → inscription → paywall → paiement. Un seul chantier à la fois : le maillon faible. Paywall vu et paiement ouvert sont mesurés depuis le 17/10 (7 jours complets le 24/10)."
-      >
-        {leoFunnel === null ? (
-          <p style={{ fontSize: 13, margin: 0 }}>Calcul indisponible pour le moment (base lente), réessaie dans quelques minutes.</p>
-        ) : (
-          <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ textAlign: "left", color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
-                <th style={{ padding: "4px 0", fontWeight: 500 }}>Étape</th>
-                <th style={{ padding: "4px 0", fontWeight: 500 }}>Volume</th>
-                <th style={{ padding: "4px 0", fontWeight: 500 }}>Taux</th>
-                <th style={{ padding: "4px 0", fontWeight: 500 }}>Benchmark Léo</th>
-              </tr>
-            </thead>
-            <tbody>
-              {leoRows.map((r) => {
-                const weak = r.step === weakestStep;
-                return (
-                  <tr key={r.step} style={{ borderTop: "1px solid var(--color-divider)", background: weak ? "color-mix(in srgb, #e5484d 10%, transparent)" : undefined }}>
-                    <td style={{ padding: "6px 0", fontWeight: 700 }}>
-                      {r.step}
-                      {weak && <span style={{ marginLeft: 6, color: "#e5484d", fontWeight: 800 }}>← maillon faible</span>}
-                    </td>
-                    <td style={{ padding: "6px 0" }}>{r.from !== null ? `${r.to} / ${r.from}` : r.to}</td>
-                    <td style={{ padding: "6px 0", fontWeight: 700, color: r.bench !== null && r.rate !== null ? (r.rate >= r.bench ? "var(--color-accent-700)" : "#e5484d") : undefined }}>
-                      {r.rate !== null ? `${Math.round(r.rate * 100)} %` : "—"}
-                    </td>
-                    <td style={{ padding: "6px 0" }}>{r.benchLabel}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </SectionCard>
-
-      <SectionCard title="Inscriptions">
-        <div className="seg mb-4" style={{ display: "inline-flex" }}>
-          {PERIODS.map((p) => (
-            <Link
-              key={p}
-              href={`/admin?periode=${p}`}
-              className={`seg-opt${p === period ? " is-active" : ""}`}
-              style={{ padding: "8px 14px" }}
-            >
-              {PERIOD_LABELS[p]}
-            </Link>
-          ))}
+          </Card>
         </div>
-        <LineAreaChart data={chartData} total={periodProfiles.length} />
-      </SectionCard>
+      </Section>
 
-      <SectionCard
-        title="Acquisition — aujourd'hui"
-        subtitle="Visiteurs distincts et inscriptions du jour, par source. Liens ?utm_source=... (pubs, partages) + détection automatique du site d'origine : google / bing = référencement, chatgpt, perplexity, gemini, meta-ai, grok, deepseek, mistral = IA ; tiktok / instagram = réseaux. Inscriptions Google incluses depuis le 08/10. « direct / inconnu » = lien tapé ou appli sans référent. Visiteurs mis à jour toutes les 5 min (comptés depuis le 08/10 14 h 15 : avant, chaque préchargement de lien comptait comme une visite), inscriptions en direct."
-      >
-        {visitorsBySourceRows === null && (
-          <p style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "0 0 8px" }}>
-            Visiteurs du jour : calcul en cours, recharge dans une minute (inscriptions à jour).
-          </p>
-        )}
-        {acquisitionSources.length === 0 ? (
-          <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>
-            Aucune visite aujourd&apos;hui.
-          </p>
-        ) : (
-          <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ textAlign: "left", color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
-                <th style={{ padding: "4px 0", fontWeight: 500 }}>Source</th>
-                <th style={{ padding: "4px 0", fontWeight: 500 }}>Visiteurs</th>
-                <th style={{ padding: "4px 0", fontWeight: 500 }}>Inscriptions</th>
-                <th style={{ padding: "4px 0", fontWeight: 500 }}>Conversion</th>
-              </tr>
-            </thead>
-            <tbody>
-              {acquisitionSources.map((source) => (
-                <tr key={source} style={{ borderTop: "1px solid var(--color-divider)" }}>
-                  <td style={{ padding: "6px 0", fontWeight: source === UNKNOWN_SOURCE ? 400 : 700 }}>{source}</td>
-                  <td style={{ padding: "6px 0" }}>{visitorsBySource.get(source) ?? 0}</td>
-                  <td style={{ padding: "6px 0" }}>{signupsBySource.get(source) ?? 0}</td>
-                  <td style={{ padding: "6px 0" }}>{pct(signupsBySource.get(source) ?? 0, visitorsBySource.get(source) ?? 0)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </SectionCard>
-
-      <SectionCard
-        title="Revenu par source — inscrits des 30 derniers jours"
-        subtitle="Combien rapporte chaque canal : inscrits sur 30 jours, combien ont payé, revenu encaissé depuis. Même détection de source que ci-dessus (google = référencement, partage = boutons de partage...)."
-      >
-        {revenueSources.length === 0 ? (
-          <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>
-            Aucun inscrit sur les 30 derniers jours.
-          </p>
-        ) : (
-          <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ textAlign: "left", color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
-                <th style={{ padding: "4px 0", fontWeight: 500 }}>Source</th>
-                <th style={{ padding: "4px 0", fontWeight: 500 }}>Inscrits</th>
-                <th style={{ padding: "4px 0", fontWeight: 500 }}>Payants</th>
-                <th style={{ padding: "4px 0", fontWeight: 500 }}>Revenu</th>
-                <th style={{ padding: "4px 0", fontWeight: 500 }}>Revenu / inscrit</th>
-              </tr>
-            </thead>
-            <tbody>
-              {revenueSources.map(([source, r]) => (
-                <tr key={source} style={{ borderTop: "1px solid var(--color-divider)" }}>
-                  <td style={{ padding: "6px 0", fontWeight: source === UNKNOWN_SOURCE ? 400 : 700 }}>{source}</td>
-                  <td style={{ padding: "6px 0" }}>{r.signups}</td>
-                  <td style={{ padding: "6px 0" }}>
-                    {r.payers} ({Math.round((r.payers / r.signups) * 100)} %)
-                  </td>
-                  <td style={{ padding: "6px 0" }}>{euros(r.cents)}</td>
-                  <td style={{ padding: "6px 0" }}>{euros(Math.round(r.cents / r.signups))}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </SectionCard>
-
-      <SectionCard
-        title="Tu nous as connus comment ? — inscrits des 30 derniers jours"
-        subtitle="Réponse donnée dans l'onboarding (question ajoutée le 20/10 : les inscrits d'avant n'ont pas répondu). Payants = ont payé au moins une fois, revenu encaissé depuis l'inscription. Recalculé toutes les 30 min."
-      >
-        {heardFrom === null ? (
-          <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>
-            Calcul en cours, recharge dans une minute.
-          </p>
-        ) : heardFrom.rows.length === 0 ? (
-          <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>
-            Aucune réponse pour l&apos;instant.
-          </p>
-        ) : (
-          <>
-            <p style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "0 0 8px" }}>
-              {heardFrom.answered} réponses sur {heardFrom.signups} inscrits.
-            </p>
-            <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ textAlign: "left", color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
-                  <th style={{ padding: "4px 0", fontWeight: 500 }}>Réponse</th>
-                  <th style={{ padding: "4px 0", fontWeight: 500 }}>Inscrits</th>
-                  <th style={{ padding: "4px 0", fontWeight: 500 }}>Part</th>
-                  <th style={{ padding: "4px 0", fontWeight: 500 }}>Payants</th>
-                  <th style={{ padding: "4px 0", fontWeight: 500 }}>Revenu</th>
-                </tr>
-              </thead>
-              <tbody>
-                {heardFrom.rows.map((r) => (
-                  <tr key={r.source} style={{ borderTop: "1px solid var(--color-divider)" }}>
-                    <td style={{ padding: "6px 0", fontWeight: 700 }}>{r.source}</td>
-                    <td style={{ padding: "6px 0" }}>{r.answers}</td>
-                    <td style={{ padding: "6px 0" }}>{Math.round((r.answers / heardFrom.answered) * 100)} %</td>
-                    <td style={{ padding: "6px 0" }}>
-                      {r.payers} ({Math.round((r.payers / r.answers) * 100)} %)
-                    </td>
-                    <td style={{ padding: "6px 0" }}>{euros(r.cents)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </>
-        )}
-      </SectionCard>
-
-      <SectionCard
-        title="Jours avec le plus de monde"
-        subtitle="Visiteurs distincts par jour de semaine, sur la période sélectionnée, depuis le 08/10 14 h 15 (avant, chaque préchargement de lien comptait comme une visite). Recalculé toutes les heures."
-      >
-        {weekdayAverages ? (
-          <WeekdayBarChart averages={weekdayAverages} />
-        ) : (
-          <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>
-            Calcul en cours, recharge dans une minute.
-          </p>
-        )}
-      </SectionCard>
-
-      <SectionCard
-        title="Funnel onboarding"
-        subtitle={`Vus / terminés par étape, ${
-          funnelStats?.since === null ? "sur tout l'historique" : `sur les ${FUNNEL_WINDOW_DAYS} derniers jours`
-        }. Recalculé toutes les 30 min.`}
-      >
-        {funnelStats === null && (
-          <p style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "0 0 8px" }}>
-            Calcul en cours, recharge dans une minute.
-          </p>
-        )}
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-            <thead>
-              <tr style={{ textAlign: "left", color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
-                <th style={{ padding: "6px 8px 6px 0", fontWeight: 500 }}>Écran</th>
-                <th style={{ padding: "6px 8px", fontWeight: 500 }}>Vus</th>
-                <th style={{ padding: "6px 8px", fontWeight: 500 }}>Terminés</th>
-                <th style={{ padding: "6px 0", fontWeight: 500 }}>Abandon</th>
-              </tr>
-            </thead>
-            <tbody>
-              {STEP_IDS.map((id, i) => {
-                const stats = stepStats.get(id)!;
-                const viewed = stats.viewed;
-                const completed = stats.completed;
-                const dropoff = viewed > 0 ? Math.round(((viewed - completed) / viewed) * 100) : 0;
-                return (
-                  <tr key={id} style={{ borderTop: "1px solid var(--color-divider)" }}>
-                    <td style={{ padding: "8px 8px 8px 0" }}>
-                      {i + 1}. {STEP_LABELS[id]}
-                    </td>
-                    <td style={{ padding: "8px" }}>{viewed}</td>
-                    <td style={{ padding: "8px" }}>{completed}</td>
-                    <td style={{ padding: "8px 0" }}>{viewed > 0 ? `${dropoff}%` : "—"}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </SectionCard>
-
-      <SectionCard title={`Avis (${allReviews.length})`}>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-2" style={{ marginBottom: 18 }}>
-          <div>
-            <p style={{ fontFamily: "var(--font-heading)", fontSize: 26, margin: 0 }}>
-              {avgRating > 0 ? avgRating.toFixed(1) : "—"}
-            </p>
-            <p style={{ fontSize: 11, textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 65%, transparent)", margin: "4px 0 0" }}>
-              Note moyenne
-            </p>
-          </div>
-          <div>
-            <p style={{ fontFamily: "var(--font-heading)", fontSize: 26, margin: 0 }}>{goodReviews}</p>
-            <p style={{ fontSize: 11, textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 65%, transparent)", margin: "4px 0 0" }}>
-              Bons avis (≥4/5)
-            </p>
-          </div>
-        </div>
-
-        <h3 style={{ fontSize: 13, margin: "0 0 10px", color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
-          En attente de modération ({pendingReviews.length})
-        </h3>
-        {pendingReviews.length === 0 ? (
-          <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
-            Aucun avis en attente.
-          </p>
-        ) : (
-          <div className="flex flex-col gap-2.5">
-            {pendingReviews.map((r) => {
-              const author = profileById.get(r.user_id);
-              return (
-                <div key={r.id} className="card" style={{ padding: "var(--space-3) var(--space-4)" }}>
-                  <div className="flex items-center justify-between gap-3">
-                    <div style={{ minWidth: 0 }}>
-                      <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>
-                        {"★".repeat(r.rating)}
-                        {"☆".repeat(5 - r.rating)}{" "}
-                        <span style={{ fontWeight: 400, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
-                          {author?.full_name || author?.email || "—"}
-                        </span>
-                      </p>
-                      {r.comment && (
-                        <p style={{ margin: "4px 0 0", fontSize: 13 }}>{r.comment}</p>
-                      )}
-                    </div>
-                    <div className="flex gap-2" style={{ flexShrink: 0 }}>
-                      <form action={moderateReviewAction}>
-                        <input type="hidden" name="id" value={r.id} />
-                        <input type="hidden" name="status" value="approved" />
-                        <button type="submit" className="btn btn-secondary" style={{ padding: "6px 12px", fontSize: 12 }}>
-                          Approuver
-                        </button>
-                      </form>
-                      <form action={moderateReviewAction}>
-                        <input type="hidden" name="id" value={r.id} />
-                        <input type="hidden" name="status" value="rejected" />
-                        <button type="submit" className="btn btn-secondary" style={{ padding: "6px 12px", fontSize: 12 }}>
-                          Rejeter
-                        </button>
-                      </form>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </SectionCard>
-
-      <SectionCard title="Usage des fonctionnalités">
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <div>
-            <p style={{ fontFamily: "var(--font-heading)", fontSize: 26, margin: 0 }}>{swipesTotal ?? 0}</p>
-            <p style={{ fontSize: 11, textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 65%, transparent)", margin: "4px 0 0" }}>
-              Swipes
-            </p>
-          </div>
-          <div>
-            <p style={{ fontFamily: "var(--font-heading)", fontSize: 26, margin: 0 }}>{applicationsTotal ?? 0}</p>
-            <p style={{ fontSize: 11, textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 65%, transparent)", margin: "4px 0 0" }}>
-              Candidatures
-            </p>
-          </div>
-          <div>
-            <p style={{ fontFamily: "var(--font-heading)", fontSize: 26, margin: 0 }}>{allReviews.length}</p>
-            <p style={{ fontSize: 11, textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 65%, transparent)", margin: "4px 0 0" }}>
-              Avis
-            </p>
-          </div>
-          <div>
-            <p style={{ fontFamily: "var(--font-heading)", fontSize: 26, margin: 0 }}>{activeOffers ?? 0}</p>
-            <p style={{ fontSize: 11, textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 65%, transparent)", margin: "4px 0 0" }}>
-              Offres actives
-            </p>
-          </div>
-        </div>
-      </SectionCard>
-
-      <SectionCard title={`Visiteurs (${Math.min(25, totalUsers ?? 0)} derniers inscrits)`}>
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-            <thead>
-              <tr style={{ textAlign: "left", color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
-                <th style={{ padding: "6px 8px 6px 0", fontWeight: 500 }}>Email</th>
-                <th style={{ padding: "6px 8px", fontWeight: 500 }}>Inscrit le</th>
-                <th style={{ padding: "6px 8px", fontWeight: 500 }}>Statut</th>
-                <th style={{ padding: "6px 0", fontWeight: 500 }}>LTV</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(recentProfiles ?? []).map((p) => (
-                <tr key={p.id} style={{ borderTop: "1px solid var(--color-divider)" }}>
-                  <td style={{ padding: "8px 8px 8px 0" }}>
-                    <Link href={`/admin/users/${p.id}`}>{p.email}</Link>
-                  </td>
-                  <td style={{ padding: "8px" }}>{fmtDate(p.created_at)}</td>
-                  <td style={{ padding: "8px" }}>{STATUS_LABEL[p.subscription_status ?? ""] ?? "Gratuit"}</td>
-                  <td style={{ padding: "8px 0" }}>
-                    {((p.total_paid_cents ?? 0) / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <Link href="/admin/users" className="btn btn-secondary mt-4" style={{ display: "inline-block" }}>
-          Voir tous les utilisateurs →
-        </Link>
-      </SectionCard>
+      <p style={{ marginTop: 24, fontSize: 12, color: "var(--color-neutral-500)" }}>
+        Détail : <Link href={`/admin/revenus?p=${period}`}>revenus</Link> · <Link href={`/admin/abonnements?p=${period}`}>abonnements et churn</Link> ·{" "}
+        <Link href="/admin/cohortes">cohortes</Link> · <Link href="/admin/sante">santé et définitions</Link>
+      </p>
     </div>
   );
 }

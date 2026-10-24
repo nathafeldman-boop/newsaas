@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { PRODUCT_EVENTS, logProductEvent } from "@/lib/analytics/logProductEvent";
 import {
   INTERVIEW_DOMAINS,
   QUESTION_COUNT_BY_LEVEL,
@@ -93,6 +94,7 @@ export function InterviewSimulator({
     setAnswers(new Array(QUESTION_COUNT_BY_LEVEL[level]).fill(null));
     setCurrentIndex(0);
     setPhase("quiz");
+    void logProductEvent(userId, PRODUCT_EVENTS.interviewQuizStarted, { domain: domainId, level });
   }
 
   function selectAnswer(optionIndex: number) {
@@ -109,6 +111,13 @@ export function InterviewSimulator({
     } else {
       setAttemptCount((c) => c + 1);
       setPhase("results");
+      const correct = questions.reduce((acc, q, i) => (answers[i] === q.correctIndex ? acc + 1 : acc), 0);
+      void logProductEvent(userId, PRODUCT_EVENTS.interviewQuizCompleted, {
+        domain: domainId,
+        level,
+        questions: questions.length,
+        score: questions.length > 0 ? Math.round((correct / questions.length) * 100) : 0,
+      });
     }
   }
 
