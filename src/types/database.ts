@@ -11,12 +11,17 @@
 export type ContractType = "alternance" | "stage";
 export type GenderType = "homme" | "femme" | "autre" | "non_precise";
 export type SwipeDirection = "like" | "pass";
+// "a_preparer" et "cloturee" : ajoutés le 24/10 (suivi des candidatures),
+// par SQL lancé à la main -- voir src/lib/applications/status.ts pour le
+// repli tant qu'ils n'existent pas encore en base.
 export type ApplicationStatus =
+  | "a_preparer"
   | "envoyee"
   | "en_cours"
   | "entretien"
   | "acceptee"
-  | "refusee";
+  | "refusee"
+  | "cloturee";
 export type OfferSource = "demo" | "manuel" | "mistral_ingest" | "adzuna" | "france_travail";
 export type EmailProvider = "gmail";
 export type EmailReplySentiment = "positive" | "negative" | "neutral";
@@ -54,6 +59,8 @@ export type Profile = {
   premium_activated_at: string | null;
   total_paid_cents: number;
   notify_new_offers: boolean;
+  // Optionnelle (24/10) : rappels de relance de candidature par e-mail.
+  application_reminders?: boolean;
   last_offer_alert_sent_at: string | null;
   last_active_at: string | null;
   last_active_path: string | null;
@@ -118,6 +125,11 @@ export type Application = {
   cover_note: string | null;
   applied_at: string;
   updated_at: string;
+  // Optionnelles : colonnes du suivi (24/10), absentes tant que le SQL
+  // n'a pas été lancé -- le code lit undefined et retombe sur applied_at.
+  note?: string | null;
+  follow_up_at?: string | null;
+  sent_at?: string | null;
 };
 
 export type EmailConnection = {

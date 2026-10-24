@@ -7,6 +7,17 @@ import { fetchFranceTravailOfferStatus } from "@/lib/franceTravail/client";
 import { CoverLetterPanel } from "@/components/candidature/CoverLetterPanel";
 import { CvOfferMatchPanel } from "@/components/candidature/CvOfferMatchPanel";
 import { isPremium } from "@/lib/subscription/isPremium";
+import { STATUS_LABELS } from "@/lib/applications/status";
+import type { Application } from "@/types/database";
+
+// Date d'envoi à afficher sous « Postuler sur le site ». Une candidature
+// « envoyée » sans date d'envoi date d'avant le 24/10, quand ouvrir la page
+// suffisait à la noter envoyée : on redemande la confirmation.
+function sentAtForPanel(application: Application | null): string | null {
+  if (!application || application.status === "a_preparer" || application.status === "cloturee") return null;
+  if (application.status === "envoyee" && !application.sent_at) return null;
+  return application.sent_at ?? application.applied_at;
+}
 
 // CvOfferMatchPanel ci-dessous déclenche analyzeOfferFitAction, qui appelle Claude
 // Opus 5 -- voir le commentaire équivalent dans src/app/(app)/cv/page.tsx
@@ -25,11 +36,12 @@ export default async function CandidaturePage({ params }: { params: Promise<{ of
   } = await supabase.auth.getUser();
   if (!user) redirect(`/login?next=/candidature/${offerId}`);
 
-  const { data: offer } = await supabase
-    .from("offers")
-    .select("*")
-    .eq("id", offerId)
-    .single();
+  // Offre plus en ligne : la règle RLS ne laisse lire que les offres
+  // actives, la page tombait en 404 et l'étudiant perdait sa candidature et
+  // sa lettre (24/10). Relue en service_role : c'est une annonce publique,
+  // affichée comme retirée.
+  const { data: liveOffer } = await supabase.from("offers").select("*").eq("id", offerId).maybeSingle();
+  const offer = liveOffer ?? (await createAdminClient().from("offers").select("*").eq("id", offerId).maybeSingle()).data;
 
   if (!offer) notFound();
 
@@ -100,10 +112,11 @@ export default async function CandidaturePage({ params }: { params: Promise<{ of
           {offer.remote_policy && <span className="tag tag-neutral">{offer.remote_policy}</span>}
         </div>
 
-        {application && (
-          <p className="tag tag-accent mt-6" style={{ padding: "8px 14px", fontSize: 13, display: "block" }}>
-            Tu as déjà postulé à cette offre le{" "}
-            {new Date(application.applied_at).toLocaleDateString("fr-FR")}.
+        {application && application.status !== "a_preparer" && (application.status !== "envoyee" || application.sent_at || gone) && (
+          <p className="tag tag-accent mt-6" style={{ padding: "8px 14px", fontSize: 13, display: "block", lineHeight: 1.5 }}>
+            Dans ton suivi : <strong>{STATUS_LABELS[application.status]}</strong>
+            {application.sent_at ? ` · envoyée le ${new Date(application.sent_at).toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" })}` : ""}.{" "}
+            <Link href="/mes-candidatures">Mettre à jour</Link>
           </p>
         )}
 
@@ -113,6 +126,12 @@ export default async function CandidaturePage({ params }: { params: Promise<{ of
               <strong>Trop tard pour celle-ci :</strong> le recruteur vient de la retirer (poste pourvu ou annonce suspendue).
               Les offres partent vite, postule dès qu&apos;une nouvelle tombe.
             </p>
+            {application?.cover_note && (
+              <details className="card" style={{ padding: 12 }}>
+                <summary style={{ fontSize: 13, cursor: "pointer", fontWeight: 600 }}>Ta lettre pour cette offre</summary>
+                <p style={{ whiteSpace: "pre-line", fontSize: 13, lineHeight: 1.55, margin: "8px 0 0" }}>{application.cover_note}</p>
+              </details>
+            )}
             <Link href="/swipe" className="btn btn-primary btn-block">
               Voir les offres publiées aujourd&apos;hui
             </Link>
@@ -124,6 +143,7 @@ export default async function CandidaturePage({ params }: { params: Promise<{ of
               offerId={offerId}
               applyUrl={offer.apply_url}
               initialLetter={application?.cover_note ?? null}
+              initialSentAt={sentAtForPanel(application)}
             />
 
             {canAnalyzeOfferFit && <CvOfferMatchPanel offerId={offerId} />}

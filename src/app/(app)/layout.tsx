@@ -28,10 +28,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       // /api/presence, plus ici -- deux écritures de moins à chaque page.
       const [{ data: swiped }, { data: applications }] = await Promise.all([
         supabase.from("swipes").select("offer_id").eq("user_id", user.id).eq("direction", "like"),
-        supabase.from("applications").select("offer_id").eq("user_id", user.id),
+        supabase.from("applications").select("offer_id, status").eq("user_id", user.id),
       ]);
 
-      const appliedOfferIds = new Set((applications ?? []).map((a) => a.offer_id));
+      // Lettre prête mais candidature pas encore envoyée : reste à faire.
+      const appliedOfferIds = new Set((applications ?? []).filter((a) => a.status !== "a_preparer").map((a) => a.offer_id));
       const likedOfferIds = new Set((swiped ?? []).map((s) => s.offer_id));
       favoritesBadge = [...likedOfferIds].filter((id) => !appliedOfferIds.has(id)).length;
     }

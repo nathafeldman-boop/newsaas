@@ -10,6 +10,7 @@ import { computeMatchScore } from "@/lib/matching/score";
 import { fetchActiveOffers } from "@/lib/offers/fetchActiveOffers";
 import { knownProfileSectors } from "@/lib/offers/sectors";
 import { buildActionPlan } from "@/lib/dashboard/actionPlan";
+import { isFollowUpDue, isSentStatus, requestNow } from "@/lib/applications/status";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -61,7 +62,7 @@ export default async function DashboardPage() {
 
   const [{ data: applications }, cvSignedUrlResult, { data: likedSwipes }, todayOffers] =
     await Promise.all([
-      supabase.from("applications").select("offer_id, status, applied_at").eq("user_id", user.id),
+      supabase.from("applications").select("*").eq("user_id", user.id),
       profile?.cv_path
         ? supabase.storage.from("cvs").createSignedUrl(profile.cv_path, 60 * 60)
         : Promise.resolve({ data: null }),
@@ -77,17 +78,20 @@ export default async function DashboardPage() {
       })(),
     ]);
 
+  // « À envoyer » (lettre prête, pas encore partie) n'est pas compté comme
+  // une candidature envoyée (24/10).
   const counts = { sent: 0, positive: 0, negative: 0 };
   for (const app of applications ?? []) {
+    if (!isSentStatus(app.status)) continue;
     if (app.status === "entretien" || app.status === "acceptee") counts.positive++;
     else if (app.status === "refusee") counts.negative++;
     else counts.sent++;
   }
-  const totalApplications = applications?.length ?? 0;
+  const totalApplications = counts.sent + counts.positive + counts.negative;
 
   // Plan d'action (RETENTION_AUDIT.md) : calculé ici, purement à partir de
   // vraies données -- jamais de compteur générique/factice.
-  const appliedOfferIds = new Set((applications ?? []).map((a) => a.offer_id));
+  const appliedOfferIds = new Set((applications ?? []).filter((a) => a.status !== "a_preparer").map((a) => a.offer_id));
   const likedOfferIds = new Set((likedSwipes ?? []).map((s) => s.offer_id));
   const offersToApplyCount = [...likedOfferIds].filter((id) => !appliedOfferIds.has(id)).length;
 
@@ -98,15 +102,13 @@ export default async function DashboardPage() {
     ? (todayOffers ?? []).filter((o) => computeMatchScore(profile, o) >= MIN_SCORE_FOR_PLAN).length
     : 0;
 
-  const staleCutoff = new Date();
-  staleCutoff.setDate(staleCutoff.getDate() - 7);
-  const staleApplicationsCount = (applications ?? []).filter(
-    (a) =>
-      (a.status === "envoyee" || a.status === "en_cours") &&
-      new Date(a.applied_at) < staleCutoff,
-  ).length;
+  // Relances dues : date choisie par l'étudiant, sinon 7 jours après
+  // l'envoi (src/lib/applications/status.ts).
+  const now = requestNow();
+  const staleApplicationsCount = (applications ?? []).filter((a) => isFollowUpDue(a, now)).length;
+  const interviewsCount = (applications ?? []).filter((a) => a.status === "entretien").length;
 
-  const actionPlan = buildActionPlan({ newMatchingOffersCount, offersToApplyCount, staleApplicationsCount });
+  const actionPlan = buildActionPlan({ newMatchingOffersCount, offersToApplyCount, staleApplicationsCount, interviewsCount });
 
   const defaultJobHint = profile?.target_jobs?.[0] || profile?.sectors?.[0] || "";
   const cvSignedUrl = cvSignedUrlResult.data?.signedUrl ?? null;
@@ -138,11 +140,16 @@ export default async function DashboardPage() {
             <Link href="/favoris" className="btn btn-secondary" style={{ padding: "8px 14px", fontSize: 12.5 }}>
               Mes favoris
             </Link>
+            {staleApplicationsCount > 0 && (
+              <Link href="/mes-candidatures" className="btn btn-secondary" style={{ padding: "8px 14px", fontSize: 12.5 }}>
+                Relancer
+              </Link>
+            )}
           </div>
         </div>
       )}
 
-      <div className="mt-6">
+      <div id="simulateur" className="mt-6" style={{ scrollMarginTop: 80 }}>
         <InterviewSimulator userId={user.id} isPremium={premium} defaultJobHint={defaultJobHint} />
       </div>
 
@@ -154,7 +161,7 @@ export default async function DashboardPage() {
           <div>
             <p style={{ fontFamily: "var(--font-heading)", fontSize: 24, margin: 0 }}>{totalApplications}</p>
             <p style={{ fontSize: 11, letterSpacing: "0.04em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 65%, transparent)", margin: "4px 0 0" }}>
-              Candidatures
+              Envoyées
             </p>
           </div>
           <div>

@@ -27,7 +27,7 @@ const SOURCES: [string, string, string][] = [
   ["Motifs d'annulation", "Stripe (portail) + Supabase (subscription_cancellations)", "Facultatifs pour le client"],
   [
     "Synchronisation Stripe → base (webhook)",
-    "Événements reçus (vérifié le 25/10) : checkout.session.completed, customer.subscription.updated / deleted, invoice.paid",
+    "Événements reçus (vérifié le 24/10) : checkout.session.completed, customer.subscription.updated / deleted, invoice.paid",
     "Non reçus : remboursements (charge.refunded) et litiges (charge.dispute.created) → le LTV en base ne baisse pas après un remboursement ; le cockpit les lit dans Stripe. Rattrapage quotidien : cron reconcile-subscriptions.",
   ],
 ];

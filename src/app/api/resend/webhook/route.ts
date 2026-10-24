@@ -2,7 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-// Événements de délivrabilité Resend (25/10, cockpit « E-mails ») : la clé
+// Événements de délivrabilité Resend (24/10, cockpit « E-mails ») : la clé
 // d'API de Stageio est en envoi seul, elle ne peut pas relire rebonds et
 // plaintes. Resend les pousse ici, signés (Svix), si un webhook est créé
 // dans le tableau de bord Resend vers cette adresse avec les événements

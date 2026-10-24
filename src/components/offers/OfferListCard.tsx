@@ -2,11 +2,13 @@ import Link from "next/link";
 import type { ApplicationStatus, Offer } from "@/types/database";
 
 const STATUS_LABELS: Record<ApplicationStatus, string> = {
+  a_preparer: "📝 À envoyer",
   envoyee: "📨 Candidature envoyée",
-  en_cours: "📝 En cours",
-  entretien: "💬 Entretien",
+  en_cours: "💬 En cours d'échange",
+  entretien: "🎤 Entretien",
   acceptee: "✅ Acceptée",
   refusee: "❌ Refusée",
+  cloturee: "🗂️ Clôturée",
 };
 
 function companyInitials(company: string): string {
@@ -20,10 +22,16 @@ export function OfferListCard({
   offer,
   applicationStatus,
   matchScore,
+  inactive = false,
+  meta,
 }: {
   offer: Offer;
   applicationStatus?: ApplicationStatus | null;
   matchScore?: number;
+  /** Offre plus en ligne (pourvue, retirée) : affichée, mais plus de « Postuler ». */
+  inactive?: boolean;
+  /** Ligne d'information sous l'entreprise (date du like…). */
+  meta?: string;
 }) {
   const tags = [offer.salary, offer.remote_policy].filter((t): t is string => Boolean(t));
 
@@ -65,6 +73,9 @@ export function OfferListCard({
             {offer.company} · {offer.location}
             {offer.source === "demo" && " · démo"}
           </p>
+          {meta && (
+            <p style={{ margin: "2px 0 0", fontSize: 11.5, color: "color-mix(in srgb, var(--color-text) 50%, transparent)" }}>{meta}</p>
+          )}
         </div>
         {typeof matchScore === "number" && (
           <span
@@ -84,6 +95,7 @@ export function OfferListCard({
       </div>
 
       <div className="flex flex-wrap gap-1.5">
+        {inactive && <span className="tag tag-neutral" style={{ fontWeight: 700 }}>Offre plus en ligne</span>}
         <span className="tag tag-accent" style={{ whiteSpace: "nowrap" }}>
           {offer.contract_type === "alternance" ? "Alternance" : "Stage"}
         </span>
@@ -104,15 +116,15 @@ export function OfferListCard({
           </span>
         ) : (
           <span style={{ fontSize: 12.5, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-            Pas encore postulé
+            {inactive ? "Plus possible de postuler" : "Pas encore postulé"}
           </span>
         )}
         <Link
           href={`/candidature/${offer.id}`}
-          className="btn btn-primary"
+          className={inactive ? "btn btn-secondary" : "btn btn-primary"}
           style={{ marginLeft: "auto", padding: "8px 16px", fontSize: 12.5, whiteSpace: "nowrap" }}
         >
-          {applicationStatus ? "Voir" : "✈️ Postuler"}
+          {applicationStatus || inactive ? "Voir" : "✈️ Postuler"}
         </Link>
       </div>
     </div>

@@ -1,4 +1,4 @@
-// Cockpit admin (25/10, « transformer le dashboard en cockpit de pilotage
+// Cockpit admin (24/10, « transformer le dashboard en cockpit de pilotage
 // SaaS ») : instantané normalisé des données Stripe de Stageio. Le compte
 // Stripe est partagé avec d'autres projets : n'entrent ici que les objets
 // rattachés à un compte Stageio (voir stripeSnapshot.ts). Dates en

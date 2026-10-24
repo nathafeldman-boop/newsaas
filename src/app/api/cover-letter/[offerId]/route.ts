@@ -7,6 +7,7 @@ import { isAnthropicConfigured } from "@/lib/anthropic/client";
 import { PROFILE_FOR_AI_COLUMNS } from "@/lib/ai/profileContext";
 import { isPremium } from "@/lib/subscription/isPremium";
 import { logServerEvent } from "@/lib/analytics/logServerEvent";
+import { isInvalidEnumError } from "@/lib/applications/status";
 
 // Lettre de motivation écrite en direct (16/10, demande de Nathan : plus
 // rapide, animation refaite) : la réponse est un flux de texte, les premiers
@@ -85,7 +86,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       await bookkeeping;
       await logServerEvent(supabase, user.id, "cover_letter_generated", { offerId, source, attempt });
       // Ne touche jamais au statut ici : une candidature déjà en cours
-      // d'entretien ne doit pas retomber à "envoyee" à cause d'une
+      // d'entretien ne doit pas retomber à "à envoyer" à cause d'une
       // régénération de lettre. Best-effort : la lettre reste affichée et
       // copiable même si la sauvegarde échoue.
       const { error: updateError } = await supabase
@@ -113,9 +114,18 @@ async function recordApplication(supabase: Awaited<ReturnType<typeof createClien
     .maybeSingle();
 
   if (!existing) {
-    const { error: insertError } = await supabase
+    // « À envoyer » : ouvrir l'offre et écrire la lettre ne veut pas dire
+    // avoir postulé. Elle passe « envoyée » quand l'étudiant le confirme
+    // (markApplicationSentAction). Base sans le statut du 24/10 : ancienne
+    // valeur, pour ne jamais perdre la candidature.
+    let { error: insertError } = await supabase
       .from("applications")
-      .insert({ user_id: userId, offer_id: offerId, status: "envoyee" });
+      .insert({ user_id: userId, offer_id: offerId, status: "a_preparer" });
+    if (isInvalidEnumError(insertError)) {
+      ({ error: insertError } = await supabase
+        .from("applications")
+        .insert({ user_id: userId, offer_id: offerId, status: "envoyee" }));
+    }
     if (insertError) {
       // supabase-js ne throw jamais sur une erreur Postgres -- sans ce log,
       // l'utilisateur croirait avoir postulé alors qu'aucune candidature

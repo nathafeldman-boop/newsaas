@@ -1,13 +1,34 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { ApplicationStatusControl } from "@/components/candidature/ApplicationStatusControl";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { ApplicationsBoard, type TrackedApplication } from "@/components/candidature/ApplicationsBoard";
+import { ownOffersByIds } from "@/lib/applications/ownOffers";
+import { STATUS_LABELS, followUpAt, requestNow } from "@/lib/applications/status";
+import type { ApplicationStatus } from "@/types/database";
 
-function companyInitials(company: string): string {
-  const words = company.trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return "?";
-  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
-  return (words[0][0] + words[1][0]).toUpperCase();
+// Suivi des candidatures (refait le 24/10, mission churn) : avant, une
+// candidature dont l'offre avait expiré disparaissait de la liste (règle RLS
+// des offres actives), et rien ne disait quoi faire ensuite. Voir
+// ApplicationsBoard pour l'écran.
+
+const HISTORY_EVENTS = ["application_status_changed", "application_marked_sent", "application_tracking_updated"];
+
+type HistoryEvent = { event_type: string; metadata: Record<string, unknown> | null; created_at: string };
+
+function historyLabel(e: HistoryEvent): string | null {
+  const m = e.metadata ?? {};
+  if (e.event_type === "application_status_changed") {
+    const label = STATUS_LABELS[m.status as ApplicationStatus];
+    return label ? `Statut : ${label}` : null;
+  }
+  if (e.event_type === "application_marked_sent") return "Candidature envoyée";
+  if (e.event_type === "application_tracking_updated") {
+    const fields = Array.isArray(m.fields) ? m.fields : [];
+    if (fields.includes("follow_up_at")) return "Date de relance modifiée";
+    if (fields.includes("note")) return "Note mise à jour";
+  }
+  return null;
 }
 
 export default async function MesCandidaturesPage() {
@@ -17,153 +38,81 @@ export default async function MesCandidaturesPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/mes-candidatures");
 
-  const { data: applications } = await supabase
-    .from("applications")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("applied_at", { ascending: false });
+  const [{ data: applications }, { data: profile }] = await Promise.all([
+    supabase.from("applications").select("*").eq("user_id", user.id).order("applied_at", { ascending: false }),
+    supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle(),
+  ]);
+  const apps = applications ?? [];
 
-  const offerIds = (applications ?? []).map((a) => a.offer_id);
-  const { data: offers } = offerIds.length
-    ? await supabase.from("offers").select("*").in("id", offerIds)
-    : { data: [] as never[] };
+  // Lecture des événements en service_role (pas de lecture côté étudiant
+  // sur user_events), filtrée sur son propre compte.
+  const [offers, { data: events }] = await Promise.all([
+    ownOffersByIds(apps.map((a) => a.offer_id)).catch((err) => {
+      console.error("mes-candidatures: offres illisibles", err);
+      return [];
+    }),
+    apps.length
+      ? createAdminClient()
+          .from("user_events")
+          .select("event_type, metadata, created_at")
+          .eq("user_id", user.id)
+          .in("event_type", HISTORY_EVENTS)
+          .order("created_at", { ascending: false })
+          .limit(1000)
+      : Promise.resolve({ data: [] as HistoryEvent[] }),
+  ]);
+  const offerById = new Map(offers.map((o) => [o.id, o]));
 
-  const offerById = new Map((offers ?? []).map((o) => [o.id, o]));
-
-  const counts = {
-    envoyee: 0,
-    entretien: 0,
-    acceptee: 0,
-    refusee: 0,
-  };
-  for (const app of applications ?? []) {
-    if (app.status === "envoyee" || app.status === "en_cours") counts.envoyee++;
-    else if (app.status === "entretien") counts.entretien++;
-    else if (app.status === "acceptee") counts.acceptee++;
-    else if (app.status === "refusee") counts.refusee++;
+  const historyByApp = new Map<string, { label: string; at: string }[]>();
+  const appIdByOffer = new Map(apps.map((a) => [a.offer_id, a.id]));
+  for (const e of [...((events ?? []) as HistoryEvent[])].reverse()) {
+    const m = e.metadata ?? {};
+    const appId = typeof m.applicationId === "string" ? m.applicationId : typeof m.offerId === "string" ? appIdByOffer.get(m.offerId) : undefined;
+    const label = historyLabel(e);
+    if (!appId || !label) continue;
+    const list = historyByApp.get(appId) ?? [];
+    list.push({ label, at: e.created_at });
+    historyByApp.set(appId, list);
   }
+
+  const trackingReady = apps.length > 0 && "follow_up_at" in apps[0];
+  const items: TrackedApplication[] = apps.map((a) => {
+    const offer = offerById.get(a.offer_id);
+    return {
+      id: a.id,
+      offerId: a.offer_id,
+      status: a.status,
+      appliedAt: a.applied_at,
+      sentAt: a.sent_at ?? null,
+      followUpAt: a.follow_up_at ?? null,
+      dueAt: followUpAt(a),
+      note: a.note ?? null,
+      offer: offer
+        ? { title: offer.title, company: offer.company, location: offer.location, contractType: offer.contract_type, isActive: offer.is_active, applyUrl: offer.apply_url }
+        : null,
+      history: [{ label: "Ajoutée au suivi", at: a.applied_at }, ...(historyByApp.get(a.id) ?? [])].slice(-12),
+    };
+  });
 
   return (
     <div>
       <h1 style={{ fontSize: 30, margin: 0 }}>Mes candidatures</h1>
       <p style={{ fontSize: 14, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "6px 0 0" }}>
-        Le suivi de toutes les offres auxquelles tu as postulé.
+        Prépare, envoie, relance : tout ton suivi au même endroit.
       </p>
 
-      {applications && applications.length > 0 && (
-        <div
-          className="card elev-sm mt-6 grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-4 sm:gap-5"
-          style={{ padding: "var(--space-4) var(--space-6)" }}
-        >
-          <div>
-            <p style={{ fontFamily: "var(--font-heading)", fontSize: 28, color: "var(--color-accent)", margin: 0 }}>
-              {counts.envoyee}
-            </p>
-            <p style={{ fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "4px 0 0" }}>
-              Envoyées
-            </p>
-          </div>
-          <div>
-            <p style={{ fontFamily: "var(--font-heading)", fontSize: 28, margin: 0 }}>{counts.entretien}</p>
-            <p style={{ fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "4px 0 0" }}>
-              Entretiens
-            </p>
-          </div>
-          <div>
-            <p style={{ fontFamily: "var(--font-heading)", fontSize: 28, margin: 0 }}>{counts.acceptee}</p>
-            <p style={{ fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "4px 0 0" }}>
-              Acceptées
-            </p>
-          </div>
-          <div>
-            <p style={{ fontFamily: "var(--font-heading)", fontSize: 28, margin: 0 }}>{counts.refusee}</p>
-            <p style={{ fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "4px 0 0" }}>
-              Refusées
-            </p>
-          </div>
+      {items.length === 0 ? (
+        <div className="card elev-sm mt-8" style={{ padding: "var(--space-6)", alignItems: "flex-start", background: "var(--color-surface)" }}>
+          <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.5 }}>
+            Pas encore de candidature. Ouvre une offre de tes favoris : ta lettre s&apos;écrit, et la candidature apparaît ici pour que tu la suives
+            jusqu&apos;à la réponse.
+          </p>
+          <Link href="/favoris" className="btn btn-primary" style={{ marginTop: 8 }}>
+            Mes favoris
+          </Link>
         </div>
-      )}
-
-      {applications && applications.length > 0 && (
-        <div className="mt-3 flex" style={{ gap: 3, height: 8, borderRadius: 999, overflow: "hidden" }}>
-          <div style={{ flex: counts.envoyee, background: "var(--color-accent)" }} />
-          <div style={{ flex: counts.entretien, background: "var(--color-accent-2)" }} />
-          <div style={{ flex: counts.acceptee, background: "var(--color-accent-2-700)" }} />
-          <div style={{ flex: counts.refusee, background: "var(--color-neutral-400)" }} />
-        </div>
-      )}
-
-      {!applications || applications.length === 0 ? (
-        <p className="mt-10 text-center" style={{ color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
-          Aucune candidature envoyée pour l&apos;instant.
-        </p>
       ) : (
-        <div
-          className="mt-6"
-          style={{
-            background: "var(--color-surface)",
-            borderRadius: 22,
-            boxShadow: "var(--shadow-sm)",
-            overflow: "hidden",
-          }}
-        >
-          {applications.map((app, i) => {
-            const offer = offerById.get(app.offer_id);
-            if (!offer) return null;
-            return (
-              <div
-                key={app.id}
-                className="flex items-center gap-3"
-                style={{
-                  padding: "14px 16px",
-                  borderBottom: i < applications.length - 1 ? "1px solid var(--color-divider)" : "none",
-                }}
-              >
-                <div
-                  aria-hidden
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 12,
-                    flexShrink: 0,
-                    background: "var(--color-accent-100)",
-                    color: "var(--color-accent-700)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontFamily: "var(--font-heading)",
-                    fontWeight: 800,
-                    fontSize: 13,
-                  }}
-                >
-                  {companyInitials(offer.company)}
-                </div>
-                <Link
-                  href={`/candidature/${offer.id}`}
-                  className="no-underline"
-                  style={{ color: "inherit", minWidth: 0, flex: 1 }}
-                >
-                  <p
-                    style={{
-                      fontWeight: 700,
-                      fontSize: 14,
-                      margin: 0,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {offer.title}
-                  </p>
-                  <p style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "2px 0 0" }}>
-                    {offer.company} · {new Date(app.applied_at).toLocaleDateString("fr-FR")}
-                  </p>
-                </Link>
-                <ApplicationStatusControl applicationId={app.id} status={app.status} />
-              </div>
-            );
-          })}
-        </div>
+        <ApplicationsBoard items={items} now={requestNow()} trackingReady={trackingReady} fullName={profile?.full_name ?? null} />
       )}
     </div>
   );

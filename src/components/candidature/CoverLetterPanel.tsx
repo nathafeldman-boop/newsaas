@@ -6,6 +6,7 @@ import { PremiumCtaLink } from "@/components/premium/PremiumCtaLink";
 import { SparkleBurst } from "@/components/fx/SparkleBurst";
 import { COVER_LETTER_RESET } from "@/lib/coverLetter/stream";
 import { prefersReducedMotion } from "@/lib/fx/events";
+import { MarkSentControl } from "@/components/candidature/MarkSentControl";
 
 // Lettre de motivation (refaite le 16/10, demande de Nathan : « plus rapide,
 // animation refaite de A à Z, ultra stylée pour TikTok ») : la lettre arrive
@@ -29,11 +30,14 @@ export function CoverLetterPanel({
   offerId,
   applyUrl,
   initialLetter,
+  initialSentAt,
 }: {
   userId: string;
   offerId: string;
   applyUrl: string | null;
   initialLetter: string | null;
+  /** Date d'envoi confirmée par l'étudiant (null : pas encore envoyée). */
+  initialSentAt: string | null;
 }) {
   const [status, setStatus] = useState<Status>(initialLetter ? "ready" : "writing");
   const [letter, setLetter] = useState(initialLetter ?? "");
@@ -46,6 +50,7 @@ export function CoverLetterPanel({
   const [celebrate, setCelebrate] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [openedApply, setOpenedApply] = useState(false);
   const [achievement, setAchievement] = useState("");
   const [whyCompany, setWhyCompany] = useState("");
   const attemptCount = useRef(0);
@@ -178,6 +183,7 @@ export function CoverLetterPanel({
       }
     }
     window.open(applyUrl, "_blank", "noopener,noreferrer");
+    setOpenedApply(true);
   }
 
   const visible = target.slice(0, shown);
@@ -464,9 +470,10 @@ export function CoverLetterPanel({
         )}
       </AnimatePresence>
 
-      {/* La candidature est enregistrée côté serveur dès l'ouverture de la
-          page pour un compte Premium, que la lettre aboutisse ou non : le
-          lien externe n'est jamais bloqué par un échec de la lettre. */}
+      {/* La candidature est enregistrée côté serveur (« à envoyer ») dès
+          l'ouverture de la page pour un compte Premium, que la lettre
+          aboutisse ou non : le lien externe n'est jamais bloqué par un échec
+          de la lettre. Elle passe « envoyée » quand l'étudiant le confirme. */}
       {status !== "premium_required" &&
         (applyUrl ? (
           <>
@@ -494,12 +501,17 @@ export function CoverLetterPanel({
                     ? "Lettre copiée — colle-la sur le site qui vient de s'ouvrir pour finaliser."
                     : "On copie ta lettre et on ouvre la page de l'offre : colle-la pour finaliser."}
             </p>
+            {status !== "writing" && <MarkSentControl offerId={offerId} initialSentAt={initialSentAt} emphasize={openedApply} />}
           </>
         ) : (
           status !== "writing" && (
-            <p className="tag tag-accent-2" style={{ padding: "8px 14px", fontSize: 13, display: "block" }}>
-              Ce recruteur n&apos;a pas de lien externe — ta candidature est enregistrée, on lui a noté ton intérêt.
-            </p>
+            <>
+              <p className="tag tag-accent-2" style={{ padding: "8px 14px", fontSize: 13, display: "block", lineHeight: 1.5 }}>
+                Pas de lien de candidature sur cette annonce : envoie ta lettre directement à l&apos;entreprise (site carrières, e-mail ou LinkedIn),
+                puis indique-le ci-dessous pour la suivre.
+              </p>
+              <MarkSentControl offerId={offerId} initialSentAt={initialSentAt} emphasize={false} />
+            </>
           )
         ))}
     </div>

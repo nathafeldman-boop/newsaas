@@ -10,6 +10,7 @@ export function buildActionPlan(params: {
   newMatchingOffersCount: number;
   offersToApplyCount: number;
   staleApplicationsCount: number;
+  interviewsCount?: number;
 }): ActionPlanItem[] {
   const items: ActionPlanItem[] = [];
 
@@ -33,7 +34,15 @@ export function buildActionPlan(params: {
     const n = params.staleApplicationsCount;
     items.push({
       icon: "⏰",
-      text: `${n} candidature${n > 1 ? "s" : ""} sans nouvelle depuis plus d'une semaine -- relance ou mets le statut à jour.`,
+      text: `${n} candidature${n > 1 ? "s" : ""} à relancer, sans réponse depuis l'envoi : un message de relance prêt t'attend dans Mes candidatures.`,
+    });
+  }
+
+  if (params.interviewsCount && params.interviewsCount > 0) {
+    const n = params.interviewsCount;
+    items.push({
+      icon: "🎤",
+      text: `${n} entretien${n > 1 ? "s" : ""} en vue : entraîne-toi avec le simulateur juste en dessous.`,
     });
   }
 

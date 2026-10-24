@@ -19,11 +19,11 @@ const cohortFacts = unstable_cache(
     const ids = await signupsIn(current);
     return [...(await userFacts(ids)).values()];
   },
-  ["cockpit-funnel-facts-v2"],
+  ["cockpit-funnel-facts-v3"],
   { revalidate: 1800 },
 );
 
-const payerFacts = unstable_cache(async (ids: string[]): Promise<UserFacts[]> => [...(await userFacts(ids)).values()], ["cockpit-payer-facts-v2"], {
+const payerFacts = unstable_cache(async (ids: string[]): Promise<UserFacts[]> => [...(await userFacts(ids)).values()], ["cockpit-payer-facts-v3"], {
   revalidate: 1800,
 });
 
@@ -65,7 +65,8 @@ export default async function FonctionnalitesPage({ searchParams }: { searchPara
     { label: "Onboarding terminé", at: (f) => f.onboardedAt },
     { label: "Premier like", at: (f) => f.first.like },
     { label: "Revenu un 2e jour", at: (f) => f.secondDayAt },
-    { label: "Première candidature", at: (f) => f.first.application },
+    { label: "Première candidature préparée", at: (f) => f.first.application, note: "offre ouverte, lettre écrite" },
+    { label: "Candidature confirmée envoyée", at: (f) => f.first.application_marked_sent, note: "suivi depuis le 24/10" },
     { label: "Paiement (abonnement ou à vie)", at: (f) => paidAt.get(f.id) },
     { label: "1er renouvellement réussi", at: (f) => renewedAt.get(f.id), note: "abonnés dont l'échéance est passée" },
   ];
@@ -230,7 +231,7 @@ export default async function FonctionnalitesPage({ searchParams }: { searchPara
           </table>
         </div>
         <p style={{ fontSize: 11.5, color: "var(--color-neutral-500)", marginTop: 8 }}>
-          Simulateur d&apos;entretien et panneau « Nouveautés » : suivis depuis peu, leurs chiffres se rempliront avec le temps.
+          Simulateur d&apos;entretien, panneau « Nouveautés » et suivi des candidatures : suivis depuis peu, leurs chiffres se rempliront avec le temps.
         </p>
       </Section>
     </div>

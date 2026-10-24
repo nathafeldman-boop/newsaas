@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isPremium } from "@/lib/subscription/isPremium";
 import { grantPremiumAndNotifyAction, syncUserPaymentsAction } from "@/app/admin/users/actions";
 import { requireAdminPage } from "@/lib/admin/accessCode";
+import { STATUS_LABELS } from "@/lib/applications/status";
 
 const SUBSCRIPTION_LABEL: Record<string, string> = {
   active: "Payant (actif)",
@@ -20,13 +21,7 @@ const EVENT_LABEL: Record<string, string> = {
   onboarding_step_completed: "Étape onboarding terminée",
 };
 
-const APPLICATION_STATUS_LABEL: Record<string, string> = {
-  envoyee: "Envoyée",
-  en_cours: "En cours",
-  entretien: "Entretien",
-  acceptee: "Acceptée",
-  refusee: "Refusée",
-};
+const APPLICATION_STATUS_LABEL: Record<string, string> = STATUS_LABELS;
 
 function describeEvent(eventType: string, metadata: Record<string, unknown> | null): string {
   if (!metadata) return "";

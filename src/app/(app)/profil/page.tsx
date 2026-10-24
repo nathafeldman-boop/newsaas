@@ -48,6 +48,8 @@ export default async function ProfilPage({
 
   const statCounts: Record<"total" | ApplicationStatus, number> = {
     total: applications?.length ?? 0,
+    a_preparer: 0,
+    cloturee: 0,
     envoyee: 0,
     en_cours: 0,
     entretien: 0,
@@ -93,7 +95,13 @@ export default async function ProfilPage({
           style={{ color: "inherit", padding: "var(--space-4) var(--space-6)" }}
         >
           <div>
-            <p style={{ fontFamily: "var(--font-heading)", fontSize: 26, color: "var(--color-accent)", margin: 0 }}>
+            <p style={{ fontFamily: "var(--font-heading)", fontSize: 26, color: "var(--color-accent)", margin: 0 }}>{statCounts.a_preparer}</p>
+            <p style={{ fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "4px 0 0" }}>
+              À envoyer
+            </p>
+          </div>
+          <div>
+            <p style={{ fontFamily: "var(--font-heading)", fontSize: 26, margin: 0 }}>
               {statCounts.envoyee + statCounts.en_cours}
             </p>
             <p style={{ fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "4px 0 0" }}>
@@ -110,12 +118,6 @@ export default async function ProfilPage({
             <p style={{ fontFamily: "var(--font-heading)", fontSize: 26, color: "var(--color-accent-2-700)", margin: 0 }}>{statCounts.acceptee}</p>
             <p style={{ fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "4px 0 0" }}>
               Ton alternance ✓
-            </p>
-          </div>
-          <div>
-            <p style={{ fontFamily: "var(--font-heading)", fontSize: 26, margin: 0 }}>{statCounts.refusee}</p>
-            <p style={{ fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "4px 0 0" }}>
-              Refusées
             </p>
           </div>
         </Link>

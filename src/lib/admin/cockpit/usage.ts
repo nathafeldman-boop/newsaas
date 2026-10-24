@@ -8,18 +8,28 @@ import type { Range } from "@/lib/admin/cockpit/metrics";
 
 export const FEATURES = [
   { key: "like", label: "Like d'une offre", since: null },
-  { key: "application", label: "Candidature enregistrée", since: null },
+  { key: "application", label: "Candidature préparée (offre ouverte)", since: null },
   { key: "cv", label: "CV importé", since: null },
   { key: "cover_letter_generated", label: "Lettre de motivation générée", since: null },
   { key: "cv_analyzed", label: "Analyse du CV", since: null },
   { key: "cv_offer_fit_analyzed", label: "CV comparé à une offre", since: null },
-  { key: "interview_quiz_started", label: "Simulateur d'entretien (quiz commencé)", since: "2026-10-25" },
-  { key: "interview_quiz_completed", label: "Simulateur d'entretien (quiz terminé)", since: "2026-10-25" },
+  { key: "interview_quiz_started", label: "Simulateur d'entretien (quiz commencé)", since: "2026-10-24" },
+  { key: "interview_quiz_completed", label: "Simulateur d'entretien (quiz terminé)", since: "2026-10-24" },
   { key: "fresh_inbox_open", label: "Panneau « Nouveautés »", since: "2026-10-24" },
+  { key: "application_marked_sent", label: "Candidature confirmée envoyée", since: "2026-10-24" },
+  { key: "application_tracking_updated", label: "Suivi mis à jour (note, relance)", since: "2026-10-24" },
 ] as const;
 export type FeatureKey = (typeof FEATURES)[number]["key"];
 
-const EVENT_FEATURES = ["cover_letter_generated", "cv_analyzed", "cv_offer_fit_analyzed", "interview_quiz_started", "interview_quiz_completed"] as const;
+const EVENT_FEATURES = [
+  "cover_letter_generated",
+  "cv_analyzed",
+  "cv_offer_fit_analyzed",
+  "interview_quiz_started",
+  "interview_quiz_completed",
+  "application_marked_sent",
+  "application_tracking_updated",
+] as const;
 
 export type UserFacts = {
   id: string;

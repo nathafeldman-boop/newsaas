@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { refreshGmailAccess, listRecentMessages } from "@/lib/google/gmailClient";
 import { GMAIL_READ_SCOPE } from "@/lib/google/gmailOAuth";
 import { classifyEmailReply } from "@/lib/google/classifyEmailReplyWithAnthropic";
+import { isTerminalStatus } from "@/lib/applications/status";
 import type { ApplicationStatus } from "@/types/database";
 
 // Sync périodique (voir vercel.json) : pour chaque boîte Gmail connectée,
@@ -141,8 +142,7 @@ export async function GET(request: NextRequest) {
 
         if (matchedApp) {
           matched++;
-          const isTerminal =
-            matchedApp.status === "acceptee" || matchedApp.status === "refusee";
+          const isTerminal = isTerminalStatus(matchedApp.status);
           const newStatus = sentimentToStatus(result.sentiment);
           if (!isTerminal && newStatus) {
             const { error: statusUpdateError } = await admin

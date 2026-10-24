@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { OfferListCard } from "@/components/offers/OfferListCard";
+import { FavoritesBoard, type FavoriteItem } from "@/components/offers/FavoritesBoard";
+import { ownOffersByIds } from "@/lib/applications/ownOffers";
 import { computeMatchScore } from "@/lib/matching/score";
 import type { ApplicationStatus } from "@/types/database";
 
@@ -11,38 +12,33 @@ export default async function FavorisPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/favoris");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
-
-  const { data: liked } = await supabase
-    .from("swipes")
-    .select("offer_id")
-    .eq("user_id", user.id)
-    .eq("direction", "like")
-    .order("created_at", { ascending: false });
-
-  const offerIds = (liked ?? []).map((s) => s.offer_id);
-
-  const [{ data: offers }, { data: applications }] = await Promise.all([
-    offerIds.length
-      ? supabase.from("offers").select("*").in("id", offerIds)
-      : Promise.resolve({ data: [] as never[] }),
-    supabase
-      .from("applications")
-      .select("offer_id, status")
-      .eq("user_id", user.id),
+  const [{ data: profile }, { data: liked }, { data: applications }] = await Promise.all([
+    supabase.from("profiles").select("*").eq("id", user.id).single(),
+    supabase.from("swipes").select("offer_id, created_at").eq("user_id", user.id).eq("direction", "like").order("created_at", { ascending: false }),
+    supabase.from("applications").select("offer_id, status").eq("user_id", user.id),
   ]);
 
-  const statusByOffer = new Map<string, ApplicationStatus>(
-    (applications ?? []).map((a) => [a.offer_id, a.status]),
-  );
-  const offerById = new Map((offers ?? []).map((o) => [o.id, o]));
-  const orderedOffers = offerIds
-    .map((id) => offerById.get(id))
-    .filter((o): o is NonNullable<typeof o> => Boolean(o));
+  // Offres plus en ligne comprises (voir ownOffers.ts) : avant le 24/10,
+  // elles disparaissaient de la liste sans explication.
+  const offers = await ownOffersByIds((liked ?? []).map((s) => s.offer_id)).catch((err) => {
+    console.error("favoris: offres illisibles", err);
+    return [];
+  });
+  const offerById = new Map(offers.map((o) => [o.id, o]));
+  const statusByOffer = new Map<string, ApplicationStatus>((applications ?? []).map((a) => [a.offer_id, a.status]));
+
+  const items: FavoriteItem[] = [];
+  for (const s of liked ?? []) {
+    const offer = offerById.get(s.offer_id);
+    if (!offer) continue;
+    items.push({
+      // Description et prérequis inutiles à la carte : non envoyés au navigateur.
+      offer: { ...offer, description: "", requirements: null },
+      likedAt: s.created_at,
+      status: statusByOffer.get(offer.id) ?? null,
+      matchScore: profile && offer.is_active ? computeMatchScore(profile, offer) : null,
+    });
+  }
 
   return (
     <div>
@@ -51,21 +47,12 @@ export default async function FavorisPage() {
         Les offres que tu as likées, prêtes à recevoir ta candidature.
       </p>
 
-      {orderedOffers.length === 0 ? (
+      {items.length === 0 ? (
         <p className="mt-10 text-center" style={{ color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
           Aucun favori pour l&apos;instant — va swiper quelques offres !
         </p>
       ) : (
-        <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {orderedOffers.map((offer) => (
-            <OfferListCard
-              key={offer.id}
-              offer={offer}
-              applicationStatus={statusByOffer.get(offer.id) ?? null}
-              matchScore={profile ? computeMatchScore(profile, offer) : undefined}
-            />
-          ))}
-        </div>
+        <FavoritesBoard items={items} />
       )}
     </div>
   );
