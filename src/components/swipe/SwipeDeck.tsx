@@ -14,6 +14,7 @@ import { createClient } from "@/lib/supabase/client";
 import { logButtonClick } from "@/lib/analytics/logButtonClick";
 import { PremiumCtaLink } from "@/components/premium/PremiumCtaLink";
 import { OfferCardContent } from "@/components/swipe/OfferCard";
+import { FreshOffersInbox, type FreshInboxItem } from "@/components/swipe/FreshOffersInbox";
 import { Icon } from "@/components/ui/Icon";
 import { cn } from "@/lib/utils";
 import type { ContractType, Offer, SwipeDirection } from "@/types/database";
@@ -560,6 +561,7 @@ export function SwipeDeck({
   cityBanner = null,
   sectorLabel = null,
   applicationStreak = 0,
+  freshInbox = [],
 }: {
   offers: Offer[];
   scores: Record<string, number>;
@@ -570,6 +572,7 @@ export function SwipeDeck({
   cityBanner?: string | null;
   sectorLabel?: string | null;
   applicationStreak?: number;
+  freshInbox?: FreshInboxItem[];
 }) {
   const [contractFilter, setContractFilter] = useState<ContractType | "all">("all");
   // Compteur d'offres restantes DANS LE DECK EN COURS, affiché juste
@@ -603,9 +606,10 @@ export function SwipeDeck({
             Stageio
           </span>
         </div>
-        <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: "-0.01em", margin: "14px 0 4px" }}>
-          Tes opportunités du jour
-        </h1>
+        <div className="flex items-center justify-between" style={{ gap: 12, margin: "14px 0 4px" }}>
+          <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: "-0.01em", margin: 0 }}>Tes opportunités du jour</h1>
+          <FreshOffersInbox items={freshInbox} isPremium={isPremium} userId={userId} />
+        </div>
         {cardsLeft > 0 && (
           <p
             className="flex items-center gap-1.5"

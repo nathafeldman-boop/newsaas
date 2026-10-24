@@ -14,6 +14,7 @@ import { isPremium } from "@/lib/subscription/isPremium";
 import { refreshStaleSubscription } from "@/lib/stripe/refreshStaleSubscription";
 import { computeApplicationStreak } from "@/lib/engagement/applicationStreak";
 import { fetchActiveOffers } from "@/lib/offers/fetchActiveOffers";
+import { hotSinceIso, orderFreshFirst } from "@/lib/offers/freshness";
 import { isSchoolOrJobBoard } from "@/lib/seo/schools";
 import { normalizeTitle } from "@/lib/seo/metiers";
 
@@ -164,7 +165,10 @@ export default async function SwipePage() {
   // 10/10 (cause probable, pas prouvée : voir SEO_ROADMAP.md).
   const LOCAL_POOL_SIZE = 300;
   const localCities = localCitiesFor(profile?.city);
-  const [nationalPool, localPool] = await Promise.all([
+  // Offres publiées ces dernières 24 h, cherchées EN PLUS : elles partent
+  // vite (24/10) et le bassin national, trié par qualité, peut les rater.
+  const FRESH_POOL_SIZE = 150;
+  const [nationalPool, localPool, freshPool] = await Promise.all([
     fetchActiveOffers(supabase, { excludeIds, sectors: hardSectors, limit: CANDIDATE_POOL_SIZE }),
     localCities.length > 0
       ? fetchActiveOffers(supabase, {
@@ -178,9 +182,22 @@ export default async function SwipePage() {
           return [];
         })
       : Promise.resolve([]),
+    fetchActiveOffers(supabase, {
+      excludeIds,
+      sectors: hardSectors,
+      publishedAfter: hotSinceIso(),
+      limit: FRESH_POOL_SIZE,
+    }).catch((error) => {
+      console.error("SwipePage: offres fraîches en échec", error);
+      return [];
+    }),
   ]);
-  const nationalIds = new Set(nationalPool.map((o) => o.id));
-  const pooled = [...nationalPool, ...localPool.filter((o) => !nationalIds.has(o.id))];
+  const pooledIds = new Set<string>();
+  const pooled = [...nationalPool, ...localPool, ...freshPool].filter((o) => {
+    if (pooledIds.has(o.id)) return false;
+    pooledIds.add(o.id);
+    return true;
+  });
 
   // Annonces d'écoles et d'organismes de formation (« Iscod Alternance »,
   // CFA...) et de sites d'emploi : ce sont des pubs pour un cursus, pas des
@@ -293,7 +310,19 @@ export default async function SwipePage() {
   const relevantOffers =
     hasPreferences && filteredByRelevance.length >= MIN_RELEVANT_POOL ? filteredByRelevance : rankedOffers;
 
-  const sortedOffers = relevantOffers.slice(0, DECK_SIZE);
+  const { deck: sortedOffers, freshPicks } = orderFreshFirst(relevantOffers, scores, DECK_SIZE);
+  // Notification « Nouveautés » à l'arrivée sur le deck : les plus récentes.
+  const freshInbox = [...freshPicks]
+    .sort((a, b) => b.published_at.localeCompare(a.published_at))
+    .slice(0, 12)
+    .map((o) => ({
+      id: o.id,
+      title: o.title,
+      company: o.company,
+      location: o.location,
+      contract_type: o.contract_type,
+      published_at: o.published_at,
+    }));
 
   const reasons: Record<string, string[]> = {};
   if (profile) {
@@ -346,6 +375,7 @@ export default async function SwipePage() {
         cityBanner={cityBanner}
         sectorLabel={sectorLabel}
         applicationStreak={applicationStreak}
+        freshInbox={freshInbox}
       />
     </div>
   );

@@ -236,6 +236,13 @@ a:hover > .card, button:hover > .card,
 .tag-accent-2 { background: var(--color-accent-2-100); color: var(--color-accent-2-800); }
 .tag-neutral { background: var(--color-neutral-100); color: var(--color-neutral-800); }
 .tag-outline { border: 1px solid var(--color-accent); color: var(--color-accent); }
+/* Offre publiée il y a moins de 24 h : pastille chaude qui pulse. */
+.tag-hot { background: #fff1e6; color: #9a3a0c; font-weight: 700; }
+.hot-dot { width: 7px; height: 7px; border-radius: 999px; background: #f05a1a; flex-shrink: 0; animation: hot-pulse 1.6s ease-out infinite; }
+@keyframes hot-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(240, 90, 26, 0.55); }
+  100% { box-shadow: 0 0 0 7px rgba(240, 90, 26, 0); }
+}
 
 /* — page-level enter animation — */
 @keyframes fade-in-up {
@@ -320,7 +327,7 @@ a:hover > .card, button:hover > .card,
 @media (prefers-reduced-motion: reduce) {
   .btn, .card, .tag, .seg-opt, .animate-in,
   .lp-float, .lp-drift, .lp-marquee, .lp-wiggle, .lp-pulse, .lp-spin, .lp-ring,
-  .fx-spin, .fx-shimmer, .fx-caret, .fx-shine::after, .fx-orb, .fx-shake {
+  .fx-spin, .fx-shimmer, .fx-caret, .fx-shine::after, .fx-orb, .fx-shake, .hot-dot {
     transition: none !important; animation: none !important;
   }
 }

@@ -20,6 +20,7 @@
 const TOKEN_URL =
   "https://entreprise.francetravail.fr/connexion/oauth2/access_token?realm=/partenaire";
 const SEARCH_URL = "https://api.francetravail.io/partenaire/offresdemploi/v2/offres/search";
+const OFFER_URL = "https://api.francetravail.io/partenaire/offresdemploi/v2/offres";
 const SCOPE = "api_offresdemploiv2 o2dsoffre";
 
 // Fenêtre max par requête (documentée : Range max jusqu'à 1000-1149, donc
@@ -130,7 +131,15 @@ export function isStructuredAlternance(job: Pick<FranceTravailJob, "alternance" 
 // France Travail : E2 = contrat d'apprentissage, FS = contrat de
 // professionnalisation, ceux du filtre « alternance » de
 // candidat.francetravail.fr).
-export type FranceTravailQuery = { motsCles?: string; natureContrat?: string };
+// minCreationDate/maxCreationDate (toujours ensemble, format
+// "2026-10-24T09:00:00Z") : offres créées dans cette fenêtre, pour la
+// synchro des offres fraîches (offresFraiches.ts).
+export type FranceTravailQuery = {
+  motsCles?: string;
+  natureContrat?: string;
+  minCreationDate?: string;
+  maxCreationDate?: string;
+};
 
 export function queryLabel(query: string | FranceTravailQuery): string {
   if (typeof query === "string") return query;
@@ -161,6 +170,10 @@ export async function searchFranceTravailPage(
   const url = new URL(SEARCH_URL);
   if (query.motsCles) url.searchParams.set("motsCles", query.motsCles);
   if (query.natureContrat) url.searchParams.set("natureContrat", query.natureContrat);
+  if (query.minCreationDate && query.maxCreationDate) {
+    url.searchParams.set("minCreationDate", query.minCreationDate);
+    url.searchParams.set("maxCreationDate", query.maxCreationDate);
+  }
   if (departement) url.searchParams.set("departement", departement);
 
   let res: Response;
@@ -192,4 +205,25 @@ export async function searchFranceTravailPage(
   const totalResults = contentRange ? Number(contentRange.split("/")[1]) || null : null;
 
   return { jobs: json.resultats ?? [], totalResults };
+}
+
+// Offre encore en ligne chez France Travail ? Vérifié avant de candidater
+// (24/10 : offre ouverte depuis Stageio, « en cours d'actualisation » sur
+// francetravail.fr). "unknown" (délai, quota, erreur) : on ne bloque jamais
+// l'étudiant sur un doute.
+export async function fetchFranceTravailOfferStatus(id: string, timeoutMs = 2500): Promise<"live" | "gone" | "unknown"> {
+  try {
+    const token = await getAccessToken();
+    await throttle();
+    const res = await fetch(`${OFFER_URL}/${encodeURIComponent(id)}`, {
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (res.status === 204 || res.status === 404 || res.status === 410) return "gone";
+    if (!res.ok) return "unknown";
+    const json = (await res.json().catch(() => null)) as { id?: string } | null;
+    return json?.id ? "live" : "unknown";
+  } catch {
+    return "unknown";
+  }
 }

@@ -20,7 +20,8 @@ export type IconName =
   | "target"
   | "pen"
   | "mic"
-  | "mail";
+  | "mail"
+  | "bell";
 
 const PATHS: Record<IconName, string> = {
   swipe: "M7 4h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z M9 2h8 M9 9h6 M9 13h4",
@@ -40,6 +41,7 @@ const PATHS: Record<IconName, string> = {
   pen: "M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17v3Z M13.5 7.5l3 3",
   mic: "M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z M5 11a7 7 0 0 0 14 0 M12 18v3",
   mail: "M4 5h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z M22 7l-10 6L2 7",
+  bell: "M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9 M10.3 21a1.94 1.94 0 0 0 3.4 0",
 };
 
 export function Icon({

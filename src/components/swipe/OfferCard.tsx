@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { Icon } from "@/components/ui/Icon";
-import { getFreshnessLabel } from "@/lib/offers/freshness";
+import { getFreshness } from "@/lib/offers/freshness";
 import type { Offer } from "@/types/database";
 
 function formatStartDate(dateStr: string): string {
@@ -215,7 +215,7 @@ export function OfferCardContent({
     (t): t is string => Boolean(t),
   );
   const hypeMessage = matchHypeMessage(score, offer.id);
-  const freshnessLabel = getFreshnessLabel(offer.published_at);
+  const freshness = getFreshness(offer.published_at);
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -336,15 +336,22 @@ export function OfferCardContent({
       </div>
 
       <div className="flex flex-1 flex-col overflow-y-auto" style={{ padding: "16px 20px 18px" }}>
-        <div className="flex flex-wrap gap-1.5" style={locked ? teaserBlur : undefined}>
-          <span className="tag tag-accent">{typeLabel}</span>
-          {freshnessLabel && (
-            <span className="tag tag-accent-2" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-              <Icon name="sparkles" size={12} /> {freshnessLabel}
+        {/* La fraîcheur reste lisible sans Premium : rien de confidentiel. */}
+        <div className="flex flex-wrap gap-1.5">
+          <span className="tag tag-accent" style={locked ? teaserBlur : undefined}>
+            {typeLabel}
+          </span>
+          {freshness && (
+            <span
+              className={freshness.hot ? "tag tag-hot" : "tag tag-accent-2"}
+              style={{ display: "inline-flex", alignItems: "center", gap: 5 }}
+              suppressHydrationWarning
+            >
+              {freshness.hot ? <span className="hot-dot" aria-hidden /> : <Icon name="sparkles" size={12} />} {freshness.label}
             </span>
           )}
           {tags.map((tag) => (
-            <span key={tag} className="tag tag-neutral">
+            <span key={tag} className="tag tag-neutral" style={locked ? teaserBlur : undefined}>
               {tag}
             </span>
           ))}

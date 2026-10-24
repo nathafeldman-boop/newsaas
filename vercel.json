@@ -137,68 +137,104 @@
       "schedule": "30 19 * * *"
     },
     {
-      "path": "/api/cron/relance-checkout",
-      "schedule": "40 20 * * *"
-    },
-    {
-      "path": "/api/cron/relance-nouveautes/copie",
-      "schedule": "35 5 * * *"
-    },
-    {
-      "path": "/api/cron/relance-nouveautes/h06",
-      "schedule": "5 6 * * *"
-    },
-    {
-      "path": "/api/cron/relance-nouveautes/h07",
-      "schedule": "5 7 * * *"
-    },
-    {
-      "path": "/api/cron/relance-nouveautes/h08",
-      "schedule": "5 8 * * *"
-    },
-    {
-      "path": "/api/cron/relance-nouveautes/h09",
-      "schedule": "5 9 * * *"
-    },
-    {
-      "path": "/api/cron/relance-nouveautes/h10",
-      "schedule": "5 10 * * *"
-    },
-    {
-      "path": "/api/cron/relance-nouveautes/h11",
-      "schedule": "5 11 * * *"
-    },
-    {
-      "path": "/api/cron/relance-nouveautes/h12",
-      "schedule": "5 12 * * *"
-    },
-    {
-      "path": "/api/cron/relance-nouveautes/h13",
-      "schedule": "5 13 * * *"
-    },
-    {
-      "path": "/api/cron/relance-nouveautes/h14",
-      "schedule": "5 14 * * *"
-    },
-    {
-      "path": "/api/cron/relance-nouveautes/h15",
-      "schedule": "5 15 * * *"
-    },
-    {
-      "path": "/api/cron/relance-nouveautes/h16",
-      "schedule": "5 16 * * *"
-    },
-    {
-      "path": "/api/cron/relance-nouveautes/h17",
-      "schedule": "5 17 * * *"
-    },
-    {
-      "path": "/api/cron/relance-nouveautes/h18",
-      "schedule": "5 18 * * *"
-    },
-    {
       "path": "/api/cron/refund-guarantee-reminder",
       "schedule": "41 7 * * *"
+    },
+    {
+      "path": "/api/cron/offres-fraiches/h00",
+      "schedule": "55 0 * * *"
+    },
+    {
+      "path": "/api/cron/offres-fraiches/h01",
+      "schedule": "55 1 * * *"
+    },
+    {
+      "path": "/api/cron/offres-fraiches/h02",
+      "schedule": "55 2 * * *"
+    },
+    {
+      "path": "/api/cron/offres-fraiches/h03",
+      "schedule": "55 3 * * *"
+    },
+    {
+      "path": "/api/cron/offres-fraiches/h04",
+      "schedule": "55 4 * * *"
+    },
+    {
+      "path": "/api/cron/offres-fraiches/h05",
+      "schedule": "55 5 * * *"
+    },
+    {
+      "path": "/api/cron/offres-fraiches/h06",
+      "schedule": "55 6 * * *"
+    },
+    {
+      "path": "/api/cron/offres-fraiches/h07",
+      "schedule": "55 7 * * *"
+    },
+    {
+      "path": "/api/cron/offres-fraiches/h08",
+      "schedule": "55 8 * * *"
+    },
+    {
+      "path": "/api/cron/offres-fraiches/h09",
+      "schedule": "55 9 * * *"
+    },
+    {
+      "path": "/api/cron/offres-fraiches/h10",
+      "schedule": "55 10 * * *"
+    },
+    {
+      "path": "/api/cron/offres-fraiches/h11",
+      "schedule": "55 11 * * *"
+    },
+    {
+      "path": "/api/cron/offres-fraiches/h12",
+      "schedule": "55 12 * * *"
+    },
+    {
+      "path": "/api/cron/offres-fraiches/h13",
+      "schedule": "55 13 * * *"
+    },
+    {
+      "path": "/api/cron/offres-fraiches/h14",
+      "schedule": "55 14 * * *"
+    },
+    {
+      "path": "/api/cron/offres-fraiches/h15",
+      "schedule": "55 15 * * *"
+    },
+    {
+      "path": "/api/cron/offres-fraiches/h16",
+      "schedule": "55 16 * * *"
+    },
+    {
+      "path": "/api/cron/offres-fraiches/h17",
+      "schedule": "55 17 * * *"
+    },
+    {
+      "path": "/api/cron/offres-fraiches/h18",
+      "schedule": "55 18 * * *"
+    },
+    {
+      "path": "/api/cron/offres-fraiches/h19",
+      "schedule": "55 19 * * *"
+    },
+    {
+      "path": "/api/cron/offres-fraiches/h20",
+      "schedule": "55 20 * * *"
+    },
+    {
+      "path": "/api/cron/offres-fraiches/h21",
+      "schedule": "55 21 * * *"
+    },
+    {
+      "path": "/api/cron/offres-fraiches/h22",
+      "schedule": "55 22 * * *"
+    },
+    {
+      "path": "/api/cron/offres-fraiches/h23",
+      "schedule": "55 23 * * *"
     }
   ]
 }

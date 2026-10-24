@@ -1,6 +1,9 @@
 import { notFound, redirect } from "next/navigation";
+import { after } from "next/server";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { fetchFranceTravailOfferStatus } from "@/lib/franceTravail/client";
 import { CoverLetterPanel } from "@/components/candidature/CoverLetterPanel";
 import { CvOfferMatchPanel } from "@/components/candidature/CvOfferMatchPanel";
 import { isPremium } from "@/lib/subscription/isPremium";
@@ -29,6 +32,20 @@ export default async function CandidaturePage({ params }: { params: Promise<{ of
     .single();
 
   if (!offer) notFound();
+
+  // Offre France Travail retirée depuis la dernière synchro (pourvue,
+  // suspendue) : vérifié avant d'écrire la lettre, plutôt que de laisser
+  // l'étudiant tomber sur « offre en cours d'actualisation » (24/10). Un
+  // doute (délai, quota) ne bloque jamais : on garde l'état en base.
+  const liveStatus =
+    offer.source === "france_travail" && offer.external_id ? await fetchFranceTravailOfferStatus(offer.external_id) : "unknown";
+  const gone = liveStatus === "gone" || (!offer.is_active && liveStatus !== "live");
+  if (liveStatus !== "unknown" && offer.is_active !== (liveStatus === "live")) {
+    after(async () => {
+      const { error } = await createAdminClient().from("offers").update({ is_active: liveStatus === "live" }).eq("id", offer.id);
+      console.log("candidature: offre France Travail", JSON.stringify({ offerId: offer.id, liveStatus, error: error?.message ?? null }));
+    });
+  }
 
   const [{ data: application }, { data: profile }] = await Promise.all([
     supabase
@@ -90,14 +107,28 @@ export default async function CandidaturePage({ params }: { params: Promise<{ of
           </p>
         )}
 
-        <CoverLetterPanel
-          userId={user.id}
-          offerId={offerId}
-          applyUrl={offer.apply_url}
-          initialLetter={application?.cover_note ?? null}
-        />
+        {gone ? (
+          <div className="mt-6 flex flex-col gap-3">
+            <p className="tag tag-accent-2" style={{ padding: "12px 14px", fontSize: 14, display: "block", lineHeight: 1.5 }}>
+              <strong>Trop tard pour celle-ci :</strong> le recruteur vient de la retirer (poste pourvu ou annonce suspendue).
+              Les offres partent vite, postule dès qu&apos;une nouvelle tombe.
+            </p>
+            <Link href="/swipe" className="btn btn-primary btn-block">
+              Voir les offres publiées aujourd&apos;hui
+            </Link>
+          </div>
+        ) : (
+          <>
+            <CoverLetterPanel
+              userId={user.id}
+              offerId={offerId}
+              applyUrl={offer.apply_url}
+              initialLetter={application?.cover_note ?? null}
+            />
 
-        {canAnalyzeOfferFit && <CvOfferMatchPanel offerId={offerId} />}
+            {canAnalyzeOfferFit && <CvOfferMatchPanel offerId={offerId} />}
+          </>
+        )}
       </div>
     </div>
   );
