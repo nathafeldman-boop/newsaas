@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AXIS_TEXT, GRID_COLOR, dayLabel, formatTick, formatValue, niceMax, type ChartUnit } from "@/components/admin/cockpit/chartUtils";
 
 export type BarSeries = { name: string; color: string; values: number[] };
@@ -15,6 +17,7 @@ export function BarChart({
   mode = "stacked",
   height = 200,
   caption,
+  hrefs,
 }: {
   times: number[];
   series: BarSeries[];
@@ -22,7 +25,10 @@ export function BarChart({
   mode?: "stacked" | "grouped";
   height?: number;
   caption: string;
+  // Détail de chaque colonne (25/10) : un clic sur un jour ouvre sa page.
+  hrefs?: (string | null)[];
 }) {
+  const router = useRouter();
   const wrapRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(640);
   const [hover, setHover] = useState<number | null>(null);
@@ -115,7 +121,9 @@ export function BarChart({
                   onPointerEnter={() => setHover(i)}
                   onFocus={() => setHover(i)}
                   onBlur={() => setHover(null)}
-                  style={{ outline: "none" }}
+                  onClick={hrefs?.[i] ? () => router.push(hrefs[i]!) : undefined}
+                  onKeyDown={hrefs?.[i] ? (e) => e.key === "Enter" && router.push(hrefs[i]!) : undefined}
+                  style={{ outline: "none", cursor: hrefs?.[i] ? "pointer" : undefined }}
                 />
               </g>
             );
@@ -147,6 +155,7 @@ export function BarChart({
                 <span style={{ color: AXIS_TEXT }}>{s.name}</span>
               </div>
             ))}
+            {hrefs?.[hover] && <div style={{ marginTop: 4, fontWeight: 700, color: "var(--color-accent-700)" }}>Cliquer pour le détail →</div>}
           </div>
         )}
       </div>
@@ -175,7 +184,7 @@ export function BarChart({
             <tbody>
               {times.map((t, i) => (
                 <tr key={t}>
-                  <td>{dayLabel(t)}</td>
+                  <td>{hrefs?.[i] ? <Link href={hrefs[i]!}>{dayLabel(t)}</Link> : dayLabel(t)}</td>
                   {series.map((s) => (
                     <td key={s.name}>{formatValue(s.values[i], unit)}</td>
                   ))}

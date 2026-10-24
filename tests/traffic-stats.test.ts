@@ -4,6 +4,7 @@
 import assert from "node:assert/strict";
 import {
   SIGNUPS_SINCE,
+  canonicalSource,
   aggregateSignups,
   dayKey,
   daysBetween,
@@ -15,6 +16,7 @@ import {
   weeklyTotals,
   type SignupDay,
 } from "../src/lib/admin/trafficStats";
+import { heardFromLabel } from "../src/lib/onboarding/options";
 
 // Sources : alias et casse fusionnés, inconnues rangées dans « Autres ».
 assert.deepEqual(sourceInfo("TikTok"), { label: "TikTok", group: "Réseaux sociaux" });
@@ -71,7 +73,8 @@ const rows = mergeBySource(
   ],
   period,
 );
-assert.deepEqual(rows[0], { label: "Instagram", group: "Réseaux sociaux", visitors: 45, signupPage: 11, signups: 1, payers: 1 });
+assert.deepEqual(rows[0], { key: "instagram", label: "Instagram", group: "Réseaux sociaux", visitors: 45, signupPage: 11, signups: 1, payers: 1 });
+assert.equal(canonicalSource(" IG "), "instagram");
 assert.equal(rows.find((r) => r.label === "TikTok"), undefined);
 assert.equal(rows.find((r) => r.label === "E-mails Stageio")?.payers, 0);
 assert.equal(mergeBySource(null, days, null, period)[0].payers, null);
@@ -120,5 +123,11 @@ assert.deepEqual(
 // Journée en cours : pas de moyenne 7 j (elle tirerait la tendance vers le bas).
 assert.equal(trend[14].avg7, null);
 assert.equal(trend[13].avg7, (6 + 8 + 1 + 7 + 3 + 2 + 5) / 7);
+
+// Réponse « Tu nous as connus comment ? » avec le format (25/10).
+assert.equal(heardFromLabel("TikTok", "commentaire"), "TikTok · commentaire");
+assert.equal(heardFromLabel("Instagram", "carrousel"), "Instagram · carrousel");
+assert.equal(heardFromLabel("Google", null), "Google");
+assert.equal(heardFromLabel("TikTok", "inconnu"), "TikTok");
 
 console.log("traffic-stats : OK");

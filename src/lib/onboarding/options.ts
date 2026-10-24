@@ -365,15 +365,34 @@ export const AVAILABILITY_OPTIONS: AvailabilityOption[] = [
 // complète utm_source, qui ne voit ni le bouche-à-oreille ni la vidéo TikTok
 // vue la veille avant une recherche Google. Valeurs comparées telles quelles
 // dans l'admin : ne pas renommer une valeur existante.
-export const HEARD_FROM_OPTIONS = [
-  { value: "TikTok", icon: "🎵" },
-  { value: "Instagram", icon: "📸" },
+// Réseaux (25/10, Nathan : « on marche aux commentaires ») : une 2e question
+// demande le format (commentaire, vidéo, carrousel, story de quelqu'un),
+// pour savoir ce qui ramène vraiment des inscrits.
+export type HeardFromFormat = "commentaire" | "video" | "carrousel" | "story" | "autre";
+
+export const HEARD_FROM_FORMATS: Record<HeardFromFormat, { label: string; short: string; icon: string; sub?: string }> = {
+  commentaire: { label: "Un commentaire", short: "commentaire", icon: "💬", sub: "Sous une vidéo ou un post" },
+  video: { label: "Une vidéo", short: "vidéo", icon: "🎬" },
+  carrousel: { label: "Un carrousel", short: "carrousel", icon: "🖼️", sub: "Des images à faire défiler" },
+  story: { label: "La story de quelqu'un", short: "story de quelqu'un", icon: "📲", sub: "Ou sa vidéo partagée" },
+  autre: { label: "Autre chose", short: "autre", icon: "✨" },
+};
+
+export const HEARD_FROM_OPTIONS: { value: string; icon: string; sub?: string; formats?: HeardFromFormat[] }[] = [
+  { value: "TikTok", icon: "🎵", formats: ["commentaire", "video", "carrousel", "story", "autre"] },
+  { value: "Instagram", icon: "📸", formats: ["commentaire", "video", "carrousel", "story", "autre"] },
   { value: "Google", icon: "🔎" },
   { value: "Bouche-à-oreille", icon: "🗣️", sub: "Un ami, la famille" },
-  { value: "Snapchat", icon: "👻" },
-  { value: "YouTube", icon: "▶️" },
-  { value: "LinkedIn", icon: "💼" },
+  { value: "Snapchat", icon: "👻", formats: ["commentaire", "video", "story", "autre"] },
+  { value: "YouTube", icon: "▶️", formats: ["commentaire", "video", "autre"] },
+  { value: "LinkedIn", icon: "💼", formats: ["commentaire", "video", "carrousel", "autre"] },
   { value: "École ou prof", icon: "🏫" },
   { value: "ChatGPT ou une IA", icon: "🤖" },
   { value: "Autre", icon: "✨" },
 ];
+
+/** « TikTok · commentaire » (ou « Google » sans format), tel qu'affiché dans l'admin. */
+export function heardFromLabel(source: string, format: string | null | undefined): string {
+  const f = format && format in HEARD_FROM_FORMATS ? HEARD_FROM_FORMATS[format as HeardFromFormat].short : null;
+  return f ? `${source} · ${f}` : source;
+}

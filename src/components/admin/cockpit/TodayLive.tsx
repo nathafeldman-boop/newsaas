@@ -34,29 +34,41 @@ export async function TodayLive({ now }: { now: number }) {
     >
       <KpiGrid>
         <Kpi
+          accent="green"
+          href="/admin/trafic"
+          cta="D'où ils viennent"
           label="Visiteurs aujourd'hui"
-          value={bySource ? int(visitors) : <Insufficient />}
+          value={bySource ? visitors : <Insufficient />}
           sub={top.length > 0 ? top.map((r) => `${r.label} ${int(r.visitors)}`).join(" · ") : undefined}
           definition="Personnes distinctes (un navigateur = une personne) qui ont ouvert une page depuis minuit, avec leur première source du jour. Robots exclus. À 5 minutes près."
           source="Supabase, site_visits"
         />
         <Kpi
+          live
+          accent="blue"
+          href="/admin/online"
+          cta="Voir qui"
           label="En ligne maintenant"
-          value={online ? int(online.visitors) : <Insufficient />}
+          value={online ? online.visitors : <Insufficient />}
           sub={online ? `dont ${int(online.loggedIn)} connecté${online.loggedIn > 1 ? "s" : ""}` : undefined}
           definition="Visiteurs qui ont ouvert une page dans les 5 dernières minutes ; « connectés » : comptes actifs dans l'appli dans les 3 dernières minutes."
           source="Supabase, site_visits et profils.last_active_at"
         />
         <Kpi
+          accent="pink"
+          href={`/admin/inscriptions/${today}`}
+          cta="Voir les inscrits"
           label="Inscrits aujourd'hui"
-          value={signupDays ? int(signupsToday) : <Insufficient />}
+          value={signupDays ? signupsToday : <Insufficient />}
           sub={signupDays ? `hier : ${int(signupsYesterday)}` : undefined}
           definition="Comptes créés depuis minuit (heure de Paris). Hier : journée complète, à comparer en fin de soirée."
           source="Supabase, profils.created_at"
         />
         <Kpi
+          accent="violet"
+          href="/admin/trafic/source/email"
           label="Venus d'un e-mail"
-          value={bySource ? int(email) : <Insufficient />}
+          value={bySource ? email : <Insufficient />}
           definition="Visiteurs du jour arrivés par un lien d'un e-mail Stageio (série, alertes, relances : utm_source=email)."
           source="Supabase, site_visits"
         />

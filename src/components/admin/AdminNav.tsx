@@ -14,6 +14,7 @@ const GROUPS = [
       { href: "/admin", label: "Vue d'ensemble" },
       { href: "/admin/trafic", label: "Trafic et sources" },
       { href: "/admin/inscriptions", label: "Inscriptions jour par jour" },
+      { href: "/admin/online", label: "En ligne maintenant" },
       { href: "/admin/revenus", label: "Revenus et MRR" },
       { href: "/admin/abonnements", label: "Abonnements et churn" },
       { href: "/admin/cohortes", label: "Cohortes" },
@@ -47,7 +48,6 @@ const GROUPS = [
       { href: "/admin/offres", label: "Offres" },
       { href: "/admin/la-bonne-alternance", label: "La bonne alternance" },
       { href: "/admin/codes", label: "Codes" },
-      { href: "/admin/online", label: "En ligne" },
     ],
   },
 ];

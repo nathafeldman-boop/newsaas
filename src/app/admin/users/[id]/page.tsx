@@ -4,6 +4,11 @@ import { isPremium } from "@/lib/subscription/isPremium";
 import { grantPremiumAndNotifyAction, syncUserPaymentsAction } from "@/app/admin/users/actions";
 import { requireAdminPage } from "@/lib/admin/accessCode";
 import { STATUS_LABELS } from "@/lib/applications/status";
+import { isAutoTier } from "@/lib/subscription/isPremium";
+import { Chip, MiniHistogram, Steps } from "@/components/admin/cockpit/Visual";
+import { sourceInfo, dayKey, daysBetween } from "@/lib/admin/trafficStats";
+import { heardFromLabel } from "@/lib/onboarding/options";
+import { nowMs } from "@/lib/admin/cockpit/load";
 
 const SUBSCRIPTION_LABEL: Record<string, string> = {
   active: "Payant (actif)",
@@ -19,7 +24,20 @@ const EVENT_LABEL: Record<string, string> = {
   login: "Connexion",
   onboarding_step_viewed: "Étape onboarding vue",
   onboarding_step_completed: "Étape onboarding terminée",
+  paywall_viewed: "Page Premium vue",
+  checkout_opened: "Paiement ouvert",
+  heard_from: "Nous a connus par",
 };
+
+// Temps écoulé entre deux étapes du parcours, en clair.
+function gapText(fromIso: string, toIso: string): string {
+  const mins = Math.max(0, Math.round((Date.parse(toIso) - Date.parse(fromIso)) / 60000));
+  if (mins < 1) return "moins d'1 min";
+  if (mins < 60) return `${mins} min`;
+  const hours = Math.round(mins / 60);
+  if (hours < 48) return `${hours} h`;
+  return `${Math.round(hours / 24)} j`;
+}
 
 const APPLICATION_STATUS_LABEL: Record<string, string> = STATUS_LABELS;
 
@@ -34,6 +52,11 @@ function describeEvent(eventType: string, metadata: Record<string, unknown> | nu
   if (eventType === "onboarding_step_viewed" || eventType === "onboarding_step_completed") {
     return typeof metadata.step === "string" ? `étape: ${metadata.step}` : "";
   }
+  if (eventType === "heard_from" && typeof metadata.source === "string") {
+    return heardFromLabel(metadata.source, typeof metadata.format === "string" ? metadata.format : null);
+  }
+  if (eventType === "paywall_viewed" && typeof metadata.source === "string") return `depuis ${metadata.source}`;
+  if (eventType === "checkout_opened" && typeof metadata.plan === "string") return `formule ${metadata.plan}`;
   return "";
 }
 
@@ -102,6 +125,42 @@ export default async function AdminUserDetailPage({
   const allApplications = applications ?? [];
   const allEvents = events ?? [];
   const loginCount = allEvents.filter((e) => e.event_type === "login").length;
+
+  // Parcours (25/10) : chaque étape cochée avec sa date, du compte au paiement.
+  const firstOf = (type: string) => {
+    const list = allEvents.filter((e) => e.event_type === type);
+    return list.length > 0 ? list[list.length - 1].created_at : null;
+  };
+  const countOf = (type: string) => allEvents.filter((e) => e.event_type === type).length;
+  const firstSwipe = allSwipes.length > 0 ? allSwipes[allSwipes.length - 1].created_at : null;
+  const firstLike = allSwipes.filter((x) => x.direction === "like").at(-1)?.created_at ?? null;
+  const firstApplication = allApplications.length > 0 ? allApplications[allApplications.length - 1].applied_at : null;
+  const paywallSeen = firstOf("paywall_viewed");
+  const checkoutOpened = firstOf("checkout_opened");
+  const paid = profile.premium_activated_at;
+  const heard = allEvents.find((e) => e.event_type === "heard_from");
+  const heardMeta = heard?.metadata as { source?: unknown; format?: unknown } | null | undefined;
+  const heardText = typeof heardMeta?.source === "string" ? heardFromLabel(heardMeta.source, typeof heardMeta.format === "string" ? heardMeta.format : null) : null;
+  const steps = [
+    { label: "Compte créé", done: true, at: profile.created_at, detail: profile.utm_source ? `via ${sourceInfo(profile.utm_source).label}` : "source inconnue" },
+    { label: "Onboarding fini", done: !!profile.onboarding_completed, at: profile.onboarding_completed_at },
+    { label: "1er swipe", done: !!firstSwipe, at: firstSwipe, detail: allSwipes.length > 0 ? `${allSwipes.length} swipe${allSwipes.length > 1 ? "s" : ""}` : undefined },
+    { label: "1er like", done: !!firstLike, at: firstLike },
+    { label: "Page Premium vue", done: !!paywallSeen, at: paywallSeen, detail: paywallSeen ? `${countOf("paywall_viewed")} fois` : undefined },
+    { label: "Paiement ouvert", done: !!checkoutOpened, at: checkoutOpened, detail: checkoutOpened ? `${countOf("checkout_opened")} fois` : undefined },
+    { label: "A payé", done: isPremium(profile) || (profile.total_paid_cents ?? 0) > 0, at: paid },
+    { label: "1re candidature", done: !!firstApplication, at: firstApplication },
+  ];
+
+  // Activité des 14 derniers jours : swipes + actions enregistrées, par jour.
+  const now = nowMs();
+  const recentDays = daysBetween(now - 13 * 86_400_000, now);
+  const perDay = new Map<string, number>();
+  for (const at of [...allSwipes.map((x) => x.created_at), ...allEvents.map((e) => e.created_at)]) {
+    const k = dayKey(Date.parse(at));
+    perDay.set(k, (perDay.get(k) ?? 0) + 1);
+  }
+  const onlineNow = !!profile.last_active_at && now - Date.parse(profile.last_active_at) < 3 * 60_000;
 
   // Titres/entreprises des offres swipées ou candidatées : un seul lookup
   // groupé plutôt qu'une requête par ligne.
@@ -188,6 +247,33 @@ export default async function AdminUserDetailPage({
           {LTV_MESSAGES[ltv]}
         </p>
       )}
+
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+        {onlineNow && (
+          <Chip tone="good">
+            <span className="live-dot" aria-hidden /> en ligne
+          </Chip>
+        )}
+        {isAutoTier(profile) ? <Chip tone="violet">Stageio Auto</Chip> : isPremium(profile) ? <Chip tone="good">Premium</Chip> : <Chip>Gratuit</Chip>}
+        {profile.utm_source && <Chip tone="blue">Arrivé via {sourceInfo(profile.utm_source).label}</Chip>}
+        {heardText && <Chip tone="violet">Dit nous avoir connus par : {heardText}</Chip>}
+        {profile.city && <Chip>{profile.city}</Chip>}
+        <Chip>Inscrit le {fmt(profile.created_at)}</Chip>
+        {profile.last_active_at && !onlineNow && <Chip>Vu le {fmt(profile.last_active_at)}</Chip>}
+      </div>
+
+      <h2 style={{ fontSize: 16, margin: "24px 0 10px" }}>Son parcours</h2>
+      <Steps steps={steps} formatDate={(iso) => fmt(iso)} gap={gapText} />
+
+      <h2 style={{ fontSize: 16, margin: "24px 0 10px" }}>Son activité sur 14 jours</h2>
+      <div className="cockpit-card">
+        <MiniHistogram
+          values={recentDays.map((d) => perDay.get(d.key) ?? 0)}
+          labels={recentDays.map((d) => `${d.key.slice(8, 10)}/${d.key.slice(5, 7)}`)}
+          color="#0f9c56"
+          title="Actions par jour sur 14 jours"
+        />
+      </div>
 
       <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div className="card elev-sm" style={{ padding: "var(--space-4)" }}>

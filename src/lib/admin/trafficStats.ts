@@ -58,9 +58,14 @@ const ALIASES: Record<string, string> = {
   newsletter: "email",
 };
 
-export function sourceInfo(source: string | null | undefined): SourceInfo {
+/** Clé unique d'une source (« ig » → « instagram ») : sert d'adresse à sa page de détail. */
+export function canonicalSource(source: string | null | undefined): string {
   const raw = sourceKey(source);
-  const key = ALIASES[raw] ?? raw;
+  return ALIASES[raw] ?? raw;
+}
+
+export function sourceInfo(source: string | null | undefined): SourceInfo {
+  const key = canonicalSource(source);
   return KNOWN[key] ?? { label: key, group: "Autres" };
 }
 
@@ -109,7 +114,7 @@ export function aggregateSignups(rows: SignupRow[]): SignupDay[] {
 
 // --- Rapprochement visiteurs / inscrits / payeurs ---------------------------
 
-export type SourceRow = { label: string; group: SourceGroup; visitors: number; signupPage: number; signups: number; payers: number | null };
+export type SourceRow = { key: string; label: string; group: SourceGroup; visitors: number; signupPage: number; signups: number; payers: number | null };
 
 /**
  * Une ligne par source (libellé fusionné : « ig » et « instagram » ne font
@@ -125,7 +130,7 @@ export function mergeBySource(
   const rows = new Map<string, SourceRow>();
   const row = (source: string) => {
     const info = sourceInfo(source);
-    const cur = rows.get(info.label) ?? { label: info.label, group: info.group, visitors: 0, signupPage: 0, signups: 0, payers: payers ? 0 : null };
+    const cur = rows.get(info.label) ?? { key: canonicalSource(source), label: info.label, group: info.group, visitors: 0, signupPage: 0, signups: 0, payers: payers ? 0 : null };
     rows.set(info.label, cur);
     return cur;
   };
@@ -146,8 +151,8 @@ export function mergeBySource(
   return [...rows.values()].sort((a, b) => b.visitors - a.visitors || b.signups - a.signups || a.label.localeCompare(b.label));
 }
 
-export function totalsByGroup(rows: SourceRow[]): (Omit<SourceRow, "label" | "group"> & { group: SourceGroup })[] {
-  const out = new Map<SourceGroup, Omit<SourceRow, "label" | "group"> & { group: SourceGroup }>();
+export function totalsByGroup(rows: SourceRow[]): (Omit<SourceRow, "key" | "label" | "group"> & { group: SourceGroup })[] {
+  const out = new Map<SourceGroup, Omit<SourceRow, "key" | "label" | "group"> & { group: SourceGroup }>();
   for (const r of rows) {
     const g = out.get(r.group) ?? { group: r.group, visitors: 0, signupPage: 0, signups: 0, payers: r.payers === null ? null : 0 };
     g.visitors += r.visitors;

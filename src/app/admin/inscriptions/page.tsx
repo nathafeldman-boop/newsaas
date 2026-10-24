@@ -81,27 +81,37 @@ export default async function SignupsPage() {
       <KpiGrid>
         <Kpi
           hero
+          accent="green"
           label="Inscrits depuis le 4 septembre"
-          value={int(summary.total)}
+          value={summary.total}
           sub={`sur ${days.length} jours`}
           definition="Comptes créés depuis le 4 septembre 2026 à 0 h (Paris), aujourd'hui compris. Un compte supprimé depuis n'est plus compté."
           source="Supabase, profils.created_at"
         />
         <Kpi
+          accent="pink"
+          href={`/admin/inscriptions/${todayKey}`}
+          cta="Voir les inscrits"
           label="Aujourd'hui"
-          value={int(summary.today)}
+          value={summary.today}
           sub={vsYesterday === null ? undefined : `hier : ${int(vsYesterday)} (journée complète)`}
           definition="Comptes créés depuis minuit (Paris). La journée n'est pas finie : comparer à hier en fin de soirée."
           source="Supabase, profils.created_at"
         />
         <Kpi
+          accent="amber"
+          href={summary.record ? `/admin/inscriptions/${summary.record.key}` : undefined}
+          cta="Voir ce jour-là"
           label="Record"
-          value={summary.record ? int(summary.record.signups) : <Insufficient />}
+          value={summary.record ? summary.record.signups : <Insufficient />}
           sub={summary.record ? longDay(summary.record.key) : undefined}
           definition="Le jour avec le plus de comptes créés depuis le 4 septembre (le plus récent en cas d'égalité)."
           source="Supabase, profils.created_at"
         />
         <Kpi
+          accent="blue"
+          href={summary.low ? `/admin/inscriptions/${summary.low.key}` : undefined}
+          cta="Voir le jour le plus bas"
           label="Moyenne par jour"
           value={avg(summary.avgPerDay)}
           sub={summary.low ? `jour le plus bas : ${int(summary.low.signups)}, ${longDay(summary.low.key)}` : undefined}
@@ -109,6 +119,7 @@ export default async function SignupsPage() {
           source="Supabase, profils.created_at"
         />
         <Kpi
+          accent="violet"
           label="7 derniers jours"
           value={summary.last7 === null ? <Insufficient /> : int(summary.last7)}
           delta={weekDelta}
@@ -116,6 +127,7 @@ export default async function SignupsPage() {
           source="Supabase, profils.created_at"
         />
         <Kpi
+          accent="green"
           label="Meilleur jour de la semaine"
           value={bestWeekday === null ? <Insufficient /> : WEEKDAYS[bestWeekday]}
           sub={bestWeekday === null ? undefined : `${avg(summary.weekdayAvg[bestWeekday])} inscrits en moyenne`}
@@ -124,7 +136,7 @@ export default async function SignupsPage() {
         />
       </KpiGrid>
 
-      <Section title="Courbe" subtitle="Chaque barre est une journée ; la dernière est la journée en cours (pas finie).">
+      <Section title="Courbe" subtitle="Chaque barre est une journée (la dernière est en cours). Clique sur une barre pour voir qui s'est inscrit ce jour-là.">
         <Card title="Inscrits par jour">
           <BarChart
             times={trend.map((d) => d.t)}
@@ -132,6 +144,7 @@ export default async function SignupsPage() {
             unit="count"
             height={240}
             caption="Comptes créés par jour depuis le 4 septembre"
+            hrefs={trend.map((d) => `/admin/inscriptions/${d.key}`)}
           />
         </Card>
         <div className="cockpit-grid-2" style={{ marginTop: 12 }}>
@@ -199,7 +212,7 @@ export default async function SignupsPage() {
 
       <Section
         title="Jour par jour"
-        subtitle="Le plus récent en haut. Source n°1 : canal le plus fréquent parmi les inscrits du jour (lien suivi à l'inscription). Visiteurs : comptés depuis le 08/10, une fois le SQL du 24/10 exécuté."
+        subtitle="Le plus récent en haut. Clique sur une date pour le détail du jour. Source n°1 : canal le plus fréquent parmi les inscrits du jour (lien suivi à l'inscription). Visiteurs : comptés depuis le 08/10, une fois le SQL du 24/10 exécuté."
       >
         <Card>
           <div className="cockpit-scroll" style={{ maxHeight: 720 }}>
@@ -226,8 +239,10 @@ export default async function SignupsPage() {
                   return (
                     <tr key={d.key} style={isRecord ? { background: "color-mix(in srgb, #0f9c56 10%, transparent)" } : undefined}>
                       <td>
-                        <span style={{ display: "inline-block", width: 34, color: "var(--color-neutral-600)" }}>{SHORT_WEEKDAYS[d.weekday]}</span>
-                        {ddmm(d.key)}
+                        <Link href={`/admin/inscriptions/${d.key}`} className="cockpit-row-link">
+                          <span style={{ display: "inline-block", width: 34, color: "var(--color-neutral-600)", fontWeight: 400 }}>{SHORT_WEEKDAYS[d.weekday]}</span>
+                          {ddmm(d.key)} →
+                        </Link>
                         {d.isToday && <span className="cockpit-pill" style={{ marginLeft: 6 }}>en cours</span>}
                         {isRecord && <span className="cockpit-pill is-good" style={{ marginLeft: 6 }}>★ record</span>}
                       </td>

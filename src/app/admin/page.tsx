@@ -144,6 +144,8 @@ export default async function CockpitOverviewPage({ searchParams }: { searchPara
         <KpiGrid>
           <Kpi
             hero
+            accent="green"
+            href="/admin/revenus"
             label="MRR actuel"
             value={euros(state.mrr)}
             sub={
@@ -155,6 +157,8 @@ export default async function CockpitOverviewPage({ searchParams }: { searchPara
             source="Stripe, abonnements"
           />
           <Kpi
+            accent="green"
+            href={`/admin/revenus?p=${period}`}
             label="Encaissé sur la période"
             value={euros(revCur.recurringCents + revCur.oneTimeCents)}
             delta={delta(revCur.recurringCents + revCur.oneTimeCents, revPrev.recurringCents + revPrev.oneTimeCents, (n) => euros(n))}
@@ -163,6 +167,8 @@ export default async function CockpitOverviewPage({ searchParams }: { searchPara
             source="Stripe, factures et sessions de paiement"
           />
           <Kpi
+            accent="amber"
+            href={`/admin/revenus?p=${period}`}
             label="Remboursé"
             value={euros(revCur.refundedCents)}
             delta={delta(revCur.refundedCents, revPrev.refundedCents, (n) => euros(n))}
@@ -177,6 +183,8 @@ export default async function CockpitOverviewPage({ searchParams }: { searchPara
       <Section title="Abonnements">
         <KpiGrid>
           <Kpi
+            accent="blue"
+            href={`/admin/abonnements?p=${period}`}
             label="Nouveaux abonnements"
             value={int(mvCur.newSubs)}
             delta={delta(mvCur.newSubs, mvPrev.newSubs)}
@@ -185,6 +193,8 @@ export default async function CockpitOverviewPage({ searchParams }: { searchPara
             source="Stripe"
           />
           <Kpi
+            accent="blue"
+            href={`/admin/abonnements?p=${period}`}
             label="Renouvellements réussis"
             value={int(mvCur.renewals)}
             delta={delta(mvCur.renewals, mvPrev.renewals)}
@@ -193,6 +203,9 @@ export default async function CockpitOverviewPage({ searchParams }: { searchPara
             source="Stripe, factures subscription_cycle"
           />
           <Kpi
+            accent="pink"
+            href="/admin/annulations"
+            cta="Voir pourquoi"
             label="Clients perdus"
             value={int(chCur.churned)}
             delta={delta(chCur.churned, chPrev.churned)}
@@ -202,6 +215,8 @@ export default async function CockpitOverviewPage({ searchParams }: { searchPara
             source="Stripe, fin réelle des abonnements"
           />
           <Kpi
+            accent="pink"
+            href="/admin/abonnements?statut=impaye"
             label="Paiements échoués"
             value={int(mvCur.failedOpen)}
             delta={delta(mvCur.failedOpen, mvPrev.failedOpen)}
@@ -216,6 +231,9 @@ export default async function CockpitOverviewPage({ searchParams }: { searchPara
       <Section title="Utilisateurs">
         <KpiGrid>
           <Kpi
+            accent="violet"
+            href="/admin/inscriptions"
+            cta="Jour par jour"
             label="Nouveaux inscrits"
             value={signupsCur ? int(signupsCur.length) : <Insufficient />}
             delta={signupsCur && signupsPrev ? delta(signupsCur.length, signupsPrev.length) : null}
@@ -223,6 +241,8 @@ export default async function CockpitOverviewPage({ searchParams }: { searchPara
             source="Supabase, profils"
           />
           <Kpi
+            accent="violet"
+            href="/admin/cohortes"
             label="Inscription → payant"
             value={convCur === null ? <Insufficient /> : pct(convCur)}
             delta={convCur !== null && convPrev !== null ? delta(Math.round(convCur * 1000), Math.round(convPrev * 1000), (n) => `${(n / 10).toLocaleString("fr-FR")} pt`) : null}
@@ -230,6 +250,9 @@ export default async function CockpitOverviewPage({ searchParams }: { searchPara
             source="Supabase (inscrits) + Stripe (payeurs)"
           />
           <Kpi
+            accent="green"
+            href="/admin/users"
+            cta="Voir les comptes"
             label="Actifs 7 jours"
             value={active7 === null ? <Insufficient /> : int(active7)}
             sub={active30 === null ? undefined : `${int(active30)} sur 30 jours`}

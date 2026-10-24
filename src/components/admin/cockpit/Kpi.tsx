@@ -1,8 +1,23 @@
-import type { ReactNode } from "react";
+import Link from "next/link";
+import type { CSSProperties, ReactNode } from "react";
+import { CountUp } from "@/components/admin/cockpit/CountUp";
 
 // Tuile d'indicateur : libellé, valeur, variation vs période précédente
 // (flèche + texte, jamais la couleur seule) et définition dépliable avec sa
 // source, pour qu'aucun chiffre ne soit lu sans savoir d'où il vient.
+// href : la tuile ouvre le détail du chiffre (25/10, Nathan : « quand je
+// clique sur une data, je veux de la data sur cette data »). accent : liseré
+// de couleur pour repérer les tuiles (décoratif, jamais porteur de sens
+// seul). Une valeur numérique défile jusqu'à son chiffre.
+export const KPI_ACCENTS = {
+  green: "#0f9c56",
+  blue: "#2a78d6",
+  pink: "#e87ba4",
+  amber: "#d98a00",
+  violet: "#7c5cd6",
+} as const;
+export type KpiAccent = keyof typeof KPI_ACCENTS;
+
 export function Kpi({
   label,
   value,
@@ -12,6 +27,10 @@ export function Kpi({
   definition,
   source,
   hero = false,
+  href,
+  accent,
+  live = false,
+  cta = "Voir le détail",
 }: {
   label: string;
   value: ReactNode;
@@ -21,6 +40,11 @@ export function Kpi({
   definition: string;
   source: string;
   hero?: boolean;
+  href?: string;
+  accent?: KpiAccent;
+  // Point vert qui pulse : chiffre en direct.
+  live?: boolean;
+  cta?: string;
 }) {
   const tone =
     !delta || delta.direction === "flat" || goodWhen === "neutral"
@@ -28,11 +52,14 @@ export function Kpi({
       : (delta.direction === "up") === (goodWhen === "up")
         ? "#0c6b3c"
         : "#b42318";
-  return (
-    <div className={hero ? "cockpit-card cockpit-hero" : "cockpit-card"}>
-      <div style={{ fontSize: 12.5, color: "var(--color-neutral-700)", fontWeight: 600 }}>{label}</div>
+  const body = (
+    <>
+      <div style={{ fontSize: 12.5, color: "var(--color-neutral-700)", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+        {live && <span className="live-dot" aria-hidden />}
+        {label}
+      </div>
       <div style={{ fontSize: hero ? 40 : 26, fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.1, marginTop: 6, fontVariantNumeric: "tabular-nums" }}>
-        {value}
+        {typeof value === "number" ? <CountUp value={value} /> : value}
       </div>
       {delta && (
         <div style={{ fontSize: 12, color: tone, marginTop: 4, fontWeight: 600 }}>
@@ -41,6 +68,19 @@ export function Kpi({
         </div>
       )}
       {sub && <div style={{ fontSize: 12, color: "var(--color-neutral-600)", marginTop: 4 }}>{sub}</div>}
+      {href && <div className="cockpit-go">{cta} →</div>}
+    </>
+  );
+  const style = accent ? ({ "--kpi-accent": KPI_ACCENTS[accent] } as CSSProperties) : undefined;
+  return (
+    <div className={`cockpit-card${hero ? " cockpit-hero" : ""}${href ? " is-link" : ""}${accent ? " has-accent" : ""}`} style={style}>
+      {href ? (
+        <Link href={href} className="cockpit-kpi-link">
+          {body}
+        </Link>
+      ) : (
+        body
+      )}
       <details style={{ marginTop: 8 }}>
         <summary style={{ fontSize: 11.5, color: "var(--color-neutral-500)", cursor: "pointer" }}>Définition</summary>
         <p style={{ fontSize: 12, margin: "6px 0 0", color: "var(--color-neutral-700)", lineHeight: 1.45 }}>{definition}</p>

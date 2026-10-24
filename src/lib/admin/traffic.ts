@@ -144,6 +144,36 @@ export async function onlineNow(now: number): Promise<{ visitors: number; logged
   return { visitors: new Set((visits ?? []).map((v) => v.visitor_id)).size, loggedIn: loggedIn ?? 0 };
 }
 
+/** Pages ouvertes et sources des 5 dernières minutes (visiteurs distincts). */
+export async function liveVisits(now: number): Promise<{ visitors: number; pages: { path: string; visitors: number }[]; sources: { source: string; visitors: number }[] }> {
+  const { data, error } = await createAdminClient()
+    .from("site_visits")
+    .select("visitor_id, path, utm_source, created_at")
+    .gte("created_at", new Date(now - 5 * 60_000).toISOString())
+    .order("created_at", { ascending: false })
+    .limit(5000);
+  if (error) throw new Error(error.message);
+  const rows = data ?? [];
+  // Page actuelle = la plus récente de chaque visiteur ; source = la première connue.
+  const current = new Map<string, string>();
+  for (const r of rows) if (!current.has(r.visitor_id)) current.set(r.visitor_id, r.path);
+  const firsts = new Map<string, string>();
+  for (const r of [...rows].reverse()) {
+    const cur = firsts.get(r.visitor_id);
+    if (!cur || (cur === "direct" && r.utm_source)) firsts.set(r.visitor_id, r.utm_source?.trim() || "direct");
+  }
+  const count = (values: Iterable<string>) => {
+    const m = new Map<string, number>();
+    for (const v of values) m.set(v, (m.get(v) ?? 0) + 1);
+    return [...m.entries()].sort((a, b) => b[1] - a[1]);
+  };
+  return {
+    visitors: current.size,
+    pages: count(current.values()).slice(0, 10).map(([path, visitors]) => ({ path, visitors })),
+    sources: count(firsts.values()).map(([source, visitors]) => ({ source, visitors })),
+  };
+}
+
 // --- Inscrits --------------------------------------------------------------
 
 // Agrégé avant la mise en cache : quelques Ko par jour au lieu d'une ligne

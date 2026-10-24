@@ -1,6 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { computeWeekdayAverages, periodStart, type Period } from "@/lib/admin/analytics";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { heardFromLabel } from "@/lib/onboarding/options";
 import { fetchAllRows, POSTGREST_MAX_ROWS } from "@/lib/supabase/public";
 import { NEWS_CAMPAIGN_EVENT, NEWS_UTM_CAMPAIGN, NEWS_VARIANTS, newsUtmCampaign } from "@/lib/campaigns/relanceOffres";
 
@@ -267,8 +268,10 @@ export const getHeardFromStats = unstable_cache(
         .limit(POSTGREST_MAX_ROWS);
       if (error) throw new Error(error.message);
       for (const e of data ?? []) {
-        const source = (e.metadata as { source?: unknown } | null)?.source;
-        if (typeof source !== "string") continue;
+        const meta = e.metadata as { source?: unknown; format?: unknown } | null;
+        if (typeof meta?.source !== "string") continue;
+        // « TikTok · commentaire » quand le format a été demandé (25/10).
+        const source = heardFromLabel(meta.source, typeof meta.format === "string" ? meta.format : null);
         const prev = latest.get(e.user_id);
         if (!prev || e.created_at > prev.at) latest.set(e.user_id, { source, at: e.created_at });
       }

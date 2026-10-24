@@ -17,7 +17,9 @@ import {
   EDUCATION_LEVELS,
   EXPERIENCE_LEVELS,
   AVAILABILITY_OPTIONS,
+  HEARD_FROM_FORMATS,
   HEARD_FROM_OPTIONS,
+  type HeardFromFormat,
 } from "@/lib/onboarding/options";
 import { STEP_IDS, STEP_LABELS, type StepId } from "@/lib/onboarding/steps";
 import { forgetSignupCity, readSignupCity } from "@/lib/signup/intentStorage";
@@ -244,12 +246,12 @@ async function logOnboardingEvent(
 // Réponse à « Tu nous as connus comment ? » : notée dès le tap (pas à la fin
 // de l'onboarding) pour compter aussi ceux qui s'arrêtent après. Un
 // changement d'avis ajoute une ligne ; l'admin garde la plus récente.
-async function logHeardFrom(userId: string, source: string) {
+async function logHeardFrom(userId: string, source: string, format: string | null = null) {
   const { error } = await createClient()
     .from("user_events")
-    .insert({ user_id: userId, event_type: "heard_from", metadata: { source } });
+    .insert({ user_id: userId, event_type: "heard_from", metadata: format ? { source, format } : { source } });
   if (error) {
-    console.error("onboarding heard_from event failed", error, { source });
+    console.error("onboarding heard_from event failed", error, { source, format });
   }
 }
 
@@ -321,6 +323,9 @@ export function OnboardingWizard({
   // jamais été renseigné.
   const [availabilityLabel, setAvailabilityLabel] = useState<string | null>(null);
   const [heardFrom, setHeardFrom] = useState<string | null>(null);
+  // Réseau choisi : format vu (commentaire, vidéo, carrousel…), 2e question.
+  const [heardFormat, setHeardFormat] = useState<HeardFromFormat | null>(null);
+  const heardOption = HEARD_FROM_OPTIONS.find((o) => o.value === heardFrom);
 
   const [cvFile, setCvFile] = useState<File | null>(null);
 
@@ -365,6 +370,9 @@ export function OnboardingWizard({
     }
     if (stepId === "source" && !heardFrom) {
       return "Dis-nous comment tu nous as connus.";
+    }
+    if (stepId === "source" && heardOption?.formats && !heardFormat) {
+      return `Dis-nous ce que tu as vu sur ${heardFrom}.`;
     }
     return null;
   }
@@ -1153,23 +1161,60 @@ export function OnboardingWizard({
 
             {stepId === "source" && (
               <div className="flex flex-col gap-5">
-                <StepHeader title="Tu nous as connus comment ?" subtitle="Ça nous aide à savoir où parler de Stageio." />
-                <div className="grid grid-cols-2 gap-3">
-                  {HEARD_FROM_OPTIONS.map((opt) => (
-                    <TileOption
-                      key={opt.value}
-                      label={opt.value}
-                      icon={opt.icon}
-                      sub={opt.sub}
-                      active={heardFrom === opt.value}
+                {heardOption?.formats ? (
+                  <>
+                    <StepHeader title={`Sur ${heardOption.value}, c'était quoi ?`} subtitle="Ça nous dit ce qui t'a vraiment donné envie de venir." />
+                    <div className="grid grid-cols-2 gap-3">
+                      {heardOption.formats.map((format) => (
+                        <TileOption
+                          key={format}
+                          label={HEARD_FROM_FORMATS[format].label}
+                          icon={HEARD_FROM_FORMATS[format].icon}
+                          sub={HEARD_FROM_FORMATS[format].sub}
+                          active={heardFormat === format}
+                          onClick={() => {
+                            setHeardFormat(format);
+                            void logHeardFrom(userId, heardOption.value, format);
+                            advanceStep("source");
+                          }}
+                        />
+                      ))}
+                    </div>
+                    <button
+                      type="button"
                       onClick={() => {
-                        setHeardFrom(opt.value);
-                        void logHeardFrom(userId, opt.value);
-                        advanceStep("source");
+                        setHeardFrom(null);
+                        setHeardFormat(null);
                       }}
-                    />
-                  ))}
-                </div>
+                      style={{ alignSelf: "flex-start", background: "none", border: "none", padding: 0, fontSize: 13, fontWeight: 600, color: "var(--color-accent-700)", cursor: "pointer" }}
+                    >
+                      ← Ce n&apos;était pas {heardOption.value}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <StepHeader title="Tu nous as connus comment ?" subtitle="Ça nous aide à savoir où parler de Stageio." />
+                    <div className="grid grid-cols-2 gap-3">
+                      {HEARD_FROM_OPTIONS.map((opt) => (
+                        <TileOption
+                          key={opt.value}
+                          label={opt.value}
+                          icon={opt.icon}
+                          sub={opt.sub}
+                          active={heardFrom === opt.value}
+                          onClick={() => {
+                            setHeardFrom(opt.value);
+                            setHeardFormat(null);
+                            // Réseau : la 2e question (format) note la réponse complète.
+                            if (opt.formats) return;
+                            void logHeardFrom(userId, opt.value);
+                            advanceStep("source");
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
             )}
 

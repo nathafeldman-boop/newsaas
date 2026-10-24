@@ -5,10 +5,11 @@ import { SERIES_COLORS } from "@/components/admin/cockpit/chartUtils";
 import { AutoRefresh } from "@/components/admin/AutoRefresh";
 import { int, pct, startOfParisDay } from "@/lib/admin/cockpit/format";
 import { loadSnapshot, nowMs } from "@/lib/admin/cockpit/load";
-import { withTimeout } from "@/lib/admin/dashboardStats";
+import { getHeardFromStats, withTimeout } from "@/lib/admin/dashboardStats";
 import { landingPages, onlineNow, payerIds, payerSignups, signupsByDay, visitorsByDaySource, visitorsBySource } from "@/lib/admin/traffic";
 import { DAY_MS, SIGNUPS_SINCE, dayKey, daysBetween, mergeBySource, sourceInfo, totalsByGroup } from "@/lib/admin/trafficStats";
 import { requireAdminPage } from "@/lib/admin/accessCode";
+import { HBars } from "@/components/admin/cockpit/Visual";
 
 // « Trafic et sources » (24/10, demande de Nathan) : combien de personnes
 // sont venues aujourd'hui, combien sont en ligne, d'où elles viennent
@@ -64,6 +65,7 @@ export default async function TrafficPage({ searchParams }: { searchParams: Prom
     ).catch(() => ({ value: null })),
   ]);
 
+  const heard = await withTimeout(getHeardFromStats().catch(() => null), 8000, null);
   const periodDays = new Set(daysBetween(since, now).map((d) => d.key));
   const rows = mergeBySource(bySource?.rows ?? null, signupDays ?? [], payers, periodDays);
   const groups = totalsByGroup(rows);
@@ -123,42 +125,59 @@ export default async function TrafficPage({ searchParams }: { searchParams: Prom
         <KpiGrid>
           <Kpi
             hero
+            accent="green"
+            href="#sources"
+            cta="Par source"
             label={days === 1 ? "Visiteurs aujourd'hui" : "Visiteurs"}
-            value={visitorsKnown ? int(visitors) : <Insufficient>{bySource === undefined ? "Indisponible" : "SQL à exécuter"}</Insufficient>}
+            value={visitorsKnown ? visitors : <Insufficient>{bySource === undefined ? "Indisponible" : "SQL à exécuter"}</Insufficient>}
             sub={visitorsKnown ? `${int(signupPage)} ont ouvert la page d'inscription` : visitsNote}
             definition="Personnes distinctes (un cookie anonyme par navigateur) qui ont ouvert au moins une page du site, robots et aperçus de liens exclus. Une même personne sur son téléphone puis son ordinateur compte deux fois."
             source="Supabase, site_visits"
           />
           <Kpi
+            live
+            accent="blue"
+            href="/admin/online"
+            cta="Voir qui"
             label="En ligne maintenant"
-            value={online ? int(online.visitors) : <Insufficient />}
-            sub={online ? `dont ${int(online.loggedIn)} connecté${online.loggedIn > 1 ? "s" : ""} · détail sur « En ligne »` : undefined}
+            value={online ? online.visitors : <Insufficient />}
+            sub={online ? `dont ${int(online.loggedIn)} connecté${online.loggedIn > 1 ? "s" : ""} à leur compte` : undefined}
             definition="Visiteurs qui ont ouvert une page dans les 5 dernières minutes, avec ou sans compte. « Connectés » : comptes actifs dans l'appli dans les 3 dernières minutes (signal envoyé toutes les 30 s)."
             source="Supabase, site_visits et profils.last_active_at"
           />
           <Kpi
+            accent="pink"
+            href={days === 1 ? `/admin/inscriptions/${dayKey(now)}` : "/admin/inscriptions"}
+            cta="Voir les inscrits"
             label={days === 1 ? "Inscrits aujourd'hui" : "Inscrits"}
-            value={signupDays ? int(signups) : <Insufficient />}
-            sub={signupDays ? `${int(onboarded)} ont fini l'onboarding · historique sur « Inscriptions »` : undefined}
+            value={signupDays ? signups : <Insufficient />}
+            sub={signupDays ? `${int(onboarded)} ont fini l'onboarding` : undefined}
             definition="Comptes créés sur la période (minuit heure de Paris)."
             source="Supabase, profils.created_at"
           />
           <Kpi
+            accent="amber"
+            href="#flux"
+            cta="Voir le flux"
             label="Visite → inscription"
             value={visitorsKnown && signupDays ? rate(signups, visitors) : <Insufficient />}
             definition="Comptes créés / visiteurs de la période. Repère : 30-40 % sur un trafic qualifié (cible 50 %). Un compte créé aujourd'hui par quelqu'un venu hier compte dans les inscrits mais pas dans les visiteurs du jour."
             source="Supabase"
           />
           <Kpi
+            accent="violet"
+            href="/admin/trafic/source/email"
             label="Venus d'un e-mail"
-            value={visitorsKnown ? int(email?.visitors ?? 0) : <Insufficient />}
-            sub={<Link href="/admin/emails">détail par e-mail</Link>}
+            value={visitorsKnown ? (email?.visitors ?? 0) : <Insufficient />}
             definition="Visiteurs arrivés par un lien d'un e-mail Stageio (série, alertes d'offres, relances : liens marqués utm_source=email). Surtout des inscrits qui reviennent."
             source="Supabase, site_visits"
           />
           <Kpi
+            accent="pink"
+            href={`/admin/trafic/source/${bySocial[0]?.key ?? "tiktok"}`}
+            cta={`Détail ${bySocial[0]?.label ?? "TikTok"}`}
             label="Venus des réseaux sociaux"
-            value={visitorsKnown ? int(social?.visitors ?? 0) : <Insufficient />}
+            value={visitorsKnown ? (social?.visitors ?? 0) : <Insufficient />}
             sub={bySocial.length > 0 ? bySocial.map((r) => `${r.label} ${int(r.visitors)}`).join(" · ") : visitorsKnown ? "aucun pour l'instant" : undefined}
             definition="Visiteurs arrivés de TikTok, Instagram, Snapchat, YouTube, Facebook, LinkedIn, X, Reddit ou WhatsApp : lien marqué (utm_source, ?a=) ou site d'origine. Les applis qui masquent leur origine (souvent TikTok et Instagram sans lien marqué) tombent dans « Direct / inconnu »."
             source="Supabase, site_visits"
@@ -166,6 +185,7 @@ export default async function TrafficPage({ searchParams }: { searchParams: Prom
         </KpiGrid>
       </Section>
 
+      <div id="sources" style={{ scrollMarginTop: 16 }} />
       <Section
         title="D'où ils viennent"
         subtitle="Chaque visiteur est compté une fois, sous la première source connue de la période. Inscrits et payants : source enregistrée à l'inscription (le premier lien suivi dans les 30 jours)."
@@ -205,6 +225,7 @@ export default async function TrafficPage({ searchParams }: { searchParams: Prom
             )}
           </Card>
           <Card title="Le flux, de la visite au paiement">
+            <div id="flux" style={{ scrollMarginTop: 16 }} />
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {funnel.map((step, i) => {
                 const prev = funnel[i - 1]?.value ?? null;
@@ -260,7 +281,11 @@ export default async function TrafficPage({ searchParams }: { searchParams: Prom
                   <tbody>
                     {rows.map((r) => (
                       <tr key={r.label}>
-                        <td style={{ fontWeight: 600 }}>{r.label}</td>
+                        <td>
+                          <Link href={`/admin/trafic/source/${encodeURIComponent(r.key)}`} className="cockpit-row-link">
+                            {r.label} →
+                          </Link>
+                        </td>
                         <td style={{ color: "var(--color-neutral-600)" }}>{r.group}</td>
                         <td>
                           <Meter value={r.visitors} max={maxVisitors} />
@@ -285,7 +310,7 @@ export default async function TrafficPage({ searchParams }: { searchParams: Prom
         </div>
       </Section>
 
-      <Section title="Jour par jour" subtitle={`${chartDays} derniers jours. Visiteurs et inscrits sur deux graphiques séparés : leurs échelles n'ont rien à voir.`}>
+      <Section title="Jour par jour" subtitle={`${chartDays} derniers jours. Clique sur un jour pour voir qui s'est inscrit ce jour-là.`}>
         <div className="cockpit-grid-2">
           <Card title="Visiteurs par jour">
             {byDay ? (
@@ -298,6 +323,7 @@ export default async function TrafficPage({ searchParams }: { searchParams: Prom
                 ]}
                 unit="count"
                 caption="Visiteurs distincts par jour et par famille de sources"
+                hrefs={chartKeys.map((d) => `/admin/inscriptions/${d.key}`)}
               />
             ) : (
               <Insufficient>{byDay === undefined ? "Lecture des visites impossible pour l'instant." : SQL_NOTE}</Insufficient>
@@ -310,6 +336,7 @@ export default async function TrafficPage({ searchParams }: { searchParams: Prom
                 series={[{ name: "Inscrits", color: SERIES_COLORS[0], values: chartKeys.map((d) => signupsOn.get(d.key) ?? 0) }]}
                 unit="count"
                 caption="Comptes créés par jour"
+                hrefs={chartKeys.map((d) => `/admin/inscriptions/${d.key}`)}
               />
             ) : (
               <Insufficient />
@@ -319,6 +346,33 @@ export default async function TrafficPage({ searchParams }: { searchParams: Prom
             </p>
           </Card>
         </div>
+      </Section>
+
+      <Section
+        title="Ce qu'ils disent : « Tu nous as connus comment ? »"
+        subtitle="Réponses des inscrits des 30 derniers jours à l'onboarding, avec ce qu'ils ont payé depuis. Depuis le 25/10, les réseaux sont précisés : commentaire, vidéo, carrousel, story de quelqu'un. De quoi voir ce qui rapporte vraiment."
+      >
+        <Card>
+          {heard.value === null ? (
+            <Insufficient>Lecture impossible pour l&apos;instant.</Insufficient>
+          ) : heard.value.rows.length === 0 ? (
+            <Insufficient>Pas encore de réponse.</Insufficient>
+          ) : (
+            <>
+              <HBars
+                items={heard.value.rows.map((r) => ({
+                  label: r.source,
+                  value: r.answers,
+                  note: `${r.payers} payant${r.payers > 1 ? "s" : ""} · ${(r.cents / 100).toLocaleString("fr-FR", { maximumFractionDigits: 0 })} € · ${(r.cents / 100 / Math.max(1, r.answers)).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €/inscrit`,
+                }))}
+                color="#7c5cd6"
+              />
+              <p style={{ margin: "10px 0 0", fontSize: 12, color: "var(--color-neutral-600)" }}>
+                {int(heard.value.answered)} réponses sur {int(heard.value.signups)} inscrits. « €/inscrit » : ce que rapporte en moyenne un inscrit de cette réponse, à comparer entre formats.
+              </p>
+            </>
+          )}
+        </Card>
       </Section>
 
       <Section title="Pages d'arrivée" subtitle="Première page ouverte par chaque visiteur sur la période.">
