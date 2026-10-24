@@ -66,7 +66,11 @@ export default async function CandidaturePage({ params }: { params: Promise<{ of
       .eq("user_id", user.id)
       .eq("offer_id", offerId)
       .maybeSingle(),
-    supabase.from("profiles").select("subscription_status, current_period_end, cv_text").eq("id", user.id).single(),
+    supabase
+      .from("profiles")
+      .select("subscription_status, current_period_end, cv_text, full_name, city, formation, skills, availability_date")
+      .eq("id", user.id)
+      .single(),
   ]);
   const canAnalyzeOfferFit = isPremium(profile) && !!profile?.cv_text;
 
@@ -144,6 +148,16 @@ export default async function CandidaturePage({ params }: { params: Promise<{ of
               applyUrl={offer.apply_url}
               initialLetter={application?.cover_note ?? null}
               initialSentAt={sentAtForPanel(application)}
+              templateContext={{
+                offer: { title: offer.title, company: offer.company, contractType: offer.contract_type, sector: offer.sector },
+                profile: {
+                  fullName: profile?.full_name ?? null,
+                  city: profile?.city ?? null,
+                  formation: profile?.formation ?? null,
+                  skills: profile?.skills ?? [],
+                  availabilityDate: profile?.availability_date ?? null,
+                },
+              }}
             />
 
             {canAnalyzeOfferFit && <CvOfferMatchPanel offerId={offerId} />}

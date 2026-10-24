@@ -7,6 +7,9 @@ import { SparkleBurst } from "@/components/fx/SparkleBurst";
 import { COVER_LETTER_RESET } from "@/lib/coverLetter/stream";
 import { prefersReducedMotion } from "@/lib/fx/events";
 import { MarkSentControl } from "@/components/candidature/MarkSentControl";
+import { TemplateLetterPicker, type TemplateContext } from "@/components/candidature/TemplateLetterPicker";
+import { saveCoverLetterAction } from "@/app/(app)/candidature/[offerId]/letter-actions";
+import { countPlaceholders, type TemplateStyle } from "@/lib/coverLetter/templates";
 
 // Lettre de motivation (refaite le 16/10, demande de Nathan : « plus rapide,
 // animation refaite de A à Z, ultra stylée pour TikTok ») : la lettre arrive
@@ -31,6 +34,7 @@ export function CoverLetterPanel({
   applyUrl,
   initialLetter,
   initialSentAt,
+  templateContext,
 }: {
   userId: string;
   offerId: string;
@@ -38,6 +42,8 @@ export function CoverLetterPanel({
   initialLetter: string | null;
   /** Date d'envoi confirmée par l'étudiant (null : pas encore envoyée). */
   initialSentAt: string | null;
+  /** Offre et profil pour la bibliothèque de modèles. */
+  templateContext: TemplateContext;
 }) {
   const [status, setStatus] = useState<Status>(initialLetter ? "ready" : "writing");
   const [letter, setLetter] = useState(initialLetter ?? "");
@@ -51,6 +57,11 @@ export function CoverLetterPanel({
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [openedApply, setOpenedApply] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [saveState, setSaveState] = useState<{ ok: boolean; text: string } | null>(null);
+  // Dernière version enregistrée en base : la lettre générée est enregistrée
+  // par le serveur, les retouches et les modèles par saveCoverLetterAction.
+  const lastSaved = useRef(initialLetter ?? "");
   const [achievement, setAchievement] = useState("");
   const [whyCompany, setWhyCompany] = useState("");
   const attemptCount = useRef(0);
@@ -167,10 +178,32 @@ export function CoverLetterPanel({
     if (status === "writing" && streamDone && shown >= target.length) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setLetter(target);
+      lastSaved.current = target;
       setStatus("ready");
       setCelebrate((n) => n + 1);
     }
   }, [status, streamDone, shown, target]);
+
+  async function saveLetter(text: string, template?: { domain: string; style: TemplateStyle }) {
+    if (!text.trim() || (text === lastSaved.current && !template)) return;
+    const result = await saveCoverLetterAction(offerId, text, template);
+    if (result.ok) {
+      lastSaved.current = text;
+      setSaveState({ ok: true, text: "Lettre enregistrée ✓" });
+    } else {
+      setSaveState({ ok: false, text: result.error });
+    }
+  }
+
+  function applyTemplate(text: string, template: { domain: string; style: TemplateStyle }) {
+    abortRef.current?.abort();
+    setLetter(text);
+    setStatus("ready");
+    setError(null);
+    setCopied(false);
+    setShowTemplates(false);
+    void saveLetter(text, template);
+  }
 
   async function handleApplyOnSite() {
     if (!applyUrl) return;
@@ -366,9 +399,14 @@ export function CoverLetterPanel({
             style={{ padding: 16, fontSize: 13, color: "var(--color-accent-700)" }}
           >
             {error}
-            <button type="button" onClick={() => void generate()} className="btn btn-secondary mt-3">
-              Réessayer
-            </button>
+            <div className="flex flex-wrap gap-2 mt-3">
+              <button type="button" onClick={() => void generate()} className="btn btn-secondary">
+                Réessayer
+              </button>
+              <button type="button" onClick={() => setShowTemplates(true)} className="btn btn-ghost">
+                📚 Partir d&apos;un modèle
+              </button>
+            </div>
           </motion.div>
         )}
 
@@ -392,7 +430,11 @@ export function CoverLetterPanel({
               >
                 <textarea
                   value={letter}
-                  onChange={(e) => setLetter(e.target.value)}
+                  onChange={(e) => {
+                    setLetter(e.target.value);
+                    setSaveState(null);
+                  }}
+                  onBlur={() => void saveLetter(letter)}
                   rows={10}
                   className="input"
                   aria-label="Ta lettre de motivation"
@@ -427,14 +469,29 @@ export function CoverLetterPanel({
                 </motion.span>
               )}
             </div>
-            <button
-              type="button"
-              onClick={() => void generate({ achievement, whyCompany })}
-              className="btn btn-ghost"
-              style={{ alignSelf: "flex-start" }}
-            >
-              ↻ Régénérer
-            </button>
+            {countPlaceholders(letter) > 0 && (
+              <p role="status" style={{ fontSize: 12, margin: 0, fontWeight: 600, color: "var(--color-accent-700)" }}>
+                Remplace les passages entre crochets [ … ] avant d&apos;envoyer ta lettre.
+              </p>
+            )}
+            {saveState && (
+              <p role="status" style={{ fontSize: 11.5, margin: 0, color: saveState.ok ? "var(--color-accent-2-700)" : "var(--color-accent-700)" }}>
+                {saveState.text}
+              </p>
+            )}
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => void generate({ achievement, whyCompany })}
+                className="btn btn-ghost"
+                style={{ alignSelf: "flex-start" }}
+              >
+                ↻ Régénérer
+              </button>
+              <button type="button" onClick={() => setShowTemplates((v) => !v)} className="btn btn-ghost" aria-expanded={showTemplates}>
+                📚 Choisir un modèle
+              </button>
+            </div>
 
             <div className="card" style={{ padding: 12, marginTop: 4 }}>
               <p style={{ fontSize: 11.5, fontWeight: 600, margin: 0 }}>
@@ -469,6 +526,10 @@ export function CoverLetterPanel({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {showTemplates && (status === "ready" || status === "error") && (
+        <TemplateLetterPicker context={templateContext} onUse={applyTemplate} onClose={() => setShowTemplates(false)} />
+      )}
 
       {/* La candidature est enregistrée côté serveur (« à envoyer ») dès
           l'ouverture de la page pour un compte Premium, que la lettre
