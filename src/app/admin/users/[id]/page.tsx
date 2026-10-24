@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isPremium } from "@/lib/subscription/isPremium";
 import { grantPremiumAndNotifyAction, syncUserPaymentsAction } from "@/app/admin/users/actions";
+import { requireAdminPage } from "@/lib/admin/accessCode";
 
 const SUBSCRIPTION_LABEL: Record<string, string> = {
   active: "Payant (actif)",
@@ -70,6 +71,7 @@ export default async function AdminUserDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ ltv?: string }>;
 }) {
+  await requireAdminPage();
   const { id } = await params;
   const { ltv } = await searchParams;
   const admin = createAdminClient();

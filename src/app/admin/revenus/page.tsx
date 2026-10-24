@@ -8,6 +8,7 @@ import { profilesByIds } from "@/lib/admin/cockpit/db";
 import { date, delta, euros, int, maskEmail, parsePeriod, periodRanges } from "@/lib/admin/cockpit/format";
 import { loadSnapshot, nowMs } from "@/lib/admin/cockpit/load";
 import { DAY_MS, currentState, dailyRevenue, firstPaidBySub, mrrSeries, paidSubs, planLabel, revenueIn } from "@/lib/admin/cockpit/metrics";
+import { requireAdminPage } from "@/lib/admin/accessCode";
 
 // Revenus et MRR : ce que Stageio encaisse réellement (Stripe), séparé en
 // récurrent et ponctuel, remboursements à part, et le détail des paiements.
@@ -26,6 +27,7 @@ type PaymentRow = {
 const KINDS: PaymentRow["kind"][] = ["1er paiement", "Renouvellement", "Accès à vie", "Remboursement", "Échec"];
 
 export default async function RevenusPage({ searchParams }: { searchParams: Promise<{ p?: string; type?: string }> }) {
+  await requireAdminPage();
   const { p, type } = await searchParams;
   const period = parsePeriod(p);
   const now = nowMs();

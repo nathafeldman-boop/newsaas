@@ -13,12 +13,13 @@ export const FEATURES = [
   { key: "cover_letter_generated", label: "Lettre de motivation générée", since: null },
   { key: "cv_analyzed", label: "Analyse du CV", since: null },
   { key: "cv_offer_fit_analyzed", label: "CV comparé à une offre", since: null },
-  { key: "interview_quiz_started", label: "Simulateur d'entretien", since: "2026-10-25" },
+  { key: "interview_quiz_started", label: "Simulateur d'entretien (quiz commencé)", since: "2026-10-25" },
+  { key: "interview_quiz_completed", label: "Simulateur d'entretien (quiz terminé)", since: "2026-10-25" },
   { key: "fresh_inbox_open", label: "Panneau « Nouveautés »", since: "2026-10-24" },
 ] as const;
 export type FeatureKey = (typeof FEATURES)[number]["key"];
 
-const EVENT_FEATURES = ["cover_letter_generated", "cv_analyzed", "cv_offer_fit_analyzed", "interview_quiz_started"] as const;
+const EVENT_FEATURES = ["cover_letter_generated", "cv_analyzed", "cv_offer_fit_analyzed", "interview_quiz_started", "interview_quiz_completed"] as const;
 
 export type UserFacts = {
   id: string;
@@ -29,6 +30,8 @@ export type UserFacts = {
   /** Jours (Paris) avec une activité enregistrée : connexion ou swipe. */
   activeDays: number;
   secondDayAt: number | null;
+  /** Dernière activité enregistrée (connexion, swipe, candidature). */
+  lastActivityAt: number;
 };
 
 const dayFmt = new Intl.DateTimeFormat("fr-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" });
@@ -40,7 +43,9 @@ export async function userFacts(ids: string[]): Promise<Map<string, UserFacts>> 
   const days = new Map<string, Set<string>>();
   const firstOnDay = new Map<string, Map<string, number>>();
   const unique = [...new Set(ids)];
+  const lastAt = new Map<string, number>();
   const markDay = (id: string, t: number) => {
+    if (t > (lastAt.get(id) ?? 0)) lastAt.set(id, t);
     const d = parisDay(t);
     const set = days.get(id) ?? new Set<string>();
     set.add(d);
@@ -85,7 +90,7 @@ export async function userFacts(ids: string[]): Promise<Map<string, UserFacts>> 
       const signupAt = Date.parse(p.created_at);
       // Comptes plus anciens que la colonne onboarding_completed_at : terminé, date inconnue.
       const onboardedAt = p.onboarding_completed_at ? Date.parse(p.onboarding_completed_at) : p.onboarding_completed ? signupAt : null;
-      const f: UserFacts = { id: p.id, signupAt, onboardedAt, first: {}, activeDays: 0, secondDayAt: null };
+      const f: UserFacts = { id: p.id, signupAt, onboardedAt, first: {}, activeDays: 0, secondDayAt: null, lastActivityAt: signupAt };
       if (p.cv_uploaded_at) f.first.cv = Date.parse(p.cv_uploaded_at);
       out.set(p.id, f);
       markDay(p.id, f.signupAt);
@@ -95,7 +100,11 @@ export async function userFacts(ids: string[]): Promise<Map<string, UserFacts>> 
       if (s.direction === "like") setFirst(out.get(s.user_id), "like", t);
       markDay(s.user_id, t);
     }
-    for (const a of apps) setFirst(out.get(a.user_id), "application", Date.parse(a.applied_at));
+    for (const a of apps) {
+      const t = Date.parse(a.applied_at);
+      setFirst(out.get(a.user_id), "application", t);
+      markDay(a.user_id, t);
+    }
     for (const e of events) {
       const t = Date.parse(e.created_at);
       if (e.event_type === "login") markDay(e.user_id, t);
@@ -107,6 +116,7 @@ export async function userFacts(ids: string[]): Promise<Map<string, UserFacts>> 
   for (const f of out.values()) {
     const set = days.get(f.id) ?? new Set();
     f.activeDays = set.size;
+    f.lastActivityAt = Math.max(f.signupAt, lastAt.get(f.id) ?? 0);
     const signupDay = parisDay(f.signupAt);
     const later = [...(firstOnDay.get(f.id) ?? new Map()).entries()].filter(([d]) => d > signupDay).sort((a, b) => a[1] - b[1]);
     f.secondDayAt = later[0]?.[1] ?? null;

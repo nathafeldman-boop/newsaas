@@ -6,6 +6,7 @@ import { premiumProfiles, profilesByIds } from "@/lib/admin/cockpit/db";
 import { date, euros, maskEmail } from "@/lib/admin/cockpit/format";
 import { loadSnapshot, nowMs } from "@/lib/admin/cockpit/load";
 import { DAY_MS, activeAt, duplicateSubs, firstPaidBySub, paidSubs } from "@/lib/admin/cockpit/metrics";
+import { requireAdminPage } from "@/lib/admin/accessCode";
 
 // Santé des paiements et qualité des données : écarts entre Stripe (vérité
 // des paiements) et Supabase (vérité des comptes et des accès), impayés,
@@ -24,9 +25,15 @@ const SOURCES: [string, string, string][] = [
   ["Événements produit (paywall, connexions, clics)", "Supabase (user_events)", ""],
   ["E-mails envoyés par les campagnes", "Supabase (user_events, registre d'envoi)", "Ouvertures et rebonds : non lus (clé Resend en envoi seul)"],
   ["Motifs d'annulation", "Stripe (portail) + Supabase (subscription_cancellations)", "Facultatifs pour le client"],
+  [
+    "Synchronisation Stripe → base (webhook)",
+    "Événements reçus (vérifié le 25/10) : checkout.session.completed, customer.subscription.updated / deleted, invoice.paid",
+    "Non reçus : remboursements (charge.refunded) et litiges (charge.dispute.created) → le LTV en base ne baisse pas après un remboursement ; le cockpit les lit dans Stripe. Rattrapage quotidien : cron reconcile-subscriptions.",
+  ],
 ];
 
 export default async function SantePage() {
+  await requireAdminPage();
   const now = nowMs();
   const { snap, error } = await loadSnapshot();
   if (!snap) {
@@ -52,6 +59,26 @@ export default async function SantePage() {
       tone: missing.length ? "is-warn" : "is-good",
       detail: "Paiement réussi dans Stripe mais LTV à 0 dans Supabase : webhook manqué ou arrivé avant le lien du client. « Récupérer depuis Stripe » sur la fiche corrige.",
       rows: missing.map((id) => ({ userId: id, text: "LTV 0 € en base" })),
+    });
+  }
+
+  if (profiles) {
+    // LTV en base comparé au payé dans Stripe (brut : la base ne déduit pas les remboursements).
+    const subUser = new Map(snap.subs.map((s) => [s.id, s.userId]));
+    const grossByUser = new Map<string, number>();
+    const add = (id: string | null | undefined, cents: number) => {
+      if (id) grossByUser.set(id, (grossByUser.get(id) ?? 0) + cents);
+    };
+    for (const inv of snap.invoices) if (inv.subscription && inv.status === "paid") add(subUser.get(inv.subscription), inv.amountPaid);
+    for (const o of snap.oneTime) add(o.userId, o.amountCents);
+    const drift = payerIds
+      .map((id) => ({ id, db: profiles.get(id)?.total_paid_cents ?? 0, stripe: grossByUser.get(id) ?? 0 }))
+      .filter((x) => x.db > 0 && x.db !== x.stripe);
+    checks.push({
+      title: "LTV en base différent du payé dans Stripe",
+      tone: drift.length ? "is-warn" : "is-good",
+      detail: "Compte par compte : total payé noté en base contre total payé dans Stripe (brut, remboursements non déduits des deux côtés). Plus en base = paiement compté deux fois ; moins = paiement manqué.",
+      rows: drift.map((x) => ({ userId: x.id, text: `base ${euros(x.db)} · Stripe ${euros(x.stripe)} (${x.db > x.stripe ? "+" : "−"}${euros(Math.abs(x.db - x.stripe))})` })),
     });
   }
 

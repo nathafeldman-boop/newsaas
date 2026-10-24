@@ -1,7 +1,9 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createAccessCodeAction, deleteAccessCodeAction } from "./actions";
+import { requireAdminPage } from "@/lib/admin/accessCode";
 
 export default async function AdminCodesPage() {
+  await requireAdminPage();
   const admin = createAdminClient();
   const { data: codes } = await admin
     .from("access_codes")

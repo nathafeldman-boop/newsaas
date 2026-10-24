@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getHourlyAttribution, getRpmWindowStats, type RpmWindowStats } from "@/lib/admin/dashboardStats";
 import { saveContentViewsAction } from "@/app/admin/rpm-actions";
+import { requireAdminPage } from "@/lib/admin/accessCode";
 
 // RPM (SOP 16 « Tracking minimum vital ») : les 3 métriques de démarrage,
 // vues et revenus côte à côte sur la MÊME période (les 7 jours qui finissent
@@ -69,6 +70,7 @@ async function loadRpmData() {
 }
 
 export default async function AdminRpmPage({ searchParams }: { searchParams: Promise<{ error?: string; saved?: string }> }) {
+  await requireAdminPage();
   const { error, saved } = await searchParams;
   const { today, rows, missingTable, knownSources, dates, windows, hourly } = await loadRpmData();
 

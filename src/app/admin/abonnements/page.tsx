@@ -18,6 +18,7 @@ import {
   type RenewalOutcome,
 } from "@/lib/admin/cockpit/metrics";
 import type { SubRecord } from "@/lib/admin/cockpit/types";
+import { requireAdminPage } from "@/lib/admin/accessCode";
 
 // Abonnements et churn : qui reste, qui part, quand et comment. Règles
 // d'alerte fixes, modifiables ici.
@@ -32,6 +33,10 @@ const ALERT_RULES = {
   lowUsageLikes: 3,
   /** « A commencé puis décroché » : au moins N candidatures, inactif depuis inactiveDays. */
   droppedAfterApplications: 2,
+  /** Baisse d'usage : au moins N actions (swipes + candidatures) sur les 14 j d'avant… */
+  usageDropMinBefore: 10,
+  /** …et au plus cette part sur les 14 derniers jours. */
+  usageDropRatio: 0.3,
 };
 
 const FEEDBACK_LABELS: Record<string, string> = {
@@ -68,6 +73,7 @@ export default async function AbonnementsPage({
 }: {
   searchParams: Promise<{ p?: string; mois?: string; statut?: string; formule?: string; activite?: string }>;
 }) {
+  await requireAdminPage();
   const params = await searchParams;
   const period = parsePeriod(params.p);
   const now = nowMs();
@@ -138,6 +144,9 @@ export default async function AbonnementsPage({
           : `Inactif depuis ${inactiveFor === null ? "son paiement" : `${Math.floor(inactiveFor)} jours`}`,
         tone: "is-warn",
       });
+    }
+    if (u && u.prev14 >= ALERT_RULES.usageDropMinBefore && u.recent14 <= u.prev14 * ALERT_RULES.usageDropRatio && (inactiveFor === null || inactiveFor < ALERT_RULES.inactiveDays)) {
+      alertList.push({ sub: s, text: `Utilisation en forte baisse : ${u.recent14} action(s) sur 14 j contre ${u.prev14} avant`, tone: "is-warn" });
     }
     if (now - fp >= ALERT_RULES.noApplicationAfterDays * DAY_MS && (u?.applications ?? 0) === 0) {
       alertList.push({
@@ -381,7 +390,7 @@ export default async function AbonnementsPage({
 
       <Section
         title={`Clients à surveiller (${alerts.length})`}
-        subtitle={`Règles fixes : inactif depuis ${ALERT_RULES.inactiveDays} j, aucune candidature après ${ALERT_RULES.noApplicationAfterDays} j de Premium, renouvellement échoué, résiliation programmée. Aucune n'invente un motif de départ.`}
+        subtitle={`Règles fixes : inactif depuis ${ALERT_RULES.inactiveDays} j, usage divisé par plus de 3 sur 14 j, aucune candidature après ${ALERT_RULES.noApplicationAfterDays} j de Premium, renouvellement échoué, résiliation programmée. Aucune n'invente un motif de départ.`}
       >
         <div className="cockpit-card cockpit-scroll" style={{ padding: 0, maxHeight: 420, overflowY: "auto" }}>
           <table className="cockpit-table">

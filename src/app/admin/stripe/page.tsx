@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripeTotals } from "@/lib/admin/stripeTotals";
+import { requireAdminPage } from "@/lib/admin/accessCode";
 
 // Ventes réelles lues dans Stripe (voir lib/admin/stripeTotals.ts) : le
 // calcul relit toutes les sessions de paiement et factures depuis le 1/09,
@@ -11,6 +12,7 @@ const muted = { color: "color-mix(in srgb, var(--color-text) 65%, transparent)" 
 const euros = (cents: number) => `${(cents / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
 
 export default async function AdminStripePage() {
+  await requireAdminPage();
   const [totals, { count: totalUsers }] = await Promise.all([
     getStripeTotals(),
     createAdminClient().from("profiles").select("id", { count: "exact", head: true }),

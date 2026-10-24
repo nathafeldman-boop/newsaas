@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireAdminPage } from "@/lib/admin/accessCode";
 
 const EVENT_LABEL: Record<string, string> = {
   button_click: "Clic bouton",
@@ -35,6 +36,7 @@ export default async function AdminActivityPage({
 }: {
   searchParams: Promise<{ type?: string }>;
 }) {
+  await requireAdminPage();
   const { type } = await searchParams;
   const admin = createAdminClient();
 

@@ -11,6 +11,7 @@ import { bucketizeSignups, periodStart, type Period } from "@/lib/admin/analytic
 import { moderateReviewAction } from "@/app/admin/reviews-actions";
 import { loadSeriesReport } from "@/lib/campaigns/serieVente";
 import { getStripeTotals } from "@/lib/admin/stripeTotals";
+import { requireAdminPage } from "@/lib/admin/accessCode";
 
 const PERIODS: Period[] = ["7j", "30j", "90j", "tout"];
 const PERIOD_LABELS: Record<Period, string> = {
@@ -107,6 +108,7 @@ export default async function AdminDashboardPage({
 }: {
   searchParams: Promise<{ periode?: string; indexnow?: string; count?: string; message?: string }>;
 }) {
+  await requireAdminPage();
   const { periode, indexnow, count: indexNowCount, message: indexNowMessage } = await searchParams;
   const period: Period = (PERIODS as string[]).includes(periode ?? "") ? (periode as Period) : "30j";
 

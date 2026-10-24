@@ -1,4 +1,5 @@
 import { getDailySales, getRetentionStats, type Horizon } from "@/lib/admin/retentionStats";
+import { requireAdminPage } from "@/lib/admin/accessCode";
 
 // Rétention (SOP 27) : les cohortes d'abonnés suivies dans la durée (le
 // churn du 1er mois ment), les 48 premières heures, ventes et
@@ -23,6 +24,7 @@ const th = { padding: "4px 12px 4px 0", fontWeight: 500 } as const;
 const td = { padding: "6px 12px 6px 0" } as const;
 
 export default async function AdminRetentionPage() {
+  await requireAdminPage();
   const [stats, sales] = await Promise.all([
     getRetentionStats().catch((err) => {
       console.error("AdminRetentionPage: retention stats failed", err);

@@ -9,6 +9,7 @@ import {
   scheduleTestCheckoutReminderAction,
   sendIncompletePaymentReminderAction,
 } from "@/app/admin/users/actions";
+import { requireAdminPage } from "@/lib/admin/accessCode";
 
 const ORPHAN_ERROR_LABEL: Record<string, string> = {
   missing_id: "Indique un ID client Stripe (cus_...).",
@@ -73,6 +74,7 @@ export default async function AdminPremiumPage({
     test_reminder_min?: string;
   }>;
 }) {
+  await requireAdminPage();
   const {
     reconcile_checked: reconcileChecked,
     reconcile_recovered: reconcileRecovered,

@@ -32,16 +32,25 @@ export async function profilesByIds(ids: string[]): Promise<Map<string, CockpitP
   return out;
 }
 
-export type Usage = { likes: number; applications: number; lastSwipeAt: number | null };
+export type Usage = {
+  likes: number;
+  applications: number;
+  lastSwipeAt: number | null;
+  /** Swipes et candidatures des 14 derniers jours, et des 14 jours d'avant. */
+  recent14: number;
+  prev14: number;
+};
 
 /** Likes et candidatures des comptes donnés (clients payants : quelques centaines au plus). */
-export async function usageByUser(ids: string[]): Promise<Map<string, Usage>> {
+const DAY = 86_400_000;
+
+export async function usageByUser(ids: string[], now: number = Date.now()): Promise<Map<string, Usage>> {
   const db = createAdminClient();
   const out = new Map<string, Usage>();
   const get = (id: string) => {
     let u = out.get(id);
     if (!u) {
-      u = { likes: 0, applications: 0, lastSwipeAt: null };
+      u = { likes: 0, applications: 0, lastSwipeAt: null, recent14: 0, prev14: 0 };
       out.set(id, u);
     }
     return u;
@@ -55,15 +64,25 @@ export async function usageByUser(ids: string[]): Promise<Map<string, Usage>> {
         50_000,
         2,
       ),
-      fetchAllRows<{ user_id: string }>((from, to) => db.from("applications").select("user_id").in("user_id", chunk).range(from, to), 20_000, 2),
+      fetchAllRows<{ user_id: string; applied_at: string }>((from, to) => db.from("applications").select("user_id, applied_at").in("user_id", chunk).range(from, to), 20_000, 2),
     ]);
+    const window = (u: Usage, t: number) => {
+      const age = now - t;
+      if (age < 14 * DAY) u.recent14++;
+      else if (age < 28 * DAY) u.prev14++;
+    };
     for (const s of swipes) {
       const u = get(s.user_id);
       if (s.direction === "like") u.likes++;
       const t = Date.parse(s.created_at);
       if (u.lastSwipeAt === null || t > u.lastSwipeAt) u.lastSwipeAt = t;
+      window(u, t);
     }
-    for (const a of apps) get(a.user_id).applications++;
+    for (const a of apps) {
+      const u = get(a.user_id);
+      u.applications++;
+      window(u, Date.parse(a.applied_at));
+    }
   }
   return out;
 }

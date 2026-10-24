@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isPremium } from "@/lib/subscription/isPremium";
 import { AutoRefresh } from "@/components/admin/AutoRefresh";
+import { requireAdminPage } from "@/lib/admin/accessCode";
 
 function timeAgo(iso: string | null): string {
   if (!iso) return "—";
@@ -13,6 +14,7 @@ function timeAgo(iso: string | null): string {
 }
 
 export default async function AdminOnlinePage() {
+  await requireAdminPage();
   // Même fenêtre que la tuile "En ligne maintenant" du dashboard : voir
   // src/app/admin/page.tsx pour l'explication. Rechargée toutes les 20 s.
   const onlineSince = new Date();

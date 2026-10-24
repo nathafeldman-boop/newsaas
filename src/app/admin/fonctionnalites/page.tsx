@@ -6,6 +6,7 @@ import { int, parsePeriod, pct, periodRanges, type PeriodDays } from "@/lib/admi
 import { loadSnapshot, nowMs } from "@/lib/admin/cockpit/load";
 import { activeAt, firstPaidBySub, paidSubs, renewalsIn } from "@/lib/admin/cockpit/metrics";
 import { FEATURES, formatDuration, median, userFacts, type UserFacts } from "@/lib/admin/cockpit/usage";
+import { requireAdminPage } from "@/lib/admin/accessCode";
 
 // Utilisation des fonctionnalités : le parcours des inscrits (funnel), ce
 // que les payants utilisent vraiment, et les fonctionnalités associées au
@@ -18,15 +19,16 @@ const cohortFacts = unstable_cache(
     const ids = await signupsIn(current);
     return [...(await userFacts(ids)).values()];
   },
-  ["cockpit-funnel-facts-v1"],
+  ["cockpit-funnel-facts-v2"],
   { revalidate: 1800 },
 );
 
-const payerFacts = unstable_cache(async (ids: string[]): Promise<UserFacts[]> => [...(await userFacts(ids)).values()], ["cockpit-payer-facts-v1"], {
+const payerFacts = unstable_cache(async (ids: string[]): Promise<UserFacts[]> => [...(await userFacts(ids)).values()], ["cockpit-payer-facts-v2"], {
   revalidate: 1800,
 });
 
 export default async function FonctionnalitesPage({ searchParams }: { searchParams: Promise<{ p?: string }> }) {
+  await requireAdminPage();
   const { p } = await searchParams;
   const period = parsePeriod(p);
   const now = nowMs();
@@ -135,6 +137,40 @@ export default async function FonctionnalitesPage({ searchParams }: { searchPara
                     <td>{pct(signups ? n / signups : null)}</td>
                     <td>{i === 0 ? "—" : int(Math.max(0, prev - n))}</td>
                     <td>{i === 0 ? "—" : formatDuration(median(delays))}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Section>
+
+      <Section
+        title="Rétention d'usage"
+        subtitle="Part des inscrits de la période revenus (connexion, swipe ou candidature) au moins une fois N jours ou plus après leur inscription. Seuls les inscrits assez anciens comptent (éligibles). Rétention d'usage, pas payante : voir Cohortes."
+      >
+        <div className="cockpit-card cockpit-scroll" style={{ padding: 0 }}>
+          <table className="cockpit-table">
+            <thead>
+              <tr>
+                <th>Retour</th>
+                <th>Tous les inscrits</th>
+                <th>Inscrits devenus payants</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[1, 7, 30].map((d) => {
+                const rate = (group: UserFacts[]) => {
+                  const eligible = group.filter((f) => now - f.signupAt >= d * 86_400_000);
+                  if (eligible.length === 0) return <span style={{ color: "var(--color-neutral-500)" }}>pas encore</span>;
+                  const back = eligible.filter((f) => f.lastActivityAt >= f.signupAt + d * 86_400_000).length;
+                  return `${pct(back / eligible.length, 0)} (${back}/${eligible.length})`;
+                };
+                return (
+                  <tr key={d}>
+                    <td>À partir de J+{d}</td>
+                    <td>{rate(facts)}</td>
+                    <td>{rate(facts.filter((f) => paidAt.has(f.id)))}</td>
                   </tr>
                 );
               })}

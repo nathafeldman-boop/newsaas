@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isPremium } from "@/lib/subscription/isPremium";
+import { requireAdminPage } from "@/lib/admin/accessCode";
 
 const PAGE_SIZE = 30;
 
@@ -9,6 +10,7 @@ export default async function AdminUsersPage({
 }: {
   searchParams: Promise<{ page?: string }>;
 }) {
+  await requireAdminPage();
   const { page: pageParam } = await searchParams;
   const page = Math.max(1, Number(pageParam) || 1);
 

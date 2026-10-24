@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireAdminPage } from "@/lib/admin/accessCode";
 
 function fmt(date: string | null | undefined): string {
   if (!date) return "—";
@@ -16,6 +17,7 @@ function fmt(date: string | null | undefined): string {
 // complet ou une causalité (RETENTION_AUDIT.md, section 19 : ne jamais
 // présenter une corrélation comme une causalité).
 export default async function AdminCancellationsPage() {
+  await requireAdminPage();
   const admin = createAdminClient();
 
   const { data: cancellations } = await admin

@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 // Dashboard admin protégé par un simple code d'accès partagé (pas de compte
 // Supabase à créer/connecter pour l'utiliser) : un cookie httpOnly porte un
@@ -65,4 +66,12 @@ export async function assertAdminSession(): Promise<void> {
   if (!(await hasAdminSession())) {
     throw new Error("Accès refusé.");
   }
+}
+
+// Pour chaque page admin : le layout vérifie déjà la session, mais Next ne
+// le réexécute pas forcément lors d'une navigation (rendu partiel) -- une
+// requête qui ne demande que le segment de la page ne passerait que par
+// celle-ci. Chaque page vérifie donc elle-même.
+export async function requireAdminPage(): Promise<void> {
+  if (!(await hasAdminSession())) redirect("/admin/login");
 }

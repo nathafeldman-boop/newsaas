@@ -34,7 +34,8 @@ const GROUPS = [
       { href: "/admin/acquisition", label: "Trafic et conversion" },
       { href: "/admin/rpm", label: "RPM" },
       { href: "/admin/affiliates", label: "Affiliés" },
-      { href: "/admin/relance", label: "E-mails et relances" },
+      { href: "/admin/emails", label: "E-mails et relances" },
+      { href: "/admin/relance", label: "Pilotage des envois" },
     ],
   },
   {

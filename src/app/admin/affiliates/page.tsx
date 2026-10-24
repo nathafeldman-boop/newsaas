@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { approveAffiliateAction, rejectAffiliateAction, markCommissionsPaidAction } from "./actions";
+import { requireAdminPage } from "@/lib/admin/accessCode";
 
 function fmt(date: string | null): string {
   if (!date) return "—";
@@ -7,6 +8,7 @@ function fmt(date: string | null): string {
 }
 
 export default async function AdminAffiliatesPage() {
+  await requireAdminPage();
   const admin = createAdminClient();
 
   const { data: affiliates, error: affiliatesError } = await admin

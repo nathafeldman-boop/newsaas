@@ -4,6 +4,7 @@ import { PeriodBar } from "@/components/admin/cockpit/PeriodBar";
 import { euros, pct } from "@/lib/admin/cockpit/format";
 import { loadSnapshot, nowMs } from "@/lib/admin/cockpit/load";
 import { firstPaidBySub, paidCohorts } from "@/lib/admin/cockpit/metrics";
+import { requireAdminPage } from "@/lib/admin/accessCode";
 
 // Cohortes payantes : les clients regroupés par mois (ou semaine) de leur
 // premier paiement, et ce qu'ils deviennent. Rétention payante seulement :
@@ -13,6 +14,7 @@ export const maxDuration = 60;
 const SMALL_SAMPLE = 10;
 
 export default async function CohortesPage({ searchParams }: { searchParams: Promise<{ grain?: string }> }) {
+  await requireAdminPage();
   const { grain: rawGrain } = await searchParams;
   const grain = rawGrain === "semaine" ? "week" : "month";
   const now = nowMs();

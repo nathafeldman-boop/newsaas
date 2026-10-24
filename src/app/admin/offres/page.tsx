@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { IngestForm } from "@/components/admin/IngestForm";
+import { requireAdminPage } from "@/lib/admin/accessCode";
 
 // L'ingestion en lot fait un fetch + un appel Claude par URL, séquentiellement :
 // sans ceci la Server Action tourne sur le défaut Vercel (10s), largement
@@ -7,6 +8,7 @@ import { IngestForm } from "@/components/admin/IngestForm";
 export const maxDuration = 60;
 
 export default async function AdminOffresPage() {
+  await requireAdminPage();
   // Accès déjà vérifié par admin/layout.tsx (code d'accès, pas de session
   // Supabase requise) : cette page n'a plus besoin de son propre guard.
   const admin = createAdminClient();

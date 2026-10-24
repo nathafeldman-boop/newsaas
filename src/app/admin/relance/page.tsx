@@ -17,6 +17,7 @@ import {
 import { MIN_SENT_PER_VARIANT, WINNER_SHARE, loadVariantReport } from "@/lib/campaigns/newsTest";
 import { SERIES_STEPS, loadSeriesReport, seriesDailyCap } from "@/lib/campaigns/serieVente";
 import { sendCampaignBatchAction, sendCampaignTestAction } from "./actions";
+import { requireAdminPage } from "@/lib/admin/accessCode";
 
 // L'envoi d'un lot lit le catalogue, les profils et envoie 2 requêtes à
 // Resend : 30 s (délai par défaut du site) peut ne pas suffire.
@@ -29,6 +30,7 @@ export default async function AdminRelancePage({
 }: {
   searchParams: Promise<{ ok?: string; erreur?: string; apercu?: string; c?: string; v?: string }>;
 }) {
+  await requireAdminPage();
   const { ok, erreur, apercu, c, v } = await searchParams;
   const campaign = campaignFrom(c);
   const isNews = campaign.id === "nouveautes";

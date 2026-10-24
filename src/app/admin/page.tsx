@@ -20,6 +20,7 @@ import {
   paidSubs,
   revenueIn,
 } from "@/lib/admin/cockpit/metrics";
+import { requireAdminPage } from "@/lib/admin/accessCode";
 
 // Vue d'ensemble du cockpit : « comment se porte Stageio aujourd'hui ? ».
 // Chiffres de paiement lus dans Stripe (instantané de 30 min max), comptes
@@ -27,6 +28,7 @@ import {
 export const maxDuration = 60;
 
 export default async function CockpitOverviewPage({ searchParams }: { searchParams: Promise<{ p?: string }> }) {
+  await requireAdminPage();
   const { p } = await searchParams;
   const period = parsePeriod(p);
   const now = nowMs();
