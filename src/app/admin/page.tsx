@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { Card, Insufficient, Kpi, KpiGrid, Section } from "@/components/admin/cockpit/Kpi";
 import { PeriodBar } from "@/components/admin/cockpit/PeriodBar";
 import { LineChart } from "@/components/admin/cockpit/LineChart";
@@ -21,6 +22,7 @@ import {
   revenueIn,
 } from "@/lib/admin/cockpit/metrics";
 import { requireAdminPage } from "@/lib/admin/accessCode";
+import { TodayLive } from "@/components/admin/cockpit/TodayLive";
 
 // Vue d'ensemble du cockpit : « comment se porte Stageio aujourd'hui ? ».
 // Chiffres de paiement lus dans Stripe (instantané de 30 min max), comptes
@@ -46,6 +48,10 @@ export default async function CockpitOverviewPage({ searchParams }: { searchPara
     return (
       <div>
         <h1 style={{ fontSize: 24, fontWeight: 700, margin: "0 0 12px" }}>Vue d&apos;ensemble</h1>
+        <Suspense fallback={null}>
+          <TodayLive now={now} />
+        </Suspense>
+        <div style={{ marginTop: 16 }} />
         <Card>
           <p style={{ margin: 0, fontSize: 14 }}>
             Lecture Stripe impossible pour l&apos;instant ({error}). Les chiffres de paiement ne sont pas affichés plutôt que d&apos;être faux.
@@ -103,7 +109,12 @@ export default async function CockpitOverviewPage({ searchParams }: { searchPara
       <p style={{ margin: "0 0 16px", fontSize: 13, color: "var(--color-neutral-600)" }}>
         Comment se porte Stageio : {period} derniers jours, comparés aux {period} jours d&apos;avant.
       </p>
-      <PeriodBar path="/admin" period={period} computedAt={snap.computedAt} />
+      <Suspense fallback={null}>
+        <TodayLive now={now} />
+      </Suspense>
+      <div style={{ marginTop: 28 }}>
+        <PeriodBar path="/admin" period={period} computedAt={snap.computedAt} />
+      </div>
 
       {alerts.length > 0 && (
         <Section title="À regarder">

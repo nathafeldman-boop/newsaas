@@ -490,6 +490,19 @@ export type Database = {
         Args: { p_since: string };
         Returns: { step: string | null; viewed_count: number; completed_count: number }[];
       };
+      // Comptage des visites (SQL du 24/10, section 5) : réservé au service_role.
+      admin_visitors_by_day_source: {
+        Args: { p_since: string; p_until: string };
+        Returns: { day: string; source: string; visitors: number }[];
+      };
+      admin_visitors_by_source: {
+        Args: { p_since: string; p_until: string };
+        Returns: { source: string; visitors: number; signup_page_visitors: number }[];
+      };
+      admin_landing_pages: {
+        Args: { p_since: string; p_until: string; p_limit?: number };
+        Returns: { path: string; visitors: number }[];
+      };
     };
     Enums: {
       contract_type: ContractType;

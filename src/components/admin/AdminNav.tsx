@@ -12,6 +12,8 @@ const GROUPS = [
     title: "Pilotage",
     links: [
       { href: "/admin", label: "Vue d'ensemble" },
+      { href: "/admin/trafic", label: "Trafic et sources" },
+      { href: "/admin/inscriptions", label: "Inscriptions jour par jour" },
       { href: "/admin/revenus", label: "Revenus et MRR" },
       { href: "/admin/abonnements", label: "Abonnements et churn" },
       { href: "/admin/cohortes", label: "Cohortes" },
@@ -31,7 +33,7 @@ const GROUPS = [
   {
     title: "Acquisition",
     links: [
-      { href: "/admin/acquisition", label: "Trafic et conversion" },
+      { href: "/admin/acquisition", label: "Conversion et paywall" },
       { href: "/admin/rpm", label: "RPM" },
       { href: "/admin/affiliates", label: "Affiliés" },
       { href: "/admin/emails", label: "E-mails et relances" },
