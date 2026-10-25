@@ -81,6 +81,10 @@
       "schedule": "50 5 * * *"
     },
     {
+      "path": "/api/cron/relance-checkout",
+      "schedule": "10 6 * * *"
+    },
+    {
       "path": "/api/cron/serie-premium/h05",
       "schedule": "30 5 * * *"
     },

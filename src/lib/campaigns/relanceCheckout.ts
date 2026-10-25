@@ -25,13 +25,14 @@ const CHECKOUT_RELANCE_TAG = "relance_checkout_2026_10_23";
 const SINCE = Date.parse("2026-10-19T22:00:00Z");
 const RECENT_MS = 60 * 60 * 1000;
 
-type Target = { id: string; email: string; full_name: string | null };
+export type Target = { id: string; email: string; full_name: string | null };
 
 export type CheckoutRelanceResult =
   | { kind: "no_sender" }
   | { kind: "sent"; sessions: number; candidates: number; sent: number; failures: string[] };
 
-function render(p: Target) {
+/** Contenu de la relance (aussi repris chaque jour par relanceCheckoutDaily.ts). */
+export function renderCheckoutRelance(p: Target) {
   const first = p.full_name?.trim().split(/\s+/)[0] ?? "";
   const name = first && first.length <= 30 ? first : null;
   const url = `${SITE_URL}/premium?utm_source=email&utm_medium=relance&utm_campaign=checkout-abandonne`;
@@ -139,7 +140,7 @@ export async function sendCheckoutRelance(now: number = Date.now()): Promise<Che
       chunk.map((p) => ({
         from,
         to: p.email,
-        ...render(p),
+        ...renderCheckoutRelance(p),
         headers: unsubscribeHeaders(p.id),
         tags: [{ name: "campaign", value: CHECKOUT_RELANCE_TAG }],
       })),

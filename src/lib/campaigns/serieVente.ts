@@ -10,7 +10,7 @@ import { LIFETIME_PROMO, PLAN_PRICES } from "@/lib/pricing/plans";
 import { SITE_URL } from "@/lib/site";
 import { getTrustCount } from "@/lib/premium/trustCount";
 import { campaignSender } from "@/lib/campaigns/sendBatch";
-import { SALES_SERIES_EVENT } from "@/lib/campaigns/serieEvents";
+import { CHECKOUT_DAILY_EVENT, SALES_SERIES_EVENT } from "@/lib/campaigns/serieEvents";
 import { CHECKOUT_RELANCE_EVENT } from "@/lib/campaigns/relanceCheckout";
 import {
   CAMPAIGN_EVENT,
@@ -46,14 +46,21 @@ import type { Database } from "@/types/database";
 // Pas de fausse urgence : le seul compte à rebours est celui de la vraie
 // promo (accès à vie à 30 €, fin le 25/10 à 0 h 30) et des 10 minutes du
 // prix de bienvenue.
+//
+// Depuis le 26/10 (Nathan, 25/10 : « l'email d'hier a ramené plusieurs
+// paiements, refais le même email demain, après-demain… toujours le même ») :
+// chaque envoi reprend l'email n°1, un par jour au plus, et les comptes
+// jamais relancés passent avant les rappels. Toujours 5 au plus par compte,
+// et jamais deux emails de relance le même jour (série, paiement non
+// finalisé, campagnes).
 
 type Db = SupabaseClient<Database>;
 
 const TAG = "serie_premium_2026_10";
 export const SERIES_STEPS = 5;
 const DAY = 86_400_000;
-const STEP_GAP_MS = 2 * DAY;
-const OTHER_GAP_MS = DAY;
+/** Le même email (le n°1) à chaque envoi de la série. */
+const SAME_EMAIL_EVERY_DAY = true;
 // Nouveaux inscrits (Nathan, 24/10) : 1er email 1 h après l'inscription,
 // le prix de bienvenue de leur 1re visite ayant expiré entre-temps.
 const MIN_ACCOUNT_AGE_MS = 60 * 60 * 1000;
@@ -78,7 +85,7 @@ const COLUMNS =
   "id, email, full_name, city, sectors, looking_for, subscription_status, current_period_end, total_paid_cents, notify_new_offers, search_completed_at, inactive_campaign_emails_sent, created_at, last_active_at";
 
 // Heure et minuit de Paris (changement d'heure compris).
-function parisClock(now: number): { hour: number; midnight: number } {
+export function parisClock(now: number): { hour: number; midnight: number } {
   const parts = new Intl.DateTimeFormat("en-GB", {
     timeZone: "Europe/Paris",
     hour: "2-digit",
@@ -114,8 +121,8 @@ async function loadDue(db: Db, now: number, midnight: number): Promise<{ due: Du
       db
         .from("user_events")
         .select("user_id")
-        .in("event_type", [NEWS_CAMPAIGN_EVENT, CAMPAIGN_EVENT, CHECKOUT_RELANCE_EVENT])
-        .gte("created_at", new Date(now - OTHER_GAP_MS).toISOString())
+        .in("event_type", [NEWS_CAMPAIGN_EVENT, CAMPAIGN_EVENT, CHECKOUT_RELANCE_EVENT, CHECKOUT_DAILY_EVENT])
+        .gte("created_at", new Date(midnight).toISOString())
         .order("created_at")
         .range(from, to),
     ),
@@ -140,13 +147,15 @@ async function loadDue(db: Db, now: number, midnight: number): Promise<{ due: Du
     if (now - Date.parse(p.created_at) < MIN_ACCOUNT_AGE_MS) continue;
     if (recentOther.has(p.id)) continue;
     const h = history.get(p.id);
-    if (h && (h.count >= SERIES_STEPS || now - h.last < STEP_GAP_MS)) continue;
+    // Un par jour au plus (déjà reçu depuis minuit : demain).
+    if (h && (h.count >= SERIES_STEPS || h.last >= midnight)) continue;
     if (h) continuing.push({ profile: p, step: h.count + 1, last: h.last });
     else starting.push({ profile: p, step: 1 });
   }
   // Les inscrits des 2 derniers jours d'abord (les plus chauds, les plus
-  // récents en tête), puis la suite de la série (les plus en retard en
-  // tête), puis les autres comptes, venus le plus récemment d'abord.
+  // récents en tête), puis les comptes jamais relancés (venus le plus
+  // récemment d'abord), puis les rappels (les plus en retard en tête) : le
+  // quota du jour sert d'abord à faire découvrir l'email.
   continuing.sort((a, b) => a.last - b.last);
   const recency = (p: SeriesProfile) => Date.parse(p.last_active_at ?? p.created_at);
   starting.sort((a, b) => recency(b.profile) - recency(a.profile));
@@ -154,7 +163,7 @@ async function loadDue(db: Db, now: number, midnight: number): Promise<{ due: Du
     .filter((d) => now - Date.parse(d.profile.created_at) < FRESH_SIGNUP_MS)
     .sort((a, b) => Date.parse(b.profile.created_at) - Date.parse(a.profile.created_at));
   const others = starting.filter((d) => now - Date.parse(d.profile.created_at) >= FRESH_SIGNUP_MS);
-  return { due: [...fresh, ...continuing, ...others], sentToday };
+  return { due: [...fresh, ...others, ...continuing], sentToday };
 }
 
 const fmt = (n: number) => n.toLocaleString("fr-FR");
@@ -171,6 +180,9 @@ export function renderSeriesEmail(
 ): RenderedSeriesEmail {
   const name = firstName(p.full_name);
   const greeting = name ? `Salut ${name},` : "Salut,";
+  // Contenu montré : celui de l'email n°1 à chaque envoi (le numéro reste
+  // noté pour les statistiques et le lien suivi).
+  const shown = SAME_EMAIL_EVERY_DAY ? 1 : step;
   const kind = typePhrase(p.looking_for);
   const counts = countForProfile(catalog, p);
   const where = zonePhrase(counts.zone);
@@ -178,7 +190,7 @@ export function renderSeriesEmail(
   const showCounts = counts.hasCriteria && counts.matching >= MIN_COUNT_TO_SHOW;
   const wantsAlternance = p.looking_for.length === 0 || p.looking_for.includes("alternance");
   // Au moins 30 min pour en profiter avant la fin de la vraie promo.
-  const promo = step === 1 && now < LIFETIME_PROMO.endsAt - 30 * 60_000;
+  const promo = shown === 1 && now < LIFETIME_PROMO.endsAt - 30 * 60_000;
   const utm = `utm_source=email&utm_medium=serie&utm_campaign=${seriesUtmCampaign(step)}`;
   const go = (plan: "monthly" | "lifetime") => `${SITE_URL}/premium/go?plan=${plan}&${utm}`;
   const termsUrl = `${SITE_URL}/legal/cgv`;
@@ -202,21 +214,21 @@ export function renderSeriesEmail(
   // Les leviers sont vrais : délai légal du contrat d'apprentissage (guide
   // « calendrier de l'alternance », article L6222-12), offres réellement
   // masquées sans Premium, garantie, vrais prix et vrai nombre d'inscrits.
-  if (step === 1 && promo) {
+  if (shown === 1 && promo) {
     subject = `⏳ ${name ? `${name}, l'` : "L'"}accès Premium à vie à ${LIFETIME_PROMO.price}, c'est jusqu'à cette nuit`;
     hook = [
       "Des candidatures envoyées, et pas de réponse ? Des heures sur chaque lettre de motivation ? C'est exactement ce que Premium règle.",
       `Et c'est le dernier jour de la promo : l'accès Premium <strong>à vie</strong> est à <strong>${LIFETIME_PROMO.price}</strong> au lieu de ${LIFETIME_PROMO.referencePrice}, jusqu'à cette nuit 0&nbsp;h&nbsp;30. Tu paies une fois, et c'est fini : pas d'abonnement, Premium pour toujours.`,
       `En ce moment, ${offersLineHtml} t'attendent sur Stageio.`,
     ];
-  } else if (step === 1 && now - Date.parse(p.created_at) < FRESH_SIGNUP_MS) {
+  } else if (shown === 1 && now - Date.parse(p.created_at) < FRESH_SIGNUP_MS) {
     subject = `${name ? `${name}, t` : "T"}on prix de bienvenue t'attend encore (10 min)`;
     hook = [
       "Tu viens de t'inscrire sur Stageio, mais tu n'as pas encore débloqué tes offres.",
       `Bonne nouvelle : ton prix de bienvenue est de nouveau disponible, pendant 10 minutes à partir de ton clic. Et en ce moment, ${offersLineHtml} t'attendent.`,
       "Sans Premium, tu ne vois ni l'entreprise ni l'analyse de chaque offre. Avec Premium, tu vois tout, et tu postules en quelques secondes, lettre de motivation comprise.",
     ];
-  } else if (step === 1) {
+  } else if (shown === 1) {
     subject = showCounts
       ? `${name ? `${name}, ` : ""}${fmt(counts.matching)} offres ${kind} t'attendent… mais tu ne les vois pas en entier`
       : "Tes offres t'attendent… mais tu ne les vois pas en entier";
@@ -224,19 +236,19 @@ export function renderSeriesEmail(
       `En ce moment, il y a ${offersLineHtml} sur Stageio.`,
       "Sans Premium, tu ne vois ni l'entreprise ni l'analyse de chaque offre. Avec Premium, tu vois tout, et tu postules en quelques secondes, lettre de motivation comprise.",
     ];
-  } else if (step === 2) {
+  } else if (shown === 2) {
     subject = `${name ? `${name}, e` : "E"}ncore une candidature sans réponse ?`;
     hook = [
       "Envoyer des candidatures, attendre, et ne rien recevoir : c'est le plus frustrant dans la recherche. Et une lettre de motivation générique, un recruteur la repère tout de suite.",
       "En Premium, ta lettre s'écrit en direct pour l'offre que tu choisis, à partir de ton profil : tu relis, tu ajustes, tu envoies. Une offre, une lettre, quelques secondes.",
     ];
-  } else if (step === 3) {
+  } else if (shown === 3) {
     subject = `Pas d'entretien en ${GUARANTEE_MONTHS} mois ? On te rembourse. Point.`;
     hook = [
       "Tu hésites encore ? Alors prends Premium sans aucun risque.",
       `Si tu n'as décroché aucun entretien au bout de ${GUARANTEE_MONTHS} mois de Premium, on te rembourse (<a href="${termsUrl}" style="color:#0c7a44">conditions</a>). Soit tu décroches des entretiens, soit tu récupères ton argent.`,
     ];
-  } else if (step === 4) {
+  } else if (shown === 4) {
     const weekAgo = new Date(now - 7 * DAY).toISOString();
     const week = countForProfile(catalog, p, weekAgo);
     const fresh = counts.hasCriteria && week.newSinceSignup >= MIN_COUNT_TO_SHOW;
