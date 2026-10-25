@@ -1,6 +1,7 @@
 import type { Offer, Profile } from "@/types/database";
 import { isDepartmentLocation } from "@/lib/onboarding/options";
 import { METIERS, SPECIALITES, classifyFormations, normalizeTitle, type Metier } from "@/lib/seo/metiers";
+import { departementFromLocation, getDepartement, regionOfDepartement } from "@/lib/seo/departements";
 
 const EDUCATION_RANK: Record<string, number> = {
   Bac: 1,
@@ -132,15 +133,78 @@ const MASTER_FORMATIONS = new Set(["master"]);
 
 export function educationGapPenalty(
   profile: Pick<Profile, "education_level">,
-  offer: Pick<Offer, "title">,
+  offer: Pick<Offer, "title"> & { description?: string | null },
 ): number {
   const rank = profile.education_level ? EDUCATION_RANK[profile.education_level] : undefined;
   if (!rank) return 0;
-  const formations = classifyFormations(offer.title).map((f) => f.slug);
+  // Diplôme de l'intitulé, sinon du début de la description (« Vendeur(se) »
+  // dont l'annonce dit « en préparation d'un CAP Équipier polyvalent ») :
+  // 25/10, offres jugées « nulles » par des étudiants bac+3.
+  let formations = classifyFormations(offer.title).map((f) => f.slug);
+  if (formations.length === 0 && offer.description) formations = classifyFormations(offer.description.slice(0, 500)).map((f) => f.slug);
   if (formations.length === 0) return 0;
   const onlyLowLevel = formations.every((slug) => LOW_LEVEL_FORMATIONS.has(slug));
   if (onlyLowLevel && rank >= 3) return -30;
   if (formations.some((slug) => MASTER_FORMATIONS.has(slug)) && rank <= 2) return -15;
+  return 0;
+}
+
+/**
+ * Département du profil : celui choisi à l'onboarding (« Rhône (69) ») ou
+ * celui de sa ville (« Lyon » -> 69, « Angers » -> 49). null si inconnu.
+ */
+export function profileDepartement(city: string | null | undefined): string | null {
+  const trimmed = city?.trim();
+  if (!trimmed) return null;
+  if (isDepartmentLocation(trimmed)) return trimmed.match(/\(([0-9]{2,3}|2[AB])\)\s*$/i)?.[1]?.toUpperCase() ?? null;
+  return departementFromLocation(trimmed);
+}
+
+export type GeoMatch = { points: number; reason: string | null };
+
+// Proximité de l'offre (25/10, « des offres à l'autre bout de la France ») :
+// ville ou agglomération, puis même département, puis même région pour qui
+// a dit « mobile dans la région ». Avant : un département choisi à
+// l'onboarding valait +4 pour TOUTE la France, et une ville hors des 13
+// métropoles n'avait aucune commune voisine (Cholet à -30 pour Angers).
+export function geoMatch(profile: Pick<Profile, "city" | "mobility">, offer: Pick<Offer, "location" | "remote_policy">): GeoMatch {
+  const city = profile.city?.trim() ?? "";
+  const cityLower = city.toLowerCase();
+  const offerLocationLower = offer.location.toLowerCase();
+  const isDepartmentSelection = !!city && isDepartmentLocation(city);
+  if (!isDepartmentSelection && cityLower && offerLocationLower.includes(cityLower)) return { points: 14, reason: `À ${city}, comme toi` };
+  if (!isDepartmentSelection && cityLower && isNearbyCity(cityLower, offerLocationLower)) return { points: 10, reason: `Près de ${city}` };
+
+  const profileDep = profileDepartement(city);
+  const offerDep = departementFromLocation(offer.location);
+  if (profileDep && offerDep === profileDep) {
+    const name = getDepartement(profileDep)?.name ?? profileDep;
+    return isDepartmentSelection ? { points: 14, reason: `Dans ${name === "Paris" ? "Paris" : `ton département (${name})`}` } : { points: 8, reason: `Dans ton département (${name})` };
+  }
+  const remote = offer.remote_policy === "remote";
+  if (profile.mobility === "Mobile en France" || profile.mobility === "Full remote" || remote) {
+    return { points: 8, reason: remote ? "Télétravail possible" : null };
+  }
+  if (profile.mobility === "Mobile dans la région") {
+    const profileRegion = profileDep ? regionOfDepartement(profileDep)?.name : undefined;
+    const offerRegion = offerDep ? regionOfDepartement(offerDep)?.name : undefined;
+    if (!profileRegion || !offerRegion) return { points: 4, reason: null };
+    return profileRegion === offerRegion ? { points: 6, reason: `Dans ta région (${profileRegion})` } : { points: -15, reason: null };
+  }
+  // Ville ou département renseigné, offre ailleurs, aucune mobilité élargie
+  // (vide ou « Sur place uniquement ») : -30 (29/09) -- souvent un métier de
+  // terrain impossible à distance ; l'offre ne reste visible que si rien de
+  // mieux n'existe (filet de sécurité de /swipe).
+  return cityLower ? { points: -30, reason: null } : { points: 0, reason: null };
+}
+
+/** Âge de l'offre : une offre de plus d'un mois est souvent déjà pourvue. */
+export function freshnessPoints(publishedAt: string, now: number): number {
+  const days = (now - Date.parse(publishedAt)) / 86_400_000;
+  if (!Number.isFinite(days)) return 0;
+  if (days > 60) return -10;
+  if (days > 30) return -5;
+  if (days <= 3) return 3;
   return 0;
 }
 
@@ -149,18 +213,27 @@ export function educationGapPenalty(
 // d'études / disponibilité. Plafonné à 99 pour ne jamais promettre un match
 // "parfait", et jamais en dessous de 30 pour rester crédible sur une échelle
 // de %.
-export function computeMatchScore(profile: Profile, offer: Offer): number {
+export function computeMatchScore(profile: Profile, offer: Offer, now: number = Date.now()): number {
   let score = 40;
 
   // Type de contrat recherché (stage/alternance/les deux à l'onboarding) :
-  // un signal direct et sans ambiguïté, jamais pris en compte auparavant.
-  if (profile.looking_for.length > 0 && profile.looking_for.includes(offer.contract_type)) {
-    score += 8;
+  // un signal direct et sans ambiguïté. Un seul type coché (« alternance ») :
+  // l'autre passe loin derrière (25/10 : des stages dans le deck de gens qui
+  // cherchent une alternance depuis des mois).
+  if (profile.looking_for.length > 0) {
+    if (profile.looking_for.includes(offer.contract_type)) score += 8;
+    else if (profile.looking_for.length === 1) score -= 25;
   }
 
-  // Secteur (le plus fort signal : c'est le domaine explicitement choisi)
+  const jobMatch = profile.target_jobs.length > 0 && matchesTargetJob(profile, offer);
+
+  // Secteur (le plus fort signal : c'est le domaine explicitement choisi).
+  // Une offre du métier visé classée dans un secteur voisin (secteur deviné
+  // à l'import) compte presque autant : le métier dit déjà le domaine.
   if (offer.sector && profile.sectors.includes(offer.sector)) {
     score += 18;
+  } else if (jobMatch && profile.sectors.length > 0) {
+    score += 12;
   }
 
   // Métier recherché : mot entier dans le titre, ou même métier d'après la
@@ -171,47 +244,14 @@ export function computeMatchScore(profile: Profile, offer: Offer): number {
   // assez d'offres pertinentes ») -- l'offre reste dans le deck si rien de
   // mieux n'existe, mais passe derrière celles du bon métier.
   if (profile.target_jobs.length > 0) {
-    score += matchesTargetJob(profile, offer) ? 14 : -12;
+    score += jobMatch ? 14 : -12;
   }
 
   score += educationGapPenalty(profile, offer);
+  score += freshnessPoints(offer.published_at, now);
 
-  // Localisation / mobilité
-  const cityLower = profile.city?.toLowerCase().trim();
-  const offerLocationLower = offer.location.toLowerCase();
-  // Un profil peut choisir tout un département plutôt qu'une ville précise
-  // (voir LOCATION_OPTIONS) : le nom d'un département n'a quasiment aucune
-  // chance d'apparaître littéralement dans offer.location, donc la
-  // correspondance de sous-chaîne / agglomération n'a pas de sens ici --
-  // on traite ce choix comme une mobilité régionale déclarée.
-  const isDepartmentSelection = !!profile.city && isDepartmentLocation(profile.city);
-  if (!isDepartmentSelection && cityLower && offerLocationLower.includes(cityLower)) {
-    score += 14;
-  } else if (!isDepartmentSelection && cityLower && isNearbyCity(cityLower, offerLocationLower)) {
-    // Même agglomération (ex: profil à "Lyon", offre à "Villeurbanne") sans
-    // être une correspondance exacte de chaîne : presque aussi pertinent.
-    score += 10;
-  } else if (
-    profile.mobility === "Mobile en France" ||
-    profile.mobility === "Full remote" ||
-    offer.remote_policy === "remote"
-  ) {
-    score += 8;
-  } else if (profile.mobility === "Mobile dans la région" || isDepartmentSelection) {
-    score += 4;
-  } else if (cityLower) {
-    // Ville renseignée, offre ailleurs, aucune mobilité élargie déclarée
-    // (mobilité vide ou "Sur place uniquement") : -20 laissait un match
-    // secteur+contrat parfait (40+8+18=66) retomber à 46 -- un score qui a
-    // l'air "correct" alors que le poste est à l'autre bout du pays pour un
-    // profil qui n'a déclaré aucune mobilité, souvent un métier de terrain
-    // (BTP, restauration...) impossible à distance. -30 fait mieux
-    // correspondre le score à la vraie pertinence : ce genre d'offre repasse
-    // sous le seuil de pertinence du deck (/swipe) au lieu de sembler
-    // "passable", et ne reste visible que si aucune meilleure offre
-    // n'existe (filet de sécurité déjà en place côté /swipe).
-    score -= 30;
-  }
+  // Localisation / mobilité : voir geoMatch.
+  score += geoMatch(profile, offer).points;
 
   // Compétences : proportion de compétences du profil retrouvées (mot entier)
   // dans la description/les prérequis de l'offre.
@@ -266,16 +306,8 @@ export function computeMatchReasons(profile: Profile, offer: Offer): string[] {
     reasons.push(`Correspond à "${matchedJob}"`);
   }
 
-  const cityLower = profile.city?.toLowerCase().trim();
-  const offerLocationLower = offer.location.toLowerCase();
-  const isDepartmentSelection = !!profile.city && isDepartmentLocation(profile.city);
-  if (!isDepartmentSelection && cityLower && offerLocationLower.includes(cityLower)) {
-    reasons.push(`À ${profile.city}, comme toi`);
-  } else if (!isDepartmentSelection && cityLower && isNearbyCity(cityLower, offerLocationLower)) {
-    reasons.push(`Près de ${profile.city}`);
-  } else if (offer.remote_policy === "remote") {
-    reasons.push("Télétravail possible");
-  }
+  const geo = geoMatch(profile, offer);
+  if (geo.reason) reasons.push(geo.reason);
 
   if (profile.skills.length > 0) {
     const offerText = `${offer.description} ${offer.requirements ?? ""}`;

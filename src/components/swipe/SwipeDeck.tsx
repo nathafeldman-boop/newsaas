@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -20,6 +20,8 @@ import { AutoUpsellSheet } from "@/components/swipe/AutoUpsellSheet";
 import { useApplyOnLike, type AutoApplySetup } from "@/components/swipe/ApplyOnLike";
 import { markAutoUpsellShown, readLikeAction, saveLikeAction, shouldShowAutoUpsell, type LikeAction } from "@/lib/swipe/likePreference";
 import { Icon } from "@/components/ui/Icon";
+import { PassReasonBar } from "@/components/swipe/PassReasonBar";
+import { cardsToDrop, type OfferTags, type PassReason } from "@/lib/matching/passReasons";
 import { cn } from "@/lib/utils";
 import type { ContractType, Offer, SwipeDirection } from "@/types/database";
 
@@ -305,10 +307,12 @@ function SwipeDeckInner({
   autoApplySetup,
   onStackChange,
   onSwipesUsedChange,
+  tags = {},
 }: {
   offers: Offer[];
   scores: Record<string, number>;
   reasons: Record<string, string[]>;
+  tags?: Record<string, OfferTags>;
   userId: string;
   initialTotalSwipes: number;
   isPremium: boolean;
@@ -341,6 +345,49 @@ function SwipeDeckInner({
 
   const visible = stack.slice(0, 3);
   const eta = useNextOffersEta();
+
+  // « Pas pour toi ? » après un « passer » (25/10) : la raison retire tout de
+  // suite les cartes du même genre et sert aux paquets suivants.
+  const [passPrompt, setPassPrompt] = useState<{ offer: Offer; key: string } | null>(null);
+  const [passAck, setPassAck] = useState<string | null>(null);
+  const closePassBar = useCallback(() => {
+    setPassPrompt(null);
+    setPassAck(null);
+  }, []);
+
+  function handlePassReason(reason: PassReason) {
+    const passed = passPrompt?.offer;
+    const passedTags = passed ? tags[passed.id] : undefined;
+    if (!passed || !passedTags) return;
+    const drop = cardsToDrop(
+      stack.filter((o) => o.id !== passed.id),
+      passedTags,
+      reason,
+      (o) => tags[o.id],
+    );
+    if (drop.size > 0) setStack((prev) => prev.filter((o) => !drop.has(o.id)));
+    void createClient()
+      .from("user_events")
+      .insert({
+        user_id: userId,
+        event_type: "pass_reason",
+        metadata: {
+          offerId: passed.id,
+          reason,
+          metier: passedTags.metier,
+          contract: passedTags.contract,
+          formations: passedTags.formations,
+          near: passedTags.near,
+          targetJob: passedTags.targetJob,
+          removed: drop.size,
+        },
+      })
+      .then(({ error }) => {
+        if (error) console.error("pass_reason event failed", error);
+      });
+    setPassPrompt(null);
+    setPassAck(drop.size > 0 ? `Compris : ${drop.size} offre${drop.size > 1 ? "s" : ""} du même genre retirée${drop.size > 1 ? "s" : ""}` : "Compris, on en tient compte");
+  }
 
   // Remonté au parent (voir SwipeDeck) pour afficher un compteur qui
   // décroît vraiment à chaque swipe, juste au-dessus des cartes -- ce
@@ -405,6 +452,8 @@ function SwipeDeckInner({
     void recordSwipe(offer, direction);
     setSwipesUsed((n) => n + 1);
     topCardRef.current?.swipeOut(direction);
+    setPassAck(null);
+    setPassPrompt(direction === "pass" && tags[offer.id] ? { offer, key: `${offer.id}-${Date.now()}` } : null);
 
     if (direction === "like" && isAuto) {
       const likeAction = readLikeAction();
@@ -528,6 +577,14 @@ function SwipeDeckInner({
           onDiscover={() => void logButtonClick(userId, "premium_cta", { source: "auto_upsell", offerId: upsellOffer?.id })}
         />
         {applyUi}
+        <PassReasonBar
+          promptKey={passPrompt?.key ?? null}
+          tags={passPrompt ? (tags[passPrompt.offer.id] ?? null) : null}
+          ack={passAck}
+          showContract={new Set(offers.map((o) => o.contract_type)).size > 1}
+          onPick={handlePassReason}
+          onClose={closePassBar}
+        />
         {visible
           .slice()
           .reverse()
@@ -613,6 +670,7 @@ export function SwipeDeck({
   offers,
   scores,
   reasons = {},
+  tags = {},
   userId,
   totalSwipesEver = 0,
   isPremium = false,
@@ -627,6 +685,7 @@ export function SwipeDeck({
   offers: Offer[];
   scores: Record<string, number>;
   reasons?: Record<string, string[]>;
+  tags?: Record<string, OfferTags>;
   userId: string;
   totalSwipesEver?: number;
   isPremium?: boolean;
@@ -722,6 +781,9 @@ export function SwipeDeck({
           postule aujourd&apos;hui pour la faire durer.
         </p>
       )}
+      {/* Un seul type de contrat dans le paquet (alternance seulement, 25/10) :
+          le choix Stage / Alternance ne servirait à rien. */}
+      {new Set(offers.map((o) => o.contract_type)).size > 1 && (
       <div className="seg mt-4 mb-5">
         {(["all", "stage", "alternance"] as const).map((type) => (
           <label
@@ -739,6 +801,7 @@ export function SwipeDeck({
           </label>
         ))}
       </div>
+      )}
       {cityBanner && (
         <p
           style={{
@@ -759,6 +822,7 @@ export function SwipeDeck({
         offers={filteredOffers}
         scores={scores}
         reasons={reasons}
+        tags={tags}
         userId={userId}
         initialTotalSwipes={swipesUsed}
         isPremium={isPremium}

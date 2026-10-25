@@ -9,6 +9,7 @@ import { Chip, MiniHistogram, Steps } from "@/components/admin/cockpit/Visual";
 import { sourceInfo, dayKey, daysBetween } from "@/lib/admin/trafficStats";
 import { heardFromLabel } from "@/lib/onboarding/options";
 import { nowMs } from "@/lib/admin/cockpit/load";
+import { PASS_REASONS, isPassReason } from "@/lib/matching/passReasons";
 
 const SUBSCRIPTION_LABEL: Record<string, string> = {
   active: "Payant (actif)",
@@ -27,6 +28,7 @@ const EVENT_LABEL: Record<string, string> = {
   paywall_viewed: "Page Premium vue",
   checkout_opened: "Paiement ouvert",
   heard_from: "Nous a connus par",
+  pass_reason: "Passé : pas pour moi",
 };
 
 // Temps écoulé entre deux étapes du parcours, en clair.
@@ -56,6 +58,9 @@ function describeEvent(eventType: string, metadata: Record<string, unknown> | nu
     return heardFromLabel(metadata.source, typeof metadata.format === "string" ? metadata.format : null);
   }
   if (eventType === "paywall_viewed" && typeof metadata.source === "string") return `depuis ${metadata.source}`;
+  if (eventType === "pass_reason" && isPassReason(metadata.reason)) {
+    return `${PASS_REASONS[metadata.reason].label}${typeof metadata.removed === "number" && metadata.removed > 0 ? ` · ${metadata.removed} offres retirées` : ""}`;
+  }
   if (eventType === "checkout_opened" && typeof metadata.plan === "string") return `formule ${metadata.plan}`;
   return "";
 }

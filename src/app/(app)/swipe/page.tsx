@@ -6,9 +6,15 @@ import {
   computeMatchScore,
   computeMatchReasons,
   computeCvMatchBonus,
-  isNearbyCity,
+  geoMatch,
   localCitiesFor,
+  matchesTargetJob,
+  profileDepartement,
 } from "@/lib/matching/score";
+import { dedupeOffers, diversifyByCompany, preferTargetJobs, targetJobTitlePatterns } from "@/lib/matching/deck";
+import { isPassReason, learnFromPassReasons, passReasonsSinceIso, type OfferTags, type PassReasonEvent } from "@/lib/matching/passReasons";
+import { classifyFormations, classifyMetier } from "@/lib/seo/metiers";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { buildLearnedAffinity, type SwipeHistoryEntry } from "@/lib/matching/learning";
 import { isPremium, isAutoTier } from "@/lib/subscription/isPremium";
 import { refreshStaleSubscription } from "@/lib/stripe/refreshStaleSubscription";
@@ -49,7 +55,7 @@ export default async function SwipePage() {
     );
   }
 
-  const [{ data: swiped }, { data: applications }] = await Promise.all([
+  const [{ data: swiped }, { data: applications }, { data: passReasonRows }] = await Promise.all([
     supabase
       .from("swipes")
       .select("offer_id, direction, created_at")
@@ -57,7 +63,33 @@ export default async function SwipePage() {
       .order("created_at", { ascending: false })
       .limit(500),
     supabase.from("applications").select("offer_id, applied_at").eq("user_id", user.id),
+    // Raisons « Pas pour moi » des 30 derniers jours (25/10). Lecture par le
+    // serveur : les étudiants n'ont que le droit d'écrire leurs événements.
+    createAdminClient()
+      .from("user_events")
+      .select("metadata")
+      .eq("user_id", user.id)
+      .eq("event_type", "pass_reason")
+      .gte("created_at", passReasonsSinceIso())
+      .order("created_at", { ascending: false })
+      .limit(200)
+      .then((r) => r, () => ({ data: null })),
   ]);
+  const passLearning = learnFromPassReasons(
+    (passReasonRows ?? []).flatMap((row) => {
+      const m = row.metadata as Record<string, unknown> | null;
+      if (!m || !isPassReason(m.reason)) return [];
+      const event: PassReasonEvent = {
+        reason: m.reason,
+        metier: typeof m.metier === "string" ? m.metier : null,
+        contract: m.contract === "stage" || m.contract === "alternance" ? m.contract : null,
+        formations: Array.isArray(m.formations) ? m.formations.filter((f): f is string => typeof f === "string") : [],
+        near: m.near === true,
+        targetJob: m.targetJob === true,
+      };
+      return [event];
+    }),
+  );
 
   const appliedOfferIds = new Set((applications ?? []).map((a) => a.offer_id));
 
@@ -169,12 +201,24 @@ export default async function SwipePage() {
   // gratuites tombaient alors ailleurs en France avec un match bas, juste
   // avant le paywall. Coïncide avec la baisse des paiements du 09 et du
   // 10/10 (cause probable, pas prouvée : voir SEO_ROADMAP.md).
-  const LOCAL_POOL_SIZE = 300;
-  const localCities = localCitiesFor(profile?.city);
+  const LOCAL_POOL_SIZE = 400;
+  // Ville (et agglomération) + tout son département (« 69 - » : libellé
+  // France Travail et La bonne alternance), ou le département choisi à
+  // l'onboarding : avant le 25/10, un département choisi n'avait AUCUNE
+  // offre locale cherchée en plus, et une ville moyenne aucune commune
+  // voisine.
+  const profileDep = profileDepartement(profile?.city);
+  const localCities = [...localCitiesFor(profile?.city), ...(profileDep ? [`${profileDep} -`] : [])];
+  // Offres du métier visé près de chez lui, cherchées par intitulé et sans
+  // filtre secteur (le secteur est deviné à l'import et peut se tromper) :
+  // le bassin par secteur, trié par qualité, pouvait n'en contenir presque
+  // aucune dans un secteur large (Commerce, Hôtellerie…).
+  const JOB_POOL_SIZE = 250;
+  const jobPatterns = profile ? targetJobTitlePatterns(profile.target_jobs) : [];
   // Offres publiées ces dernières 24 h, cherchées EN PLUS : elles partent
   // vite (24/10) et le bassin national, trié par qualité, peut les rater.
   const FRESH_POOL_SIZE = 150;
-  const [nationalPool, localPool, freshPool] = await Promise.all([
+  const [nationalPool, localPool, freshPool, jobPool] = await Promise.all([
     fetchActiveOffers(supabase, { excludeIds, sectors: hardSectors, limit: CANDIDATE_POOL_SIZE }),
     localCities.length > 0
       ? fetchActiveOffers(supabase, {
@@ -197,9 +241,20 @@ export default async function SwipePage() {
       console.error("SwipePage: offres fraîches en échec", error);
       return [];
     }),
+    jobPatterns.length > 0
+      ? fetchActiveOffers(supabase, {
+          excludeIds,
+          titles: jobPatterns,
+          locations: localCities.length > 0 ? localCities : undefined,
+          limit: JOB_POOL_SIZE,
+        }).catch((error) => {
+          console.error("SwipePage: offres du métier visé en échec", error);
+          return [];
+        })
+      : Promise.resolve([]),
   ]);
   const pooledIds = new Set<string>();
-  const pooled = [...nationalPool, ...localPool, ...freshPool].filter((o) => {
+  const pooled = [...nationalPool, ...localPool, ...freshPool, ...jobPool].filter((o) => {
     if (pooledIds.has(o.id)) return false;
     pooledIds.add(o.id);
     return true;
@@ -224,6 +279,13 @@ export default async function SwipePage() {
   );
   let offers = employers.length >= 10 ? employers : pooled;
 
+  // Un seul type coché à l'onboarding (« alternance ») : l'autre ne sort plus
+  // (25/10). Gardé seulement s'il ne resterait presque rien sans lui.
+  if (profile && profile.looking_for.length === 1) {
+    const wanted = offers.filter((o) => o.contract_type === profile.looking_for[0]);
+    if (wanted.length >= 10) offers = wanted;
+  }
+
   // Filet de sécurité : si le filtre secteur ne renvoie rien (secteur trop
   // niche, catalogue encore mince dessus...), on se retrouvait avec un deck
   // vide -- donc directement sur l'écran "Plus d'offres" sans avoir pu
@@ -238,6 +300,22 @@ export default async function SwipePage() {
   // reste à 0 pour un profil qui n'a encore rien swipé, donc n'affecte
   // jamais un tout nouveau compte.
   const scores: Record<string, number> = {};
+  // Ce que l'écran a besoin de savoir de chaque carte pour « Pas pour moi »
+  // (proche ou non, métier, diplôme, contrat) : mêmes règles qu'ici.
+  const tags: Record<string, OfferTags> = {};
+  if (profile) {
+    for (const offer of offers) {
+      const geoPoints = geoMatch(profile, offer).points;
+      tags[offer.id] = {
+        near: offer.remote_policy === "remote" || geoPoints >= 8,
+        local: offer.remote_policy === "remote" || geoPoints >= 10,
+        targetJob: profile.target_jobs.length > 0 && matchesTargetJob(profile, offer),
+        metier: classifyMetier(offer.title)?.slug ?? null,
+        formations: classifyFormations(offer.title).map((f) => f.slug),
+        contract: offer.contract_type,
+      };
+    }
+  }
   if (profile) {
     // Bonus supplémentaire réservé aux Premium : va chercher dans le texte
     // réel du CV (profiles.cv_text, mis en cache à l'upload -- voir
@@ -252,7 +330,8 @@ export default async function SwipePage() {
         affinity.remoteBonus(offer.remote_policy) +
         affinity.keywordBonus(offer.title);
       const cvBonus = computeCvMatchBonus(cvText, offer);
-      scores[offer.id] = Math.max(30, Math.min(99, Math.round(base + learnedBonus + cvBonus)));
+      const passPenalty = passLearning.penalty(tags[offer.id], tags[offer.id].targetJob);
+      scores[offer.id] = Math.max(30, Math.min(99, Math.round(base + learnedBonus + cvBonus + passPenalty)));
     }
   }
 
@@ -316,7 +395,19 @@ export default async function SwipePage() {
   const relevantOffers =
     hasPreferences && filteredByRelevance.length >= MIN_RELEVANT_POOL ? filteredByRelevance : rankedOffers;
 
-  const { deck: sortedOffers, freshPicks } = orderFreshFirst(relevantOffers, scores, DECK_SIZE);
+  // Composition du paquet (25/10) : une carte par annonce (doublons entre
+  // sources retirés), le métier visé d'abord quand il y en a au moins 12
+  // pas trop loin, et au plus 2 cartes par entreprise.
+  const composed = profile
+    ? diversifyByCompany(
+        preferTargetJobs(
+          dedupeOffers(relevantOffers),
+          (o) => profile.target_jobs.length > 0 && matchesTargetJob(profile, o) && geoMatch(profile, o).points >= 0,
+        ),
+        DECK_SIZE,
+      )
+    : relevantOffers;
+  const { deck: sortedOffers, freshPicks } = orderFreshFirst(composed, scores, DECK_SIZE);
   // Notification « Nouveautés » à l'arrivée sur le deck : les plus récentes.
   const freshInbox = [...freshPicks]
     .sort((a, b) => b.published_at.localeCompare(a.published_at))
@@ -346,20 +437,12 @@ export default async function SwipePage() {
   // apparaît dans le deck d'un profil basé quelque part de précis.
   let cityBanner: string | null = null;
   if (profile?.city && sortedOffers.length > 0) {
-    const cityLower = profile.city.toLowerCase().trim();
-    // Compte aussi les offres de l'agglomération (ex: "Villeurbanne" pour un
-    // profil à "Lyon") comme "dans la ville" -- sinon le bandeau annonçait
-    // "puis d'autres villes" pour des offres en réalité toutes proches,
-    // ce qui donnait l'impression trompeuse que rien n'était proposé
-    // autour de la ville choisie.
-    const inCityCount = sortedOffers.filter((o) => {
-      const locationLower = o.location.toLowerCase();
-      return locationLower.includes(cityLower) || isNearbyCity(cityLower, locationLower);
-    }).length;
+    // « Près de » = ville, agglomération ou même département (geoMatch).
+    const nearCount = sortedOffers.filter((o) => o.remote_policy !== "remote" && geoMatch(profile, o).points >= 8).length;
     cityBanner =
-      inCityCount === sortedOffers.length
+      nearCount === sortedOffers.length
         ? `${sortedOffers.length} offre${sortedOffers.length > 1 ? "s" : ""} à ${profile.city} et alentours.`
-        : `${sortedOffers.length} offres vers ${profile.city}, puis d'autres villes.`;
+        : `${sortedOffers.length} offres près de ${profile.city}, puis d'autres villes.`;
   }
 
   const sectorLabel =
@@ -375,6 +458,7 @@ export default async function SwipePage() {
         offers={sortedOffers}
         scores={scores}
         reasons={reasons}
+        tags={Object.fromEntries(sortedOffers.map((o) => [o.id, tags[o.id]]).filter(([, t]) => !!t))}
         userId={user.id}
         totalSwipesEver={totalSwipesEver}
         isPremium={premium}

@@ -209,3 +209,33 @@ export async function payerSignups(ids: string[]): Promise<{ day: string; source
 }
 
 
+
+// --- Pertinence du paquet (25/10) ------------------------------------------
+
+export type DeckFeedback = { likes: number; passes: number; reasons: { reason: string; count: number }[] };
+
+/** Likes, passes et raisons « Pas pour moi » depuis une date (en cache 10 min). */
+export const deckFeedback = unstable_cache(
+  async (sinceIso: string): Promise<DeckFeedback> => {
+    const db = createAdminClient();
+    const [likes, passes, reasons] = await Promise.all([
+      db.from("swipes").select("id", { count: "exact", head: true }).eq("direction", "like").gte("created_at", sinceIso),
+      db.from("swipes").select("id", { count: "exact", head: true }).eq("direction", "pass").gte("created_at", sinceIso),
+      db.from("user_events").select("metadata").eq("event_type", "pass_reason").gte("created_at", sinceIso).limit(5000),
+    ]);
+    if (likes.error) throw new Error(likes.error.message);
+    if (passes.error) throw new Error(passes.error.message);
+    const counts = new Map<string, number>();
+    for (const row of reasons.data ?? []) {
+      const reason = (row.metadata as { reason?: unknown } | null)?.reason;
+      if (typeof reason === "string") counts.set(reason, (counts.get(reason) ?? 0) + 1);
+    }
+    return {
+      likes: likes.count ?? 0,
+      passes: passes.count ?? 0,
+      reasons: [...counts.entries()].map(([reason, count]) => ({ reason, count })).sort((a, b) => b.count - a.count),
+    };
+  },
+  ["admin-deck-feedback-v1"],
+  { revalidate: 600 },
+);

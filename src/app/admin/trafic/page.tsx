@@ -6,7 +6,8 @@ import { AutoRefresh } from "@/components/admin/AutoRefresh";
 import { int, pct, startOfParisDay } from "@/lib/admin/cockpit/format";
 import { loadSnapshot, nowMs } from "@/lib/admin/cockpit/load";
 import { getHeardFromStats, withTimeout } from "@/lib/admin/dashboardStats";
-import { landingPages, onlineNow, payerIds, payerSignups, signupsByDay, visitorsByDaySource, visitorsBySource } from "@/lib/admin/traffic";
+import { deckFeedback, landingPages, onlineNow, payerIds, payerSignups, signupsByDay, visitorsByDaySource, visitorsBySource } from "@/lib/admin/traffic";
+import { PASS_REASONS, isPassReason } from "@/lib/matching/passReasons";
 import { DAY_MS, SIGNUPS_SINCE, dayKey, daysBetween, mergeBySource, sourceInfo, totalsByGroup } from "@/lib/admin/trafficStats";
 import { requireAdminPage } from "@/lib/admin/accessCode";
 import { HBars } from "@/components/admin/cockpit/Visual";
@@ -65,7 +66,12 @@ export default async function TrafficPage({ searchParams }: { searchParams: Prom
     ).catch(() => ({ value: null })),
   ]);
 
-  const heard = await withTimeout(getHeardFromStats().catch(() => null), 8000, null);
+  const [heard, feedback] = await Promise.all([
+    withTimeout(getHeardFromStats().catch(() => null), 8000, null),
+    deckFeedback(sinceIso).catch((err) => (console.error("trafic: pertinence du paquet", err), null)),
+  ]);
+  const swipes = feedback ? feedback.likes + feedback.passes : 0;
+  const reasonsTotal = feedback ? feedback.reasons.reduce((s, r) => s + r.count, 0) : 0;
   const periodDays = new Set(daysBetween(since, now).map((d) => d.key));
   const rows = mergeBySource(bySource?.rows ?? null, signupDays ?? [], payers, periodDays);
   const groups = totalsByGroup(rows);
@@ -344,6 +350,43 @@ export default async function TrafficPage({ searchParams }: { searchParams: Prom
             <p style={{ margin: "8px 0 0", fontSize: 12 }}>
               <Link href="/admin/inscriptions">Toutes les inscriptions depuis le 4 septembre →</Link>
             </p>
+          </Card>
+        </div>
+      </Section>
+
+      <Section
+        title="Pertinence du paquet d'offres"
+        subtitle="Combien d'offres les étudiants likent, et pourquoi ils passent les autres (« Pas pour toi ? », depuis le 25/10). Si « Trop loin » ou « Pas mon métier » domine, c'est là qu'il faut agir."
+      >
+        <div className="cockpit-grid-2">
+          <KpiGrid>
+            <Kpi
+              accent="green"
+              label="Taux de like"
+              value={feedback && swipes > 0 ? rate(feedback.likes, swipes) : <Insufficient />}
+              sub={feedback ? `${int(feedback.likes)} likes · ${int(feedback.passes)} passés` : undefined}
+              definition="Likes / (likes + passes) sur la période, tous comptes confondus. Les comptes gratuits ne peuvent pas liker (le cœur mène à Premium) : le taux reflète surtout les Premium."
+              source="Supabase, swipes"
+            />
+            <Kpi
+              accent="violet"
+              label="Raisons données"
+              value={feedback ? reasonsTotal : <Insufficient />}
+              sub={feedback && feedback.passes > 0 ? `${rate(reasonsTotal, feedback.passes)} des passes` : undefined}
+              definition="Nombre de fois où un étudiant a dit pourquoi il passait une offre (barre « Pas pour toi ? » après un passer)."
+              source="Supabase, user_events pass_reason"
+            />
+          </KpiGrid>
+          <Card title="Pourquoi ils passent">
+            {feedback ? (
+              <HBars
+                items={feedback.reasons.map((r) => ({ label: isPassReason(r.reason) ? `${PASS_REASONS[r.reason].icon} ${PASS_REASONS[r.reason].label}` : r.reason, value: r.count }))}
+                color="#e87ba4"
+                empty="Pas encore de raison donnée."
+              />
+            ) : (
+              <Insufficient />
+            )}
           </Card>
         </div>
       </Section>

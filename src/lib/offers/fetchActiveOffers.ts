@@ -11,6 +11,8 @@ type Filters = {
   createdAfter?: string;
   /** Ne renvoyer que les offres dont le lieu contient l'un de ces noms. */
   locations?: string[];
+  /** Ne renvoyer que les offres dont l'intitulé contient l'un de ces motifs ILIKE (voir targetJobTitlePatterns). */
+  titles?: string[];
   limit?: number;
 };
 
@@ -38,9 +40,12 @@ export async function fetchActiveOffers(
   supabase: SupabaseClient<Database>,
   filters: Filters,
 ): Promise<Offer[]> {
-  const { excludeIds = [], sectors = [], publishedAfter, createdAfter, locations, limit = 600 } = filters;
+  const { excludeIds = [], sectors = [], publishedAfter, createdAfter, locations, titles, limit = 600 } = filters;
   const locationOr = locations ? locationsFilter(locations) : null;
   if (locations && !locationOr) return [];
+  // Motifs déjà propres (lettres, espaces, « _ ») : rien qui casse .or().
+  const titleOr = titles ? titles.filter((t) => /^[a-z_ ]+$/i.test(t)).map((t) => `title.ilike.%${t}%`).join(",") : null;
+  if (titles && !titleOr) return [];
 
   function baseQuery() {
     let q = supabase.from("offers").select("*").eq("is_active", true).limit(limit);
@@ -49,6 +54,8 @@ export async function fetchActiveOffers(
     if (publishedAfter) q = q.gt("published_at", publishedAfter);
     if (createdAfter) q = q.gt("created_at", createdAfter);
     if (locationOr) q = q.or(locationOr);
+    // Deux .or() se combinent en ET : lieu ET intitulé.
+    if (titleOr) q = q.or(titleOr);
     return q;
   }
 
