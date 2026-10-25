@@ -6,17 +6,18 @@ import { AutoRefresh } from "@/components/admin/AutoRefresh";
 import { int, pct, startOfParisDay } from "@/lib/admin/cockpit/format";
 import { loadSnapshot, nowMs } from "@/lib/admin/cockpit/load";
 import { getHeardFromStats, withTimeout } from "@/lib/admin/dashboardStats";
-import { deckFeedback, landingPages, onlineNow, payerIds, payerSignups, signupsByDay, visitorsByDaySource, visitorsBySource } from "@/lib/admin/traffic";
+import { deckFeedback, onlineNow, payerIds, payerSignups, signupFunnel, signupsByDay } from "@/lib/admin/traffic";
 import { PASS_REASONS, isPassReason } from "@/lib/matching/passReasons";
 import { DAY_MS, SIGNUPS_SINCE, dayKey, daysBetween, mergeBySource, sourceInfo, totalsByGroup } from "@/lib/admin/trafficStats";
 import { requireAdminPage } from "@/lib/admin/accessCode";
 import { HBars } from "@/components/admin/cockpit/Visual";
 
 // « Trafic et sources » (24/10, demande de Nathan) : combien de personnes
-// sont venues aujourd'hui, combien sont en ligne, d'où elles viennent
-// (TikTok, Instagram, e-mails…) et où elles décrochent entre la première
-// page et le paiement. Visiteurs : site_visits ; inscrits : profils ;
-// payeurs : Stripe. Données en cache 5 min, page rechargée chaque minute.
+// arrivent, combien sont en ligne, d'où elles viennent (TikTok, Instagram,
+// Google…) et où elles décrochent avant le paiement. Depuis le 25/10,
+// uniquement des inscrits (Nathan : « les visiteurs, ça peut être des robots
+// Google ; ne compte que les inscrits ») : profils, événements du parcours,
+// payeurs Stripe. Données en cache 5 à 10 min, page rechargée chaque minute.
 export const maxDuration = 60;
 
 const PERIODS = [
@@ -24,8 +25,6 @@ const PERIODS = [
   { days: 7, label: "7 jours" },
   { days: 30, label: "30 jours" },
 ] as const;
-
-const SQL_NOTE = "Historique des visites disponible une fois exécutée la section 5 du SQL du 24/10 (fonctions de comptage des visites).";
 
 function Meter({ value, max }: { value: number; max: number }) {
   const w = max > 0 ? Math.max(2, Math.round((value / max) * 100)) : 0;
@@ -46,19 +45,14 @@ export default async function TrafficPage({ searchParams }: { searchParams: Prom
   const now = nowMs();
   const todayStart = startOfParisDay(now);
   const since = todayStart - (days - 1) * DAY_MS;
-  // Fin = minuit ce soir : même clé de cache toute la journée, données
-  // rafraîchies toutes les 5 minutes par le cache lui-même.
-  const endIso = new Date(todayStart + DAY_MS).toISOString();
   const sinceIso = new Date(since).toISOString();
   const chartDays = Math.max(days, 14);
   const chartSince = todayStart - (chartDays - 1) * DAY_MS;
 
-  const [bySource, byDay, landing, online, signupDays, { value: payers }] = await Promise.all([
-    visitorsBySource(sinceIso, endIso).catch((err) => (console.error("trafic: visiteurs par source", err), undefined)),
-    visitorsByDaySource(new Date(chartSince).toISOString(), endIso).catch((err) => (console.error("trafic: visiteurs par jour", err), undefined)),
-    landingPages(sinceIso, endIso).catch((err) => (console.error("trafic: pages d'arrivée", err), undefined)),
+  const [online, signupDays, funnelData, { value: payers }] = await Promise.all([
     onlineNow(now, todayStart).catch(() => null),
     signupsByDay(new Date(SIGNUPS_SINCE).toISOString()).catch((err) => (console.error("trafic: inscrits", err), null)),
+    signupFunnel(sinceIso).catch((err) => (console.error("trafic: flux des inscrits", err), null)),
     withTimeout(
       loadSnapshot().then(({ snap }) => (snap ? payerSignups(payerIds(snap)) : null)),
       10_000,
@@ -73,50 +67,49 @@ export default async function TrafficPage({ searchParams }: { searchParams: Prom
   const swipes = feedback ? feedback.likes + feedback.passes : 0;
   const reasonsTotal = feedback ? feedback.reasons.reduce((s, r) => s + r.count, 0) : 0;
   const periodDays = new Set(daysBetween(since, now).map((d) => d.key));
-  const rows = mergeBySource(bySource?.rows ?? null, signupDays ?? [], payers, periodDays);
-  const groups = totalsByGroup(rows);
-  const visitorsKnown = !!bySource;
-  // undefined : lecture en échec ; null : historique indisponible sans le SQL.
-  const visitsNote = bySource === undefined ? "Lecture des visites impossible pour l'instant." : SQL_NOTE;
-  const visitors = rows.reduce((s, r) => s + r.visitors, 0);
-  const signupPage = rows.reduce((s, r) => s + r.signupPage, 0);
+  const rows = mergeBySource(null, signupDays ?? [], payers, periodDays)
+    .filter((r) => r.signups > 0 || (r.payers ?? 0) > 0)
+    .sort((a, b) => b.signups - a.signups || a.label.localeCompare(b.label));
+  const groups = totalsByGroup(rows).sort((a, b) => b.signups - a.signups);
   const periodSignups = (signupDays ?? []).filter((d) => periodDays.has(d.day));
   const signups = periodSignups.reduce((s, d) => s + d.signups, 0);
   const onboarded = periodSignups.reduce((s, d) => s + d.onboarded, 0);
   const paying = payers ? payers.filter((p) => periodDays.has(p.day)).length : null;
-  const group = (name: string) => groups.find((g) => g.group === name);
-  const email = group("E-mails Stageio");
-  const social = group("Réseaux sociaux");
-  const bySocial = rows.filter((r) => r.group === "Réseaux sociaux" && r.visitors > 0).slice(0, 3);
+  const top = (group: string[]) => rows.filter((r) => group.includes(r.group) && r.signups > 0);
+  const social = top(["Réseaux sociaux"]);
+  const search = top(["Moteurs de recherche", "Assistants IA"]);
+  const sum = (list: typeof rows) => list.reduce((s, r) => s + r.signups, 0);
+  const maxSignups = Math.max(0, ...rows.map((r) => r.signups));
 
-  // Graphiques : visiteurs par jour en trois familles (palette de 3
-  // couleurs, jamais plus), inscrits par jour à part (pas de double axe).
+  // Graphique : inscrits par jour en trois familles de sources (palette de
+  // 3 couleurs, jamais plus).
   const chartKeys = daysBetween(chartSince, now);
+  const familyOf = (source: string) => {
+    const g = sourceInfo(source).group;
+    return g === "Réseaux sociaux" ? 0 : g === "Direct / inconnu" ? 1 : 2;
+  };
   const dayFamily = new Map<string, [number, number, number]>();
-  for (const r of byDay?.rows ?? []) {
-    const g = sourceInfo(r.source).group;
-    const cur = dayFamily.get(r.day) ?? [0, 0, 0];
-    cur[g === "Réseaux sociaux" ? 0 : g === "E-mails Stageio" ? 1 : 2] += r.visitors;
-    dayFamily.set(r.day, cur);
+  for (const d of signupDays ?? []) {
+    const cur: [number, number, number] = [0, 0, 0];
+    for (const [source, n] of Object.entries(d.sources)) cur[familyOf(source)] += n;
+    dayFamily.set(d.day, cur);
   }
-  const signupsOn = new Map((signupDays ?? []).map((d) => [d.day, d.signups]));
-  const maxVisitors = Math.max(0, ...rows.map((r) => r.visitors));
 
   const funnel = [
-    { label: "Visiteurs", value: visitorsKnown ? visitors : null, def: "Personnes distinctes (un navigateur = une personne) qui ont ouvert au moins une page." },
-    { label: "Ont ouvert la page d'inscription", value: visitorsKnown ? signupPage : null, def: "Parmi les visiteurs, ceux qui ont ouvert /inscription." },
-    { label: "Comptes créés", value: signupDays ? signups : null, def: "Comptes créés sur la période (tous, même venus d'une visite plus ancienne)." },
-    { label: "Onboarding terminé", value: signupDays ? onboarded : null, def: "Parmi ces comptes, ceux qui ont fini le questionnaire de départ." },
+    { label: "Comptes créés", value: funnelData?.signups ?? null, def: "Comptes créés sur la période (heure de Paris)." },
+    { label: "Onboarding terminé", value: funnelData?.onboarded ?? null, def: "Parmi ces comptes, ceux qui ont fini le questionnaire de départ." },
+    { label: "Paywall vu", value: funnelData?.paywallViewed ?? null, def: "Parmi ces comptes, ceux qui ont vu la page Premium." },
+    { label: "Paiement ouvert", value: funnelData?.checkoutOpened ?? null, def: "Parmi ces comptes, ceux qui ont ouvert la page de paiement Stripe." },
     { label: "Payants", value: paying, def: "Parmi ces comptes, ceux qui ont payé (abonnement ou accès à vie), à ce jour, d'après Stripe." },
   ];
-  const funnelTop = funnel[0].value ?? funnel[2].value ?? 0;
+  const funnelTop = funnel[0].value ?? 0;
 
   return (
     <div>
       <AutoRefresh seconds={60} />
       <h1 style={{ fontSize: 24, fontWeight: 700, margin: "0 0 4px" }}>Trafic et sources</h1>
       <p style={{ margin: "0 0 16px", fontSize: 13, color: "var(--color-neutral-600)" }}>
-        Qui vient, d&apos;où, et jusqu&apos;où ils vont. {periodLabel}
+        Qui s&apos;inscrit, d&apos;où, et jusqu&apos;où ils vont. Uniquement des inscrits : les visiteurs sans compte (robots compris) ne sont pas comptés. {periodLabel}
         {days > 1 ? " (aujourd'hui compris)" : ""}, heure de Paris. Mis à jour toutes les 5 minutes ; « inscrits en ligne » à la minute.
       </p>
       <div className="seg" role="group" aria-label="Période">
@@ -132,13 +125,13 @@ export default async function TrafficPage({ searchParams }: { searchParams: Prom
           <Kpi
             hero
             accent="green"
-            href="#sources"
-            cta="Par source"
-            label={days === 1 ? "Visiteurs aujourd'hui" : "Visiteurs"}
-            value={visitorsKnown ? visitors : <Insufficient>{bySource === undefined ? "Indisponible" : "SQL à exécuter"}</Insufficient>}
-            sub={visitorsKnown ? `${int(signupPage)} ont ouvert la page d'inscription` : visitsNote}
-            definition="Personnes distinctes (un cookie anonyme par navigateur) qui ont ouvert au moins une page du site, robots et aperçus de liens exclus. Une même personne sur son téléphone puis son ordinateur compte deux fois."
-            source="Supabase, site_visits"
+            href={days === 1 ? `/admin/inscriptions/${dayKey(now)}` : "/admin/inscriptions"}
+            cta="Voir les inscrits"
+            label={days === 1 ? "Inscrits aujourd'hui" : "Inscrits"}
+            value={signupDays ? signups : <Insufficient />}
+            sub={signupDays ? `${int(onboarded)} ont fini l'onboarding (${rate(onboarded, signups)})` : undefined}
+            definition="Comptes créés sur la période (minuit heure de Paris)."
+            source="Supabase, profils.created_at"
           />
           <Kpi
             live
@@ -152,64 +145,56 @@ export default async function TrafficPage({ searchParams }: { searchParams: Prom
             source="Supabase, profils.last_active_at"
           />
           <Kpi
-            accent="pink"
-            href={days === 1 ? `/admin/inscriptions/${dayKey(now)}` : "/admin/inscriptions"}
-            cta="Voir les inscrits"
-            label={days === 1 ? "Inscrits aujourd'hui" : "Inscrits"}
-            value={signupDays ? signups : <Insufficient />}
-            sub={signupDays ? `${int(onboarded)} ont fini l'onboarding` : undefined}
-            definition="Comptes créés sur la période (minuit heure de Paris)."
-            source="Supabase, profils.created_at"
-          />
-          <Kpi
             accent="amber"
             href="#flux"
             cta="Voir le flux"
-            label="Visite → inscription"
-            value={visitorsKnown && signupDays ? rate(signups, visitors) : <Insufficient />}
-            definition="Comptes créés / visiteurs de la période. Repère : 30-40 % sur un trafic qualifié (cible 50 %). Un compte créé aujourd'hui par quelqu'un venu hier compte dans les inscrits mais pas dans les visiteurs du jour."
-            source="Supabase"
-          />
-          <Kpi
-            accent="violet"
-            href="/admin/trafic/source/email"
-            label="Venus d'un e-mail"
-            value={visitorsKnown ? (email?.visitors ?? 0) : <Insufficient />}
-            definition="Visiteurs arrivés par un lien d'un e-mail Stageio (série, alertes d'offres, relances : liens marqués utm_source=email). Surtout des inscrits qui reviennent."
-            source="Supabase, site_visits"
+            label="Inscription → payant"
+            value={signupDays && paying !== null ? rate(paying, signups) : <Insufficient />}
+            sub={paying !== null ? `${int(paying)} payant${paying > 1 ? "s" : ""}` : undefined}
+            definition="Part des inscrits de la période qui ont payé (abonnement ou accès à vie), à ce jour, d'après Stripe. Les inscrits les plus récents ont eu moins de temps pour payer."
+            source="Supabase (inscrits) + Stripe (payeurs)"
           />
           <Kpi
             accent="pink"
-            href={`/admin/trafic/source/${bySocial[0]?.key ?? "tiktok"}`}
-            cta={`Détail ${bySocial[0]?.label ?? "TikTok"}`}
+            href={`/admin/trafic/source/${social[0]?.key ?? "tiktok"}`}
+            cta={`Détail ${social[0]?.label ?? "TikTok"}`}
             label="Venus des réseaux sociaux"
-            value={visitorsKnown ? (social?.visitors ?? 0) : <Insufficient />}
-            sub={bySocial.length > 0 ? bySocial.map((r) => `${r.label} ${int(r.visitors)}`).join(" · ") : visitorsKnown ? "aucun pour l'instant" : undefined}
-            definition="Visiteurs arrivés de TikTok, Instagram, Snapchat, YouTube, Facebook, LinkedIn, X, Reddit ou WhatsApp : lien marqué (utm_source, ?a=) ou site d'origine. Les applis qui masquent leur origine (souvent TikTok et Instagram sans lien marqué) tombent dans « Direct / inconnu »."
-            source="Supabase, site_visits"
+            value={signupDays ? sum(social) : <Insufficient />}
+            sub={social.length > 0 ? social.slice(0, 3).map((r) => `${r.label} ${int(r.signups)}`).join(" · ") : signupDays ? "aucun pour l'instant" : undefined}
+            definition="Inscrits arrivés de TikTok, Instagram, Snapchat, YouTube, Facebook, LinkedIn, X, Reddit ou WhatsApp : lien marqué (utm_source, ?a=) ou site d'origine, enregistré à l'inscription. Les applis qui masquent leur origine (souvent TikTok et Instagram sans lien marqué) tombent dans « Direct / inconnu »."
+            source="Supabase, profils.utm_source"
+          />
+          <Kpi
+            accent="violet"
+            href={`/admin/trafic/source/${search[0]?.key ?? "google"}`}
+            cta={`Détail ${search[0]?.label ?? "Google"}`}
+            label="Venus de Google et des IA"
+            value={signupDays ? sum(search) : <Insufficient />}
+            sub={search.length > 0 ? search.slice(0, 3).map((r) => `${r.label} ${int(r.signups)}`).join(" · ") : signupDays ? "aucun pour l'instant" : undefined}
+            definition="Inscrits arrivés d'un moteur de recherche (Google, Bing…) ou d'un assistant IA (ChatGPT, Perplexity, Gemini…), d'après la source enregistrée à l'inscription."
+            source="Supabase, profils.utm_source"
           />
         </KpiGrid>
       </Section>
 
       <div id="sources" style={{ scrollMarginTop: 16 }} />
-      <Section
-        title="D'où ils viennent"
-        subtitle="Chaque visiteur est compté une fois, sous la première source connue de la période. Inscrits et payants : source enregistrée à l'inscription (le premier lien suivi dans les 30 jours)."
-      >
+      <Section title="D'où viennent les inscrits" subtitle="Source enregistrée à l'inscription (le premier lien suivi dans les 30 jours). Payants : parmi ces inscrits, à ce jour, d'après Stripe.">
         <div className="cockpit-grid-2">
           <Card title="Par canal">
-            {groups.length === 0 ? (
-              <Insufficient>{visitorsKnown ? "Aucune visite sur la période" : visitsNote}</Insufficient>
+            {!signupDays ? (
+              <Insufficient>Lecture impossible pour l&apos;instant</Insufficient>
+            ) : groups.length === 0 ? (
+              <Insufficient>Aucun inscrit sur la période</Insufficient>
             ) : (
               <div className="cockpit-scroll">
                 <table className="cockpit-table">
                   <thead>
                     <tr>
                       <th>Canal</th>
-                      <th>Visiteurs</th>
                       <th>Inscrits</th>
-                      <th>Visite → inscrit</th>
+                      <th>Part</th>
                       <th>Payants</th>
+                      <th>Inscrit → payant</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -217,12 +202,12 @@ export default async function TrafficPage({ searchParams }: { searchParams: Prom
                       <tr key={g.group}>
                         <td style={{ fontWeight: 600 }}>{g.group}</td>
                         <td>
-                          <Meter value={g.visitors} max={groups[0].visitors} />
-                          {visitorsKnown ? int(g.visitors) : "—"}
+                          <Meter value={g.signups} max={groups[0].signups} />
+                          {int(g.signups)}
                         </td>
-                        <td>{int(g.signups)}</td>
-                        <td>{visitorsKnown ? rate(g.signups, g.visitors) : "—"}</td>
+                        <td>{rate(g.signups, signups)}</td>
                         <td>{g.payers === null ? "—" : int(g.payers)}</td>
+                        <td>{g.payers === null ? "—" : rate(g.payers, g.signups)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -230,7 +215,7 @@ export default async function TrafficPage({ searchParams }: { searchParams: Prom
               </div>
             )}
           </Card>
-          <Card title="Le flux, de la visite au paiement">
+          <Card title="Le flux, de l'inscription au paiement">
             <div id="flux" style={{ scrollMarginTop: 16 }} />
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {funnel.map((step, i) => {
@@ -268,8 +253,10 @@ export default async function TrafficPage({ searchParams }: { searchParams: Prom
 
         <div style={{ marginTop: 12 }}>
           <Card title="Par source">
-            {rows.length === 0 ? (
-              <Insufficient>{visitorsKnown ? "Aucune visite sur la période" : visitsNote}</Insufficient>
+            {!signupDays ? (
+              <Insufficient>Lecture impossible pour l&apos;instant</Insufficient>
+            ) : rows.length === 0 ? (
+              <Insufficient>Aucun inscrit sur la période</Insufficient>
             ) : (
               <div className="cockpit-scroll">
                 <table className="cockpit-table">
@@ -277,11 +264,10 @@ export default async function TrafficPage({ searchParams }: { searchParams: Prom
                     <tr>
                       <th>Source</th>
                       <th>Canal</th>
-                      <th>Visiteurs</th>
-                      <th>Page d&apos;inscription</th>
                       <th>Inscrits</th>
-                      <th>Visite → inscrit</th>
+                      <th>Part</th>
                       <th>Payants</th>
+                      <th>Inscrit → payant</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -294,64 +280,43 @@ export default async function TrafficPage({ searchParams }: { searchParams: Prom
                         </td>
                         <td style={{ color: "var(--color-neutral-600)" }}>{r.group}</td>
                         <td>
-                          <Meter value={r.visitors} max={maxVisitors} />
-                          {visitorsKnown ? int(r.visitors) : "—"}
+                          <Meter value={r.signups} max={maxSignups} />
+                          {int(r.signups)}
                         </td>
-                        <td>{visitorsKnown ? int(r.signupPage) : "—"}</td>
-                        <td>{int(r.signups)}</td>
-                        <td>{visitorsKnown ? rate(r.signups, r.visitors) : "—"}</td>
+                        <td>{rate(r.signups, signups)}</td>
                         <td>{r.payers === null ? "—" : int(r.payers)}</td>
+                        <td>{r.payers === null ? "—" : rate(r.payers, r.signups)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
             )}
-            {bySource && !bySource.viaSql && (
-              <p style={{ margin: "8px 0 0", fontSize: 11.5, color: "var(--color-neutral-600)" }}>
-                Compté ligne par ligne en attendant le SQL du 24/10 (aujourd&apos;hui et hier seulement).
-              </p>
-            )}
           </Card>
         </div>
       </Section>
 
       <Section title="Jour par jour" subtitle={`${chartDays} derniers jours. Clique sur un jour pour voir qui s'est inscrit ce jour-là.`}>
-        <div className="cockpit-grid-2">
-          <Card title="Visiteurs par jour">
-            {byDay ? (
-              <BarChart
-                times={chartKeys.map((d) => d.t)}
-                series={[
-                  { name: "Réseaux sociaux", color: SERIES_COLORS[0], values: chartKeys.map((d) => dayFamily.get(d.key)?.[0] ?? 0) },
-                  { name: "E-mails Stageio", color: SERIES_COLORS[1], values: chartKeys.map((d) => dayFamily.get(d.key)?.[1] ?? 0) },
-                  { name: "Autres (Google, IA, direct…)", color: SERIES_COLORS[2], values: chartKeys.map((d) => dayFamily.get(d.key)?.[2] ?? 0) },
-                ]}
-                unit="count"
-                caption="Visiteurs distincts par jour et par famille de sources"
-                hrefs={chartKeys.map((d) => `/admin/inscriptions/${d.key}`)}
-              />
-            ) : (
-              <Insufficient>{byDay === undefined ? "Lecture des visites impossible pour l'instant." : SQL_NOTE}</Insufficient>
-            )}
-          </Card>
-          <Card title="Inscrits par jour">
-            {signupDays ? (
-              <BarChart
-                times={chartKeys.map((d) => d.t)}
-                series={[{ name: "Inscrits", color: SERIES_COLORS[0], values: chartKeys.map((d) => signupsOn.get(d.key) ?? 0) }]}
-                unit="count"
-                caption="Comptes créés par jour"
-                hrefs={chartKeys.map((d) => `/admin/inscriptions/${d.key}`)}
-              />
-            ) : (
-              <Insufficient />
-            )}
-            <p style={{ margin: "8px 0 0", fontSize: 12 }}>
-              <Link href="/admin/inscriptions">Toutes les inscriptions depuis le 4 septembre →</Link>
-            </p>
-          </Card>
-        </div>
+        <Card title="Inscrits par jour, par famille de sources">
+          {signupDays ? (
+            <BarChart
+              times={chartKeys.map((d) => d.t)}
+              series={[
+                { name: "Réseaux sociaux", color: SERIES_COLORS[0], values: chartKeys.map((d) => dayFamily.get(d.key)?.[0] ?? 0) },
+                { name: "Direct / inconnu", color: SERIES_COLORS[1], values: chartKeys.map((d) => dayFamily.get(d.key)?.[1] ?? 0) },
+                { name: "Autres (Google, IA, partages…)", color: SERIES_COLORS[2], values: chartKeys.map((d) => dayFamily.get(d.key)?.[2] ?? 0) },
+              ]}
+              unit="count"
+              caption="Comptes créés par jour et par famille de sources"
+              hrefs={chartKeys.map((d) => `/admin/inscriptions/${d.key}`)}
+            />
+          ) : (
+            <Insufficient />
+          )}
+          <p style={{ margin: "8px 0 0", fontSize: 12 }}>
+            <Link href="/admin/inscriptions">Toutes les inscriptions depuis le 4 septembre →</Link>
+          </p>
+        </Card>
       </Section>
 
       <Section
@@ -418,39 +383,8 @@ export default async function TrafficPage({ searchParams }: { searchParams: Prom
         </Card>
       </Section>
 
-      <Section title="Pages d'arrivée" subtitle="Première page ouverte par chaque visiteur sur la période.">
-        <Card>
-          {landing === null || landing === undefined ? (
-            <Insufficient>{landing === null ? SQL_NOTE : "Lecture impossible pour l'instant"}</Insufficient>
-          ) : landing.length === 0 ? (
-            <Insufficient>Aucune visite sur la période</Insufficient>
-          ) : (
-            <div className="cockpit-scroll">
-              <table className="cockpit-table">
-                <thead>
-                  <tr>
-                    <th>Page</th>
-                    <th>Visiteurs</th>
-                    <th>Part</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {landing.map((l) => (
-                    <tr key={l.path}>
-                      <td style={{ maxWidth: 420, overflow: "hidden", textOverflow: "ellipsis" }}>{l.path}</td>
-                      <td>{int(l.visitors)}</td>
-                      <td>{visitorsKnown ? rate(l.visitors, visitors) : "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </Card>
-      </Section>
-
       <p style={{ marginTop: 24, fontSize: 12, color: "var(--color-neutral-500)", lineHeight: 1.5 }}>
-        Visites fiables depuis le 08/10 (avant, les préchargements de liens comptaient comme des visites). Jour en cours : {dayKey(now).split("-").reverse().join("/")}.
+        Jour en cours : {dayKey(now).split("-").reverse().join("/")}.
         Voir aussi : <Link href="/admin/inscriptions">inscriptions jour par jour</Link> · <Link href="/admin/online">en ligne</Link> ·{" "}
         <Link href="/admin/acquisition">conversion et paywall</Link> · <Link href="/admin/emails">e-mails</Link>
       </p>

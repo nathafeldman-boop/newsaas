@@ -5,8 +5,6 @@
 export const DAY_MS = 86_400_000;
 /** 4 septembre 2026, 0 h à Paris : début des inscriptions suivies. */
 export const SIGNUPS_SINCE = Date.parse("2026-09-03T22:00:00Z");
-/** Visites fiables à partir de là (= VISITS_CLEAN_SINCE de dashboardStats). */
-export const VISITS_RELIABLE_SINCE = Date.parse("2026-10-08T12:15:00Z");
 
 type SourceInfo = { label: string; group: SourceGroup };
 export type SourceGroup = "Réseaux sociaux" | "Moteurs de recherche" | "Assistants IA" | "E-mails Stageio" | "Partages" | "Direct / inconnu" | "Autres";
@@ -69,7 +67,6 @@ export function sourceInfo(source: string | null | undefined): SourceInfo {
   return KNOWN[key] ?? { label: key, group: "Autres" };
 }
 
-export type DaySource = { day: string; source: string; visitors: number };
 export type SourceVisitors = { source: string; visitors: number; signupPageVisitors: number };
 
 const parisDay = new Intl.DateTimeFormat("fr-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" });

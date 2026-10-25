@@ -1,13 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Card, Insufficient, Kpi, KpiGrid, Section } from "@/components/admin/cockpit/Kpi";
+import { Card, Kpi, KpiGrid, Section } from "@/components/admin/cockpit/Kpi";
 import { HBars, MiniHistogram } from "@/components/admin/cockpit/Visual";
 import { PeopleTable } from "@/components/admin/cockpit/PeopleTable";
-import { int, pct, startOfParisDay } from "@/lib/admin/cockpit/format";
+import { pct, startOfParisDay } from "@/lib/admin/cockpit/format";
 import { nowMs } from "@/lib/admin/cockpit/load";
 import { hasPaid, journeys, profilesCreatedBetween } from "@/lib/admin/people";
-import { visitorsByDaySource } from "@/lib/admin/traffic";
-import { SIGNUPS_SINCE, VISITS_RELIABLE_SINCE, dayKey, sourceInfo, sourceKey } from "@/lib/admin/trafficStats";
+import { SIGNUPS_SINCE, dayKey, sourceInfo, sourceKey } from "@/lib/admin/trafficStats";
 import { requireAdminPage } from "@/lib/admin/accessCode";
 
 // Détail d'un jour d'inscriptions (25/10, Nathan : « je clique sur un jour,
@@ -33,10 +32,7 @@ export default async function SignupDayPage({ params }: { params: Promise<{ jour
   const nextDay = dayKey(end + 12 * 3600_000);
   const longDate = new Date(Date.parse(`${jour}T12:00:00Z`)).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 
-  const [people, visits] = await Promise.all([
-    profilesCreatedBetween(start, end).catch((err) => (console.error("inscriptions/jour: comptes", err), null)),
-    visitorsByDaySource(new Date(start).toISOString(), new Date(end).toISOString()).catch(() => null),
-  ]);
+  const people = await profilesCreatedBetween(start, end).catch((err) => (console.error("inscriptions/jour: comptes", err), null));
   if (!people) {
     return (
       <Card>
@@ -51,9 +47,6 @@ export default async function SignupDayPage({ params }: { params: Promise<{ jour
   const openedCheckout = people.filter((p) => (paths.get(p.id)?.checkout ?? 0) > 0).length;
   const paid = people.filter(hasPaid).length;
   const cents = people.reduce((s, p) => s + (p.total_paid_cents ?? 0), 0);
-  // Visites fiables à partir du 09/10 (journées entières) : avant, inconnues.
-  const visitsKnown = !!visits && start > VISITS_RELIABLE_SINCE;
-  const visitors = visitsKnown ? visits.rows.reduce((s, r) => s + r.visitors, 0) : null;
 
   const hours = Array.from({ length: 24 }, () => 0);
   for (const p of people) hours[Number(hourFmt.format(Date.parse(p.created_at)))]++;
@@ -65,6 +58,11 @@ export default async function SignupDayPage({ params }: { params: Promise<{ jour
     row.signups++;
     if (hasPaid(p)) row.paid++;
     bySource.set(info.label, row);
+  }
+  const byGroup = new Map<string, number>();
+  for (const p of people) {
+    const group = sourceInfo(p.utm_source).group;
+    byGroup.set(group, (byGroup.get(group) ?? 0) + 1);
   }
   const byHeard = new Map<string, number>();
   for (const p of people) {
@@ -87,7 +85,7 @@ export default async function SignupDayPage({ params }: { params: Promise<{ jour
       </p>
 
       <KpiGrid>
-        <Kpi hero accent="green" label="Inscrits" value={people.length} sub={visitors !== null ? `sur ${int(visitors)} visiteurs (${rate(people.length, visitors)})` : undefined} definition="Comptes créés ce jour-là, heure de Paris." source="Supabase, profils" />
+        <Kpi hero accent="green" label="Inscrits" value={people.length} definition="Comptes créés ce jour-là, heure de Paris." source="Supabase, profils" />
         <Kpi accent="blue" label="Onboarding fini" value={onboarded} sub={rate(onboarded, people.length)} definition="Parmi les inscrits du jour, ceux qui ont fini le questionnaire de départ (à ce jour)." source="Supabase, profils" />
         <Kpi accent="violet" label="Ont vu la page Premium" value={sawPaywall} sub={rate(sawPaywall, people.length)} definition="Parmi les inscrits du jour, ceux qui ont ouvert au moins une fois la page Premium (à ce jour)." source="Supabase, user_events paywall_viewed" />
         <Kpi accent="amber" label="Ont ouvert le paiement" value={openedCheckout} sub={rate(openedCheckout, sawPaywall)} definition="Parmi les inscrits du jour, ceux qui ont cliqué jusqu'à la page de paiement Stripe. Pourcentage : parmi ceux qui ont vu la page Premium." source="Supabase, user_events checkout_opened" />
@@ -98,7 +96,6 @@ export default async function SignupDayPage({ params }: { params: Promise<{ jour
         <Card>
           <HBars
             items={[
-              ...(visitors !== null ? [{ label: "Visiteurs du jour", value: visitors }] : []),
               { label: "Comptes créés", value: people.length },
               { label: "Onboarding fini", value: onboarded, note: rate(onboarded, people.length) },
               { label: "Page Premium vue", value: sawPaywall, note: rate(sawPaywall, people.length) },
@@ -129,26 +126,11 @@ export default async function SignupDayPage({ params }: { params: Promise<{ jour
               color="#7c5cd6"
             />
           </Card>
-          <Card title="Visiteurs du jour par source">
-            {visitsKnown ? (
-              <HBars
-                items={(() => {
-                  const m = new Map<string, { key: string; value: number }>();
-                  for (const r of visits.rows) {
-                    const label = sourceInfo(r.source).label;
-                    const cur = m.get(label) ?? { key: sourceKey(r.source), value: 0 };
-                    cur.value += r.visitors;
-                    m.set(label, cur);
-                  }
-                  return [...m.entries()].sort((a, b) => b[1].value - a[1].value).map(([label, v]) => ({ label, value: v.value, href: `/admin/trafic/source/${encodeURIComponent(v.key)}` }));
-                })()}
-                color="#d98a00"
-              />
-            ) : (
-              <Insufficient>
-                {start <= VISITS_RELIABLE_SINCE ? "Visites comptées à partir du 09/10." : "Historique des visites disponible une fois exécuté le SQL du 24/10 (section 5)."}
-              </Insufficient>
-            )}
+          <Card title="Par canal">
+            <HBars
+              items={[...byGroup.entries()].sort((a, b) => b[1] - a[1]).map(([label, value]) => ({ label, value, note: rate(value, people.length) }))}
+              color="#d98a00"
+            />
           </Card>
         </div>
       </Section>

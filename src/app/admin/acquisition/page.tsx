@@ -2,7 +2,7 @@ import Link from "next/link";
 import { submitIndexNowAction } from "@/app/admin/seo-actions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchAllRows } from "@/lib/supabase/public";
-import { FUNNEL_WINDOW_DAYS, getHeardFromStats, getLeoFunnel, getNewsCampaignStats, getOnboardingFunnelStats, getTodayVisitorsBySource, getWeekdayAverages, withTimeout } from "@/lib/admin/dashboardStats";
+import { FUNNEL_WINDOW_DAYS, getHeardFromStats, getLeoFunnel, getNewsCampaignStats, getOnboardingFunnelStats, getWeekdayAverages, withTimeout } from "@/lib/admin/dashboardStats";
 import { startOfTodayParis } from "@/lib/date";
 import { STEP_IDS, STEP_LABELS, type StepId } from "@/lib/onboarding/steps";
 import { LineAreaChart } from "@/components/admin/charts/LineAreaChart";
@@ -148,8 +148,7 @@ export default async function AdminDashboardPage({
   const ANNUALIZATION_BY_INTERVAL: Record<string, number> = { day: 365, week: 52, month: 12, year: 1 };
   const DEFAULT_MONTHLY_PRICE_CENTS = 799;
 
-  // Statistiques lourdes (graphique par jour de semaine, visiteurs du jour,
-  // entonnoir) : en cache, bornées, et jamais attendues plus de
+  // Statistiques lourdes (graphique par jour de semaine, entonnoir) : en cache, bornées, et jamais attendues plus de
   // HEAVY_STAT_BUDGET_MS (voir lib/admin/dashboardStats.ts). null = pas
   // disponible (erreur ou calcul trop long) : le bloc l'indique, le reste du
   // tableau de bord s'affiche normalement. Lancées avant le reste pour que
@@ -166,15 +165,7 @@ export default async function AdminDashboardPage({
   );
   const weekdayAveragesPromise = withTimeout(
     getWeekdayAverages(period).catch((err) => {
-      console.error("AdminDashboardPage: visits query failed", err);
-      return null;
-    }),
-    HEAVY_STAT_BUDGET_MS,
-    null,
-  );
-  const visitorsBySourcePromise = withTimeout(
-    getTodayVisitorsBySource(todayStart.toISOString(), UNKNOWN_SOURCE).catch((err) => {
-      console.error("AdminDashboardPage: visits today query failed", err);
+      console.error("AdminDashboardPage: weekday averages failed", err);
       return null;
     }),
     HEAVY_STAT_BUDGET_MS,
@@ -347,47 +338,36 @@ export default async function AdminDashboardPage({
     period,
   );
 
-  const [{ value: weekdayAverages }, { value: visitorsBySourceRows }, { value: leoFunnel }, { value: heardFrom }, { value: newsCampaign }, { value: series }, { value: stripeTotals }, { count: paidEverCount }] =
-    await Promise.all([weekdayAveragesPromise, visitorsBySourcePromise, leoFunnelPromise, heardFromPromise, newsCampaignPromise, seriesPromise, stripeTotalsPromise, paidEverPromise]);
+  const [{ value: weekdayAverages }, { value: leoFunnel }, { value: heardFrom }, { value: newsCampaign }, { value: series }, { value: stripeTotals }, { count: paidEverCount }] =
+    await Promise.all([weekdayAveragesPromise, leoFunnelPromise, heardFromPromise, newsCampaignPromise, seriesPromise, stripeTotalsPromise, paidEverPromise]);
   const paidEver = stripeTotals?.payers ?? paidEverCount ?? 0;
 
   // Chemin de Léo (SOP 26) : chaque taux comparé au bas de son benchmark ;
   // le maillon faible est celui qui en est le plus loin (un seul chantier).
   const leoRows = leoFunnel
     ? [
-        { step: "Arrivées sur l'accueil", from: null, to: leoFunnel.arrivals, bench: null, benchLabel: "vues TikTok → accueil ~1 % (voir TikTok)" },
-        { step: "Accueil → inscription commencée", from: leoFunnel.arrivals, to: leoFunnel.signupStarted, bench: null, benchLabel: "—" },
-        { step: "Accueil → inscription", from: leoFunnel.arrivals, to: leoFunnel.signups, bench: 0.3, benchLabel: "30-40 % (cible 50 %)" },
+        { step: "Inscrits", from: null, to: leoFunnel.signups, bench: null, benchLabel: "—" },
         { step: "Inscription → onboarding fini", from: leoFunnel.signups, to: leoFunnel.onboarded, bench: null, benchLabel: "—" },
         { step: "Inscription → paywall vu", from: leoFunnel.signups, to: leoFunnel.paywallViewed, bench: 0.9, benchLabel: "90 %" },
         { step: "Paywall vu → paiement ouvert", from: leoFunnel.paywallViewed, to: leoFunnel.checkoutOpened, bench: 0.6, benchLabel: "60-70 %" },
         { step: "Paywall vu → payé", from: leoFunnel.paywallViewed, to: leoFunnel.paid, bench: 0.1, benchLabel: "10-25 %" },
-        { step: "Arrivée → payé", from: leoFunnel.arrivals, to: leoFunnel.paid, bench: 0.03, benchLabel: "3-6 %" },
+        { step: "Inscription → payé", from: leoFunnel.signups, to: leoFunnel.paid, bench: null, benchLabel: "—" },
       ].map((r) => ({ ...r, rate: r.from ? r.to / r.from : null }))
     : [];
   const weakestStep = leoRows
     .filter((r) => r.bench !== null && r.rate !== null && r.rate < r.bench)
     .sort((a, b) => a.rate! / a.bench! - b.rate! / b.bench!)[0]?.step;
 
-  // Répartition par source aujourd'hui : seul moyen de répondre à "j'ai eu
-  // 106 clics TikTok mais 6 inscrits" avec des vraies données plutôt qu'une
-  // supposition -- visiteurs distincts (une même personne qui recharge la
-  // page ne doit pas compter deux fois) vs inscriptions, groupés par
-  // utm_source (voir migration 20260927000000_utm_tracking.sql).
-  const visitorsBySource = new Map(visitorsBySourceRows ?? []);
-  // Taux visites → comptes du jour (checklist « landing qui convertit » :
-  // 30-40 % en organique, cible 50 %). Visiteurs = somme par source, donc
-  // un visiteur venu par deux sources compte deux fois (léger sous-taux).
-  const visitorsToday = [...visitorsBySource.values()].reduce((sum, n) => sum + n, 0);
-  const pct = (signups: number, visitors: number) => (visitors > 0 ? `${Math.round((signups / visitors) * 100)} %` : "—");
+  // Inscriptions du jour par source (utm_source, voir migration
+  // 20260927000000_utm_tracking.sql). Uniquement des inscrits depuis le
+  // 25/10 (Nathan : « ne compte que les inscrits ») : plus de visiteurs.
+  const pct = (part: number, total: number) => (total > 0 ? `${Math.round((part / total) * 100)} %` : "—");
   const signupsBySource = new Map<string, number>();
   for (const p of signupsTodayRows ?? []) {
     const source = p.utm_source || UNKNOWN_SOURCE;
     signupsBySource.set(source, (signupsBySource.get(source) ?? 0) + 1);
   }
-  const acquisitionSources = [...new Set([...visitorsBySource.keys(), ...signupsBySource.keys()])].sort(
-    (a, b) => (visitorsBySource.get(b) ?? 0) - (visitorsBySource.get(a) ?? 0),
-  );
+  const acquisitionSources = [...signupsBySource.keys()].sort((a, b) => (signupsBySource.get(b) ?? 0) - (signupsBySource.get(a) ?? 0));
 
   // Revenu par source : la question n'est pas "combien de visites" mais
   // "combien rapporte chaque canal" (audit SEO du 07/10, section KPI). Cohorte
@@ -457,11 +437,6 @@ export default async function AdminDashboardPage({
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <StatTile label="En ligne maintenant" value={String(onlineNow ?? 0)} accent href="/admin/online" />
         <StatTile label="Inscrits aujourd'hui" value={String(signupsToday ?? 0)} accent />
-        <StatTile
-          label="Visites → comptes (jour) · cible 30-40 %"
-          value={visitorsBySourceRows === null ? "—" : `${pct(signupsToday ?? 0, visitorsToday)} (${signupsToday ?? 0}/${visitorsToday})`}
-          accent
-        />
         <StatTile label="Inscrits (7 jours)" value={String(signupsWeek ?? 0)} />
         <StatTile label="Total utilisateurs" value={String(totalUsers ?? 0)} />
         <StatTile label="Premium (avec bonus)" value={`${premiumTotal} (${totalUsers && totalUsers > 0 ? Math.round((premiumTotal / totalUsers) * 100) : 0}%)`} accent />
@@ -540,7 +515,7 @@ export default async function AdminDashboardPage({
 
       <SectionCard
         title="Chemin de Léo · 7 derniers jours"
-        subtitle="Vidéos → accueil → inscription → paywall → paiement. Un seul chantier à la fois : le maillon faible. Paywall vu et paiement ouvert sont mesurés depuis le 17/10 (7 jours complets le 24/10)."
+        subtitle="Inscription → onboarding → paywall → paiement, sur les inscrits seulement. Un seul chantier à la fois : le maillon faible. Paywall vu et paiement ouvert sont mesurés depuis le 17/10 (7 jours complets le 24/10)."
       >
         {leoFunnel === null ? (
           <p style={{ fontSize: 13, margin: 0 }}>Calcul indisponible pour le moment (base lente), réessaie dans quelques minutes.</p>
@@ -594,34 +569,27 @@ export default async function AdminDashboardPage({
 
       <SectionCard
         title="Acquisition — aujourd'hui"
-        subtitle="Visiteurs distincts et inscriptions du jour, par source. Liens ?utm_source=... (pubs, partages) + détection automatique du site d'origine : google / bing = référencement, chatgpt, perplexity, gemini, meta-ai, grok, deepseek, mistral = IA ; tiktok / instagram = réseaux. Inscriptions Google incluses depuis le 08/10. « direct / inconnu » = lien tapé ou appli sans référent. Visiteurs mis à jour toutes les 5 min (comptés depuis le 08/10 14 h 15 : avant, chaque préchargement de lien comptait comme une visite), inscriptions en direct."
+        subtitle="Inscriptions du jour, par source enregistrée à l'inscription. Liens ?utm_source=... (pubs, partages) + détection automatique du site d'origine : google / bing = référencement, chatgpt, perplexity, gemini, meta-ai, grok, deepseek, mistral = IA ; tiktok / instagram = réseaux. « direct / inconnu » = lien tapé ou appli sans référent. Uniquement des inscrits : les visiteurs sans compte (robots compris) ne sont pas comptés."
       >
-        {visitorsBySourceRows === null && (
-          <p style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "0 0 8px" }}>
-            Visiteurs du jour : calcul en cours, recharge dans une minute (inscriptions à jour).
-          </p>
-        )}
         {acquisitionSources.length === 0 ? (
           <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>
-            Aucune visite aujourd&apos;hui.
+            Aucun inscrit aujourd&apos;hui.
           </p>
         ) : (
           <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ textAlign: "left", color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
                 <th style={{ padding: "4px 0", fontWeight: 500 }}>Source</th>
-                <th style={{ padding: "4px 0", fontWeight: 500 }}>Visiteurs</th>
                 <th style={{ padding: "4px 0", fontWeight: 500 }}>Inscriptions</th>
-                <th style={{ padding: "4px 0", fontWeight: 500 }}>Conversion</th>
+                <th style={{ padding: "4px 0", fontWeight: 500 }}>Part</th>
               </tr>
             </thead>
             <tbody>
               {acquisitionSources.map((source) => (
                 <tr key={source} style={{ borderTop: "1px solid var(--color-divider)" }}>
                   <td style={{ padding: "6px 0", fontWeight: source === UNKNOWN_SOURCE ? 400 : 700 }}>{source}</td>
-                  <td style={{ padding: "6px 0" }}>{visitorsBySource.get(source) ?? 0}</td>
                   <td style={{ padding: "6px 0" }}>{signupsBySource.get(source) ?? 0}</td>
-                  <td style={{ padding: "6px 0" }}>{pct(signupsBySource.get(source) ?? 0, visitorsBySource.get(source) ?? 0)}</td>
+                  <td style={{ padding: "6px 0" }}>{pct(signupsBySource.get(source) ?? 0, signupsToday ?? 0)}</td>
                 </tr>
               ))}
             </tbody>
@@ -711,8 +679,8 @@ export default async function AdminDashboardPage({
       </SectionCard>
 
       <SectionCard
-        title="Jours avec le plus de monde"
-        subtitle="Visiteurs distincts par jour de semaine, sur la période sélectionnée, depuis le 08/10 14 h 15 (avant, chaque préchargement de lien comptait comme une visite). Recalculé toutes les heures."
+        title="Jours avec le plus d'inscrits"
+        subtitle="Inscrits en moyenne par jour de semaine, sur la période sélectionnée (jours avec au moins une inscription). Recalculé toutes les heures."
       >
         {weekdayAverages ? (
           <WeekdayBarChart averages={weekdayAverages} />

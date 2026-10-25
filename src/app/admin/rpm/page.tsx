@@ -134,7 +134,7 @@ export default async function AdminRpmPage({ searchParams }: { searchParams: Pro
           <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse", whiteSpace: "nowrap" }}>
             <thead>
               <tr style={{ textAlign: "left", color: muted }}>
-                {["7 jours jusqu'au", "Source", "Vues", "Arrivées", "Inscrits", "Inscrits / 1000 vues", "Payants", "Revenu 1er paiement", "Revenu / inscrit", "RPM"].map(
+                {["7 jours jusqu'au", "Source", "Vues", "Inscrits", "Inscrits / 1000 vues", "Payants", "Revenu 1er paiement", "Revenu / inscrit", "RPM"].map(
                   (h) => (
                     <th key={h} style={{ padding: "4px 10px 4px 0", fontWeight: 500 }}>
                       {h}
@@ -148,7 +148,7 @@ export default async function AdminRpmPage({ searchParams }: { searchParams: Pro
                 .filter((r) => dates.includes(r.recorded_on))
                 .map((r) => {
                   const stats = windows.get(r.recorded_on);
-                  const s = stats?.[r.source] ?? { arrivals: 0, signups: 0, firstPaymentCents: 0, payers: 0 };
+                  const s = stats?.[r.source] ?? { signups: 0, firstPaymentCents: 0, payers: 0 };
                   const perThousand = r.views > 0 ? r.views / 1000 : null;
                   const rpm = perThousand ? s.firstPaymentCents / 100 / perThousand : null;
                   return (
@@ -157,12 +157,11 @@ export default async function AdminRpmPage({ searchParams }: { searchParams: Pro
                       <td style={{ padding: "6px 10px 6px 0", fontWeight: 700 }}>{r.source}</td>
                       <td style={{ padding: "6px 10px 6px 0" }}>{r.views.toLocaleString("fr-FR")}</td>
                       {stats === null ? (
-                        <td colSpan={7} style={{ padding: "6px 0", color: muted }}>
+                        <td colSpan={6} style={{ padding: "6px 0", color: muted }}>
                           Calcul indisponible (base lente), recharge dans quelques minutes.
                         </td>
                       ) : (
                         <>
-                          <td style={{ padding: "6px 10px 6px 0" }}>{s.arrivals}</td>
                           <td style={{ padding: "6px 10px 6px 0" }}>{s.signups}</td>
                           <td style={{ padding: "6px 10px 6px 0" }}>{perThousand ? (s.signups / perThousand).toFixed(2) : "—"}</td>
                           <td style={{ padding: "6px 10px 6px 0" }}>{s.payers}</td>
@@ -193,7 +192,7 @@ export default async function AdminRpmPage({ searchParams }: { searchParams: Pro
           <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse", whiteSpace: "nowrap" }}>
             <thead>
               <tr style={{ textAlign: "left", color: muted }}>
-                {["Heure", "Arrivées", "Inscrits", "Paiements", "Montant", "Sources principales"].map((h) => (
+                {["Heure", "Inscrits", "Paiements", "Montant", "Sources des inscrits"].map((h) => (
                   <th key={h} style={{ padding: "4px 12px 4px 0", fontWeight: 500 }}>
                     {h}
                   </th>
@@ -212,7 +211,6 @@ export default async function AdminRpmPage({ searchParams }: { searchParams: Pro
                   <td style={{ padding: "5px 12px 5px 0", fontWeight: 700 }}>
                     {new Date(h.hour).toLocaleString("fr-FR", { timeZone: "Europe/Paris", weekday: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                   </td>
-                  <td style={{ padding: "5px 12px 5px 0" }}>{h.arrivals}</td>
                   <td style={{ padding: "5px 12px 5px 0" }}>{h.signups}</td>
                   <td style={{ padding: "5px 12px 5px 0", fontWeight: h.payments > 0 ? 800 : 400 }}>{h.payments}</td>
                   <td style={{ padding: "5px 12px 5px 0" }}>{h.cents > 0 ? euros(h.cents) : "—"}</td>

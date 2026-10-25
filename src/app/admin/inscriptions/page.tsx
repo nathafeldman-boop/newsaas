@@ -4,16 +4,17 @@ import { BarChart } from "@/components/admin/cockpit/BarChart";
 import { LineChart } from "@/components/admin/cockpit/LineChart";
 import { SERIES_COLORS } from "@/components/admin/cockpit/chartUtils";
 import { AutoRefresh } from "@/components/admin/AutoRefresh";
-import { int, pct, startOfParisDay } from "@/lib/admin/cockpit/format";
+import { int, pct } from "@/lib/admin/cockpit/format";
 import { nowMs } from "@/lib/admin/cockpit/load";
-import { signupsByDay, visitorsByDaySource } from "@/lib/admin/traffic";
-import { DAY_MS, SIGNUPS_SINCE, VISITS_RELIABLE_SINCE, dayKey, daysBetween, signupTrend, summarizeTrend, weeklyTotals } from "@/lib/admin/trafficStats";
+import { signupsByDay } from "@/lib/admin/traffic";
+import { SIGNUPS_SINCE, dayKey, daysBetween, signupTrend, summarizeTrend, weeklyTotals } from "@/lib/admin/trafficStats";
 import { requireAdminPage } from "@/lib/admin/accessCode";
 
 // « Inscriptions jour par jour » (24/10, demande de Nathan) : tous les
 // comptes créés depuis le 4 septembre 2026, un jour par ligne, pour voir
 // quand ça monte, quand ça baisse et le meilleur jour. Comptes : profils
-// Supabase (en cache 5 min) ; visiteurs : site_visits, depuis le 08/10.
+// Supabase (en cache 5 min). Uniquement des inscrits depuis le 25/10 : plus
+// de colonne visiteurs (Nathan : « ne compte que les inscrits »).
 export const maxDuration = 60;
 
 const WEEKDAYS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
@@ -31,12 +32,8 @@ export default async function SignupsPage() {
   await requireAdminPage();
   const now = nowMs();
   const todayKey = dayKey(now);
-  const endIso = new Date(startOfParisDay(now) + DAY_MS).toISOString();
 
-  const [signupDays, visits] = await Promise.all([
-    signupsByDay(new Date(SIGNUPS_SINCE).toISOString()).catch((err) => (console.error("inscriptions: lecture des profils", err), null)),
-    visitorsByDaySource(new Date(VISITS_RELIABLE_SINCE).toISOString(), endIso).catch((err) => (console.error("inscriptions: visiteurs", err), null)),
-  ]);
+  const signupDays = await signupsByDay(new Date(SIGNUPS_SINCE).toISOString()).catch((err) => (console.error("inscriptions: lecture des profils", err), null));
 
   if (!signupDays) {
     return (
@@ -53,8 +50,6 @@ export default async function SignupsPage() {
   const trend = signupTrend(days, signupDays, todayKey);
   const summary = summarizeTrend(trend);
   const weeks = weeklyTotals(trend);
-  const visitorsOn = new Map<string, number>();
-  for (const r of visits?.rows ?? []) visitorsOn.set(r.day, (visitorsOn.get(r.day) ?? 0) + r.visitors);
   const maxDay = summary.record?.signups ?? 0;
   const bestWeekday = summary.weekdayAvg.reduce<number | null>((best, v, i) => (v !== null && (best === null || v > (summary.weekdayAvg[best] ?? -1)) ? i : best), null);
   const weekDelta =
@@ -212,7 +207,7 @@ export default async function SignupsPage() {
 
       <Section
         title="Jour par jour"
-        subtitle="Le plus récent en haut. Clique sur une date pour le détail du jour. Source n°1 : canal le plus fréquent parmi les inscrits du jour (lien suivi à l'inscription). Visiteurs : comptés depuis le 08/10, une fois le SQL du 24/10 exécuté."
+        subtitle="Le plus récent en haut. Clique sur une date pour le détail du jour. Source n°1 : canal le plus fréquent parmi les inscrits du jour (lien suivi à l'inscription)."
       >
         <Card>
           <div className="cockpit-scroll" style={{ maxHeight: 720 }}>
@@ -226,16 +221,11 @@ export default async function SignupsPage() {
                   <th>Cumul</th>
                   <th>Onboarding fini</th>
                   <th>Source n°1</th>
-                  <th>Visiteurs</th>
-                  <th>Visite → inscrit</th>
                 </tr>
               </thead>
               <tbody>
                 {[...trend].reverse().map((d) => {
                   const isRecord = summary.record?.key === d.key;
-                  const v = visitorsOn.get(d.key);
-                  // Jours entiers seulement : le 08/10 n'est fiable qu'à partir de 12 h 15.
-                  const visitsKnown = !!visits && Date.parse(`${d.key}T00:00:00Z`) > VISITS_RELIABLE_SINCE;
                   return (
                     <tr key={d.key} style={isRecord ? { background: "color-mix(in srgb, #0f9c56 10%, transparent)" } : undefined}>
                       <td>
@@ -259,8 +249,6 @@ export default async function SignupsPage() {
                       <td>{int(d.cumul)}</td>
                       <td>{d.signups > 0 ? `${int(d.onboarded)} (${pct(d.onboarded / d.signups, 0)})` : "—"}</td>
                       <td>{d.topSource ? `${d.topSource.label} (${int(d.topSource.count)})` : "—"}</td>
-                      <td>{visitsKnown && v !== undefined ? int(v) : "—"}</td>
-                      <td>{visitsKnown && v ? pct(d.signups / v, 0) : "—"}</td>
                     </tr>
                   );
                 })}

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Insufficient, Kpi, KpiGrid, Section } from "@/components/admin/cockpit/Kpi";
-import { int, startOfParisDay } from "@/lib/admin/cockpit/format";
-import { onlineNow, signupsByDay, visitorsBySource } from "@/lib/admin/traffic";
+import { int, pct, startOfParisDay } from "@/lib/admin/cockpit/format";
+import { onlineNow, signupsByDay } from "@/lib/admin/traffic";
 import { DAY_MS, SIGNUPS_SINCE, dayKey, mergeBySource } from "@/lib/admin/trafficStats";
 
 // Bandeau « Aujourd'hui, en direct » en tête de la vue d'ensemble (24/10) :
@@ -13,14 +13,13 @@ export async function TodayLive({ now }: { now: number }) {
   const todayStart = startOfParisDay(now);
   const today = dayKey(now);
   const yesterday = dayKey(todayStart - DAY_MS / 2);
-  const [bySource, online, signupDays] = await Promise.all([
-    visitorsBySource(new Date(todayStart).toISOString(), new Date(todayStart + DAY_MS).toISOString()).catch(() => null),
+  const [online, signupDays] = await Promise.all([
     onlineNow(now, todayStart).catch(() => null),
     signupsByDay(new Date(SIGNUPS_SINCE).toISOString()).catch(() => null),
   ]);
-  const rows = mergeBySource(bySource?.rows ?? null, signupDays ?? [], null, new Set([today]));
-  const email = rows.filter((r) => r.group === "E-mails Stageio").reduce((s, r) => s + r.visitors, 0);
+  const rows = mergeBySource(null, signupDays ?? [], null, new Set([today]));
   const signupsToday = signupDays?.find((d) => d.day === today)?.signups ?? 0;
+  const onboardedToday = signupDays?.find((d) => d.day === today)?.onboarded ?? 0;
   const signupsYesterday = signupDays?.find((d) => d.day === yesterday)?.signups ?? 0;
   const top = rows
     .filter((r) => r.signups > 0)
@@ -70,11 +69,13 @@ export async function TodayLive({ now }: { now: number }) {
         />
         <Kpi
           accent="violet"
-          href="/admin/trafic/source/email"
-          label="Venus d'un e-mail"
-          value={bySource ? email : <Insufficient />}
-          definition="Personnes arrivées aujourd'hui par un lien d'un e-mail Stageio (série, alertes, relances : utm_source=email). Ces e-mails ne partent qu'aux inscrits."
-          source="Supabase, site_visits"
+          href={`/admin/inscriptions/${today}`}
+          cta="Leur parcours"
+          label="Onboarding terminé aujourd'hui"
+          value={signupDays ? onboardedToday : <Insufficient />}
+          sub={signupDays && signupsToday > 0 ? `${pct(onboardedToday / signupsToday, 0)} des inscrits du jour` : undefined}
+          definition="Inscrits du jour qui ont fini le questionnaire de départ (étape juste avant le paywall)."
+          source="Supabase, profils.onboarding_completed"
         />
       </KpiGrid>
     </Section>

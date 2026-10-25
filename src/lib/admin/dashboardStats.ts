@@ -6,77 +6,17 @@ import { fetchAllRows, POSTGREST_MAX_ROWS } from "@/lib/supabase/public";
 import { NEWS_CAMPAIGN_EVENT, NEWS_UTM_CAMPAIGN, NEWS_VARIANTS, newsUtmCampaign } from "@/lib/campaigns/relanceOffres";
 
 // Statistiques lourdes du tableau de bord : bornées, en cache, et jamais
-// bloquantes.
+// bloquantes (la page n'attend jamais plus de quelques secondes :
+// withTimeout).
 //
-// Historique (08/10) : jusqu'à 12 h 10 UTC, le proxy écrivait une ligne
-// site_visits pour chaque préchargement de lien (une cinquantaine par page
-// vue). La table contient donc des millions de lignes avant cette heure-là.
-// Lire « toutes les visites de la période » pour le graphique par jour de
-// semaine a fait tomber /admin en délai dépassé (300 s) à 13 h puis à 18 h 21.
-// Désormais :
-// - on ne lit que les visites propres, depuis VISITS_CLEAN_SINCE ;
-// - au plus MAX_ROWS lignes, en fenêtres (jour, ou heure pour aujourd'hui)
-//   lues 6 à la fois ;
-// - résultat en cache (1 h graphique, 5 min sources du jour) ;
-// - et la page n'attend jamais plus de quelques secondes (withTimeout).
-// Le vrai correctif est une fonction SQL d'agrégation (proposée dans
-// SEO_ROADMAP.md, migration à valider par Nathan).
+// Depuis le 25/10, les visiteurs anonymes ne sont plus comptés ici (Nathan :
+// « les visiteurs, ça peut être des robots Google ; ne compte que les
+// inscrits ») : jours de semaine, chemin de Léo, RPM et heure par heure se
+// calculent sur les inscrits (profils) et les paiements. Seuls les clics
+// des e-mails (envoyés aux inscrits) lisent encore site_visits.
 
-export const VISITS_CLEAN_SINCE = new Date("2026-10-08T12:15:00Z");
-
-const CONCURRENCY = 6;
-const MAX_ROWS = 100_000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
-
-type Admin = ReturnType<typeof createAdminClient>;
-
-// Visites de [from, to), par curseur sur created_at (index
-// site_visits_created_at_idx). Deux visites à la même microseconde à la
-// jonction de deux pages : l'une peut être sautée, négligeable ici.
-async function readWindow<T extends { created_at: string }>(
-  admin: Admin,
-  columns: string,
-  from: Date,
-  to: Date,
-  budget: { rows: number },
-): Promise<T[]> {
-  const rows: T[] = [];
-  let after: string | null = null;
-  while (budget.rows < MAX_ROWS) {
-    let query = admin.from("site_visits").select(columns).lt("created_at", to.toISOString());
-    query = after ? query.gt("created_at", after) : query.gte("created_at", from.toISOString());
-    const { data, error } = await query.order("created_at").limit(POSTGREST_MAX_ROWS);
-    if (error) throw new Error(error.message);
-    const page = (data ?? []) as unknown as T[];
-    rows.push(...page);
-    budget.rows += page.length;
-    if (page.length < POSTGREST_MAX_ROWS) break;
-    after = page[page.length - 1].created_at;
-  }
-  return rows;
-}
-
-export async function readVisits<T extends { created_at: string }>(columns: string, since: Date, until: Date, windowMs: number): Promise<T[]> {
-  const admin = createAdminClient();
-  const start = Math.max(since.getTime(), VISITS_CLEAN_SINCE.getTime());
-  const windows: [Date, Date][] = [];
-  for (let t = start; t < until.getTime(); t += windowMs) {
-    windows.push([new Date(t), new Date(Math.min(t + windowMs, until.getTime()))]);
-  }
-  const budget = { rows: 0 };
-  const results: T[][] = new Array(windows.length).fill([]);
-  let next = 0;
-  await Promise.all(
-    Array.from({ length: Math.min(CONCURRENCY, windows.length) }, async () => {
-      while (next < windows.length && budget.rows < MAX_ROWS) {
-        const i = next++;
-        results[i] = await readWindow<T>(admin, columns, windows[i][0], windows[i][1], budget);
-      }
-    }),
-  );
-  return results.flat();
-}
 
 // "tout" est borné à 180 jours, comme le reste du tableau de bord.
 const ALL_TIME_DAYS = 180;
@@ -113,32 +53,15 @@ export const getWeekdayAverages = unstable_cache(
   guarded("weekday averages", async (period: Period): Promise<number[]> => {
     const until = new Date();
     const since = periodStart(period) ?? new Date(until.getTime() - ALL_TIME_DAYS * DAY_MS);
-    const visits = await readVisits<{ visitor_id: string; created_at: string }>("visitor_id, created_at", since, until, DAY_MS);
-    return computeWeekdayAverages(visits);
-  }),
-  ["admin-weekday-averages-v2"],
-  { revalidate: 3600 },
-);
-
-// Visiteurs distincts du jour par source (utm_source), du plus gros au plus petit.
-export const getTodayVisitorsBySource = unstable_cache(
-  guarded("today visitors by source", async (todayStartIso: string, unknownLabel: string): Promise<[string, number][]> => {
-    const visits = await readVisits<{ visitor_id: string; utm_source: string | null; created_at: string }>(
-      "visitor_id, utm_source, created_at",
-      new Date(todayStartIso),
-      new Date(),
-      HOUR_MS,
+    const db = createAdminClient();
+    const signups = await fetchAllRows<{ id: string; created_at: string }>((from, to) =>
+      db.from("profiles").select("id, created_at").gte("created_at", since.toISOString()).order("created_at").range(from, to),
     );
-    const bySource = new Map<string, Set<string>>();
-    for (const v of visits) {
-      const source = v.utm_source || unknownLabel;
-      if (!bySource.has(source)) bySource.set(source, new Set());
-      bySource.get(source)!.add(v.visitor_id);
-    }
-    return [...bySource.entries()].map(([source, visitors]): [string, number] => [source, visitors.size]).sort((a, b) => b[1] - a[1]);
+    // Un inscrit compte pour une personne (même calcul qu'avant pour les visiteurs).
+    return computeWeekdayAverages(signups.map((p) => ({ visitor_id: p.id, created_at: p.created_at })));
   }),
-  ["admin-today-visitors-by-source-v2"],
-  { revalidate: 300 },
+  ["admin-weekday-averages-v3"],
+  { revalidate: 3600 },
 );
 
 // Entonnoir d'onboarding sur les 30 derniers jours (22/10 : sur tout
@@ -187,13 +110,11 @@ export async function withTimeout<T>(promise: Promise<T>, ms: number, fallback: 
 }
 
 // Chemin de Léo (SOP 26, 17/10) : les taux de l'entonnoir sur les inscrits
-// des 7 derniers jours, à comparer aux benchmarks de la fiche. Arrivées =
-// visiteurs distincts de l'accueil (/). paywall_viewed et checkout_opened
-// sont notés depuis le 17/10 (page /premium et création de la session
-// Stripe). Payé = au moins un paiement réel (total_paid_cents > 0).
+// des 7 derniers jours, à comparer aux benchmarks de la fiche. Inscrits
+// seulement depuis le 25/10 (plus d'arrivées sur l'accueil). paywall_viewed
+// et checkout_opened sont notés depuis le 17/10 (page /premium et création
+// de la session Stripe). Payé = au moins un paiement réel.
 export type LeoFunnel = {
-  arrivals: number;
-  signupStarted: number;
   signups: number;
   onboarded: number;
   paywallViewed: number;
@@ -205,10 +126,7 @@ export const getLeoFunnel = unstable_cache(
   guarded("leo funnel", async (): Promise<LeoFunnel> => {
     const since = new Date(Date.now() - 7 * DAY_MS);
     const admin = createAdminClient();
-    const [visits, { data: signups, error }] = await Promise.all([
-      readVisits<{ visitor_id: string; path: string; created_at: string }>("visitor_id, path, created_at", since, new Date(), DAY_MS),
-      admin.from("profiles").select("id, onboarding_completed, total_paid_cents").gte("created_at", since.toISOString()).limit(10_000),
-    ]);
+    const { data: signups, error } = await admin.from("profiles").select("id, onboarding_completed, total_paid_cents").gte("created_at", since.toISOString()).limit(10_000);
     if (error) throw new Error(error.message);
     const ids = (signups ?? []).map((p) => p.id);
     const viewed = new Set<string>();
@@ -225,9 +143,6 @@ export const getLeoFunnel = unstable_cache(
       for (const e of events ?? []) (e.event_type === "paywall_viewed" ? viewed : opened).add(e.user_id);
     }
     return {
-      arrivals: new Set(visits.filter((v) => v.path === "/").map((v) => v.visitor_id)).size,
-      // Sign-up commencé (SOP 16) : visiteurs distincts du formulaire d'inscription.
-      signupStarted: new Set(visits.filter((v) => v.path === "/inscription").map((v) => v.visitor_id)).size,
       signups: ids.length,
       onboarded: (signups ?? []).filter((p) => p.onboarding_completed).length,
       paywallViewed: viewed.size,
@@ -235,7 +150,7 @@ export const getLeoFunnel = unstable_cache(
       paid: (signups ?? []).filter((p) => p.total_paid_cents > 0).length,
     };
   }),
-  ["admin-leo-funnel-v2"],
+  ["admin-leo-funnel-v3"],
   { revalidate: 1800 },
 );
 
@@ -377,7 +292,7 @@ export const getNewsCampaignStats = unstable_cache(
 // distincts), inscrits, et revenu du PREMIER paiement uniquement (jamais la
 // LTV : « comme ça tu es sûr d'être en bénéfice sur la suite »), attribué à
 // la source d'inscription du compte.
-export type RpmWindowStats = Record<string, { arrivals: number; signups: number; firstPaymentCents: number; payers: number }>;
+export type RpmWindowStats = Record<string, { signups: number; firstPaymentCents: number; payers: number }>;
 
 export const getRpmWindowStats = unstable_cache(
   guarded("rpm window", async (endIso: string): Promise<RpmWindowStats> => {
@@ -385,10 +300,9 @@ export const getRpmWindowStats = unstable_cache(
     const start = new Date(end.getTime() - 7 * DAY_MS);
     const admin = createAdminClient();
     const stats: RpmWindowStats = {};
-    const entry = (source: string) => (stats[source] ??= { arrivals: 0, signups: 0, firstPaymentCents: 0, payers: 0 });
+    const entry = (source: string) => (stats[source] ??= { signups: 0, firstPaymentCents: 0, payers: 0 });
 
-    const [visits, { data: signups, error: signupsError }, { data: invoices, error: invoicesError }] = await Promise.all([
-      readVisits<{ visitor_id: string; utm_source: string | null; created_at: string }>("visitor_id, utm_source, created_at", start, end, DAY_MS),
+    const [{ data: signups, error: signupsError }, { data: invoices, error: invoicesError }] = await Promise.all([
       admin.from("profiles").select("utm_source").gte("created_at", start.toISOString()).lt("created_at", end.toISOString()).limit(20_000),
       admin
         .from("stripe_processed_invoices")
@@ -402,13 +316,6 @@ export const getRpmWindowStats = unstable_cache(
     if (signupsError) throw new Error(signupsError.message);
     if (invoicesError) throw new Error(invoicesError.message);
 
-    const visitorsBySource = new Map<string, Set<string>>();
-    for (const v of visits) {
-      if (!v.utm_source) continue;
-      if (!visitorsBySource.has(v.utm_source)) visitorsBySource.set(v.utm_source, new Set());
-      visitorsBySource.get(v.utm_source)!.add(v.visitor_id);
-    }
-    for (const [source, visitors] of visitorsBySource) entry(source).arrivals = visitors.size;
     for (const p of signups ?? []) if (p.utm_source) entry(p.utm_source).signups += 1;
 
     // Premier paiement = première facture du client dans la fenêtre, sans
@@ -434,17 +341,16 @@ export const getRpmWindowStats = unstable_cache(
     }
     return stats;
   }),
-  ["admin-rpm-window-v1"],
+  ["admin-rpm-window-v2"],
   { revalidate: 1800 },
 );
 
-// Attribution par corrélation (SOP 17) : heure par heure sur 72 h, arrivées,
-// inscrits et paiements, pour rapprocher un pic de revenu d'un pic de vues
+// Attribution par corrélation (SOP 17) : heure par heure sur 72 h, inscrits
+// (et leurs sources) et paiements, pour rapprocher un pic de revenu d'un pic de vues
 // (« une vidéo qui monte à 17 h et un spike de revenu à 17 h : le revenu
 // vient d'elle »). Paiements limités aux clients Stageio (compte partagé).
 export type HourlyAttribution = {
   hour: string;
-  arrivals: number;
   signups: number;
   payments: number;
   cents: number;
@@ -455,9 +361,8 @@ export const getHourlyAttribution = unstable_cache(
   guarded("hourly attribution", async (): Promise<HourlyAttribution[]> => {
     const since = new Date(Date.now() - 72 * HOUR_MS);
     const admin = createAdminClient();
-    const [visits, { data: signups, error: signupsError }, { data: invoices, error: invoicesError }] = await Promise.all([
-      readVisits<{ visitor_id: string; utm_source: string | null; created_at: string }>("visitor_id, utm_source, created_at", since, new Date(), HOUR_MS),
-      admin.from("profiles").select("created_at").gte("created_at", since.toISOString()).limit(20_000),
+    const [{ data: signups, error: signupsError }, { data: invoices, error: invoicesError }] = await Promise.all([
+      admin.from("profiles").select("created_at, utm_source").gte("created_at", since.toISOString()).limit(20_000),
       admin.from("stripe_processed_invoices").select("stripe_customer_id, amount_cents, created_at").gte("created_at", since.toISOString()).gt("amount_cents", 0).limit(5_000),
     ]);
     if (signupsError) throw new Error(signupsError.message);
@@ -476,22 +381,18 @@ export const getHourlyAttribution = unstable_cache(
       d.setUTCMinutes(0, 0, 0);
       return d.toISOString();
     };
-    const hours = new Map<string, { visitors: Set<string>; bySource: Map<string, Set<string>>; signups: number; payments: number; cents: number }>();
+    const hours = new Map<string, { bySource: Map<string, number>; signups: number; payments: number; cents: number }>();
     const bucket = (iso: string) => {
       const key = hourKey(iso);
       let b = hours.get(key);
-      if (!b) hours.set(key, (b = { visitors: new Set(), bySource: new Map(), signups: 0, payments: 0, cents: 0 }));
+      if (!b) hours.set(key, (b = { bySource: new Map(), signups: 0, payments: 0, cents: 0 }));
       return b;
     };
-    for (const v of visits) {
-      const b = bucket(v.created_at);
-      b.visitors.add(v.visitor_id);
-      if (v.utm_source) {
-        if (!b.bySource.has(v.utm_source)) b.bySource.set(v.utm_source, new Set());
-        b.bySource.get(v.utm_source)!.add(v.visitor_id);
-      }
+    for (const p of signups ?? []) {
+      const b = bucket(p.created_at);
+      b.signups += 1;
+      if (p.utm_source) b.bySource.set(p.utm_source, (b.bySource.get(p.utm_source) ?? 0) + 1);
     }
-    for (const p of signups ?? []) bucket(p.created_at).signups += 1;
     for (const inv of invoices ?? []) {
       if (!owned.has(inv.stripe_customer_id)) continue;
       const b = bucket(inv.created_at);
@@ -502,13 +403,12 @@ export const getHourlyAttribution = unstable_cache(
       .sort((a, b) => b[0].localeCompare(a[0]))
       .map(([hour, b]) => ({
         hour,
-        arrivals: b.visitors.size,
         signups: b.signups,
         payments: b.payments,
         cents: b.cents,
-        topSources: [...b.bySource.entries()].sort((x, y) => y[1].size - x[1].size).slice(0, 2).map(([s, set]) => `${s} (${set.size})`),
+        topSources: [...b.bySource.entries()].sort((x, y) => y[1] - x[1]).slice(0, 2).map(([s, n]) => `${s} (${n})`),
       }));
   }),
-  ["admin-hourly-attribution-v1"],
+  ["admin-hourly-attribution-v2"],
   { revalidate: 600 },
 );
