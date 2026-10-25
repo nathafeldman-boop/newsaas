@@ -21,7 +21,9 @@ import type { SubRecord } from "@/lib/admin/cockpit/types";
 import { requireAdminPage } from "@/lib/admin/accessCode";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { KEEP_PREMIUM_EVENT } from "@/lib/stripe/keepPremium";
-import { sendKeepPremiumRemindersAction } from "./actions";
+import { WINBACK_EVENT } from "@/lib/churn/outreach";
+import { WINBACK_WINDOW_DAYS, winbackCandidates } from "@/lib/churn/candidates";
+import { sendKeepPremiumRemindersAction, sendWinbackMessagesAction } from "./actions";
 
 // Abonnements et churn : qui reste, qui part, quand et comment. Règles
 // d'alerte fixes, modifiables ici.
@@ -74,7 +76,7 @@ const OUTCOME_TONE: Record<RenewalOutcome, string> = {
 export default async function AbonnementsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ p?: string; mois?: string; statut?: string; formule?: string; activite?: string; rappel?: string }>;
+  searchParams: Promise<{ p?: string; mois?: string; statut?: string; formule?: string; activite?: string; rappel?: string; retour?: string }>;
 }) {
   await requireAdminPage();
   const params = await searchParams;
@@ -207,15 +209,27 @@ export default async function AbonnementsPage({
     .filter((m) => m >= firstMonth);
   // Rappel « Garder mon Premium » : abonnés à résiliation programmée pas encore prévenus.
   const scheduledSubs = paid.filter((s) => s.userId && statusOf(s, now) === "programme");
-  const { data: reminded } = await createAdminClient()
-    .from("user_events")
-    .select("metadata")
-    .eq("event_type", KEEP_PREMIUM_EVENT)
-    .in("user_id", [...new Set(scheduledSubs.map((s) => s.userId!))])
-    .limit(2000);
+  const departed = winbackCandidates(snap, now);
+  const [{ data: reminded }, { data: wonBack }] = await Promise.all([
+    createAdminClient()
+      .from("user_events")
+      .select("metadata")
+      .eq("event_type", KEEP_PREMIUM_EVENT)
+      .in("user_id", [...new Set(scheduledSubs.map((s) => s.userId!))])
+      .limit(2000),
+    createAdminClient()
+      .from("user_events")
+      .select("user_id")
+      .eq("event_type", WINBACK_EVENT)
+      .in("user_id", departed.map((d) => d.userId))
+      .limit(2000),
+  ]);
   const remindedSubs = new Set((reminded ?? []).map((e) => (e.metadata as { subscriptionId?: string } | null)?.subscriptionId));
   const toRemind = scheduledSubs.filter((s) => !remindedSubs.has(s.id)).length;
+  const wonBackUsers = new Set((wonBack ?? []).map((e) => e.user_id));
+  const toWinBack = departed.filter((d) => !wonBackUsers.has(d.userId)).length;
   const [sentNow, skippedNow] = (params.rappel ?? "").split("-").map(Number);
+  const [winSent, winSkipped] = (params.retour ?? "").split("-").map(Number);
   const monthName = (key: string) => new Date(`${key}-15T12:00:00Z`).toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
 
   return (
@@ -226,10 +240,10 @@ export default async function AbonnementsPage({
       </p>
       {scheduledSubs.length > 0 && (
         <div style={{ marginBottom: 12 }}>
-          <Card title={`${scheduledSubs.length} résiliation(s) programmée(s) : leur proposer de garder Premium`}>
+          <Card title={`${scheduledSubs.length} résiliation(s) programmée(s) : le message de Nathan`}>
             <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5 }}>
-              Un e-mail à chacun : la date où son Premium s&apos;arrête, ce qu&apos;il perd ensuite, et un bouton « Garder mon Premium » qui annule la résiliation en un clic, au même prix (rien n&apos;est payé tout de
-              suite). Une seule fois par abonnement ; chaque résiliation est revérifiée dans Stripe juste avant l&apos;envoi.
+              Un e-mail signé Nathan : la date de fin, le questionnaire « pourquoi j&apos;arrête », des compromis (garder Premium un mois de plus au même prix, accès à vie, rester en gratuit, réponse perso), les
+              nouveautés, et « on continue le mois prochain ? ». Envoyé automatiquement à chaque nouvelle résiliation ; ce bouton sert pour celles d&apos;avant. Une seule fois par abonnement.
             </p>
             {params.rappel === "erreur" ? (
               <p style={{ margin: "8px 0 0", fontSize: 13, color: "#b42318" }}>Lecture Stripe impossible, rien n&apos;a été envoyé.</p>
@@ -241,11 +255,37 @@ export default async function AbonnementsPage({
             {toRemind > 0 ? (
               <form action={sendKeepPremiumRemindersAction} style={{ marginTop: 10 }}>
                 <button type="submit" className="btn btn-primary" style={{ fontSize: 13 }}>
-                  Envoyer le rappel à {toRemind} abonné(s)
+                  Envoyer le message à {toRemind} abonné(s)
                 </button>
               </form>
             ) : (
-              <p style={{ margin: "8px 0 0", fontSize: 13, color: "var(--color-neutral-600)" }}>Tous ont déjà reçu le rappel.</p>
+              <p style={{ margin: "8px 0 0", fontSize: 13, color: "var(--color-neutral-600)" }}>Tous ont déjà reçu le message.</p>
+            )}
+          </Card>
+        </div>
+      )}
+      {departed.length > 0 && (
+        <div style={{ marginBottom: 12 }}>
+          <Card title={`${departed.length} abonné(s) parti(s) ces ${WINBACK_WINDOW_DAYS} derniers jours : leur demander pourquoi, et s'ils reviennent`}>
+            <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5 }}>
+              Un e-mail signé Nathan : « ton alternance, tu en es où ? », le questionnaire, les nouveautés, et « tu veux réessayer le mois prochain ? ». Pas envoyé à ceux qui sont revenus, ont un accès à vie, ont dit avoir
+              trouvé leur alternance, se sont désinscrits des e-mails ou viennent de recevoir le message de résiliation. Une seule fois par compte.
+            </p>
+            {params.retour === "erreur" ? (
+              <p style={{ margin: "8px 0 0", fontSize: 13, color: "#b42318" }}>Lecture Stripe impossible, rien n&apos;a été envoyé.</p>
+            ) : params.retour ? (
+              <p style={{ margin: "8px 0 0", fontSize: 13, fontWeight: 700 }}>
+                ✓ {int(winSent || 0)} e-mail(s) envoyé(s){winSkipped ? ` · ${int(winSkipped)} ignoré(s) (exclus ou déjà prévenus)` : ""}.
+              </p>
+            ) : null}
+            {toWinBack > 0 ? (
+              <form action={sendWinbackMessagesAction} style={{ marginTop: 10 }}>
+                <button type="submit" className="btn btn-primary" style={{ fontSize: 13 }}>
+                  Envoyer le message (jusqu&apos;à {toWinBack} personne(s))
+                </button>
+              </form>
+            ) : (
+              <p style={{ margin: "8px 0 0", fontSize: 13, color: "var(--color-neutral-600)" }}>Tous ont déjà reçu le message.</p>
             )}
           </Card>
         </div>

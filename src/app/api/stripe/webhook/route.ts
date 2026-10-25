@@ -8,6 +8,7 @@ import { notifyIncompletePaymentByCustomerId } from "@/lib/stripe/notifyIncomple
 import { creditAffiliateCommission } from "@/lib/affiliates/creditAffiliateCommission";
 import { cancelRemindersAfterPayment } from "@/lib/stripe/checkoutReminder";
 import { applyAutoCheckout } from "@/lib/stripe/autoPlan";
+import { onCancellationScheduled } from "@/lib/churn/outreach";
 
 export const maxDuration = 30;
 
@@ -204,6 +205,19 @@ export async function POST(request: NextRequest) {
       const { ok } = await syncSubscription(subscription);
       if (!ok) {
         return NextResponse.json({ error: "Profil pas encore lié, réessaie plus tard." }, { status: 409 });
+      }
+      // Résiliation tout juste programmée (25/10, Nathan) : message avec
+      // compromis, questionnaire et nouveautés. Une seule fois par
+      // abonnement, jamais bloquant ; rien si un autre abonnement le remplace
+      // (passage à Stageio Auto).
+      const before = (event.data as { previous_attributes?: Partial<Stripe.Subscription> }).previous_attributes;
+      const justScheduled =
+        event.type === "customer.subscription.updated" &&
+        !!before &&
+        ((subscription.cancel_at_period_end && before.cancel_at_period_end === false) || (!!subscription.cancel_at && "cancel_at" in before && !before.cancel_at));
+      if (justScheduled) {
+        const customerId = typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
+        await onCancellationScheduled(customerId);
       }
       break;
     }
