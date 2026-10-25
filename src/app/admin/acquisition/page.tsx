@@ -121,7 +121,7 @@ export default async function AdminDashboardPage({
   const weekAgo = new Date();
   weekAgo.setDate(weekAgo.getDate() - 7);
   // Fenêtre "en ligne" : chaque page ouverte par un compte connecté retape
-  // last_active_at toutes les 30 s et à chaque geste (voir PresencePing,
+  // last_active_at toutes les 90 s et à chaque geste (voir PresencePing,
   // 16/10), jamais depuis /admin -- 3 min tolèrent plusieurs signaux
   // manqués (réseau mobile, Supabase lent) sans garder longtemps un parti.
   const onlineSince = new Date();

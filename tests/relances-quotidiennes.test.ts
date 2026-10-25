@@ -3,7 +3,8 @@
 // non finalisés de Stageio.
 // Lancer : npx tsx --tsconfig tsconfig.json tests/relances-quotidiennes.test.ts
 import assert from "node:assert/strict";
-import { renderSeriesEmail } from "../src/lib/campaigns/serieVente";
+import { compactCatalog, renderSeriesEmail } from "../src/lib/campaigns/serieVente";
+import { countForProfile } from "../src/lib/campaigns/relanceOffres";
 import { abandonedUsers } from "../src/lib/campaigns/relanceCheckoutDaily";
 import type { CampaignProfile } from "../src/lib/campaigns/relanceOffres";
 
@@ -43,5 +44,18 @@ assert.deepEqual(
   ).sort(),
   ["abandon-hier", "deux-essais"],
 );
+
+// Catalogue compact (en cache) : mêmes nombres que le catalogue complet.
+{
+  const o = (i: number, contract_type: "alternance" | "stage", sector: string | null, location: string) => ({
+    id: `o${i}`, title: `Offre ${i}`, company: "X", contract_type, sector, location, created_at: new Date(NOW - i * H).toISOString(),
+  });
+  const full = { offers: [o(1, "alternance", "Commerce", "69 - Lyon 3e"), o(2, "alternance", "Commerce", "69 - Lyon 3e"), o(3, "stage", "Commerce", "69 - Lyon 3e"), o(4, "alternance", "Informatique", "75 - Paris"), o(5, "alternance", "Commerce", "Villeurbanne")] };
+  const compact = compactCatalog(full);
+  assert.equal(compact.offers.length, 4);
+  const lyon = { ...profile, city: "Lyon", sectors: ["Commerce"] } as typeof profile;
+  assert.equal(countForProfile(compact, lyon).matching, countForProfile(full, lyon).matching);
+  assert.equal(countForProfile(compact, profile).matching, countForProfile(full, profile).matching);
+}
 
 console.log("relances-quotidiennes : OK");

@@ -76,7 +76,7 @@ export default async function AdminOnlinePage() {
           label="Inscrits en ligne"
           value={online.length}
           sub="actifs dans les 3 dernières minutes"
-          definition="Comptes actifs dans l'appli dans les 3 dernières minutes (signal envoyé toutes les 45 s par chaque page ouverte). Visiteurs sans compte et robots exclus."
+          definition="Comptes actifs dans l'appli dans les 3 dernières minutes (signal envoyé toutes les 90 s par chaque page ouverte). Visiteurs sans compte et robots exclus."
           source="Supabase, profils.last_active_at"
         />
         <Kpi

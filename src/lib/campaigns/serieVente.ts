@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchAllRows, fetchAllRowsByIdCursor } from "@/lib/supabase/public";
@@ -15,6 +16,7 @@ import { CHECKOUT_RELANCE_EVENT } from "@/lib/campaigns/relanceCheckout";
 import {
   CAMPAIGN_EVENT,
   MIN_COUNT_TO_SHOW,
+  catalogSize,
   NEWS_CAMPAIGN_EVENT,
   countForProfile,
   escapeHtml,
@@ -107,7 +109,9 @@ const SENDABLE_EMAIL = /^(?!\.)(?!.*\.\.)[^\s@]+(?<!\.)@[^\s@]+\.[^\s@]+$/;
 async function loadDue(db: Db, now: number, midnight: number): Promise<{ due: Due[]; sentToday: number }> {
   const [profiles, seriesEvents, otherEvents] = await Promise.all([
     fetchAllRowsByIdCursor<SeriesProfile>((afterId, limit) => {
-      let q = db.from("profiles").select(COLUMNS);
+      // Filtres de base faits par la base (moins de lignes lues à chaque passage) ;
+      // les mêmes sont revérifiés plus bas.
+      let q = db.from("profiles").select(COLUMNS).not("notify_new_offers", "is", false).is("search_completed_at", null).or("total_paid_cents.is.null,total_paid_cents.eq.0").not("email", "is", null);
       if (afterId) q = q.gt("id", afterId);
       return q.order("id").limit(limit) as unknown as PromiseLike<{
         data: SeriesProfile[] | null;
@@ -168,6 +172,31 @@ async function loadDue(db: Db, now: number, midnight: number): Promise<{ due: Du
 
 const fmt = (n: number) => n.toLocaleString("fr-FR");
 
+/**
+ * Catalogue des offres actives, regroupé par contrat, secteur et lieu (un
+ * nombre par ligne), en cache 6 h (25/10 : chaque passage horaire relisait
+ * les 14 000 offres actives, la base saturait). Suffit au nombre d'offres
+ * de l'email n°1 ; pas aux listes d'offres (intitulés vides).
+ */
+export function compactCatalog(catalog: Catalog): Catalog {
+  const groups = new Map<string, Catalog["offers"][number]>();
+  for (const o of catalog.offers) {
+    const key = `${o.contract_type}|${o.sector ?? ""}|${o.location}`;
+    const g = groups.get(key);
+    if (g) {
+      g.n = (g.n ?? 1) + (o.n ?? 1);
+      if (o.created_at > g.created_at) g.created_at = o.created_at;
+    } else {
+      groups.set(key, { id: key, title: "", company: "", contract_type: o.contract_type, sector: o.sector, location: o.location, created_at: o.created_at, n: o.n ?? 1 });
+    }
+  }
+  return { offers: [...groups.values()] };
+}
+
+export const loadCompactCatalog = unstable_cache(async (): Promise<Catalog> => compactCatalog(await loadCatalog(createAdminClient())), ["serie-compact-catalog-v1"], {
+  revalidate: 6 * 3600,
+});
+
 export type RenderedSeriesEmail = { subject: string; html: string; text: string };
 
 // trustCount : vrai nombre de comptes inscrits (même chiffre que le paywall).
@@ -196,7 +225,7 @@ export function renderSeriesEmail(
   const termsUrl = `${SITE_URL}/legal/cgv`;
   const offersLineHtml = showCounts
     ? `<strong>${fmt(counts.matching)} offres ${kind}</strong>${whereHtml}`
-    : `<strong>${fmt(catalog.offers.length)} offres</strong> d'alternance et de stage`;
+    : `<strong>${fmt(catalogSize(catalog))} offres</strong> d'alternance et de stage`;
   const strip = (html: string) =>
     html
       .replace(/<[^>]+>/g, "")
@@ -256,7 +285,7 @@ export function renderSeriesEmail(
       ? `${fmt(week.newSinceSignup)} nouvelles offres ${kind} cette semaine : les autres postulent déjà`
       : "Les nouvelles offres de la semaine : les autres postulent déjà";
     const { offers } = pickOffers(catalog, p, weekAgo, 3);
-    picks = offers.map((o) => ({ title: o.title, company: o.company }));
+    picks = offers.filter((o) => o.title).map((o) => ({ title: o.title, company: o.company }));
     hook = [
       fresh
         ? `Cette semaine, <strong>${fmt(week.newSinceSignup)} nouvelles offres ${kind}</strong>${whereHtml} sont arrivées sur Stageio. Pendant que tu hésites, d'autres candidats postulent, et une offre ne reste pas en ligne éternellement :`
@@ -380,7 +409,7 @@ export async function sendSeriesRun(now: number = Date.now()): Promise<SeriesRun
   const failures: string[] = [];
   if (batch.length === 0) return { kind: "sent", sent: 0, due: due.length, quota, byStep, failures };
 
-  const [catalog, trustCount] = await Promise.all([loadCatalog(db), getTrustCount().catch(() => 0)]);
+  const [catalog, trustCount] = await Promise.all([loadCompactCatalog(), getTrustCount().catch(() => 0)]);
   const resend = getResendClient();
   const runKey = new Date(now).toISOString().slice(0, 13);
   let sent = 0;

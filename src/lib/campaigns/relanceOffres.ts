@@ -233,9 +233,16 @@ type CatalogOffer = {
   sector: string | null;
   location: string;
   created_at: string;
+  /** Catalogue compact : nombre d'offres regroupées sur cette ligne (1 sinon). */
+  n?: number;
 };
 
 export type Catalog = { offers: CatalogOffer[] };
+
+/** Nombre d'offres d'un catalogue (compact ou non). */
+export function catalogSize(catalog: Catalog): number {
+  return catalog.offers.reduce((total, o) => total + (o.n ?? 1), 0);
+}
 
 export async function loadCatalog(db: Db): Promise<Catalog> {
   const offers = await fetchAllRowsByIdCursor<CatalogOffer>((afterId, limit) => {
@@ -306,11 +313,12 @@ export function countForProfile(catalog: Catalog, p: CampaignProfile, since: str
   let newSinceSignup = 0;
   let newOverall = 0;
   for (const o of catalog.offers) {
+    const n = o.n ?? 1;
     const isNew = o.created_at > since;
-    if (isNew) newOverall++;
+    if (isNew) newOverall += n;
     if (!matches(o)) continue;
-    matching++;
-    if (isNew) newSinceSignup++;
+    matching += n;
+    if (isNew) newSinceSignup += n;
   }
   const hasCriteria = types.size === 1 || sectors.size > 0 || zone.kind !== "france";
   return { matching, newSinceSignup, newOverall, hasCriteria, zone };

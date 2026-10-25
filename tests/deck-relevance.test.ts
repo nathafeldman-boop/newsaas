@@ -138,9 +138,9 @@ const score = (p: Profile, o: Offer) => computeMatchScore(p, o, NOW);
 // 12. Motifs de recherche par intitulé : tirés de la liste des métiers, accents tolérés.
 {
   const patterns = targetJobTitlePatterns(["Développeur web"]);
-  assert.ok(patterns.includes("d_v_l_pp__"));
+  assert.ok(patterns.includes("d_v_lopp_u"));
   assert.ok(patterns.every((p) => /^[a-z_ ]+$/.test(p) && p.length >= 6));
-  assert.ok(targetJobTitlePatterns(["Commercial"]).includes("c_mm_rc_"));
+  assert.ok(targetJobTitlePatterns(["Commercial"]).includes("comm_rci"));
   assert.deepEqual(targetJobTitlePatterns([]), []);
 }
 

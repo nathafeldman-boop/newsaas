@@ -66,12 +66,16 @@ export function diversifyByCompany<T extends DeckOffer>(ranked: T[], size: numbe
   return [...picked, ...later];
 }
 
-const ACCENTABLE = /[aeiou]/g;
+// Seul le « e » devient un joker (é, è, ê : l'accent de loin le plus
+// fréquent dans les intitulés). Remplacer toutes les voyelles empêchait
+// l'index trigramme de servir (plus trois lettres de suite) : la base
+// relisait toutes les offres à chaque paquet (25/10, Disk IO).
+const ACCENTABLE = /e/g;
 
 /**
  * Motifs ILIKE pour aller chercher en base les offres du métier visé (titre),
- * tirés de la liste des métiers du site : « Commercial » -> « %comm_rc__% »…
- * Les voyelles deviennent « _ » (un caractère quelconque) pour trouver aussi
+ * tirés de la liste des métiers du site : « Commercial » -> « %comm_rci% »…
+ * Le « e » devient « _ » (un caractère quelconque) pour trouver aussi
  * « Développeur » quand le motif est « developpeu ». Au plus `max` motifs.
  */
 export function targetJobTitlePatterns(targetJobs: string[], max = 8): string[] {

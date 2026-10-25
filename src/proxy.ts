@@ -86,11 +86,16 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
   // ouverture de page) ; sans en-tête (vieux navigateur), on compte.
   const fetchDest = request.headers.get("sec-fetch-dest");
   const isPageLoad = fetchDest === null || fetchDest === "document";
+  // Depuis le 25/10, seuls les clics venus d'un e-mail ou d'une campagne
+  // (utm_campaign, utm_source=email) sont notés : l'admin ne compte plus que
+  // les inscrits, et ces clics sont les seules visites encore lues (stats
+  // des e-mails). Avant : une ligne par page ouverte, la base saturait.
+  const isCampaignClick = utmCampaign !== null || utmSourceParam === "email";
 
   // waitUntil (proxy tourne sur le runtime Node.js depuis Next 16) : la
   // navigation réelle ne doit jamais attendre ce log analytics, ni échouer
   // à cause de lui.
-  if (isPageLoad) {
+  if (isPageLoad && isCampaignClick) {
     event.waitUntil(
       logVisit(visitorId, request.nextUrl.pathname, request.headers.get("user-agent"), {
         source: utmSource,

@@ -5,12 +5,14 @@ import { usePathname } from "next/navigation";
 
 // Signal de présence pour l'admin (voir api/presence) : seulement pour un
 // visiteur connecté (cookie de session Supabase présent), à l'arrivée, à
-// chaque changement de page, toutes les 30 s tant que l'onglet est visible,
-// et au premier geste après 20 s sans signal (toucher, scroll, clavier).
+// chaque changement de page, toutes les 90 s tant que l'onglet est visible,
+// et au premier geste après 60 s sans signal (toucher, scroll, clavier).
+// 90 s depuis le 25/10 (avant 30 s) : trois fois moins d'écritures sur les
+// profils, toujours assez pour la fenêtre « en ligne » de 3 minutes.
 // Jamais depuis /admin : Nathan sur son tableau de bord n'est pas un
 // utilisateur en ligne.
-const INTERVAL_MS = 30_000;
-const ACTIVITY_THROTTLE_MS = 20_000;
+const INTERVAL_MS = 90_000;
+const ACTIVITY_THROTTLE_MS = 60_000;
 
 let lastPing = 0;
 
