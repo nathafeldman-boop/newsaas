@@ -5,6 +5,7 @@
 import assert from "node:assert/strict";
 import { compactCatalog, renderSeriesEmail } from "../src/lib/campaigns/serieVente";
 import { countForProfile } from "../src/lib/campaigns/relanceOffres";
+import { attributeEmailRevenue } from "../src/lib/admin/emailRevenue";
 import { abandonedUsers } from "../src/lib/campaigns/relanceCheckoutDaily";
 import type { CampaignProfile } from "../src/lib/campaigns/relanceOffres";
 
@@ -56,6 +57,31 @@ assert.deepEqual(
   const lyon = { ...profile, city: "Lyon", sectors: ["Commerce"] } as typeof profile;
   assert.equal(countForProfile(compact, lyon).matching, countForProfile(full, lyon).matching);
   assert.equal(countForProfile(compact, profile).matching, countForProfile(full, profile).matching);
+}
+
+// Ce que rapporte chaque e-mail : paiement rattaché au dernier e-mail des 48 h, au jour de l'e-mail.
+{
+  const day1 = Date.parse("2026-10-24T08:00:00Z");
+  const day2 = Date.parse("2026-10-25T08:00:00Z");
+  const rows = attributeEmailRevenue(
+    [
+      { userId: "a", at: day1, source: "serie" },
+      { userId: "a", at: day2, source: "panier" },
+      { userId: "b", at: day1, source: "serie" },
+      { userId: "c", at: day1, source: "serie" },
+    ],
+    [
+      { userId: "a", at: day2 + 2 * H, cents: 799 }, // dernier e-mail : le panier du 25
+      { userId: "b", at: day1 + 3 * H, cents: 3000 }, // série du 24
+      { userId: "c", at: day1 + 3 * D, cents: 799 }, // trop tard : non attribué
+      { userId: "z", at: day1, cents: 799 }, // aucun e-mail
+    ],
+    ["serie", "panier"],
+    ["2026-10-24", "2026-10-25"],
+  );
+  assert.deepEqual(rows[0].bySource.serie, { sent: 3, payers: 1, cents: 3000 });
+  assert.deepEqual(rows[1].bySource.panier, { sent: 1, payers: 1, cents: 799 });
+  assert.deepEqual(rows[1].bySource.serie, { sent: 0, payers: 0, cents: 0 });
 }
 
 console.log("relances-quotidiennes : OK");
