@@ -2,7 +2,8 @@
 // (date de création chez la source, à la seconde pour France Travail) :
 // jamais stockée, ne peut pas se dé-synchroniser. Moins de 24 h : à la
 // minute près et en « chaud » (24/10, Nathan : « elle est là depuis
-// 2 heures, tu dois la prendre ») ; muette au-delà de 7 jours.
+// 2 heures, tu dois la prendre ») ; muette au-delà (25/10, Nathan : « enlève
+// ça » sur « Publiée il y a 7 jours »).
 export type Freshness = { label: string; hot: boolean };
 
 const MINUTE = 60_000;
@@ -16,9 +17,7 @@ export function getFreshness(publishedAt: string, now: number = Date.now()): Fre
   if (age < MINUTE) return { label: "Publiée à l'instant", hot: true };
   if (age < HOUR) return { label: `Publiée il y a ${Math.floor(age / MINUTE)} min`, hot: true };
   if (age < DAY) return { label: `Publiée il y a ${Math.floor(age / HOUR)} h`, hot: true };
-  if (age < 2 * DAY) return { label: "Publiée hier", hot: false };
-  const days = Math.floor(age / DAY);
-  return days <= 7 ? { label: `Publiée il y a ${days} jours`, hot: false } : null;
+  return null;
 }
 
 // Durée courte pour les listes (« 12 min », « 3 h »).

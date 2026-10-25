@@ -9,7 +9,7 @@ import { fetchAllRows } from "@/lib/supabase/public";
 import { CHECKOUT_DAILY_EVENT, SALES_SERIES_EVENT } from "@/lib/campaigns/serieEvents";
 import { WINBACK_EVENT } from "@/lib/churn/outreach";
 import { KEEP_PREMIUM_EVENT } from "@/lib/stripe/keepPremium";
-import { loadSnapshot } from "@/lib/admin/cockpit/load";
+import { loadSnapshot, nowMs } from "@/lib/admin/cockpit/load";
 import { ATTRIBUTION_WINDOW_MS, attributeEmailRevenue, type EmailSend, type FirstPayment } from "@/lib/admin/emailRevenue";
 import { DAY_MS, dayKey, daysBetween } from "@/lib/admin/trafficStats";
 import { euros, startOfParisDay } from "@/lib/admin/cockpit/format";
@@ -189,7 +189,7 @@ export default async function EmailsPage({ searchParams }: { searchParams: Promi
   const revenue = await loadEmailRevenue().catch((err) => (console.error("cockpit: revenus des e-mails en échec", err), null));
   const revenueTotal = (key?: string) =>
     (revenue?.days ?? []).reduce((sum, d) => sum + Object.entries(d.bySource).reduce((s, [k, v]) => s + (key && k !== key ? 0 : v.cents), 0), 0);
-  const today = dayKey(Date.now());
+  const today = dayKey(nowMs());
 
   return (
     <div>
