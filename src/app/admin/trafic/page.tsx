@@ -57,7 +57,7 @@ export default async function TrafficPage({ searchParams }: { searchParams: Prom
     visitorsBySource(sinceIso, endIso).catch((err) => (console.error("trafic: visiteurs par source", err), undefined)),
     visitorsByDaySource(new Date(chartSince).toISOString(), endIso).catch((err) => (console.error("trafic: visiteurs par jour", err), undefined)),
     landingPages(sinceIso, endIso).catch((err) => (console.error("trafic: pages d'arrivée", err), undefined)),
-    onlineNow(now).catch(() => null),
+    onlineNow(now, todayStart).catch(() => null),
     signupsByDay(new Date(SIGNUPS_SINCE).toISOString()).catch((err) => (console.error("trafic: inscrits", err), null)),
     withTimeout(
       loadSnapshot().then(({ snap }) => (snap ? payerSignups(payerIds(snap)) : null)),
@@ -117,7 +117,7 @@ export default async function TrafficPage({ searchParams }: { searchParams: Prom
       <h1 style={{ fontSize: 24, fontWeight: 700, margin: "0 0 4px" }}>Trafic et sources</h1>
       <p style={{ margin: "0 0 16px", fontSize: 13, color: "var(--color-neutral-600)" }}>
         Qui vient, d&apos;où, et jusqu&apos;où ils vont. {periodLabel}
-        {days > 1 ? " (aujourd'hui compris)" : ""}, heure de Paris. Mis à jour toutes les 5 minutes ; « en ligne » à la minute.
+        {days > 1 ? " (aujourd'hui compris)" : ""}, heure de Paris. Mis à jour toutes les 5 minutes ; « inscrits en ligne » à la minute.
       </p>
       <div className="seg" role="group" aria-label="Période">
         {PERIODS.map((p) => (
@@ -145,11 +145,11 @@ export default async function TrafficPage({ searchParams }: { searchParams: Prom
             accent="blue"
             href="/admin/online"
             cta="Voir qui"
-            label="En ligne maintenant"
-            value={online ? online.visitors : <Insufficient />}
-            sub={online ? `dont ${int(online.loggedIn)} connecté${online.loggedIn > 1 ? "s" : ""} à leur compte` : undefined}
-            definition="Visiteurs qui ont ouvert une page dans les 5 dernières minutes, avec ou sans compte. « Connectés » : comptes actifs dans l'appli dans les 3 dernières minutes (signal envoyé toutes les 30 s)."
-            source="Supabase, site_visits et profils.last_active_at"
+            label="Inscrits en ligne"
+            value={online ? online.accounts : <Insufficient />}
+            sub={online ? `${int(online.activeToday)} inscrits actifs aujourd'hui` : undefined}
+            definition="Comptes actifs dans l'appli dans les 3 dernières minutes (signal envoyé toutes les 45 s par chaque page ouverte). Visiteurs sans compte et robots exclus."
+            source="Supabase, profils.last_active_at"
           />
           <Kpi
             accent="pink"

@@ -5,14 +5,16 @@ import { AutoRefresh } from "@/components/admin/AutoRefresh";
 import { Card, Insufficient, Kpi, KpiGrid, Section } from "@/components/admin/cockpit/Kpi";
 import { Avatar, Chip, HBars } from "@/components/admin/cockpit/Visual";
 import { nowMs } from "@/lib/admin/cockpit/load";
-import { liveVisits } from "@/lib/admin/traffic";
+import { startOfParisDay } from "@/lib/admin/cockpit/format";
 import { sourceInfo } from "@/lib/admin/trafficStats";
 import { requireAdminPage } from "@/lib/admin/accessCode";
 
 // « En ligne maintenant » (revu le 25/10, Nathan : « avant je cliquais sur
 // les gens en ligne, je voyais leur e-mail, puis leur parcours ») : comptes
-// connectés (cliquables, vers leur fiche), visiteurs sans compte, pages
-// ouvertes et sources du moment. Rechargée toutes les 20 s.
+// connectés (cliquables, vers leur fiche), leur page actuelle et leur source
+// d'inscription. Uniquement des inscrits (Nathan, même jour : « les
+// visiteurs, ça peut être des robots Google ») : plus de visiteurs anonymes
+// ici. Rechargée toutes les 20 s.
 
 function ago(fromMs: number, now: number): string {
   const mins = Math.max(0, Math.round((now - fromMs) / 60000));
@@ -31,17 +33,15 @@ export default async function AdminOnlinePage() {
   await requireAdminPage();
   const now = nowMs();
   const admin = createAdminClient();
-  const [{ data: users, error: usersError }, live] = await Promise.all([
+  const todayStart = startOfParisDay(now);
+  const [{ data: users, error: usersError }, { count: activeToday }] = await Promise.all([
     admin
       .from("profiles")
       .select("*")
       .gte("last_active_at", new Date(now - 3 * 60_000).toISOString())
       .order("last_active_at", { ascending: false })
       .limit(500),
-    liveVisits(now).catch((err) => {
-      console.error("AdminOnlinePage: visites en direct", err);
-      return null;
-    }),
+    admin.from("profiles").select("id", { count: "exact", head: true }).gte("last_active_at", new Date(todayStart).toISOString()),
   ]);
   // supabase-js ne lève jamais d'erreur : sans ce log, une requête en échec
   // afficherait « personne en ligne » même si des gens le sont.
@@ -49,11 +49,14 @@ export default async function AdminOnlinePage() {
 
   const online = users ?? [];
   const paying = online.filter((u) => isPremium(u)).length;
-  const sources = new Map<string, number>();
-  for (const s of live?.sources ?? []) {
-    const label = sourceInfo(s.source).label;
-    sources.set(label, (sources.get(label) ?? 0) + s.visitors);
-  }
+  const newToday = online.filter((u) => Date.parse(u.created_at) >= todayStart).length;
+  const tally = (values: string[]) => {
+    const m = new Map<string, number>();
+    for (const v of values) m.set(v, (m.get(v) ?? 0) + 1);
+    return [...m.entries()].sort((a, b) => b[1] - a[1]).map(([label, value]) => ({ label, value }));
+  };
+  const pages = tally(online.map((u) => u.last_active_path || "Page inconnue")).slice(0, 10);
+  const sources = tally(online.map((u) => (u.utm_source ? sourceInfo(u.utm_source).label : "Direct / inconnu")));
 
   return (
     <div>
@@ -68,31 +71,38 @@ export default async function AdminOnlinePage() {
 
       <KpiGrid>
         <Kpi
-          hero
           live
           accent="green"
-          label="Visiteurs sur le site"
-          value={live ? live.visitors : <Insufficient />}
-          sub="avec ou sans compte, 5 dernières minutes"
-          definition="Navigateurs distincts qui ont ouvert une page dans les 5 dernières minutes, robots exclus."
-          source="Supabase, site_visits"
+          label="Inscrits en ligne"
+          value={online.length}
+          sub="actifs dans les 3 dernières minutes"
+          definition="Comptes actifs dans l'appli dans les 3 dernières minutes (signal envoyé toutes les 45 s par chaque page ouverte). Visiteurs sans compte et robots exclus."
+          source="Supabase, profils.last_active_at"
         />
         <Kpi
           live
           accent="blue"
-          label="Connectés à leur compte"
-          value={online.length}
-          sub={`dont ${paying} payant${paying > 1 ? "s" : ""}`}
-          definition="Comptes actifs dans l'appli dans les 3 dernières minutes (signal envoyé toutes les 30 s par chaque page ouverte)."
-          source="Supabase, profils.last_active_at"
+          label="Dont payants"
+          value={paying}
+          sub={online.length > 0 ? `${Math.round((paying / online.length) * 100)} % des connectés` : undefined}
+          definition="Comptes connectés avec un Premium ou Stageio Auto actif (abonnement, accès à vie ou offert)."
+          source="Supabase, profils"
         />
         <Kpi
           accent="pink"
-          label="Sans compte"
-          value={live ? Math.max(0, live.visitors - online.length) : <Insufficient />}
-          sub="visiteurs pas (encore) inscrits ou pas connectés"
-          definition="Visiteurs sur le site moins comptes connectés. Approximatif : un compte ouvert sur deux appareils compte deux fois côté visiteurs."
-          source="Supabase"
+          label="Dont nouveaux du jour"
+          value={newToday}
+          sub="inscrits depuis minuit"
+          definition="Comptes connectés créés aujourd'hui (heure de Paris)."
+          source="Supabase, profils.created_at"
+        />
+        <Kpi
+          accent="violet"
+          label="Inscrits actifs aujourd'hui"
+          value={activeToday ?? <Insufficient />}
+          sub="ont ouvert l'appli depuis minuit"
+          definition="Comptes dont la dernière activité dans l'appli date d'aujourd'hui (heure de Paris), nouveaux inscrits compris."
+          source="Supabase, profils.last_active_at"
         />
       </KpiGrid>
 
@@ -130,23 +140,13 @@ export default async function AdminOnlinePage() {
         )}
       </Section>
 
-      <Section title="Ce qu'ils regardent en ce moment" subtitle="Page actuelle de chaque visiteur (avec ou sans compte) et d'où il est arrivé, sur les 5 dernières minutes.">
+      <Section title="Ce qu'ils regardent en ce moment" subtitle="Page actuelle de chaque inscrit connecté, et d'où il était venu à son inscription.">
         <div className="cockpit-grid-2">
           <Card title="Pages ouvertes">
-            {live ? <HBars items={live.pages.map((p) => ({ label: p.path, value: p.visitors }))} color="#2a78d6" empty="Aucune page ouverte" /> : <Insufficient />}
+            <HBars items={pages} color="#2a78d6" empty="Personne de connecté" />
           </Card>
           <Card title="D'où ils viennent">
-            {live ? (
-              <HBars
-                items={[...sources.entries()]
-                  .sort((a, b) => b[1] - a[1])
-                  .map(([label, value]) => ({ label, value }))}
-                color="#e87ba4"
-                empty="Aucun visiteur"
-              />
-            ) : (
-              <Insufficient />
-            )}
+            <HBars items={sources} color="#e87ba4" empty="Personne de connecté" />
           </Card>
         </div>
       </Section>
