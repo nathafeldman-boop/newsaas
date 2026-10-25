@@ -15,46 +15,78 @@ import { AUTO_DAILY_LIMIT, AUTO_PRICES } from "@/lib/pricing/plans";
 
 const muted = "color-mix(in srgb, var(--color-text) 66%, transparent)";
 
-// Ce que Stageio Auto ajoute à Premium (Nathan, 25/10 : « mets ce qu'il y a
-// de plus en prenant l'offre à 17,99 »). Fidèle au code : envoi au like
-// (api/applications/auto-send), boîte réservée à Auto (boite/page.tsx),
-// candidature notée « envoyée » avec relance à 7 jours (FOLLOW_UP_DAYS).
-export const AUTO_EXTRAS = [
-  "Ta candidature part à chaque like : lettre et CV",
-  `Jusqu'à ${AUTO_DAILY_LIMIT} candidatures envoyées par jour`,
-  "Une adresse de candidature à ton nom",
-  "Ta boîte Stageio : les réponses des recruteurs dans l'appli",
-  "Chaque envoi noté dans ton suivi, relance prévue à 7 jours",
+// Premium contre Stageio Auto, avec croix et coches (Nathan, 25/10 : « mets
+// ce qu'il y a de plus en prenant l'offre à 17,99 », « avec des croix et des
+// coches »). Fidèle au code : envoi au like (api/applications/auto-send),
+// boîte réservée à Auto (boite/page.tsx), candidature notée « envoyée » avec
+// relance à 7 jours (FOLLOW_UP_DAYS) ; le reste est commun aux deux.
+export const AUTO_COMPARISON = [
+  { label: "Ta candidature part à chaque like : lettre et CV", premium: false },
+  { label: `Jusqu'à ${AUTO_DAILY_LIMIT} candidatures envoyées par jour`, premium: false },
+  { label: "Une adresse de candidature à ton nom", premium: false },
+  { label: "Ta boîte Stageio : les réponses des recruteurs dans l'appli", premium: false },
+  { label: "Chaque envoi noté dans ton suivi, relance prévue à 7 jours", premium: false },
+  { label: "Likes, lettres de motivation, audit CV, simulateur d'entretien", premium: true },
 ] as const;
 
-export function AutoExtras({ compact = false }: { compact?: boolean }) {
+function Mark({ ok, size, delay }: { ok: boolean; size: number; delay: number }) {
   return (
-    <div style={{ marginTop: compact ? 10 : 0 }}>
-      <p style={{ margin: 0, fontSize: compact ? 11.5 : 12, fontWeight: 800, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
-        En plus de Premium
-      </p>
-      <ul style={{ listStyle: "none", margin: "6px 0 0", padding: 0, display: "flex", flexDirection: "column", gap: compact ? 5 : 7 }}>
-        {AUTO_EXTRAS.map((item, i) => (
-          <motion.li
-            key={item}
+    <motion.span
+      role="img"
+      aria-label={ok ? "Inclus" : "Non inclus"}
+      initial={{ scale: 0, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ delay, type: "spring", stiffness: 520, damping: 22 }}
+      className="inline-flex items-center justify-center"
+      style={{
+        width: size,
+        height: size,
+        borderRadius: "50%",
+        fontSize: size * 0.62,
+        fontWeight: 800,
+        lineHeight: 1,
+        background: ok ? "var(--color-accent)" : "color-mix(in srgb, var(--color-text) 10%, transparent)",
+        color: ok ? "var(--color-bg)" : "color-mix(in srgb, var(--color-text) 45%, transparent)",
+      }}
+    >
+      {ok ? "✓" : "✕"}
+    </motion.span>
+  );
+}
+
+export function AutoComparison({ compact = false }: { compact?: boolean }) {
+  const mark = compact ? 18 : 20;
+  const col = compact ? 50 : 58;
+  const head = { fontSize: compact ? 11 : 11.5, fontWeight: 800, textAlign: "center", padding: "0 0 6px" } as const;
+  return (
+    <table style={{ width: "100%", marginTop: compact ? 12 : 0, borderCollapse: "collapse", tableLayout: "fixed" }}>
+      <thead>
+        <tr>
+          <th style={{ ...head, textAlign: "left", color: "var(--color-accent-700)", letterSpacing: "0.04em", textTransform: "uppercase" }}>Ce qui change</th>
+          <th style={{ ...head, width: col, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>Premium</th>
+          <th style={{ ...head, width: col, color: "var(--color-accent-700)" }}>Auto</th>
+        </tr>
+      </thead>
+      <tbody>
+        {AUTO_COMPARISON.map((row, i) => (
+          <motion.tr
+            key={row.label}
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.08 + i * 0.07, type: "spring", stiffness: 420, damping: 30 }}
-            className="flex items-start gap-2"
-            style={{ fontSize: compact ? 12.5 : 13.5, lineHeight: 1.4, fontWeight: 600 }}
+            transition={{ delay: 0.06 + i * 0.07, type: "spring", stiffness: 420, damping: 30 }}
+            style={{ borderTop: "1px solid var(--color-divider)" }}
           >
-            <span
-              aria-hidden
-              className="flex items-center justify-center"
-              style={{ width: compact ? 16 : 18, height: compact ? 16 : 18, marginTop: 1, borderRadius: "50%", flexShrink: 0, background: "var(--color-accent)", color: "var(--color-bg)", fontSize: compact ? 12 : 13, fontWeight: 800, lineHeight: 1 }}
-            >
-              +
-            </span>
-            {item}
-          </motion.li>
+            <td style={{ padding: compact ? "6px 6px 6px 0" : "8px 8px 8px 0", fontSize: compact ? 12.5 : 13.5, lineHeight: 1.35, fontWeight: 600 }}>{row.label}</td>
+            <td style={{ textAlign: "center", verticalAlign: "middle" }}>
+              <Mark ok={row.premium} size={mark} delay={0.2 + i * 0.07} />
+            </td>
+            <td style={{ textAlign: "center", verticalAlign: "middle", background: "color-mix(in srgb, var(--color-accent) 9%, transparent)" }}>
+              <Mark ok size={mark} delay={0.28 + i * 0.07} />
+            </td>
+          </motion.tr>
         ))}
-      </ul>
-    </div>
+      </tbody>
+    </table>
   );
 }
 
@@ -300,7 +332,7 @@ export function AutoHelpButton({
                   </div>
 
                   <div style={{ margin: "14px 16px 0", padding: "12px 14px", borderRadius: 16, background: "var(--color-surface)", border: "1.5px solid var(--color-accent)" }}>
-                    <AutoExtras />
+                    <AutoComparison />
                   </div>
 
                   <div style={{ padding: "14px 16px 0" }}>

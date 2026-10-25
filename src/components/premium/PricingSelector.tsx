@@ -4,7 +4,7 @@ import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { createCheckoutSessionAction } from "@/app/(app)/premium/actions";
 import { AccessCodeForm } from "@/components/premium/AccessCodeForm";
-import { AutoExtras, AutoHelpButton } from "@/components/premium/AutoExplainer";
+import { AutoComparison, AutoHelpButton } from "@/components/premium/AutoExplainer";
 import { useWelcomeCountdown } from "@/components/premium/WelcomeCountdown";
 import { AUTO_DAILY_LIMIT, AUTO_PRICES, LIFETIME_PROMO, PLAN_PRICES } from "@/lib/pricing/plans";
 
@@ -251,7 +251,7 @@ function OfferTabs({
                 badge="Nouveau"
                 help={autoHelp}
               >
-                <AutoExtras compact />
+                <AutoComparison compact />
               </PlanRow>
             )}
           </>
@@ -279,7 +279,7 @@ function OfferTabs({
                 badge="Nouveau"
                 help={autoHelp}
               >
-                <AutoExtras compact />
+                <AutoComparison compact />
               </PlanRow>
             )}
           </>
