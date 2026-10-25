@@ -4,7 +4,7 @@ import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { createCheckoutSessionAction } from "@/app/(app)/premium/actions";
 import { AccessCodeForm } from "@/components/premium/AccessCodeForm";
-import { AutoHelpButton } from "@/components/premium/AutoExplainer";
+import { AutoExtras, AutoHelpButton } from "@/components/premium/AutoExplainer";
 import { useWelcomeCountdown } from "@/components/premium/WelcomeCountdown";
 import { AUTO_DAILY_LIMIT, AUTO_PRICES, LIFETIME_PROMO, PLAN_PRICES } from "@/lib/pricing/plans";
 
@@ -21,6 +21,7 @@ function PlanRow({
   strikePrice,
   badge,
   help,
+  children,
 }: {
   selected: boolean;
   onSelect: () => void;
@@ -37,12 +38,14 @@ function PlanRow({
   badge?: string;
   // « ? » en haut à droite de l'encadré (Stageio Auto : vidéo + FAQ).
   help?: ReactNode;
+  // Sous la ligne, dans le même encadré (Stageio Auto : ce qu'elle ajoute).
+  children?: ReactNode;
 }) {
   return (
     <label
-      className="flex items-center justify-between gap-3"
       style={{
         position: "relative",
+        display: "block",
         cursor: "pointer",
         padding: "14px 16px",
         borderRadius: 16,
@@ -57,67 +60,70 @@ function PlanRow({
         onChange={onSelect}
         style={{ position: "absolute", opacity: 0, width: 0, height: 0 }}
       />
-      <div className="flex items-center gap-3" style={{ minWidth: 0 }}>
-        <span
-          aria-hidden
-          style={{
-            width: 20,
-            height: 20,
-            borderRadius: "50%",
-            flexShrink: 0,
-            border: selected ? "6px solid var(--color-accent)" : "1.5px solid var(--color-divider)",
-            background: "var(--color-bg)",
-          }}
-        />
-        <div style={{ minWidth: 0 }}>
-          <div className="flex flex-wrap items-center gap-2" style={{ fontSize: 14.5, fontWeight: 700 }}>
-            {label}
-            {badge && (
-              <span
-                style={{
-                  fontSize: 10.5,
-                  fontWeight: 800,
-                  padding: "2px 8px",
-                  borderRadius: 999,
-                  background: "var(--color-accent)",
-                  color: "var(--color-bg)",
-                }}
-              >
-                {badge}
-              </span>
-            )}
-          </div>
-          <div style={{ fontSize: 12, marginTop: 1, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-            {sublabel}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3" style={{ minWidth: 0 }}>
+          <span
+            aria-hidden
+            style={{
+              width: 20,
+              height: 20,
+              borderRadius: "50%",
+              flexShrink: 0,
+              border: selected ? "6px solid var(--color-accent)" : "1.5px solid var(--color-divider)",
+              background: "var(--color-bg)",
+            }}
+          />
+          <div style={{ minWidth: 0 }}>
+            <div className="flex flex-wrap items-center gap-2" style={{ fontSize: 14.5, fontWeight: 700 }}>
+              {label}
+              {badge && (
+                <span
+                  style={{
+                    fontSize: 10.5,
+                    fontWeight: 800,
+                    padding: "2px 8px",
+                    borderRadius: 999,
+                    background: "var(--color-accent)",
+                    color: "var(--color-bg)",
+                  }}
+                >
+                  {badge}
+                </span>
+              )}
+            </div>
+            <div style={{ fontSize: 12, marginTop: 1, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+              {sublabel}
+            </div>
           </div>
         </div>
+        <div style={{ textAlign: "right", flexShrink: 0 }}>
+          {strikePrice && (
+            <s
+              style={{
+                fontSize: 13.5,
+                fontWeight: 600,
+                marginRight: 6,
+                color: "color-mix(in srgb, var(--color-text) 50%, transparent)",
+              }}
+            >
+              {strikePrice}
+            </s>
+          )}
+          <span style={{ fontSize: 19, fontWeight: 800, letterSpacing: "-0.01em" }}>{price}</span>
+          {priceSuffix && (
+            <span style={{ fontSize: 12.5, fontWeight: 500, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+              {" "}
+              {priceSuffix}
+            </span>
+          )}
+          {afterPrice && (
+            <div style={{ fontSize: 11.5, fontWeight: 700, marginTop: 2, color: "var(--color-accent-700)", whiteSpace: "nowrap" }}>
+              ensuite {afterPrice}
+            </div>
+          )}
+        </div>
       </div>
-      <div style={{ textAlign: "right", flexShrink: 0 }}>
-        {strikePrice && (
-          <s
-            style={{
-              fontSize: 13.5,
-              fontWeight: 600,
-              marginRight: 6,
-              color: "color-mix(in srgb, var(--color-text) 50%, transparent)",
-            }}
-          >
-            {strikePrice}
-          </s>
-        )}
-        <span style={{ fontSize: 19, fontWeight: 800, letterSpacing: "-0.01em" }}>{price}</span>
-        {priceSuffix && (
-          <span style={{ fontSize: 12.5, fontWeight: 500, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-            {" "}
-            {priceSuffix}
-          </span>
-        )}
-        {afterPrice && (
-          <div style={{ fontSize: 11.5, fontWeight: 700, marginTop: 2, color: "var(--color-accent-700)", whiteSpace: "nowrap" }}>
-            ensuite {afterPrice}
-          </div>
-        )}
-      </div>
+      {children}
       {help && <span style={{ position: "absolute", top: -13, right: 12 }}>{help}</span>}
     </label>
   );
@@ -244,7 +250,9 @@ function OfferTabs({
                 priceSuffix="/mois"
                 badge="Nouveau"
                 help={autoHelp}
-              />
+              >
+                <AutoExtras compact />
+              </PlanRow>
             )}
           </>
         ) : (
@@ -270,7 +278,9 @@ function OfferTabs({
                 price={AUTO_PRICES.lifetime}
                 badge="Nouveau"
                 help={autoHelp}
-              />
+              >
+                <AutoExtras compact />
+              </PlanRow>
             )}
           </>
         )}
@@ -278,9 +288,8 @@ function OfferTabs({
 
       {auto && (
         <p style={{ fontSize: 12, lineHeight: 1.5, margin: "10px 2px 0", color: "color-mix(in srgb, var(--color-text) 62%, transparent)" }}>
-          Tout Premium, plus ta candidature (lettre et CV) envoyée à chaque like, jusqu&apos;à {AUTO_DAILY_LIMIT} par jour, depuis une
-          adresse à ton nom, avec une boîte pour lire les réponses. Envoi quand le recruteur a laissé une adresse ou passe par La bonne
-          alternance ; sinon, le like reste un favori.
+          Envoi automatique quand le recruteur a laissé une adresse ou passe par La bonne alternance ; sinon, le like reste un favori. Au-delà
+          de {AUTO_DAILY_LIMIT} par jour, les likes redeviennent des favoris jusqu&apos;au lendemain.
         </p>
       )}
 
