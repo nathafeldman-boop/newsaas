@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createCheckoutSessionAction } from "@/app/(app)/premium/actions";
+import { AutoHelpButton } from "@/components/premium/AutoExplainer";
 import { AUTO_DAILY_LIMIT, AUTO_PRICES } from "@/lib/pricing/plans";
 
 // Formule « Stageio Auto » (24/10, demande de Nathan) : 17,99 €/mois ou
@@ -15,7 +16,7 @@ const POINTS = [
   "Tout Premium inclus : likes, lettres, simulateur d'entretien, suivi",
 ];
 
-export function AutoPlanCard({ context }: { context: "paywall" | "upgrade_monthly" | "upgrade_lifetime" }) {
+export function AutoPlanCard({ context, userId }: { context: "paywall" | "upgrade_monthly" | "upgrade_lifetime"; userId?: string }) {
   return (
     <section
       id="auto"
@@ -26,6 +27,9 @@ export function AutoPlanCard({ context }: { context: "paywall" | "upgrade_monthl
         <h2 style={{ fontSize: 19, fontWeight: 800, margin: 0 }}>Stageio Auto</h2>
         <span className="tag tag-accent" style={{ fontWeight: 700 }}>
           Nouveau
+        </span>
+        <span style={{ marginLeft: "auto" }}>
+          <AutoHelpButton userId={userId} source={context} ctaLabel="Voir les prix" />
         </span>
       </div>
       <p style={{ fontSize: 13.5, lineHeight: 1.5, margin: "4px 0 0", color: muted }}>

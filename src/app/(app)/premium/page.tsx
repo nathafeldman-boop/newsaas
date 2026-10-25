@@ -234,7 +234,10 @@ export default async function PremiumPage({
           ) : (
             isAutoOfferAvailable(profile) && (
               <div style={{ width: "100%", maxWidth: 420, textAlign: "left" }}>
-                <AutoPlanCard context={profile?.subscription_status === "lifetime" ? "upgrade_lifetime" : "upgrade_monthly"} />
+                <AutoPlanCard
+                  context={profile?.subscription_status === "lifetime" ? "upgrade_lifetime" : "upgrade_monthly"}
+                  userId={user.id}
+                />
               </div>
             )
           )}
@@ -432,6 +435,7 @@ export default async function PremiumPage({
             <GuaranteeBadge initialVisible={guaranteeShown} />
 
             <PricingSelector
+              userId={user.id}
               welcomeEndsAt={welcome?.endsAt ?? null}
               welcomeActive={welcome?.active ?? false}
               promoActive={promoActive}

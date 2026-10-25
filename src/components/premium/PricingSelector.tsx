@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { createCheckoutSessionAction } from "@/app/(app)/premium/actions";
 import { AccessCodeForm } from "@/components/premium/AccessCodeForm";
+import { AutoHelpButton } from "@/components/premium/AutoExplainer";
 import { useWelcomeCountdown } from "@/components/premium/WelcomeCountdown";
 import { AUTO_DAILY_LIMIT, AUTO_PRICES, LIFETIME_PROMO, PLAN_PRICES } from "@/lib/pricing/plans";
 
@@ -19,6 +20,7 @@ function PlanRow({
   afterPrice,
   strikePrice,
   badge,
+  help,
 }: {
   selected: boolean;
   onSelect: () => void;
@@ -33,11 +35,14 @@ function PlanRow({
   // LIFETIME_PROMO dans lib/pricing/plans.ts).
   strikePrice?: string;
   badge?: string;
+  // « ? » en haut à droite de l'encadré (Stageio Auto : vidéo + FAQ).
+  help?: ReactNode;
 }) {
   return (
     <label
       className="flex items-center justify-between gap-3"
       style={{
+        position: "relative",
         cursor: "pointer",
         padding: "14px 16px",
         borderRadius: 16,
@@ -113,6 +118,7 @@ function PlanRow({
           </div>
         )}
       </div>
+      {help && <span style={{ position: "absolute", top: -13, right: 12 }}>{help}</span>}
     </label>
   );
 }
@@ -128,6 +134,7 @@ const CHECKOUT_PLAN: Record<Plan, Record<Offer, string>> = {
 };
 
 function OfferTabs({
+  userId,
   lifetimeAvailable,
   autoAvailable = false,
   initialOffer = "premium",
@@ -136,6 +143,7 @@ function OfferTabs({
   welcomeActive = false,
   promoActive = false,
 }: {
+  userId?: string;
   lifetimeAvailable: boolean;
   // Stageio Auto proposée seulement si elle peut servir (isAutoOfferAvailable).
   autoAvailable?: boolean;
@@ -162,6 +170,15 @@ function OfferTabs({
   // Premium à vie absent (prix Stripe non configuré) : seule Auto reste.
   const chosen: Offer = plan === "lifetime" && !lifetimeAvailable ? "auto" : !autoAvailable ? "premium" : offer;
   const auto = chosen === "auto";
+
+  const autoHelp = (
+    <AutoHelpButton
+      userId={userId}
+      source="paywall"
+      ctaLabel={plan === "lifetime" ? `Choisir Stageio Auto à vie · ${AUTO_PRICES.lifetime}` : `Choisir Stageio Auto · ${AUTO_PRICES.monthly}/mois`}
+      onChoose={() => setOffer("auto")}
+    />
+  );
 
   const ctaLabel = auto
     ? plan === "lifetime"
@@ -226,6 +243,7 @@ function OfferTabs({
                 price={AUTO_PRICES.monthly}
                 priceSuffix="/mois"
                 badge="Nouveau"
+                help={autoHelp}
               />
             )}
           </>
@@ -251,6 +269,7 @@ function OfferTabs({
                 sublabel="Paiement unique · candidature à chaque like"
                 price={AUTO_PRICES.lifetime}
                 badge="Nouveau"
+                help={autoHelp}
               />
             )}
           </>
@@ -479,6 +498,7 @@ function ClassicPricing({
 }
 
 type SelectorProps = {
+  userId?: string;
   lifetimeAvailable: boolean;
   // Stageio Auto proposée seulement si elle peut servir (isAutoOfferAvailable).
   autoAvailable?: boolean;
