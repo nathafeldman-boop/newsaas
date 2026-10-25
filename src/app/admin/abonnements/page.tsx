@@ -19,6 +19,9 @@ import {
 } from "@/lib/admin/cockpit/metrics";
 import type { SubRecord } from "@/lib/admin/cockpit/types";
 import { requireAdminPage } from "@/lib/admin/accessCode";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { KEEP_PREMIUM_EVENT } from "@/lib/stripe/keepPremium";
+import { sendKeepPremiumRemindersAction } from "./actions";
 
 // Abonnements et churn : qui reste, qui part, quand et comment. Règles
 // d'alerte fixes, modifiables ici.
@@ -71,7 +74,7 @@ const OUTCOME_TONE: Record<RenewalOutcome, string> = {
 export default async function AbonnementsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ p?: string; mois?: string; statut?: string; formule?: string; activite?: string }>;
+  searchParams: Promise<{ p?: string; mois?: string; statut?: string; formule?: string; activite?: string; rappel?: string }>;
 }) {
   await requireAdminPage();
   const params = await searchParams;
@@ -202,6 +205,17 @@ export default async function AbonnementsPage({
       return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + offset, 15)).toISOString().slice(0, 7);
     })
     .filter((m) => m >= firstMonth);
+  // Rappel « Garder mon Premium » : abonnés à résiliation programmée pas encore prévenus.
+  const scheduledSubs = paid.filter((s) => s.userId && statusOf(s, now) === "programme");
+  const { data: reminded } = await createAdminClient()
+    .from("user_events")
+    .select("metadata")
+    .eq("event_type", KEEP_PREMIUM_EVENT)
+    .in("user_id", [...new Set(scheduledSubs.map((s) => s.userId!))])
+    .limit(2000);
+  const remindedSubs = new Set((reminded ?? []).map((e) => (e.metadata as { subscriptionId?: string } | null)?.subscriptionId));
+  const toRemind = scheduledSubs.filter((s) => !remindedSubs.has(s.id)).length;
+  const [sentNow, skippedNow] = (params.rappel ?? "").split("-").map(Number);
   const monthName = (key: string) => new Date(`${key}-15T12:00:00Z`).toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
 
   return (
@@ -210,6 +224,33 @@ export default async function AbonnementsPage({
       <p style={{ margin: "0 0 16px", fontSize: 13, color: "var(--color-neutral-600)" }}>
         Combien de clients Stageio garde, quand ils partent, et lesquels sont en train de décrocher.
       </p>
+      {scheduledSubs.length > 0 && (
+        <div style={{ marginBottom: 12 }}>
+          <Card title={`${scheduledSubs.length} résiliation(s) programmée(s) : leur proposer de garder Premium`}>
+            <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5 }}>
+              Un e-mail à chacun : la date où son Premium s&apos;arrête, ce qu&apos;il perd ensuite, et un bouton « Garder mon Premium » qui annule la résiliation en un clic, au même prix (rien n&apos;est payé tout de
+              suite). Une seule fois par abonnement ; chaque résiliation est revérifiée dans Stripe juste avant l&apos;envoi.
+            </p>
+            {params.rappel === "erreur" ? (
+              <p style={{ margin: "8px 0 0", fontSize: 13, color: "#b42318" }}>Lecture Stripe impossible, rien n&apos;a été envoyé.</p>
+            ) : params.rappel ? (
+              <p style={{ margin: "8px 0 0", fontSize: 13, fontWeight: 700 }}>
+                ✓ {int(sentNow || 0)} e-mail(s) envoyé(s){skippedNow ? ` · ${int(skippedNow)} ignoré(s) (déjà prévenu, plus programmé ou sans e-mail)` : ""}.
+              </p>
+            ) : null}
+            {toRemind > 0 ? (
+              <form action={sendKeepPremiumRemindersAction} style={{ marginTop: 10 }}>
+                <button type="submit" className="btn btn-primary" style={{ fontSize: 13 }}>
+                  Envoyer le rappel à {toRemind} abonné(s)
+                </button>
+              </form>
+            ) : (
+              <p style={{ margin: "8px 0 0", fontSize: 13, color: "var(--color-neutral-600)" }}>Tous ont déjà reçu le rappel.</p>
+            )}
+          </Card>
+        </div>
+      )}
+
       <PeriodBar path="/admin/abonnements" period={period} computedAt={snap.computedAt} extraParams={{ mois: month.key }} />
 
       <Section title="Churn de la période" subtitle="Un client qui résilie mais garde son accès payé jusqu'à l'échéance n'est compté perdu qu'à la fin réelle de son abonnement.">
@@ -237,6 +278,15 @@ export default async function AbonnementsPage({
             sub={chCur.unknown > 0 ? `${chCur.unknown} sans motif Stripe` : "Motif Stripe connu pour tous"}
             definition="Volontaire : résiliation demandée (portail, suppression de compte, admin). Impayé : abonnement arrêté par Stripe après échec de paiement ou litige."
             source="Stripe, cancellation_details.reason"
+          />
+          <Kpi
+            label="Perdus après un paiement refusé"
+            value={int(mvCur.lostAfterFailure)}
+            delta={delta(mvCur.lostAfterFailure, mvPrev.lostAfterFailure)}
+            goodWhen="down"
+            sub={mvCur.failedOpen > 0 ? `${mvCur.failedOpen} paiement(s) refusé(s) encore récupérable(s)` : "aucun paiement refusé encore récupérable"}
+            definition="Abonnements terminés pendant la période alors qu'un renouvellement venait d'être refusé (carte sans provision, expirée, 3D Secure). Stripe ne retente plus : ces factures restent ouvertes mais ne seront pas encaissées. Récupérables : refus sur un abonnement encore en cours, que Stripe retente."
+            source="Stripe, factures et abonnements"
           />
           <Kpi
             label="Demandes de résiliation"

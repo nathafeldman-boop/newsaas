@@ -58,9 +58,9 @@ const rev = m.revenueIn(snap, sept);
 assert.equal(rev.recurringCents, 2747); assert.equal(rev.oneTimeCents, 3999); assert.equal(rev.refundedCents, 0);
 const octR = m.revenueIn(snap, { start: oct1, end: Date.UTC(2026, 10, 1) });
 assert.equal(octR.recurringCents, 1598); assert.equal(octR.refundedCents, 799); assert.equal(octR.netCents, 799);
-// Mouvements septembre : 4 nouveaux, 1 à vie, 0 renouvellement payé, 1 échec ouvert
+// Mouvements septembre : 4 nouveaux, 1 à vie, 0 renouvellement payé ; l'échec de D (terminé) est un client perdu, pas un paiement à récupérer
 const mv = m.movementIn(snap, sept, fp);
-assert.equal(mv.newSubs, 4); assert.equal(mv.lifetimeBuyers, 1); assert.equal(mv.renewals, 0); assert.equal(mv.failedOpen, 1); assert.equal(mv.cancelRequests, 1);
+assert.equal(mv.newSubs, 4); assert.equal(mv.lifetimeBuyers, 1); assert.equal(mv.renewals, 0); assert.equal(mv.failedOpen, 0); assert.equal(mv.lostAfterFailure, 1); assert.equal(mv.cancelRequests, 1);
 // Churn octobre : au 1/10 en cours : A, B, C (D fini le 20/9) ; terminés en oct : B (1/10), C (10/10) -> 2/3
 const ch = m.churnIn(paid, { start: oct1, end: Date.UTC(2026, 10, 1) });
 assert.equal(ch.startCount, 3); assert.equal(ch.churned, 2); assert.equal(ch.voluntary, 2);
@@ -85,4 +85,14 @@ assert.equal(cohorts[0].subs, 4);
 assert.equal(cohorts[0].lifetime, 1);
 assert.deepEqual(cohorts[0].firstRenewal, { ok: 2, failed: 1, canceled: 1, pending: 0 });
 assert.equal(cohorts[0].alive[30].alive, 2);
+// Paiement refusé sur un abonnement encore en cours (impayé) : à récupérer.
+{
+  const live: StripeSnapshot = {
+    ...snap,
+    subs: [sub({ id: "P", status: "past_due" })],
+    invoices: [inv({ id: "p1", subscription: "P" }), inv({ id: "p2", subscription: "P", billingReason: "subscription_cycle", created: T0 + 10 * D, status: "open", paidAt: null, amountPaid: 0, attemptCount: 2 })],
+  };
+  const mvLive = m.movementIn(live, sept);
+  assert.equal(mvLive.failedOpen, 1); assert.equal(mvLive.lostAfterFailure, 0);
+}
 console.log("cockpit-metrics : OK");

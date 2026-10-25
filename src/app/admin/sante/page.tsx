@@ -7,13 +7,14 @@ import { date, euros, maskEmail } from "@/lib/admin/cockpit/format";
 import { loadSnapshot, nowMs } from "@/lib/admin/cockpit/load";
 import { DAY_MS, activeAt, duplicateSubs, firstPaidBySub, paidSubs } from "@/lib/admin/cockpit/metrics";
 import { requireAdminPage } from "@/lib/admin/accessCode";
+import { syncUserPaymentsAction } from "@/app/admin/users/actions";
 
 // Santé des paiements et qualité des données : écarts entre Stripe (vérité
 // des paiements) et Supabase (vérité des comptes et des accès), impayés,
 // litiges, et la carte des sources de chaque métrique du cockpit.
 export const maxDuration = 60;
 
-type Check = { title: string; tone: "is-good" | "is-warn" | "is-bad"; detail: string; rows: { userId: string | null; text: string }[] };
+type Check = { title: string; tone: "is-good" | "is-warn" | "is-bad"; detail: string; rows: { userId: string | null; text: string; recover?: boolean }[] };
 
 const SOURCES: [string, string, string][] = [
   ["MRR, abonnements, renouvellements, churn", "Stripe (abonnements, factures)", "Instantané relu toutes les 30 min (bouton Actualiser)"],
@@ -32,7 +33,14 @@ const SOURCES: [string, string, string][] = [
   ],
 ];
 
-export default async function SantePage() {
+const LTV_RESULT: Record<string, string> = {
+  ok: "✓ Paiements recopiés depuis Stripe. Si le cas reste listé, recharger dans une minute.",
+  no_customer: "Aucun client Stripe trouvé pour ce compte : rien à recopier.",
+  error: "La récupération a échoué en partie : réessayer, ou voir la fiche du compte.",
+};
+
+export default async function SantePage({ searchParams }: { searchParams: Promise<{ ltv?: string }> }) {
+  const { ltv } = await searchParams;
   await requireAdminPage();
   const now = nowMs();
   const { snap, error } = await loadSnapshot();
@@ -57,8 +65,8 @@ export default async function SantePage() {
     checks.push({
       title: "Payeurs Stripe sans paiement noté en base",
       tone: missing.length ? "is-warn" : "is-good",
-      detail: "Paiement réussi dans Stripe mais LTV à 0 dans Supabase : webhook manqué ou arrivé avant le lien du client. « Récupérer depuis Stripe » sur la fiche corrige.",
-      rows: missing.map((id) => ({ userId: id, text: "LTV 0 € en base" })),
+      detail: "Paiement réussi dans Stripe mais LTV à 0 dans Supabase : webhook manqué ou arrivé avant le lien du client. « Récupérer depuis Stripe » ci-dessous recopie ses paiements (sans doublon).",
+      rows: missing.map((id) => ({ userId: id, text: "LTV 0 € en base", recover: true })),
     });
   }
 
@@ -148,6 +156,11 @@ export default async function SantePage() {
         Les écarts entre Stripe et la base, les paiements à surveiller, et d&apos;où vient chaque chiffre du cockpit.
       </p>
       <PeriodBar path="/admin/sante" computedAt={snap.computedAt} />
+      {ltv && LTV_RESULT[ltv] && (
+        <p className="cockpit-card" style={{ margin: "12px 0 0", fontSize: 13, fontWeight: 600 }}>
+          {LTV_RESULT[ltv]}
+        </p>
+      )}
 
       <Section title="Contrôles">
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -162,7 +175,7 @@ export default async function SantePage() {
               </div>
               <p style={{ fontSize: 12.5, color: "var(--color-neutral-600)", margin: "6px 0 0" }}>{c.detail}</p>
               {c.rows.length > 0 && (
-                <details style={{ marginTop: 6 }}>
+                <details style={{ marginTop: 6 }} open={c.rows.some((r) => r.recover)}>
                   <summary style={{ cursor: "pointer", fontSize: 12.5 }}>Voir les {c.rows.length} cas</summary>
                   <table className="cockpit-table" style={{ marginTop: 6 }}>
                     <tbody>
@@ -170,6 +183,17 @@ export default async function SantePage() {
                         <tr key={i}>
                           <td>{userLink(r.userId)}</td>
                           <td>{r.text}</td>
+                          {r.recover && r.userId && (
+                            <td>
+                              <form action={syncUserPaymentsAction}>
+                                <input type="hidden" name="userId" value={r.userId} />
+                                <input type="hidden" name="back" value="/admin/sante" />
+                                <button type="submit" className="btn btn-secondary" style={{ padding: "4px 10px", fontSize: 12 }}>
+                                  Récupérer depuis Stripe
+                                </button>
+                              </form>
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>

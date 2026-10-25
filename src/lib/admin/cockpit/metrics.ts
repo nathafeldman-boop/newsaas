@@ -145,7 +145,10 @@ export type Movement = {
   lifetimeBuyers: number;
   renewals: number;
   renewalCents: number;
+  /** Paiements refusés encore récupérables (abonnement toujours en cours, Stripe peut encore encaisser). */
   failedOpen: number;
+  /** Abonnements terminés après un paiement refusé : plus rien à récupérer, client perdu. */
+  lostAfterFailure: number;
   recoveredAfterFailure: number;
   cancelRequests: number;
 };
@@ -155,13 +158,24 @@ export function movementIn(snap: StripeSnapshot, r: Range, firstPaid = firstPaid
   const cycle = snap.invoices.filter((i) => i.subscription && i.billingReason === "subscription_cycle");
   const renewals = cycle.filter((i) => i.status === "paid" && i.amountPaid > 0 && inRange(i.paidAt ?? i.created, r));
   const subInvoices = snap.invoices.filter((i) => i.subscription);
+  // 25/10 : l'alerte comptait aussi les factures d'abonnements déjà résiliés
+  // (41 « à récupérer », en fait 28 abonnements terminés que Stripe ne
+  // retentera plus). Une facture d'abonnement terminé est un client perdu,
+  // pas un paiement à récupérer.
+  const subById = new Map(snap.subs.map((s) => [s.id, s]));
+  const ended = (subId: string | null) => {
+    const s = subId ? subById.get(subId) : undefined;
+    return !!s && (s.status === "canceled" || s.status === "incomplete_expired");
+  };
+  const failed = subInvoices.filter((i) => i.attemptCount > 0 && (i.status === "open" || i.status === "uncollectible") && inRange(i.created, r));
   return {
     newSubs: newSubs.length,
     newMrr: sum(newSubs.filter(eur).map((s) => s.mrrCents)),
     lifetimeBuyers: new Set(snap.oneTime.filter((o) => inRange(o.created, r)).map((o) => o.userId)).size,
     renewals: renewals.length,
     renewalCents: sum(renewals.map((i) => i.amountPaid)),
-    failedOpen: subInvoices.filter((i) => i.attemptCount > 0 && (i.status === "open" || i.status === "uncollectible") && inRange(i.created, r)).length,
+    failedOpen: failed.filter((i) => !ended(i.subscription)).length,
+    lostAfterFailure: new Set(failed.filter((i) => ended(i.subscription)).map((i) => i.subscription)).size,
     recoveredAfterFailure: subInvoices.filter((i) => i.status === "paid" && i.attemptCount > 1 && inRange(i.paidAt ?? i.created, r)).length,
     cancelRequests: snap.subs.filter((s) => firstPaid.has(s.id) && inRange(s.canceledAt, r)).length,
   };

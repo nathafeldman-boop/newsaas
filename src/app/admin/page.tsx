@@ -105,7 +105,7 @@ export default async function CockpitOverviewPage({ searchParams }: { searchPara
   const alerts = [
     autoAlert,
     state.pastDue.count > 0 && { tone: "is-bad", text: `${state.pastDue.count} abonnement(s) en impayé (${euros(state.pastDue.mrr)} de MRR)`, href: "/admin/abonnements?statut=impaye" },
-    mvCur.failedOpen > 0 && { tone: "is-bad", text: `${mvCur.failedOpen} paiement(s) échoué(s) non récupéré(s) sur la période`, href: "/admin/abonnements" },
+    mvCur.failedOpen > 0 && { tone: "is-bad", text: `${mvCur.failedOpen} paiement(s) refusé(s) encore récupérable(s) (abonnement en cours)`, href: "/admin/abonnements?statut=impaye" },
     state.scheduled.count > 0 && { tone: "is-warn", text: `${state.scheduled.count} résiliation(s) programmée(s) (${euros(state.scheduled.mrr)} de MRR à risque)`, href: "/admin/abonnements?statut=programme" },
     cancels7 >= 3 && cancels7 >= 2 * Math.max(1, cancelsPrev7) && { tone: "is-bad", text: `Hausse des résiliations : ${cancels7} demandes en 7 jours contre ${cancelsPrev7} les 7 jours d'avant`, href: "/admin/abonnements" },
     missingCredit && { tone: "is-warn", text: `${missingCredit} payeur(s) Stripe sans paiement noté en base`, href: "/admin/sante" },
