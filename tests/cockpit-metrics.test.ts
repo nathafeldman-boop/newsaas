@@ -58,6 +58,13 @@ const rev = m.revenueIn(snap, sept);
 assert.equal(rev.recurringCents, 2747); assert.equal(rev.oneTimeCents, 3999); assert.equal(rev.refundedCents, 0);
 const octR = m.revenueIn(snap, { start: oct1, end: Date.UTC(2026, 10, 1) });
 assert.equal(octR.recurringCents, 1598); assert.equal(octR.refundedCents, 799); assert.equal(octR.netCents, 799);
+// Achat à vie d'un compte supprimé depuis (28/10) : sa facture sans session reliée compte, sans double compte de in_L.
+{
+  const orphan = { id: "in_X", customer: "cus_X", subscription: null, billingReason: "manual", status: "paid", amountPaid: 4000, amountDue: 4000, currency: "eur", created: oct1 + D, paidAt: oct1 + D, attemptCount: 1 };
+  const withOrphan = { ...snap, invoices: [...snap.invoices, orphan] };
+  assert.equal(m.revenueIn(withOrphan, { start: oct1, end: Date.UTC(2026, 10, 1) }).oneTimeCents, 4000);
+  assert.equal(m.revenueIn(withOrphan, sept).oneTimeCents, 3999);
+}
 // Mouvements septembre : 4 nouveaux, 1 à vie, 0 renouvellement payé ; l'échec de D (terminé) est un client perdu, pas un paiement à récupérer
 const mv = m.movementIn(snap, sept, fp);
 assert.equal(mv.newSubs, 4); assert.equal(mv.lifetimeBuyers, 1); assert.equal(mv.renewals, 0); assert.equal(mv.failedOpen, 0); assert.equal(mv.lostAfterFailure, 1); assert.equal(mv.cancelRequests, 1);

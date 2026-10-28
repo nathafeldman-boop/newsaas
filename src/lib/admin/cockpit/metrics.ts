@@ -113,7 +113,11 @@ export function revenueIn(snap: StripeSnapshot, r: Range): Revenue {
   const recurringCents = sum(
     snap.invoices.filter((i) => i.subscription && i.status === "paid" && inRange(i.paidAt ?? i.created, r)).map((i) => i.amountPaid),
   );
-  const oneTimeCents = sum(snap.oneTime.filter((o) => inRange(o.created, r)).map((o) => o.amountCents));
+  // Plus les factures d'achat unique sans session reliée à un profil (compte
+  // supprimé depuis, 28/10) : sinon ce paiement manquerait au total.
+  const sessionInvoices = new Set(snap.oneTime.map((o) => o.invoice).filter(Boolean));
+  const orphanOneTime = snap.invoices.filter((i) => !i.subscription && i.status === "paid" && !sessionInvoices.has(i.id) && inRange(i.paidAt ?? i.created, r));
+  const oneTimeCents = sum(snap.oneTime.filter((o) => inRange(o.created, r)).map((o) => o.amountCents)) + sum(orphanOneTime.map((i) => i.amountPaid));
   const refunds = snap.refunds.filter((x) => inRange(x.created, r));
   const disputes = snap.disputes.filter((x) => inRange(x.created, r));
   const refundedCents = sum(refunds.map((x) => x.amount));

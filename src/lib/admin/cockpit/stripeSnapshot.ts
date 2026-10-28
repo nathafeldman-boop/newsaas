@@ -4,6 +4,7 @@ import { getStripeClient } from "@/lib/stripe/client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchAllRowsByIdCursor } from "@/lib/supabase/public";
 import type { BillingInterval, StripeSnapshot, SubRecord } from "@/lib/admin/cockpit/types";
+import { isStageioInvoice } from "@/lib/admin/stageioInvoice";
 
 // Source de vérité des paiements et des abonnements : Stripe. Le compte est
 // partagé avec d'autres sites : un objet n'est gardé que s'il appartient à
@@ -132,7 +133,8 @@ async function compute(): Promise<StripeSnapshot> {
   const invoices: StripeSnapshot["invoices"] = [];
   for await (const inv of stripe.invoices.list({ created: { gte: since }, limit: 100 })) {
     const customer = idOf(inv.customer);
-    if (!customer || !userByCustomer.has(customer)) continue;
+    // Compte relié à un profil, ou produit Stageio (compte supprimé, client non relié).
+    if (!customer || (!userByCustomer.has(customer) && !isStageioInvoice(inv))) continue;
     invoices.push({
       id: inv.id ?? "",
       customer,
@@ -171,7 +173,7 @@ async function compute(): Promise<StripeSnapshot> {
   return { computedAt: Date.now(), since: SINCE, subs, invoices, oneTime, refunds, disputes, otherCurrencySubs };
 }
 
-export const getStripeSnapshot = unstable_cache(compute, ["cockpit-stripe-snapshot-v1"], {
+export const getStripeSnapshot = unstable_cache(compute, ["cockpit-stripe-snapshot-v2"], {
   revalidate: 1800,
   tags: [COCKPIT_STRIPE_TAG],
 });

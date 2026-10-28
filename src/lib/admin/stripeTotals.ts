@@ -3,6 +3,7 @@ import type Stripe from "stripe";
 import { getStripeClient } from "@/lib/stripe/client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchAllRowsByIdCursor } from "@/lib/supabase/public";
+import { isStageioInvoice } from "@/lib/admin/stageioInvoice";
 
 // Ventes réelles depuis Stripe (Nathan, 24/10 : « prends les personnes qui
 // ont réellement payé », le compteur « payant réel » ne garde que les
@@ -60,7 +61,8 @@ async function compute(): Promise<StripeTotals> {
   // renouvellements, et accès à vie avec facture.
   for await (const inv of stripe.invoices.list({ created: { gte: SINCE }, status: "paid", limit: 100 })) {
     const customer = typeof inv.customer === "string" ? inv.customer : inv.customer?.id;
-    if (customer && customers.has(customer)) revenueCents += inv.amount_paid;
+    // Comptes reliés, plus tout produit Stageio (compte supprimé depuis, 28/10).
+    if ((customer && customers.has(customer)) || isStageioInvoice(inv)) revenueCents += inv.amount_paid;
   }
 
   let refundedCents = 0;
@@ -92,4 +94,4 @@ async function compute(): Promise<StripeTotals> {
 
 // Plusieurs dizaines d'appels Stripe : gardé 6 h. La page /admin/stripe le
 // calcule (60 s permises) ; le dashboard ne fait que relire le cache.
-export const getStripeTotals = unstable_cache(compute, ["admin-stripe-totals-v1"], { revalidate: 6 * 3600 });
+export const getStripeTotals = unstable_cache(compute, ["admin-stripe-totals-v2"], { revalidate: 6 * 3600 });
