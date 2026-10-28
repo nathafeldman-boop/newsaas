@@ -3,6 +3,7 @@ import { domainOf } from "@/lib/inbox/parse";
 import { classifyEmailReply } from "@/lib/google/classifyEmailReplyWithAnthropic";
 import { isAnthropicConfigured } from "@/lib/anthropic/client";
 import { notifyInboxMessage } from "@/lib/resend/notifyInboxMessage";
+import { notifyInterviewReply } from "@/lib/resend/notifyInterviewReply";
 import type { ApplicationStatus } from "@/types/database";
 
 // Rangement d'un email reçu sur une adresse de la boîte Stageio, quel que
@@ -72,9 +73,10 @@ export async function storeInboundEmail(admin: ReturnType<typeof createAdminClie
   }
 
   // Statut de la candidature d'après la réponse (entretien, refus).
+  let interview: { company: string; title: string | null } | null = null;
   if (offerId && isAnthropicConfigured()) {
     try {
-      const { data: offer } = await admin.from("offers").select("company").eq("id", offerId).maybeSingle();
+      const { data: offer } = await admin.from("offers").select("company, title").eq("id", offerId).maybeSingle();
       const verdict = await classifyEmailReply(
         {
           from: email.from.name ? `${email.from.name} <${email.from.address}>` : email.from.address,
@@ -93,9 +95,27 @@ export async function storeInboundEmail(admin: ReturnType<typeof createAdminClie
           .eq("user_id", profile.id)
           .eq("offer_id", offerId)
           .not("status", "in", "(acceptee,refusee,cloturee)");
+        if (status === "entretien" && offer?.company) interview = { company: offer.company, title: offer.title ?? null };
       }
     } catch (err) {
       console.error("inbox: classement de la réponse impossible", err);
+    }
+  }
+
+  // Invitation à un entretien (28/10) : un email qui le dit et mène à la
+  // préparation, à la place du simple « nouveau message ».
+  if (profile.email && interview) {
+    try {
+      await notifyInterviewReply({
+        to: profile.email,
+        firstName: profile.full_name?.split(" ")[0] ?? null,
+        company: interview.company,
+        offerTitle: interview.title,
+        messageId: inserted.id,
+      });
+      return "stored";
+    } catch (err) {
+      console.error("inbox: notification d'entretien impossible", err);
     }
   }
 

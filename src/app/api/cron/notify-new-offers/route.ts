@@ -17,6 +17,9 @@ import {
   windowStart,
   type AlertFrequency,
 } from "@/lib/alerts/offerAlert";
+import { isPremium } from "@/lib/subscription/isPremium";
+import { SPONTANEOUS_EVENT } from "@/lib/spontaneous/targets";
+import type { AlertRecap } from "@/lib/alerts/offerAlert";
 import type { Profile } from "@/types/database";
 
 // Cron quotidien (voir vercel.json) : alerte e-mail « nouvelles offres qui
@@ -46,7 +49,12 @@ const PROFILE_PAGE = 600;
 const CONCURRENCY = 6;
 
 type Candidate = { profile: Profile; frequency: AlertFrequency };
-type Prepared = { profile: Profile; frequency: AlertFrequency; matches: { offer: Awaited<ReturnType<typeof fetchActiveOffers>>[number]; score: number }[] };
+type Prepared = {
+  profile: Profile;
+  frequency: AlertFrequency;
+  matches: { offer: Awaited<ReturnType<typeof fetchActiveOffers>>[number]; score: number }[];
+  recap?: AlertRecap;
+};
 
 export async function GET(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -131,7 +139,16 @@ export async function GET(request: NextRequest) {
         scored.map((m) => m.offer.id),
       );
     const seen = new Set((swiped ?? []).map((s) => s.offer_id));
-    return { profile, frequency, matches: scored.filter((m) => !seen.has(m.offer.id)).slice(0, MAX_OFFERS_PER_EMAIL) };
+    const matches = scored.filter((m) => !seen.has(m.offer.id)).slice(0, MAX_OFFERS_PER_EMAIL);
+    // Abonnés (28/10) : leurs résultats des dernières 24 h en tête de l'email.
+    if (matches.length === 0 || !isPremium(profile)) return { profile, frequency, matches };
+    const since = new Date(now - 86_400_000).toISOString();
+    const [sentApps, spontaneous, replies] = await Promise.all([
+      admin.from("applications").select("id", { count: "exact", head: true }).eq("user_id", profile.id).gte("sent_at", since),
+      admin.from("user_events").select("id", { count: "exact", head: true }).eq("user_id", profile.id).eq("event_type", SPONTANEOUS_EVENT).gte("created_at", since),
+      admin.from("inbox_messages").select("id", { count: "exact", head: true }).eq("user_id", profile.id).eq("direction", "in").gte("created_at", since),
+    ]);
+    return { profile, frequency, matches, recap: { sent: (sentApps.count ?? 0) + (spontaneous.count ?? 0), replies: replies.count ?? 0 } };
   };
 
   // Curseur : le compte est traité (même sans offre), il ne repasse pas avant sa prochaine échéance.
@@ -160,7 +177,7 @@ export async function GET(request: NextRequest) {
       chunk.map((c) => ({
         from,
         to: c.profile.email as string,
-        ...renderOfferAlert({ profileId: c.profile.id, firstName: c.profile.full_name, matches: c.matches, frequency: c.frequency }),
+        ...renderOfferAlert({ profileId: c.profile.id, firstName: c.profile.full_name, matches: c.matches, frequency: c.frequency, recap: c.recap }),
         headers: unsubscribeHeaders(c.profile.id),
         tags: [{ name: "campaign", value: ALERT_TAG }],
       })),

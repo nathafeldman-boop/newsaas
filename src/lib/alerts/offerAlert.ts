@@ -46,7 +46,11 @@ const utm = (content: string) => `utm_source=email&utm_medium=alerte&utm_campaig
 
 type Match = { offer: Pick<Offer, "id" | "title" | "company" | "location" | "contract_type">; score: number };
 
-export function renderOfferAlert(params: { profileId: string; firstName: string | null; matches: Match[]; frequency: AlertFrequency }): {
+// Abonnés (28/10, résumé du matin) : leurs résultats des dernières 24 h
+// (vrais comptes) et le lien vers les candidatures spontanées.
+export type AlertRecap = { sent: number; replies: number };
+
+export function renderOfferAlert(params: { profileId: string; firstName: string | null; matches: Match[]; frequency: AlertFrequency; recap?: AlertRecap }): {
   subject: string;
   html: string;
   text: string;
@@ -71,21 +75,31 @@ export function renderOfferAlert(params: { profileId: string; firstName: string 
   const swipeUrl = `${SITE_URL}/swipe?${utm("bouton")}`;
   const settingsUrl = `${SITE_URL}/profil?${utm("frequence")}`;
   const rhythm = frequency === "weekly" ? "une fois par semaine" : "au plus une fois par jour";
+  const recap = params.recap;
+  const recapLine =
+    recap && recap.sent + recap.replies > 0
+      ? `📈 Depuis hier : ${recap.sent} candidature${recap.sent > 1 ? "s" : ""} envoyée${recap.sent > 1 ? "s" : ""}, ${recap.replies} réponse${recap.replies > 1 ? "s" : ""} reçue${recap.replies > 1 ? "s" : ""}.`
+      : null;
+  const spontaneousUrl = `${SITE_URL}/spontanees?${utm("spontanees")}`;
   const html = `<p>${hello}</p>
+${recapLine ? `<p style="background:#f2fbf6;border-radius:10px;padding:10px 12px">${recapLine}</p>` : ""}
 <p>${n === 1 ? "Une offre arrivée" : `${n} offres arrivées`} sur Stageio ${period} correspond${n === 1 ? "" : "ent"} à ton profil. Les premiers à postuler ont le plus de chances.</p>
 <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;max-width:560px">${items}</table>
 <p style="margin-top:18px"><a href="${swipeUrl}" style="background:#0f9c56;color:#fff;padding:10px 18px;border-radius:999px;text-decoration:none;font-weight:700">Voir toutes mes offres</a></p>
+${recap ? `<p>🏢 Des entreprises près de chez toi recrutent aussi sans annonce : <a href="${spontaneousUrl}" style="color:#0f7a45;font-weight:700">candidature spontanée en 1 clic</a>.</p>` : ""}
 <p style="font-size:12px;color:#888">Tu reçois cette alerte ${rhythm}, seulement s'il y a des offres pour toi. <a href="${settingsUrl}" style="color:#888">Changer la fréquence</a>.</p>
 ${unsubscribeFooterHtml(params.profileId)}`;
 
   const text = [
     params.firstName?.trim() ? `Salut ${params.firstName.trim()},` : "Salut,",
     "",
+    ...(recapLine ? [recapLine, ""] : []),
     `${n === 1 ? "Une offre arrivée" : `${n} offres arrivées`} sur Stageio ${period} correspond${n === 1 ? "" : "ent"} à ton profil :`,
     "",
     ...matches.map(({ offer, score }) => `- ${offer.title} — ${offer.company} (${offer.location}), ${score} % compatible : ${SITE_URL}${offerPath(offer)}?${utm("offre")}`),
     "",
     `Voir toutes mes offres : ${swipeUrl}`,
+    ...(recap ? [`Candidature spontanée en 1 clic : ${spontaneousUrl}`] : []),
     `Changer la fréquence : ${settingsUrl}`,
   ].join("\n");
 

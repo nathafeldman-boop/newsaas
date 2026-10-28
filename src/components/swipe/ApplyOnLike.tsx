@@ -15,7 +15,9 @@ import type { AutoSendManualReason } from "@/lib/applications/autoSend";
 
 export type AutoApplySetup = { hasCv: boolean; hasPhone: boolean; hasFullName: boolean };
 
-type Field = "cv" | "phone" | "name";
+// Aussi demandé avant une candidature spontanée (/spontanees, 28/10).
+export type ApplicantField = "cv" | "phone" | "name";
+type Field = ApplicantField;
 
 const FIELD_OF_REASON: Partial<Record<AutoSendManualReason, Field>> = { no_cv: "cv", no_phone: "phone", no_name: "name" };
 
@@ -82,7 +84,7 @@ export function useApplyOnLike(setup: AutoApplySetup | undefined, userId: string
   return { applyOnLike, ui };
 }
 
-function InfoSheet({
+export function InfoSheet({
   prompt,
   userId,
   onDone,

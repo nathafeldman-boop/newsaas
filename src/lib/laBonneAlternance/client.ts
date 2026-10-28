@@ -7,7 +7,8 @@
 // Routes et schémas lus dans le SDK officiel (paquet npm api-alternance-sdk
 // 2.18.0) : GET /job/v1/search, POST /job/v1/apply.
 
-const API_URL = "https://api.apprentissage.beta.gouv.fr/api";
+// LBA_API_URL : autre adresse de l'API (aperçu local avec un faux serveur), jamais réglée en production.
+const API_URL = process.env.LBA_API_URL?.trim() || "https://api.apprentissage.beta.gouv.fr/api";
 
 // Limites de débit de l'API, par consommateur (donc pour tout Stageio).
 export const SEARCH_CALLS_PER_MINUTE = 60;
@@ -110,6 +111,34 @@ export async function searchLbaJobs(departement: string, key?: string): Promise<
   const params = new URLSearchParams({ departements: departement });
   const data = (await call(`/job/v1/search?${params}`, { method: "GET", key })) as { jobs?: LbaJob[] } | null;
   return data?.jobs ?? [];
+}
+
+// Entreprises qui n'ont pas publié d'offre mais sont susceptibles de
+// recruter des alternants dans le métier cherché (« recruiters » de la même
+// recherche, 150 au plus) : cibles des candidatures spontanées (28/10). Il
+// faut un domaine (codes ROME) et une zone (coordonnées et rayon, ou
+// département). apply.recipient_id présent = l'API sait leur transmettre une
+// candidature.
+export type LbaRecruiter = {
+  identifier: { id: string };
+  workplace: LbaWorkplace;
+  apply: LbaApply;
+};
+
+export async function searchLbaRecruiters(
+  params: { romes: string[]; latitude?: number; longitude?: number; radius?: number; departement?: string },
+  key?: string,
+): Promise<LbaRecruiter[]> {
+  const query = new URLSearchParams({ romes: params.romes.join(",") });
+  if (params.latitude !== undefined && params.longitude !== undefined) {
+    query.set("latitude", String(params.latitude));
+    query.set("longitude", String(params.longitude));
+    query.set("radius", String(params.radius ?? 30));
+  } else if (params.departement) {
+    query.set("departements", params.departement);
+  }
+  const data = (await call(`/job/v1/search?${query}`, { method: "GET", key })) as { recruiters?: LbaRecruiter[] } | null;
+  return data?.recruiters ?? [];
 }
 
 export async function sendLbaApplication(application: LbaApplication, key?: string): Promise<{ id: string }> {

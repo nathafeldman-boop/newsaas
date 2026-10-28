@@ -1,0 +1,65 @@
+import { NextResponse, type NextRequest } from "next/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { parisClock } from "@/lib/campaigns/serieVente";
+import { loadSearchingSubscribers } from "@/lib/subscribers/premiumProfiles";
+import { runFollowUps } from "@/lib/subscribers/followUps";
+import { runFreshAlerts } from "@/lib/subscribers/freshAlerts";
+import { runAutoSpontaneous } from "@/lib/spontaneous/autoRun";
+
+// Aide aux abonnés après le paiement (28/10, Nathan : « dès qu'il paye,
+// fais pas en sorte qu'il churn […] faut qu'il trouve son alternance ») :
+// un seul passage par heure de 8 h 15 à 19 h 15 (heure de Paris) :
+// 1. relances des candidatures sans réponse, une fois par jour (10 h) ;
+// 2. alerte « offre de moins d'une heure » (voir lib/subscribers/freshAlerts) ;
+// 3. candidatures spontanées envoyées toutes seules pour Stageio Auto.
+// Chaque partie a son budget de temps : une panne de l'une ne bloque pas les autres.
+export const maxDuration = 300;
+
+const FOLLOW_UP_HOUR = 10;
+
+export async function GET(request: NextRequest) {
+  const secret = process.env.CRON_SECRET;
+  if (secret && request.headers.get("authorization") !== `Bearer ${secret}`) {
+    return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
+  }
+  const started = Date.now();
+  const admin = createAdminClient();
+  const { hour } = parisClock(started);
+  const result: Record<string, unknown> = { parisHour: hour };
+
+  let subscribers: Awaited<ReturnType<typeof loadSearchingSubscribers>> = [];
+  try {
+    subscribers = await loadSearchingSubscribers(admin);
+    result.subscribers = subscribers.length;
+  } catch (err) {
+    result.subscribersError = err instanceof Error ? err.message : String(err);
+  }
+
+  if (hour === FOLLOW_UP_HOUR && subscribers.length > 0) {
+    try {
+      const r = await runFollowUps(admin, subscribers, started);
+      result.followUps = { ...r, failures: r.failures.slice(0, 5) };
+    } catch (err) {
+      result.followUpsError = err instanceof Error ? err.message : String(err);
+    }
+  }
+
+  if (subscribers.length > 0) {
+    try {
+      const r = await runFreshAlerts(admin, subscribers, started + 120_000, started);
+      result.freshAlerts = { ...r, failures: r.failures.slice(0, 5) };
+    } catch (err) {
+      result.freshAlertsError = err instanceof Error ? err.message : String(err);
+    }
+  }
+
+  try {
+    result.autoSpontaneous = await runAutoSpontaneous(admin, started + 270_000, started);
+  } catch (err) {
+    result.autoSpontaneousError = err instanceof Error ? err.message : String(err);
+  }
+
+  result.ms = Date.now() - started;
+  console.log("abonnes", JSON.stringify(result));
+  return NextResponse.json(result);
+}

@@ -67,15 +67,18 @@ export function InterviewSimulator({
   userId,
   isPremium,
   defaultJobHint,
+  defaultDomainId = null,
   pastResults = [],
 }: {
   userId: string;
   isPremium: boolean;
   defaultJobHint: string;
+  /** Domaine déjà trouvé côté serveur par la taxonomie des métiers (lib/interview/domainForJob). */
+  defaultDomainId?: string | null;
   /** Parties terminées (complètes) de l'étudiant, les plus récentes en dernier. */
   pastResults?: QuizResult[];
 }) {
-  const [domainId, setDomainId] = useState(() => findClosestDomain(defaultJobHint));
+  const [domainId, setDomainId] = useState(() => defaultDomainId ?? findClosestDomain(defaultJobHint));
   const [level, setLevel] = useState<InterviewLevel | null>(null);
   const [phase, setPhase] = useState<Phase>("setup");
   const [mode, setMode] = useState<Mode>("full");

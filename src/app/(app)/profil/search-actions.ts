@@ -32,6 +32,7 @@ export async function markSearchCompletedAction(reason: string): Promise<void> {
   await logServerEvent(supabase, user.id, "search_completed", { reason });
   revalidatePath("/swipe");
   revalidatePath("/profil");
+  revalidatePath("/dashboard");
 }
 
 export async function resumeSearchAction(): Promise<void> {
@@ -54,4 +55,5 @@ export async function resumeSearchAction(): Promise<void> {
   await logServerEvent(supabase, user.id, "search_resumed");
   revalidatePath("/swipe");
   revalidatePath("/profil");
+  revalidatePath("/dashboard");
 }

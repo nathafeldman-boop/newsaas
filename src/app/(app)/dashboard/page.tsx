@@ -13,8 +13,20 @@ import { fetchActiveOffers } from "@/lib/offers/fetchActiveOffers";
 import { knownProfileSectors } from "@/lib/offers/sectors";
 import { buildActionPlan } from "@/lib/dashboard/actionPlan";
 import { isFollowUpDue, isSentStatus, requestNow } from "@/lib/applications/status";
+import { isAutoTier } from "@/lib/subscription/isPremium";
+import { normalizePhone, splitFullName } from "@/lib/laBonneAlternance/applicant";
+import { ownOffersByIds } from "@/lib/applications/ownOffers";
+import { SPONTANEOUS_EVENT } from "@/lib/spontaneous/targets";
+import { computeResults } from "@/lib/subscribers/results";
+import { SearchCompletedToggle } from "@/components/profile/SearchCompletedToggle";
+import { interviewDomainFor } from "@/lib/interview/domainForJob";
 
-export default async function DashboardPage() {
+const DATE_FR = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", timeZone: "Europe/Paris" });
+const mutedText = { color: "color-mix(in srgb, var(--color-text) 66%, transparent)" } as const;
+const kpiLabel = { fontSize: 11, letterSpacing: "0.04em", textTransform: "uppercase", margin: "4px 0 0", ...mutedText } as const;
+
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ prep?: string }> }) {
+  const { prep } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -62,7 +74,8 @@ export default async function DashboardPage() {
     );
   }
 
-  const [{ data: applications }, cvSignedUrlResult, { data: likedSwipes }, todayOffers, quizEvents] =
+  const admin = createAdminClient();
+  const [{ data: applications }, cvSignedUrlResult, { data: likedSwipes }, todayOffers, quizEvents, { data: spontaneous }, { data: inbound }] =
     await Promise.all([
       supabase.from("applications").select("*").eq("user_id", user.id),
       profile?.cv_path
@@ -90,6 +103,10 @@ export default async function DashboardPage() {
             .limit(500)
             .then(({ data }) => data ?? [])
         : Promise.resolve([]),
+      // Candidatures spontanées envoyées et réponses arrivées dans la boîte
+      // Stageio (lues en service_role, sur son seul compte).
+      admin.from("user_events").select("created_at").eq("user_id", user.id).eq("event_type", SPONTANEOUS_EVENT).limit(2000),
+      admin.from("inbox_messages").select("created_at").eq("user_id", user.id).eq("direction", "in").limit(2000),
     ]);
   const pastResults: QuizResult[] = [];
   for (const e of quizEvents as { metadata: Record<string, unknown> | null; created_at: string }[]) {
@@ -131,7 +148,25 @@ export default async function DashboardPage() {
 
   const actionPlan = buildActionPlan({ newMatchingOffersCount, offersToApplyCount, staleApplicationsCount, interviewsCount });
 
-  const defaultJobHint = profile?.target_jobs?.[0] || profile?.sectors?.[0] || "";
+  // Résultats et étapes suivantes (28/10, aide après le paiement).
+  const results = computeResults({
+    applications: applications ?? [],
+    spontaneousAt: (spontaneous ?? []).map((e) => e.created_at),
+    inboundAt: (inbound ?? []).map((m) => m.created_at),
+    now,
+  });
+  const interviewApps = (applications ?? []).filter((a) => a.status === "entretien");
+  const interviewOffers = interviewApps.length > 0 ? await ownOffersByIds(interviewApps.map((a) => a.offer_id)).catch(() => []) : [];
+  const auto = isAutoTier(profile);
+  const checklist = [
+    { done: !!profile?.cv_path, label: "Ajouter ton CV", hint: "Il part avec chaque candidature.", href: "/cv" },
+    { done: (profile?.target_jobs ?? []).length > 0, label: "Indiquer le métier que tu vises", hint: "Pour les offres et les entreprises qu'on te propose.", href: "/profil" },
+    { done: !!profile?.city, label: "Indiquer ta ville", hint: "Pour les entreprises proches de chez toi.", href: "/profil" },
+    { done: !!normalizePhone(profile?.phone) && !!splitFullName(profile?.full_name), label: "Ton nom complet et ton téléphone", hint: "Exigés pour postuler via La bonne alternance : le recruteur doit pouvoir te rappeler.", href: "/profil" },
+  ];
+  const checklistLeft = checklist.filter((c) => !c.done);
+
+  const defaultJobHint = prep?.trim().slice(0, 120) || profile?.target_jobs?.[0] || profile?.sectors?.[0] || "";
   const cvSignedUrl = cvSignedUrlResult.data?.signedUrl ?? null;
 
   return (
@@ -140,6 +175,121 @@ export default async function DashboardPage() {
       <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "4px 0 0" }}>
         Prépare tes entretiens et suis tes candidatures, au même endroit.
       </p>
+
+      {checklistLeft.length > 0 && (
+        <div className="card elev-sm mt-6" style={{ padding: "var(--space-6)" }}>
+          <p style={{ fontFamily: "var(--font-heading)", fontSize: 17, margin: 0 }}>🚀 Prêt à postuler</p>
+          <p style={{ fontSize: 13, margin: "4px 0 0", ...mutedText }}>
+            {checklist.length - checklistLeft.length}/{checklist.length} fait. Complète le reste : tes candidatures partent ensuite en un clic.
+          </p>
+          <div className="flex flex-col gap-2" style={{ marginTop: 12 }}>
+            {checklist.map((c) => (
+              <Link
+                key={c.label}
+                href={c.href}
+                className="flex items-start gap-2.5 no-underline"
+                style={{ color: "inherit", opacity: c.done ? 0.55 : 1, pointerEvents: c.done ? "none" : undefined }}
+              >
+                <span aria-hidden style={{ fontSize: 15, lineHeight: 1.4 }}>{c.done ? "✅" : "⬜"}</span>
+                <span style={{ fontSize: 13.5, lineHeight: 1.4 }}>
+                  <strong style={{ textDecoration: c.done ? "line-through" : undefined }}>{c.label}</strong>
+                  {!c.done && <span style={mutedText}> · {c.hint}</span>}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="card elev-sm mt-6" style={{ padding: "var(--space-6)" }}>
+        <p style={{ fontFamily: "var(--font-heading)", fontSize: 17, margin: 0 }}>📈 Tes résultats</p>
+        <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <div>
+            <p style={{ fontFamily: "var(--font-heading)", fontSize: 26, margin: 0 }}>{results.sentTotal}</p>
+            <p style={kpiLabel}>Candidatures</p>
+          </div>
+          <div>
+            <p style={{ fontFamily: "var(--font-heading)", fontSize: 26, margin: 0 }}>{results.sentWeek}</p>
+            <p style={kpiLabel}>Cette semaine</p>
+          </div>
+          <div>
+            <p style={{ fontFamily: "var(--font-heading)", fontSize: 26, margin: 0, color: "var(--color-accent-700)" }}>{results.replies}</p>
+            <p style={kpiLabel}>Réponses</p>
+          </div>
+          <div>
+            <p style={{ fontFamily: "var(--font-heading)", fontSize: 26, margin: 0, color: "var(--color-accent-2-700)" }}>{results.interviews + results.accepted}</p>
+            <p style={kpiLabel}>Entretiens</p>
+          </div>
+        </div>
+        <p style={{ fontSize: 13, lineHeight: 1.5, margin: "14px 0 0", ...mutedText }}>
+          {results.firstReplyAt
+            ? `Première réponse reçue le ${DATE_FR.format(new Date(results.firstReplyAt))}. Continue sur ta lancée : plus tu postules, plus tu décroches d'entretiens.`
+            : results.sentTotal === 0
+              ? "Ta première candidature est à un clic : like une offre ou contacte une entreprise en spontané."
+              : results.sentWeek < 10
+                ? "Vise au moins 10 candidatures par semaine : plus tu postules, plus tu décroches d'entretiens."
+                : "Beau rythme ! Les premières réponses arrivent souvent dans les jours qui suivent."}
+        </p>
+      </div>
+
+      {interviewApps.length > 0 && (
+        <div className="card elev-sm mt-5" style={{ padding: "var(--space-6)", background: "color-mix(in srgb, var(--color-accent-2) 8%, var(--color-surface))" }}>
+          <p style={{ fontFamily: "var(--font-heading)", fontSize: 17, margin: 0 }}>🎤 Entretien{interviewApps.length > 1 ? "s" : ""} en vue</p>
+          <div className="flex flex-col gap-2.5" style={{ marginTop: 12 }}>
+            {interviewApps.map((a) => {
+              const offer = interviewOffers.find((o) => o.id === a.offer_id);
+              const label = offer ? `${offer.title} · ${offer.company}` : "Candidature";
+              return (
+                <div key={a.id} className="flex items-center justify-between gap-3">
+                  <span style={{ fontSize: 13.5, fontWeight: 600, minWidth: 0 }}>{label}</span>
+                  <Link
+                    href={`/dashboard?prep=${encodeURIComponent(offer?.title ?? defaultJobHint)}#simulateur`}
+                    className="btn btn-primary"
+                    style={{ padding: "7px 12px", fontSize: 12.5, whiteSpace: "nowrap" }}
+                  >
+                    Me préparer
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
+          <p style={{ fontSize: 12.5, lineHeight: 1.5, margin: "12px 0 0", ...mutedText }}>
+            Confirme vite le créneau, regarde le site de l&apos;entreprise, entraîne-toi avec le simulateur et prépare 2 questions (missions, rythme école-entreprise, tuteur).
+          </p>
+        </div>
+      )}
+
+      {results.accepted > 0 && (
+        <div className="card elev-sm mt-5" style={{ padding: "var(--space-6)" }}>
+          <p style={{ fontFamily: "var(--font-heading)", fontSize: 17, margin: 0 }}>🎉 Réponse positive : les prochaines étapes</p>
+          <p style={{ fontSize: 13.5, lineHeight: 1.6, margin: "10px 0 0" }}>
+            1. Confirme ton accord par écrit à l&apos;entreprise.
+            <br />
+            2. Préviens ton école ou ton CFA : le contrat (CERFA) se remplit avec l&apos;entreprise, puis part à son OPCO.
+            <br />
+            3. Note ta date de début et le nom de ton tuteur.
+          </p>
+        </div>
+      )}
+
+      <div className="card elev-sm mt-5" style={{ padding: "var(--space-6)" }}>
+        <p style={{ fontFamily: "var(--font-heading)", fontSize: 17, margin: 0 }}>🏢 Candidatures spontanées</p>
+        <p style={{ fontSize: 13.5, lineHeight: 1.5, margin: "6px 0 0" }}>
+          Beaucoup de contrats se signent sans annonce. Des entreprises près de chez toi recrutent des alternants dans ton métier : envoie-leur ta
+          candidature en un clic.
+          {auto ? " Avec Stageio Auto, on en contacte jusqu'à 20 par jour pour toi, automatiquement." : ""}
+        </p>
+        <div className="flex flex-wrap items-center gap-3" style={{ marginTop: 12 }}>
+          <Link href="/spontanees" className="btn btn-primary" style={{ padding: "8px 14px", fontSize: 12.5 }}>
+            Voir les entreprises
+          </Link>
+          {results.spontaneousTotal > 0 && (
+            <span style={{ fontSize: 12.5, ...mutedText }}>
+              {results.spontaneousTotal} déjà contactée{results.spontaneousTotal > 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
+      </div>
 
       {actionPlan.length > 0 && (
         <div className="card elev-sm mt-6" style={{ padding: "var(--space-6)" }}>
@@ -171,7 +321,14 @@ export default async function DashboardPage() {
       )}
 
       <div id="simulateur" className="mt-6" style={{ scrollMarginTop: 80 }}>
-        <InterviewSimulator userId={user.id} isPremium={premium} defaultJobHint={defaultJobHint} pastResults={pastResults} />
+        <InterviewSimulator
+          key={defaultJobHint}
+          userId={user.id}
+          isPremium={premium}
+          defaultJobHint={defaultJobHint}
+          defaultDomainId={interviewDomainFor(defaultJobHint)}
+          pastResults={pastResults}
+        />
       </div>
 
       <div className="card elev-sm mt-5" style={{ padding: "var(--space-6)" }}>
@@ -217,6 +374,10 @@ export default async function DashboardPage() {
           <p style={{ fontSize: 12, fontWeight: 600, margin: "0 0 8px" }}>Envoyer mon CV</p>
           <CvQuickSend cvSignedUrl={cvSignedUrl} />
         </div>
+      </div>
+
+      <div className="mt-5">
+        <SearchCompletedToggle completedAt={profile?.search_completed_at ?? null} completedReason={profile?.search_completed_reason ?? null} />
       </div>
 
     </div>
