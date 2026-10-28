@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import { createCheckoutSessionAction } from "@/app/(app)/premium/actions";
 import { AccessCodeForm } from "@/components/premium/AccessCodeForm";
@@ -9,6 +10,44 @@ import { useWelcomeCountdown } from "@/components/premium/WelcomeCountdown";
 import { AUTO_DAILY_LIMIT, AUTO_PRICES, LIFETIME_PROMO, PLAN_PRICES } from "@/lib/pricing/plans";
 
 type Plan = "monthly" | "lifetime";
+
+// Bouton de paiement (28/10) : la page Stripe met une ou deux secondes à
+// s'ouvrir après le clic ; sans retour visible, on reclique ou on part.
+// Pendant l'envoi : « Ouverture du paiement sécurisé… », bouton bloqué.
+function CheckoutButton({ label }: { label: string }) {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      aria-busy={pending}
+      className="btn btn-block"
+      style={{
+        height: 52,
+        border: "none",
+        borderRadius: 999,
+        background: "linear-gradient(135deg, var(--color-accent), var(--color-accent-700))",
+        color: "var(--color-bg)",
+        fontSize: 15.5,
+        fontWeight: 700,
+        letterSpacing: "-0.01em",
+        boxShadow: "0 10px 22px color-mix(in srgb, var(--color-accent) 35%, transparent)",
+        opacity: pending ? 0.85 : 1,
+        cursor: pending ? "wait" : "pointer",
+      }}
+    >
+      {pending ? (
+        <span className="flex items-center justify-center gap-2">
+          <span aria-hidden className="fx-spin" style={{ width: 16, height: 16, borderRadius: "50%", border: "2px solid currentColor", borderTopColor: "transparent", display: "inline-block", animationDuration: "0.8s" }} />
+          Ouverture du paiement sécurisé…
+        </span>
+      ) : (
+        label
+      )}
+    </button>
+  );
+}
+
 
 function PlanRow({
   selected,
@@ -326,23 +365,7 @@ function OfferTabs({
 
       <form action={createCheckoutSessionAction} style={{ marginTop: 14 }}>
         <input type="hidden" name="plan" value={CHECKOUT_PLAN[plan][chosen]} />
-        <button
-          type="submit"
-          className="btn btn-block"
-          style={{
-            height: 52,
-            border: "none",
-            borderRadius: 999,
-            background: "linear-gradient(135deg, var(--color-accent), var(--color-accent-700))",
-            color: "var(--color-bg)",
-            fontSize: 15.5,
-            fontWeight: 700,
-            letterSpacing: "-0.01em",
-            boxShadow: "0 10px 22px color-mix(in srgb, var(--color-accent) 35%, transparent)",
-          }}
-        >
-          {ctaLabel}
-        </button>
+        <CheckoutButton label={ctaLabel} />
       </form>
 
       <div
@@ -466,23 +489,7 @@ function ClassicPricing({
 
       <form action={createCheckoutSessionAction} style={{ marginTop: 14 }}>
         <input type="hidden" name="plan" value={plan} />
-        <button
-          type="submit"
-          className="btn btn-block"
-          style={{
-            height: 52,
-            border: "none",
-            borderRadius: 999,
-            background: "linear-gradient(135deg, var(--color-accent), var(--color-accent-700))",
-            color: "var(--color-bg)",
-            fontSize: 15.5,
-            fontWeight: 700,
-            letterSpacing: "-0.01em",
-            boxShadow: "0 10px 22px color-mix(in srgb, var(--color-accent) 35%, transparent)",
-          }}
-        >
-          {plan === "lifetime" ? `Débloquer à vie · ${lifetimePrice}` : `Débloquer Premium · ${monthlyPrice}/mois`}
-        </button>
+        <CheckoutButton label={plan === "lifetime" ? `Débloquer à vie · ${lifetimePrice}` : `Débloquer Premium · ${monthlyPrice}/mois`} />
       </form>
 
       <div

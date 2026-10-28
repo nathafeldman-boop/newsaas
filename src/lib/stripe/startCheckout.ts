@@ -1,4 +1,6 @@
+import { cookies } from "next/headers";
 import { after } from "next/server";
+import Stripe from "stripe";
 import { recordCheckoutOpened } from "@/lib/stripe/checkoutReminder";
 import { AUTO_PRICE_IDS, LIFETIME_PROMO, REGULAR_PRICE_IDS } from "@/lib/pricing/plans";
 import { syncSubscriptionToProfile } from "@/lib/stripe/syncSubscription";
@@ -10,6 +12,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripeClient } from "@/lib/stripe/client";
 import { SITE_URL } from "@/lib/site";
+import { GUARANTEE_COOKIE, GUARANTEE_MONTHS } from "@/lib/premium/guaranteeTerms";
 
 async function getOrCreateStripeCustomer(userId: string, email: string | null) {
   const supabase = await createClient();
@@ -38,6 +41,49 @@ async function getOrCreateStripeCustomer(userId: string, email: string | null) {
 }
 
 export type CheckoutError = "already_subscribed" | "not_configured" | "checkout_failed" | "upgrade_failed";
+
+// Page de paiement Stripe aux couleurs de Stageio (28/10, Nathan : « les
+// gens arrivent sur la page de paiement mais ne paient pas » ; 1 paiement
+// sur 6 personnes ce jour-là, et aucune n'avait même essayé une carte). Le
+// compte Stripe est partagé : son nom (« SMARTAPP ») et son bouton bleu
+// s'affichaient en haut de la page. Réglages posés session par session
+// (branding_settings), jamais sur le compte. Sous le bouton payer, ce qui
+// rassure : paiement sécurisé, accès immédiat, sans engagement (mensuel) ou
+// paiement unique (à vie), et la garantie quand l'étudiant l'a vue.
+async function checkoutPresentation(lifetime: boolean): Promise<Pick<Stripe.Checkout.SessionCreateParams, "branding_settings" | "custom_text">> {
+  const guarantee = !!(await cookies()).get(GUARANTEE_COOKIE);
+  const message = [
+    "🔒 Paiement sécurisé par Stripe pour Stageio. Ton accès s'ouvre dès le paiement.",
+    lifetime ? "Paiement unique : aucun abonnement, rien à résilier." : "Sans engagement : tu résilies quand tu veux, depuis ton compte Stageio.",
+    guarantee ? `🛡️ Garantie : aucun entretien en ${GUARANTEE_MONTHS} mois de Premium = remboursé (conditions dans les CGV).` : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
+  return {
+    branding_settings: {
+      display_name: "Stageio",
+      button_color: "#0f9c56",
+      background_color: "#ffffff",
+      border_style: "rounded",
+      font_family: "inter",
+      icon: { type: "url", url: `${SITE_URL}/logo.png` },
+    },
+    custom_text: { submit: { message } },
+  };
+}
+
+// Si Stripe refuse l'habillage (logo injoignable, réglage refusé), la page de
+// paiement s'ouvre quand même, sans lui : jamais de paiement bloqué pour ça.
+async function createCheckoutSession(params: Stripe.Checkout.SessionCreateParams, lifetime: boolean): Promise<Stripe.Checkout.Session> {
+  const stripe = getStripeClient();
+  try {
+    return await stripe.checkout.sessions.create({ ...params, ...(await checkoutPresentation(lifetime)) });
+  } catch (err) {
+    if (!(err instanceof Stripe.errors.StripeInvalidRequestError)) throw err;
+    console.error("startCheckout: habillage Stageio refusé par Stripe, page standard", err.message);
+    return stripe.checkout.sessions.create(params);
+  }
+}
 
 // Création de la session Stripe Checkout, commune au bouton de /premium
 // (server action) et au lien direct des emails de vente (/premium/go).
@@ -120,9 +166,8 @@ export async function startCheckout(
   }
 
   const customerId = await getOrCreateStripeCustomer(user.id, user.email);
-  const stripe = getStripeClient();
 
-  const session = await stripe.checkout.sessions.create({
+  const session = await createCheckoutSession({
     mode: isLifetime ? "payment" : "subscription",
     customer: customerId,
     line_items: [{ price: priceId, quantity: 1 }],
@@ -159,7 +204,7 @@ export async function startCheckout(
           invoice_creation: { enabled: true },
         }
       : { subscription_data: { metadata: { supabase_user_id: user.id } } }),
-  });
+  }, isLifetime);
 
   if (!session.url) return { error: "checkout_failed" };
   // Mesure seulement (tableau « Chemin de Léo » de l'admin), rien de visible.
@@ -224,7 +269,7 @@ async function startAutoCheckout(
   const customerId = await getOrCreateStripeCustomer(user.id, user.email);
   const metadata: Record<string, string> = { tier: "auto", supabase_user_id: user.id };
   if (lifetime && activeSubscription) metadata.replace_subscription = activeSubscription;
-  const session = await stripe.checkout.sessions.create({
+  const session = await createCheckoutSession({
     mode: lifetime ? "payment" : "subscription",
     customer: customerId,
     line_items: [{ price: priceId, quantity: 1 }],
@@ -236,7 +281,7 @@ async function startAutoCheckout(
     ...(lifetime
       ? { payment_intent_data: { metadata: { supabase_user_id: user.id, tier: "auto" } }, invoice_creation: { enabled: true } }
       : { subscription_data: { metadata: { supabase_user_id: user.id, tier: "auto" } } }),
-  });
+  }, lifetime);
   if (!session.url) return { error: "checkout_failed" };
   // Mesure seulement : la relance « paiement pas finalisé » parle des prix
   // Premium, elle n'est pas programmée pour l'offre Auto.
