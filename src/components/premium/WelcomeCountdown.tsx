@@ -38,9 +38,9 @@ function DigitTile({ char }: { char: string }) {
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        width: 46,
-        height: 60,
-        borderRadius: 12,
+        width: 28,
+        height: 38,
+        borderRadius: 9,
         overflow: "hidden",
         background: "linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0.08))",
         border: "1px solid rgba(255,255,255,0.22)",
@@ -52,7 +52,7 @@ function DigitTile({ char }: { char: string }) {
         initial={{ y: -18, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.25, ease: "easeOut" }}
-        style={{ fontFamily: "var(--font-heading)", fontSize: 38, fontWeight: 800, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}
+        style={{ fontFamily: "var(--font-heading)", fontSize: 23, fontWeight: 800, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}
       >
         {char}
       </motion.span>
@@ -61,9 +61,11 @@ function DigitTile({ char }: { char: string }) {
   );
 }
 
-// Gros chrono en haut du paywall (20/10, Nathan : « nettement plus gros,
-// beaucoup plus visible » ; 22/10 : 10 min et plus stylé). Tuiles de
-// chiffres, barre qui se vide, rouge dans les 2 dernières minutes.
+// Chrono en haut du paywall (20/10, Nathan : « nettement plus gros,
+// beaucoup plus visible » ; 22/10 : 10 min et plus stylé ; 28/10 : « un peu
+// plus petit, moyen, bien visible sans prendre trop de place »). Libellé à
+// gauche, tuiles de chiffres à droite, barre qui se vide, rouge dans les 2
+// dernières minutes.
 export function WelcomePriceBanner({ endsAt, initialActive }: { endsAt: number | null; initialActive: boolean }) {
   const { active, remaining, msLeft } = useWelcomeCountdown(endsAt, initialActive);
   if (!active) return null;
@@ -83,9 +85,9 @@ export function WelcomePriceBanner({ endsAt, initialActive }: { endsAt: number |
         overflow: "hidden",
         textAlign: "center",
         color: "#fff",
-        borderRadius: 22,
-        padding: "14px 16px 15px",
-        marginBottom: 16,
+        borderRadius: 18,
+        padding: "11px 14px 12px",
+        marginBottom: 14,
         background: lastMinutes
           ? "linear-gradient(135deg, #8f1d21, #e5484d)"
           : "linear-gradient(135deg, var(--color-accent-900), var(--color-accent-700) 55%, var(--color-accent))",
@@ -106,29 +108,31 @@ export function WelcomePriceBanner({ endsAt, initialActive }: { endsAt: number |
           pointerEvents: "none",
         }}
       />
-      <p style={{ position: "relative", margin: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 12, fontWeight: 800, letterSpacing: "0.07em", textTransform: "uppercase" }}>
-        <motion.span
-          aria-hidden
-          animate={{ opacity: [1, 0.25, 1] }}
-          transition={{ duration: 1, repeat: Infinity }}
-          style={{ width: 8, height: 8, borderRadius: "50%", background: lastMinutes ? "#fff" : "var(--color-accent-300)" }}
-        />
-        {lastMinutes ? "⚡ Dernières minutes" : "🎁 Ton prix de bienvenue expire dans"}
-      </p>
-      <div aria-hidden style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 10 }}>
-        <DigitTile char={mm[0]} />
-        <DigitTile char={mm[1]} />
-        <motion.span
-          animate={{ opacity: [1, 0.3, 1] }}
-          transition={{ duration: 1, repeat: Infinity }}
-          style={{ fontFamily: "var(--font-heading)", fontSize: 34, fontWeight: 800, margin: "0 2px" }}
-        >
-          :
-        </motion.span>
-        <DigitTile char={ss[0]} />
-        <DigitTile char={ss[1]} />
+      <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <p style={{ margin: 0, minWidth: 0, display: "flex", alignItems: "center", gap: 7, textAlign: "left", fontSize: 13, fontWeight: 800, lineHeight: 1.25 }}>
+          <motion.span
+            aria-hidden
+            animate={{ opacity: [1, 0.25, 1] }}
+            transition={{ duration: 1, repeat: Infinity }}
+            style={{ width: 7, height: 7, borderRadius: "50%", flexShrink: 0, background: lastMinutes ? "#fff" : "var(--color-accent-300)" }}
+          />
+          {lastMinutes ? "⚡ Dernières minutes du prix de bienvenue" : "🎁 Ton prix de bienvenue, encore"}
+        </p>
+        <div aria-hidden style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+          <DigitTile char={mm[0]} />
+          <DigitTile char={mm[1]} />
+          <motion.span
+            animate={{ opacity: [1, 0.3, 1] }}
+            transition={{ duration: 1, repeat: Infinity }}
+            style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 800, margin: "0 1px" }}
+          >
+            :
+          </motion.span>
+          <DigitTile char={ss[0]} />
+          <DigitTile char={ss[1]} />
+        </div>
       </div>
-      <div style={{ position: "relative", height: 6, borderRadius: 999, background: "rgba(255,255,255,0.2)", margin: "12px 6px 0", overflow: "hidden" }}>
+      <div style={{ position: "relative", height: 4, borderRadius: 999, background: "rgba(255,255,255,0.2)", margin: "10px 0 0", overflow: "hidden" }}>
         <div
           style={{
             height: "100%",
@@ -139,7 +143,7 @@ export function WelcomePriceBanner({ endsAt, initialActive }: { endsAt: number |
           }}
         />
       </div>
-      <p style={{ position: "relative", margin: "10px 0 0", fontSize: 13, fontWeight: 600, opacity: 0.95 }}>
+      <p style={{ position: "relative", margin: "7px 0 0", fontSize: 12, fontWeight: 600, opacity: 0.92 }}>
         Ensuite : {PLAN_PRICES.monthly.regular}/mois · {PLAN_PRICES.lifetime.regular} à vie
       </p>
     </motion.div>

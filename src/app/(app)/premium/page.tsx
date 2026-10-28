@@ -88,6 +88,29 @@ function BenefitIcon({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Les 4 avantages en grille 2x2 (maquette de Nathan, 26/09), sous les prix
+// depuis le 28/10 (Nathan : « tu les mets en dessous des prix »).
+function BenefitsGrid() {
+  return (
+    <div className="grid grid-cols-2 gap-2.5" style={{ marginTop: 12 }}>
+      {BENEFITS.map((b) => (
+        <div
+          key={b.label}
+          style={{
+            padding: "12px 12px",
+            borderRadius: 16,
+            border: "1px solid var(--color-divider)",
+            background: "var(--color-surface)",
+          }}
+        >
+          <BenefitIcon>{b.icon}</BenefitIcon>
+          <div style={{ fontSize: 12.5, fontWeight: 700, marginTop: 8, lineHeight: 1.3 }}>{b.label}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // Garantie remboursé d'un compte Premium (null si aucune) et où en est sa
 // fenêtre de demande. Hors du composant : l'heure courante n'est lue
 // qu'ici, jamais pendant le rendu.
@@ -155,8 +178,9 @@ export default async function PremiumPage({
 
   const guarantee = premium && profile ? await loadGuarantee(user.id, profile) : null;
 
-  // Avant le paywall, à chaque arrivée (Nathan, 22/10) : engagement
-  // (empreinte), vrai nombre d'inscrits, garantie. Pas après une erreur de
+  // Avant le paywall, à chaque arrivée (Nathan, 22/10) : vrai nombre
+  // d'inscrits, garantie, chrono (l'engagement à l'empreinte est à la fin de
+  // l'onboarding depuis le 28/10). Pas après une erreur de
   // paiement ni au retour de Stripe sans payer : le paywall directement.
   // Garantie : badge si elle a déjà été vue.
   const cookieStore = await cookies();
@@ -171,7 +195,8 @@ export default async function PremiumPage({
   }
 
   return (
-    <div className="mx-auto flex max-w-md flex-1 items-center py-6">
+    // Paywall : plein écran sur ordinateur, sans la barre à gauche (Nathan, 28/10 ; voir globals.css).
+    <div className="mx-auto flex max-w-md flex-1 items-center py-6" data-paywall-fullscreen={premium ? undefined : ""}>
       <div
         className="flex w-full flex-col"
         style={{
@@ -302,7 +327,6 @@ export default async function PremiumPage({
         <>
           {showPledge && (
             <PaywallPledge
-              userId={user.id}
               trustCount={trustCount}
               welcomeEndsAt={welcome?.endsAt ?? null}
               welcomeActive={welcome?.active ?? false}
@@ -413,29 +437,11 @@ export default async function PremiumPage({
               Débloque toutes les opportunités et les outils pour maximiser tes chances.
             </p>
 
-            {/* Grille 2x2 (au lieu d'une liste verticale) -- maquette
-                fournie par Nathan. */}
-            <div className="animate-in grid grid-cols-2 gap-2.5" style={{ marginTop: 20 }}>
-              {BENEFITS.map((b) => (
-                <div
-                  key={b.label}
-                  style={{
-                    padding: "13px 12px",
-                    borderRadius: 16,
-                    border: "1px solid var(--color-divider)",
-                    background: "var(--color-surface)",
-                  }}
-                >
-                  <BenefitIcon>{b.icon}</BenefitIcon>
-                  <div style={{ fontSize: 12.5, fontWeight: 700, marginTop: 8, lineHeight: 1.3 }}>{b.label}</div>
-                </div>
-              ))}
-            </div>
-
             <GuaranteeBadge initialVisible={guaranteeShown} />
 
             <PricingSelector
               userId={user.id}
+              benefits={<BenefitsGrid />}
               welcomeEndsAt={welcome?.endsAt ?? null}
               welcomeActive={welcome?.active ?? false}
               promoActive={promoActive}

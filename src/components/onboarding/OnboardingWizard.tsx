@@ -21,7 +21,9 @@ import {
   HEARD_FROM_OPTIONS,
   type HeardFromFormat,
 } from "@/lib/onboarding/options";
-import { STEP_IDS, STEP_LABELS, type StepId } from "@/lib/onboarding/steps";
+import { NO_CHROME_STEPS, STEP_IDS, STEP_LABELS, type StepId } from "@/lib/onboarding/steps";
+import { PledgeDone, ProofCompare, ProofDemo, ProofReviews, type ProofData } from "@/components/onboarding/ProofScreens";
+import { PledgeSign } from "@/components/pledge/PledgeSign";
 import { forgetSignupCity, readSignupCity } from "@/lib/signup/intentStorage";
 
 // Onboarding "sans clavier" : tout se fait au tap (tuiles/chips), avec un
@@ -37,9 +39,7 @@ import { forgetSignupCity, readSignupCity } from "@/lib/signup/intentStorage";
 // (pénalité de localisation) : un profil qui ne la renseigne jamais se fait
 // pénaliser par défaut comme s'il n'était mobile pour rien, même quand ce
 // n'est pas vrai — d'où son caractère obligatoire comme les autres.
-const PROGRESS_STEPS: StepId[] = STEP_IDS.filter(
-  (s) => s !== "intro" && s !== "outro" && s !== "trust",
-);
+const PROGRESS_STEPS: StepId[] = STEP_IDS.filter((s) => !NO_CHROME_STEPS.includes(s));
 const SKIPPABLE: StepId[] = ["cv"];
 
 // Écran de réassurance sociale juste après le choix stage/alternance/les
@@ -51,6 +51,15 @@ function trustContractLabel(lookingFor: ContractType[]): string {
   if (hasAlternance && !hasStage) return "leur alternance";
   if (hasStage && !hasAlternance) return "leur stage";
   return "leur alternance ou leur stage";
+}
+
+// « ton alternance », « ton stage », « ton alternance ou ton stage » (contrat).
+function myContractLabel(lookingFor: ContractType[]): string {
+  const hasAlternance = lookingFor.includes("alternance");
+  const hasStage = lookingFor.includes("stage");
+  if (hasAlternance && !hasStage) return "ton alternance";
+  if (hasStage && !hasAlternance) return "ton stage";
+  return "ton alternance ou ton stage";
 }
 
 function AnimatedCount({ target, durationMs }: { target: number; durationMs: number }) {
@@ -259,10 +268,12 @@ export function OnboardingWizard({
   userId,
   initialProfile,
   trustCount,
+  proof,
 }: {
   userId: string;
   initialProfile: Profile | null;
   trustCount: number;
+  proof: ProofData;
 }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [direction, setDirection] = useState(1);
@@ -569,7 +580,7 @@ export function OnboardingWizard({
   }, [stepId]);
 
   const progressIndex = PROGRESS_STEPS.indexOf(stepId);
-  const showChrome = stepId !== "intro" && stepId !== "outro" && stepId !== "trust";
+  const showChrome = !NO_CHROME_STEPS.includes(stepId);
   const skippable = SKIPPABLE.includes(stepId);
   const currentStepValid = validateCurrentStep() === null;
 
@@ -987,6 +998,25 @@ export function OnboardingWizard({
                   Continuer
                 </button>
               </div>
+            )}
+
+            {stepId === "proof_compare" && <ProofCompare onNext={goNext} />}
+            {stepId === "proof_reviews" && <ProofReviews data={proof} onNext={goNext} />}
+            {stepId === "proof_demo" && <ProofDemo data={proof} onNext={goNext} />}
+            {stepId === "pledge" && (
+              <div className="flex flex-1 flex-col px-1">
+                <PledgeSign userId={userId} contractLabel={myContractLabel(lookingFor)} onSigned={goNext} />
+              </div>
+            )}
+            {stepId === "pledge_done" && (
+              <PledgeDone
+                contractLabel={myContractLabel(lookingFor)}
+                onNext={() => {
+                  void logOnboardingEvent(userId, "onboarding_step_completed", "pledge_done");
+                  // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+                  window.location.href = "/swipe";
+                }}
+              />
             )}
 
             {stepId === "city" && (
@@ -1537,29 +1567,13 @@ export function OnboardingWizard({
                       plus que jamais.
                     </p>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <span aria-hidden style={{ fontSize: 16, lineHeight: 1.3 }}>
-                      🎒
-                    </span>
-                    <p style={{ fontSize: 12, lineHeight: 1.45, color: "var(--color-accent-2-800)", margin: 0 }}>
-                      <strong>Offre spéciale rentrée</strong> — tarifs actuels garantis encore un temps
-                      limité, augmentation prévue ensuite.
-                    </p>
-                  </div>
                 </div>
 
                 <div className="flex-1" style={{ minHeight: 20 }} />
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-                    window.location.href = "/swipe";
-                  }}
-                  className="btn btn-primary btn-block"
-                  style={{ position: "relative" }}
-                >
-                  Voir mes offres
+                {/* Avant le premier swipe : le contrat à l'empreinte (28/10). */}
+                <button type="button" onClick={goNext} className="btn btn-primary btn-block" style={{ position: "relative" }}>
+                  Continuer
                 </button>
                   </>
                 )}

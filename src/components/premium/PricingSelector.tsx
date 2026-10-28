@@ -141,6 +141,7 @@ const CHECKOUT_PLAN: Record<Plan, Record<Offer, string>> = {
 
 function OfferTabs({
   userId,
+  benefits,
   lifetimeAvailable,
   autoAvailable = false,
   initialOffer = "premium",
@@ -150,6 +151,8 @@ function OfferTabs({
   promoActive = false,
 }: {
   userId?: string;
+  // Avantages Premium, affichés sous les prix (Nathan, 28/10).
+  benefits?: ReactNode;
   lifetimeAvailable: boolean;
   // Stageio Auto proposée seulement si elle peut servir (isAutoOfferAvailable).
   autoAvailable?: boolean;
@@ -286,6 +289,8 @@ function OfferTabs({
         )}
       </div>
 
+      {benefits}
+
       {auto && (
         <p style={{ fontSize: 12, lineHeight: 1.5, margin: "10px 2px 0", color: "color-mix(in srgb, var(--color-text) 62%, transparent)" }}>
           Envoi automatique quand le recruteur a laissé une adresse ou passe par La bonne alternance ; sinon, le like reste un favori. Au-delà
@@ -377,12 +382,14 @@ function OfferTabs({
 // quel plan est sélectionné au moment de soumettre, d'où ce composant "use
 // client" plutôt qu'un simple form server-only comme le reste de la page.
 function ClassicPricing({
+  benefits,
   lifetimeAvailable,
   errorMessage,
   welcomeEndsAt = null,
   welcomeActive = false,
   promoActive = false,
 }: {
+  benefits?: ReactNode;
   lifetimeAvailable: boolean;
   errorMessage: string | null;
   // Prix de bienvenue (voir lib/pricing/plans.ts) : fin fixée côté serveur.
@@ -428,6 +435,8 @@ function ClassicPricing({
           priceSuffix="/mois"
         />
       </div>
+
+      {benefits}
 
       {errorMessage && (
         <p
@@ -508,6 +517,7 @@ function ClassicPricing({
 
 type SelectorProps = {
   userId?: string;
+  benefits?: ReactNode;
   lifetimeAvailable: boolean;
   // Stageio Auto proposée seulement si elle peut servir (isAutoOfferAvailable).
   autoAvailable?: boolean;

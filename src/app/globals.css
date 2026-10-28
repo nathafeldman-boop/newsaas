@@ -474,3 +474,9 @@ a:hover > .card, button:hover > .card,
   .goal-line { stroke-dashoffset: 0; }
   .goal-area { opacity: 1; }
 }
+
+/* Paywall plein écran sur ordinateur (28/10, Nathan : « pas de barre à
+   gauche, que le paywall ») : la page du paywall porte data-paywall-fullscreen. */
+body:has([data-paywall-fullscreen]) .app-sidebar,
+body:has([data-paywall-fullscreen]) .app-menu-btn { display: none !important; }
+body:has([data-paywall-fullscreen]) .app-shell-content { padding-left: 0 !important; }

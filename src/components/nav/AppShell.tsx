@@ -57,7 +57,7 @@ function Sidebar({ open, onClose, favoritesBadge, inboxBadge }: { open: boolean;
       aria-label="Modules"
       aria-hidden={!open}
       inert={!open}
-      className="hidden sm:flex"
+      className="hidden sm:flex app-sidebar"
       initial={false}
       animate={{ x: open ? 0 : -WIDTH - 12 }}
       transition={{ type: "spring", stiffness: 380, damping: 36 }}
@@ -214,7 +214,7 @@ export function AppShell({
             onClick={() => toggle(true)}
             aria-label="Afficher le menu"
             data-fx-off
-            className="hidden sm:flex items-center justify-center"
+            className="hidden sm:flex items-center justify-center app-menu-btn"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
@@ -241,7 +241,7 @@ export function AppShell({
           </motion.button>
         )}
       </AnimatePresence>
-      <div className={cn("flex min-h-full flex-1 flex-col transition-[padding] duration-300 ease-out", open && "sm:pl-[248px]")}>
+      <div className={cn("app-shell-content flex min-h-full flex-1 flex-col transition-[padding] duration-300 ease-out", open && "sm:pl-[248px]")}>
         {children}
       </div>
     </>
