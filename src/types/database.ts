@@ -237,6 +237,13 @@ export type StripeProcessedInvoice = {
 
 // Vues TikTok/créateurs saisies à la main dans /admin/rpm (SOP 16) : vues
 // des 7 jours qui finissent le `recorded_on`, par source (utm_source).
+// Objectifs de chiffre d'affaires par mois (26/10, admin « Objectifs »).
+export type RevenueGoal = {
+  month: string;
+  target_cents: number;
+  updated_at: string;
+};
+
 export type ContentView = {
   recorded_on: string;
   source: string;
@@ -425,6 +432,12 @@ export type Database = {
         Row: UserEvent;
         Insert: Partial<UserEvent> & { user_id: string; event_type: string };
         Update: Partial<UserEvent>;
+        Relationships: [];
+      };
+      revenue_goals: {
+        Row: RevenueGoal;
+        Insert: Partial<RevenueGoal> & { month: string; target_cents: number };
+        Update: Partial<RevenueGoal>;
         Relationships: [];
       };
       content_views: {

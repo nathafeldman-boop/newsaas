@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 // Chiffre qui défile jusqu'à sa valeur (à l'arrivée et à chaque
 // rafraîchissement), pour voir d'un coup d'œil ce qui a bougé. Rien ne
 // bouge si l'appareil demande moins d'animations.
-export function CountUp({ value, duration = 700 }: { value: number; duration?: number }) {
+export function CountUp({ value, duration = 700, format }: { value: number; duration?: number; format?: (n: number) => string }) {
   const [shown, setShown] = useState(0);
   // Valeur affichée à l'instant : point de départ de l'animation suivante
   // (aussi quand React relance l'effet, en développement).
@@ -33,5 +33,5 @@ export function CountUp({ value, duration = 700 }: { value: number; duration?: n
     return () => cancelAnimationFrame(raf);
   }, [value, duration]);
 
-  return <>{shown.toLocaleString("fr-FR")}</>;
+  return <>{format ? format(shown) : shown.toLocaleString("fr-FR")}</>;
 }

@@ -12,6 +12,8 @@ const GROUPS = [
     title: "Pilotage",
     links: [
       { href: "/admin", label: "Vue d'ensemble" },
+      { href: "/admin/objectifs", label: "Objectifs" },
+      { href: "/admin/simulateur", label: "Simulateur" },
       { href: "/admin/trafic", label: "Trafic et sources" },
       { href: "/admin/inscriptions", label: "Inscriptions jour par jour" },
       { href: "/admin/online", label: "En ligne maintenant" },
