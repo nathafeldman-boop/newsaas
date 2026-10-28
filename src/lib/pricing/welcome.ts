@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { WELCOME_WINDOW_MS } from "@/lib/pricing/plans";
+import { FLASH_OFFER, WELCOME_WINDOW_MS } from "@/lib/pricing/plans";
 import { NEWS_CAMPAIGN_EVENT } from "@/lib/campaigns/relanceOffres";
 import { SALES_SERIES_EVENT } from "@/lib/campaigns/serieEvents";
 
@@ -40,8 +40,27 @@ export async function getWelcomeEndsAt(userId: string): Promise<number> {
   return start + WELCOME_WINDOW_MS;
 }
 
+// Offre 48 h par email (voir FLASH_OFFER) : fin de l'offre du compte, 48 h
+// après le premier email de la série qui l'a ouverte, ou null.
+export async function getFlashEndsAt(userId: string): Promise<number | null> {
+  const { data } = await createAdminClient()
+    .from("user_events")
+    .select("created_at")
+    .eq("user_id", userId)
+    .eq("event_type", SALES_SERIES_EVENT)
+    .eq("metadata->>flash", "true")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  return data ? Date.parse(data.created_at) + FLASH_OFFER.windowMs : null;
+}
+
 // État au moment de l'affichage (hors du corps du composant : rendu pur).
-export async function getWelcomeState(userId: string): Promise<{ endsAt: number; active: boolean }> {
-  const endsAt = await getWelcomeEndsAt(userId);
-  return { endsAt, active: Date.now() < endsAt };
+// Pendant l'offre 48 h, le prix de bienvenue dure jusqu'à la fin de l'offre.
+export async function getWelcomeState(userId: string): Promise<{ endsAt: number; active: boolean; flashEndsAt: number | null }> {
+  const [welcomeEndsAt, flash] = await Promise.all([getWelcomeEndsAt(userId), getFlashEndsAt(userId)]);
+  const now = Date.now();
+  const flashEndsAt = flash !== null && now < flash ? flash : null;
+  const endsAt = Math.max(welcomeEndsAt, flashEndsAt ?? 0);
+  return { endsAt, active: now < endsAt, flashEndsAt };
 }

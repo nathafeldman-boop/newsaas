@@ -27,6 +27,40 @@ export function isLifetimePromoActive(now: number = Date.now()): boolean {
   return now < LIFETIME_PROMO.endsAt;
 }
 
+// Offre 48 h par email (Nathan, 28/10 : « l'offre de bienvenue plus […] 30
+// euros accès à vie […] pendant 48 heures juste pour vous », comme l'email
+// du 24/10 qui avait ramené des paiements). Le premier email de la série
+// Premium reçu pendant la campagne ouvre, pour ce compte seulement, 48 h de
+// prix de bienvenue (7,99 €/mois) avec l'accès à vie au prix de 30 € (le
+// même prix Stripe que la promo du 23-25/10). Délai compté côté serveur
+// depuis l'envoi, jamais rouvert. Ni prix barré ni « baisse de prix » : 30 €
+// est déjà le prix le plus bas de l'accès à vie sur les 30 derniers jours.
+export const FLASH_OFFER = {
+  windowMs: 48 * 60 * 60 * 1000,
+  lifetimePrice: LIFETIME_PROMO.price,
+  // Emails envoyés dans cette période : ils ouvrent l'offre (dimanche 1/11 à 21 h à Paris).
+  start: Date.parse("2026-10-28T17:00:00Z"),
+  end: Date.parse("2026-11-01T20:00:00Z"),
+};
+
+export function isFlashCampaignOpen(now: number = Date.now()): boolean {
+  return now >= FLASH_OFFER.start && now < FLASH_OFFER.end;
+}
+
+// Prix spécial de l'accès à vie montré au paywall, pendant le prix de
+// bienvenue : l'offre 48 h du compte, ou la promo du 23-25/10.
+export type LifetimeOffer = { kind: "flash" | "promo"; price: string; endsAt: number; strike: string | null; badge: string };
+
+export function lifetimeOfferFor(flashEndsAt: number | null, now: number = Date.now()): LifetimeOffer | null {
+  if (flashEndsAt !== null && now < flashEndsAt) {
+    return { kind: "flash", price: FLASH_OFFER.lifetimePrice, endsAt: flashEndsAt, strike: null, badge: "Offre 48 h" };
+  }
+  if (isLifetimePromoActive(now)) {
+    return { kind: "promo", price: LIFETIME_PROMO.price, endsAt: LIFETIME_PROMO.endsAt, strike: LIFETIME_PROMO.referencePrice, badge: "Promo" };
+  }
+  return null;
+}
+
 export const PLAN_PRICES = {
   monthly: { welcome: "7,99 €", regular: "12,79 €" },
   lifetime: { welcome: "39,99 €", regular: "63,99 €" },

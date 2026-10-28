@@ -7,7 +7,7 @@ import { createCheckoutSessionAction } from "@/app/(app)/premium/actions";
 import { AccessCodeForm } from "@/components/premium/AccessCodeForm";
 import { AutoComparison, AutoHelpButton } from "@/components/premium/AutoExplainer";
 import { useWelcomeCountdown } from "@/components/premium/WelcomeCountdown";
-import { AUTO_DAILY_LIMIT, AUTO_PRICES, LIFETIME_PROMO, PLAN_PRICES } from "@/lib/pricing/plans";
+import { AUTO_DAILY_LIMIT, AUTO_PRICES, PLAN_PRICES, type LifetimeOffer } from "@/lib/pricing/plans";
 
 type Plan = "monthly" | "lifetime";
 
@@ -187,7 +187,7 @@ function OfferTabs({
   errorMessage,
   welcomeEndsAt = null,
   welcomeActive = false,
-  promoActive = false,
+  lifetimeOffer = null,
 }: {
   userId?: string;
   // Avantages Premium, affichés sous les prix (Nathan, 28/10).
@@ -201,15 +201,16 @@ function OfferTabs({
   // Prix de bienvenue (voir lib/pricing/plans.ts) : fin fixée côté serveur.
   welcomeEndsAt?: number | null;
   welcomeActive?: boolean;
-  // Période de la promo accès à vie (LIFETIME_PROMO) : lue côté serveur.
-  promoActive?: boolean;
+  // Prix spécial de l'accès à vie (offre 48 h du compte, ou promo) : lu côté serveur.
+  lifetimeOffer?: LifetimeOffer | null;
 }) {
   const { active: welcome, remaining } = useWelcomeCountdown(welcomeEndsAt, welcomeActive);
-  const { active: promoPeriod } = useWelcomeCountdown(LIFETIME_PROMO.endsAt, promoActive);
+  const { active: offerPeriod } = useWelcomeCountdown(lifetimeOffer?.endsAt ?? null, lifetimeOffer !== null);
   const tier = welcome ? "welcome" : "regular";
-  // Promo : 30 € (39,99 € barré) tant que le chrono de bienvenue tourne.
-  const promo = promoPeriod && welcome;
-  const lifetimePrice = promo ? LIFETIME_PROMO.price : PLAN_PRICES.lifetime[tier];
+  // 30 € tant que le chrono de bienvenue tourne (39,99 € barré pendant la promo du 23-25/10 seulement).
+  const promo = offerPeriod && welcome ? lifetimeOffer : null;
+  const flash = promo?.kind === "flash";
+  const lifetimePrice = promo ? promo.price : PLAN_PRICES.lifetime[tier];
   const monthlyPrice = PLAN_PRICES.monthly[tier];
   // Mensuel affiché d'abord (Nathan, 24/10) ; « À vie » s'il n'y a que ça.
   const hasLifetime = lifetimeAvailable || autoAvailable;
@@ -306,9 +307,9 @@ function OfferTabs({
                 label="Premium à vie"
                 sublabel="Paiement unique"
                 price={lifetimePrice}
-                strikePrice={promo ? LIFETIME_PROMO.referencePrice : undefined}
+                strikePrice={promo?.strike ?? undefined}
                 afterPrice={welcome ? PLAN_PRICES.lifetime.regular : undefined}
-                badge={promo ? "Promo" : "Le prix de 5 mois"}
+                badge={promo ? promo.badge : "Le prix de 5 mois"}
               />
             )}
             {autoAvailable && (
@@ -354,7 +355,7 @@ function OfferTabs({
 
       {welcome && !auto && (
         <p style={{ margin: "14px 0 0", fontSize: 14, fontWeight: 700, textAlign: "center", color: "var(--color-accent-700)" }}>
-          🎁 Prix de bienvenue encore{" "}
+          {flash ? "🎁 Ton offre 48 h encore" : "🎁 Prix de bienvenue encore"}{" "}
           <span style={{ fontSize: 20, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{remaining ?? "––:––"}</span>
           <br />
           <span style={{ fontSize: 12.5, fontWeight: 600 }}>
@@ -410,7 +411,7 @@ function ClassicPricing({
   errorMessage,
   welcomeEndsAt = null,
   welcomeActive = false,
-  promoActive = false,
+  lifetimeOffer = null,
 }: {
   benefits?: ReactNode;
   lifetimeAvailable: boolean;
@@ -418,15 +419,16 @@ function ClassicPricing({
   // Prix de bienvenue (voir lib/pricing/plans.ts) : fin fixée côté serveur.
   welcomeEndsAt?: number | null;
   welcomeActive?: boolean;
-  // Période de la promo accès à vie (LIFETIME_PROMO) : lue côté serveur.
-  promoActive?: boolean;
+  // Prix spécial de l'accès à vie (offre 48 h du compte, ou promo) : lu côté serveur.
+  lifetimeOffer?: LifetimeOffer | null;
 }) {
   const { active: welcome, remaining } = useWelcomeCountdown(welcomeEndsAt, welcomeActive);
-  const { active: promoPeriod } = useWelcomeCountdown(LIFETIME_PROMO.endsAt, promoActive);
+  const { active: offerPeriod } = useWelcomeCountdown(lifetimeOffer?.endsAt ?? null, lifetimeOffer !== null);
   const tier = welcome ? "welcome" : "regular";
-  // Promo : 30 € (39,99 € barré) tant que le chrono de bienvenue tourne.
-  const promo = promoPeriod && welcome;
-  const lifetimePrice = promo ? LIFETIME_PROMO.price : PLAN_PRICES.lifetime[tier];
+  // 30 € tant que le chrono de bienvenue tourne (39,99 € barré pendant la promo du 23-25/10 seulement).
+  const promo = offerPeriod && welcome ? lifetimeOffer : null;
+  const flash = promo?.kind === "flash";
+  const lifetimePrice = promo ? promo.price : PLAN_PRICES.lifetime[tier];
   const monthlyPrice = PLAN_PRICES.monthly[tier];
   // Accès à vie affiché en premier et présélectionné (demande de Nathan,
   // 14/10) ; le prix du plan choisi est écrit sur le bouton pour qu'il n'y
@@ -443,9 +445,9 @@ function ClassicPricing({
             label="Accès à vie"
             sublabel="Paiement unique, jamais de renouvellement"
             price={lifetimePrice}
-            strikePrice={promo ? LIFETIME_PROMO.referencePrice : undefined}
+            strikePrice={promo?.strike ?? undefined}
             afterPrice={welcome ? PLAN_PRICES.lifetime.regular : undefined}
-            badge={promo ? "Promo" : "Le prix de 5 mois"}
+            badge={promo ? promo.badge : "Le prix de 5 mois"}
           />
         )}
         <PlanRow
@@ -478,7 +480,7 @@ function ClassicPricing({
 
       {welcome && (
         <p style={{ margin: "14px 0 0", fontSize: 14, fontWeight: 700, textAlign: "center", color: "var(--color-accent-700)" }}>
-          🎁 Prix de bienvenue encore{" "}
+          {flash ? "🎁 Ton offre 48 h encore" : "🎁 Prix de bienvenue encore"}{" "}
           <span style={{ fontSize: 20, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{remaining ?? "––:––"}</span>
           <br />
           <span style={{ fontSize: 12.5, fontWeight: 600 }}>
@@ -533,7 +535,7 @@ type SelectorProps = {
   errorMessage: string | null;
   welcomeEndsAt?: number | null;
   welcomeActive?: boolean;
-  promoActive?: boolean;
+  lifetimeOffer?: LifetimeOffer | null;
 };
 
 // Paywall : onglets Mensuel / À vie avec Stageio Auto quand elle est en

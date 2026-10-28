@@ -7,7 +7,7 @@ import { GUARANTEE_COOKIE, setBrowserCookie } from "@/lib/premium/guaranteeTerms
 import { GUARANTEE_EVENT } from "@/components/premium/PaywallExitGuard";
 import { GuaranteeHero } from "@/components/premium/GuaranteeHero";
 import { useWelcomeCountdown } from "@/components/premium/WelcomeCountdown";
-import { LIFETIME_PROMO, PLAN_PRICES } from "@/lib/pricing/plans";
+import { PLAN_PRICES, type LifetimeOffer } from "@/lib/pricing/plans";
 
 // Avant le paywall, à chaque arrivée (Nathan, 22/10) : combien de
 // personnes nous ont fait confiance (vrai chiffre), la garantie remboursé
@@ -52,18 +52,20 @@ export function PaywallPledge({
   trustCount,
   welcomeEndsAt = null,
   welcomeActive = false,
-  promoActive = false,
+  lifetimeOffer = null,
 }: {
   trustCount: number;
   welcomeEndsAt?: number | null;
   welcomeActive?: boolean;
-  promoActive?: boolean;
+  // Prix spécial de l'accès à vie (offre 48 h du compte, ou promo) : lu côté serveur.
+  lifetimeOffer?: LifetimeOffer | null;
 }) {
   const showTrust = trustCount >= 100;
   const trustTarget = trustFloor(trustCount);
   const [phase, setPhase] = useState<Phase>(showTrust ? "trust" : "guarantee");
   const welcome = useWelcomeCountdown(welcomeEndsAt, welcomeActive);
-  const lifetimeNow = promoActive ? LIFETIME_PROMO.price : PLAN_PRICES.lifetime.welcome;
+  const lifetimeNow = lifetimeOffer ? lifetimeOffer.price : PLAN_PRICES.lifetime.welcome;
+  const flash = lifetimeOffer?.kind === "flash";
 
   // Bloque le défilement du paywall en dessous tant que l'écran est affiché.
   useEffect(() => {
@@ -149,14 +151,14 @@ export function PaywallPledge({
                 style={{ maxWidth: 400, margin: "auto" }}
               >
                 <p style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", margin: 0, color: "var(--color-accent-700)" }}>
-                  ⏳ Ton prix de bienvenue
+                  {flash ? "⏳ Ton offre 48 h, rien que pour toi" : "⏳ Ton prix de bienvenue"}
                 </p>
                 <h1 style={{ fontSize: 28, fontWeight: 800, lineHeight: 1.15, margin: "8px 0 0" }}>
                   Il te reste{" "}
-                  <span style={{ color: "var(--color-accent-700)", fontVariantNumeric: "tabular-nums" }}>{welcome.remaining ?? "10:00"}</span>
+                  <span style={{ color: "var(--color-accent-700)", fontVariantNumeric: "tabular-nums" }}>{welcome.remaining ?? (flash ? "––:––:––" : "10:00")}</span>
                 </h1>
                 <p style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.45, margin: "8px 0 0", color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
-                  pour payer le prix de bienvenue. Après, c&apos;est <strong style={{ color: "#c2262b" }}>au moins 60 % plus cher</strong>.
+                  {flash ? "pour profiter de ton offre" : "pour payer le prix de bienvenue"}. Après, c&apos;est <strong style={{ color: "#c2262b" }}>au moins 60 % plus cher</strong>.
                 </p>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, width: "100%", marginTop: 20 }}>
                   <div
@@ -202,7 +204,7 @@ export function PaywallPledge({
                   </div>
                 </div>
                 <p style={{ fontSize: 13, lineHeight: 1.5, margin: "16px 0 0", color: "color-mix(in srgb, var(--color-text) 62%, transparent)" }}>
-                  Le chrono ne repart pas à zéro : quand il est fini, le prix de bienvenue disparaît.
+                  Le chrono ne repart pas à zéro : quand il est fini, {flash ? "l'offre disparaît" : "le prix de bienvenue disparaît"}.
                 </p>
                 <button type="button" className="btn btn-primary" onClick={() => setPhase("done")} style={{ marginTop: 20, height: 50, borderRadius: 999, padding: "0 28px", fontWeight: 700 }}>
                   J&apos;en profite →

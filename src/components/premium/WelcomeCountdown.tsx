@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { PLAN_PRICES, WELCOME_WINDOW_MS } from "@/lib/pricing/plans";
+import { FLASH_OFFER, PLAN_PRICES, WELCOME_WINDOW_MS } from "@/lib/pricing/plans";
 
 // Compte à rebours du prix de bienvenue (voir lib/pricing/plans.ts). La
 // fin est fixée côté serveur : recharger la page ne rajoute pas de temps.
@@ -24,13 +24,16 @@ export function useWelcomeCountdown(endsAt: number | null, initialActive: boolea
   if (now === null) return { active: initialActive, remaining: null as string | null, msLeft: null as number | null };
   const ms = endsAt - now;
   if (ms <= 0) return { active: false, remaining: null as string | null, msLeft: null as number | null };
-  const minutes = Math.floor(ms / 60_000);
+  // Offre 48 h : heures:minutes:secondes ; prix de bienvenue : minutes:secondes.
+  const hours = Math.floor(ms / 3_600_000);
+  const minutes = Math.floor((ms % 3_600_000) / 60_000);
   const seconds = Math.floor((ms % 60_000) / 1000);
-  return { active: true, remaining: `${minutes}:${String(seconds).padStart(2, "0")}`, msLeft: ms };
+  const remaining = hours > 0 ? `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}` : `${minutes}:${String(seconds).padStart(2, "0")}`;
+  return { active: true, remaining, msLeft: ms };
 }
 
 // Chiffre du chrono dans sa tuile : glisse à chaque changement.
-function DigitTile({ char }: { char: string }) {
+function DigitTile({ char, narrow = false }: { char: string; narrow?: boolean }) {
   return (
     <span
       style={{
@@ -38,7 +41,7 @@ function DigitTile({ char }: { char: string }) {
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        width: 28,
+        width: narrow ? 23 : 28,
         height: 38,
         borderRadius: 9,
         overflow: "hidden",
@@ -52,7 +55,7 @@ function DigitTile({ char }: { char: string }) {
         initial={{ y: -18, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.25, ease: "easeOut" }}
-        style={{ fontFamily: "var(--font-heading)", fontSize: 23, fontWeight: 800, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}
+        style={{ fontFamily: "var(--font-heading)", fontSize: narrow ? 20 : 23, fontWeight: 800, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}
       >
         {char}
       </motion.span>
@@ -65,19 +68,37 @@ function DigitTile({ char }: { char: string }) {
 // beaucoup plus visible » ; 22/10 : 10 min et plus stylé ; 28/10 : « un peu
 // plus petit, moyen, bien visible sans prendre trop de place »). Libellé à
 // gauche, tuiles de chiffres à droite, barre qui se vide, rouge dans les 2
-// dernières minutes.
-export function WelcomePriceBanner({ endsAt, initialActive }: { endsAt: number | null; initialActive: boolean }) {
+// dernières minutes. Offre 48 h par email (28/10) : heures en plus, et son
+// propre libellé.
+export function WelcomePriceBanner({
+  endsAt,
+  initialActive,
+  flash = false,
+}: {
+  endsAt: number | null;
+  initialActive: boolean;
+  flash?: boolean;
+}) {
   const { active, remaining, msLeft } = useWelcomeCountdown(endsAt, initialActive);
   if (!active) return null;
   const lastMinutes = msLeft !== null && msLeft < 2 * 60_000;
-  const [mm, ss] = remaining ? remaining.split(":").map((part) => part.padStart(2, "0")) : ["––", "––"];
-  const progress = msLeft !== null ? Math.max(0, Math.min(1, msLeft / WELCOME_WINDOW_MS)) : 1;
+  const parts = remaining ? remaining.split(":").map((part) => part.padStart(2, "0")) : flash ? ["––", "––", "––"] : ["––", "––"];
+  const withHours = parts.length === 3;
+  const windowMs = flash ? FLASH_OFFER.windowMs : WELCOME_WINDOW_MS;
+  const progress = msLeft !== null ? Math.max(0, Math.min(1, msLeft / windowMs)) : 1;
+  const label = lastMinutes
+    ? flash
+      ? "⚡ Dernières minutes de ton offre"
+      : "⚡ Dernières minutes du prix de bienvenue"
+    : flash
+      ? "🎁 Ton offre 48 h, rien que pour toi"
+      : "🎁 Ton prix de bienvenue, encore";
   return (
     <motion.div
       className="animate-in"
       role="timer"
       aria-live="off"
-      aria-label={`Prix de bienvenue : encore ${mm} min ${ss} s`}
+      aria-label={`${flash ? "Ton offre 48 h" : "Prix de bienvenue"} : encore ${withHours ? `${parts[0]} h ` : ""}${parts[parts.length - 2]} min ${parts[parts.length - 1]} s`}
       animate={lastMinutes ? { scale: [1, 1.015, 1] } : { scale: 1 }}
       transition={lastMinutes ? { duration: 1.2, repeat: Infinity } : { duration: 0.2 }}
       style={{
@@ -116,20 +137,25 @@ export function WelcomePriceBanner({ endsAt, initialActive }: { endsAt: number |
             transition={{ duration: 1, repeat: Infinity }}
             style={{ width: 7, height: 7, borderRadius: "50%", flexShrink: 0, background: lastMinutes ? "#fff" : "var(--color-accent-300)" }}
           />
-          {lastMinutes ? "⚡ Dernières minutes du prix de bienvenue" : "🎁 Ton prix de bienvenue, encore"}
+          {label}
         </p>
-        <div aria-hidden style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
-          <DigitTile char={mm[0]} />
-          <DigitTile char={mm[1]} />
-          <motion.span
-            animate={{ opacity: [1, 0.3, 1] }}
-            transition={{ duration: 1, repeat: Infinity }}
-            style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 800, margin: "0 1px" }}
-          >
-            :
-          </motion.span>
-          <DigitTile char={ss[0]} />
-          <DigitTile char={ss[1]} />
+        <div aria-hidden style={{ display: "flex", alignItems: "center", gap: withHours ? 3 : 4, flexShrink: 0 }}>
+          {parts.map((part, i) => (
+            <span key={i} style={{ display: "contents" }}>
+              {i > 0 && (
+                <motion.span
+                  animate={{ opacity: [1, 0.3, 1] }}
+                  transition={{ duration: 1, repeat: Infinity }}
+                  style={{ fontFamily: "var(--font-heading)", fontSize: withHours ? 19 : 22, fontWeight: 800, margin: "0 1px" }}
+                >
+                  :
+                </motion.span>
+              )}
+              {[...part].map((char, j) => (
+                <DigitTile key={j} char={char} narrow={withHours} />
+              ))}
+            </span>
+          ))}
         </div>
       </div>
       <div style={{ position: "relative", height: 4, borderRadius: 999, background: "rgba(255,255,255,0.2)", margin: "10px 0 0", overflow: "hidden" }}>

@@ -3,7 +3,8 @@
 // non finalisés de Stageio.
 // Lancer : npx tsx --tsconfig tsconfig.json tests/relances-quotidiennes.test.ts
 import assert from "node:assert/strict";
-import { compactCatalog, renderSeriesEmail } from "../src/lib/campaigns/serieVente";
+import { compactCatalog, parisDeadline, renderSeriesEmail } from "../src/lib/campaigns/serieVente";
+import { FLASH_OFFER, lifetimeOfferFor } from "../src/lib/pricing/plans";
 import { countForProfile } from "../src/lib/campaigns/relanceOffres";
 import { attributeEmailRevenue } from "../src/lib/admin/emailRevenue";
 import { abandonedUsers } from "../src/lib/campaigns/relanceCheckoutDaily";
@@ -85,3 +86,30 @@ assert.deepEqual(
 }
 
 console.log("relances-quotidiennes : OK");
+
+// Offre 48 h (28/10) : l'envoi qui l'ouvre donne la vraie heure de fin, le suivant la rappelle ; jamais de prix barré.
+{
+  const SEND = Date.parse("2026-10-28T17:30:00Z"); // mercredi 18 h 30 à Paris
+  const ends = SEND + FLASH_OFFER.windowMs;
+  assert.deepEqual(parisDeadline(ends, SEND), { long: "vendredi 30 octobre à 18\u00a0h\u00a030", short: "vendredi à 18\u00a0h\u00a030" });
+  assert.equal(parisDeadline(ends, SEND + D).short, "demain à 18\u00a0h\u00a030");
+  assert.equal(parisDeadline(ends, SEND + 2 * D - 3 * H).short, "ce soir à 18\u00a0h\u00a030");
+  assert.equal(parisDeadline(Date.parse("2026-10-30T08:00:59Z"), SEND).long, "vendredi 30 octobre à 9\u00a0h", "arrondi à la minute inférieure");
+
+  const opening = renderSeriesEmail(profile, 1, catalog, SEND, 0, ends);
+  assert.ok(opening.subject.includes("48 h rien que pour toi"), opening.subject);
+  assert.ok(opening.html.includes("vendredi 30 octobre à 18\u00a0h\u00a030"));
+  assert.ok(opening.html.includes("30&nbsp;€") && opening.html.includes("7,99&nbsp;€/mois"));
+  assert.ok(!/line-through|au lieu de|baisse|−/.test(opening.html), "ni prix barré ni baisse annoncée");
+
+  const reminder = renderSeriesEmail(profile, 2, catalog, SEND + D - 6 * H, 0, ends);
+  assert.ok(reminder.subject.includes("se termine demain à 18\u00a0h\u00a030"), reminder.subject);
+  // Moins d'une heure avant la fin, ou après : l'email habituel.
+  assert.equal(renderSeriesEmail(profile, 3, catalog, ends - 30 * 60_000, 0, ends).subject, renderSeriesEmail(profile, 3, catalog, ends - 30 * 60_000).subject);
+
+  // Paywall : 30 € pendant l'offre du compte, sans prix barré ; rien après.
+  assert.deepEqual(lifetimeOfferFor(ends, SEND + H), { kind: "flash", price: "30 €", endsAt: ends, strike: null, badge: "Offre 48 h" });
+  assert.equal(lifetimeOfferFor(ends, ends), null);
+  assert.equal(lifetimeOfferFor(null, SEND), null);
+}
+

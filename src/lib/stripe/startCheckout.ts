@@ -7,7 +7,7 @@ import { syncSubscriptionToProfile } from "@/lib/stripe/syncSubscription";
 import { isAutoTier } from "@/lib/subscription/isPremium";
 import { isAutoOfferAvailable } from "@/lib/subscription/autoAvailability";
 import type { Profile } from "@/types/database";
-import { getWelcomeEndsAt } from "@/lib/pricing/welcome";
+import { getFlashEndsAt, getWelcomeEndsAt } from "@/lib/pricing/welcome";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripeClient } from "@/lib/stripe/client";
@@ -141,10 +141,15 @@ export async function startCheckout(
   // Prix de bienvenue (anciens prix) tant que ses 10 minutes ne sont pas
   // écoulées, prix réguliers ensuite (voir lib/pricing/plans.ts). Une minute
   // de marge : un clic à 19:59 garde le prix affiché sur le bouton.
-  const welcome = Date.now() <= (await getWelcomeEndsAt(user.id)) + 60_000;
+  // Offre 48 h par email (FLASH_OFFER) : prix de bienvenue et accès à vie à
+  // 30 € jusqu'à la fin de l'offre du compte (même minute de marge).
+  const [welcomeEndsAt, flashEndsAt] = await Promise.all([getWelcomeEndsAt(user.id), getFlashEndsAt(user.id)]);
+  const now = Date.now();
+  const flash = flashEndsAt !== null && now <= flashEndsAt + 60_000;
+  const welcome = flash || now <= welcomeEndsAt + 60_000;
   // Promo accès à vie (30 € au lieu de 39,99 €) : pendant le prix de
   // bienvenue seulement, tant que la promo dure (même minute de marge).
-  const promo = isLifetime && welcome && Date.now() <= LIFETIME_PROMO.endsAt + 60_000;
+  const promo = isLifetime && (flash || (welcome && now <= LIFETIME_PROMO.endsAt + 60_000));
   const rawPriceId = promo
     ? LIFETIME_PROMO.priceId
     : welcome

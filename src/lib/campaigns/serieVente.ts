@@ -7,7 +7,7 @@ import { unsubscribeHeaders, unsubscribeUrlFor } from "@/lib/resend/unsubscribe"
 import { isAdminEmail } from "@/lib/admin/assertAdmin";
 import { isPremium } from "@/lib/subscription/isPremium";
 import { GUARANTEE_MONTHS } from "@/lib/premium/guaranteeTerms";
-import { LIFETIME_PROMO, PLAN_PRICES } from "@/lib/pricing/plans";
+import { FLASH_OFFER, isFlashCampaignOpen, LIFETIME_PROMO, PLAN_PRICES } from "@/lib/pricing/plans";
 import { SITE_URL } from "@/lib/site";
 import { getTrustCount } from "@/lib/premium/trustCount";
 import { campaignSender } from "@/lib/campaigns/sendBatch";
@@ -55,6 +55,11 @@ import type { Database } from "@/types/database";
 // jamais relancés passent avant les rappels. Toujours 5 au plus par compte,
 // et jamais deux emails de relance le même jour (série, paiement non
 // finalisé, campagnes).
+//
+// Offre 48 h (Nathan, 28/10, voir FLASH_OFFER) : pendant la campagne, le
+// premier email de la série reçu ouvre 48 h d'offre pour ce compte (noté
+// metadata.flash sur l'envoi) ; l'email suivant, s'il tombe avant la fin, le
+// rappelle avec la vraie heure de fin ; après, l'email habituel.
 
 type Db = SupabaseClient<Database>;
 
@@ -100,7 +105,9 @@ export function parisClock(now: number): { hour: number; midnight: number } {
   return { hour: get("hour"), midnight: now - sinceMidnight };
 }
 
-type Due = { profile: SeriesProfile; step: number };
+// flashEndsAt : fin de l'offre 48 h déjà ouverte pour ce compte (sinon null) ;
+// opensFlash : cet envoi ouvre l'offre.
+type Due = { profile: SeriesProfile; step: number; flashEndsAt: number | null; opensFlash: boolean };
 
 // Adresses que Resend refuse d'office (point juste avant le @, deux points
 // de suite…) : sinon retentées, et refusées, à chaque passage.
@@ -118,8 +125,8 @@ async function loadDue(db: Db, now: number, midnight: number): Promise<{ due: Du
         error: { message: string } | null;
       }>;
     }),
-    fetchAllRows<{ user_id: string; created_at: string }>((from, to) =>
-      db.from("user_events").select("user_id, created_at").eq("event_type", SALES_SERIES_EVENT).order("created_at").range(from, to),
+    fetchAllRows<{ user_id: string; created_at: string; metadata: Record<string, unknown> | null }>((from, to) =>
+      db.from("user_events").select("user_id, created_at, metadata").eq("event_type", SALES_SERIES_EVENT).order("created_at").range(from, to),
     ),
     fetchAllRows<{ user_id: string }>((from, to) =>
       db
@@ -133,13 +140,22 @@ async function loadDue(db: Db, now: number, midnight: number): Promise<{ due: Du
   ]);
 
   const history = new Map<string, { count: number; last: number }>();
+  // Premier envoi qui a ouvert l'offre 48 h, par compte (événements triés par date).
+  const flashOpened = new Map<string, number>();
   let sentToday = 0;
   for (const e of seriesEvents) {
     const at = Date.parse(e.created_at);
     if (at >= midnight) sentToday++;
     const h = history.get(e.user_id) ?? { count: 0, last: 0 };
     history.set(e.user_id, { count: h.count + 1, last: Math.max(h.last, at) });
+    if (e.metadata?.flash === true && !flashOpened.has(e.user_id)) flashOpened.set(e.user_id, at);
   }
+  const campaignOpen = isFlashCampaignOpen(now);
+  const flashFor = (userId: string): Pick<Due, "flashEndsAt" | "opensFlash"> => {
+    const opened = flashOpened.get(userId);
+    if (opened !== undefined) return { flashEndsAt: opened + FLASH_OFFER.windowMs, opensFlash: false };
+    return { flashEndsAt: null, opensFlash: campaignOpen };
+  };
   const recentOther = new Set(otherEvents.map((e) => e.user_id));
 
   const continuing: (Due & { last: number })[] = [];
@@ -153,8 +169,8 @@ async function loadDue(db: Db, now: number, midnight: number): Promise<{ due: Du
     const h = history.get(p.id);
     // Un par jour au plus (déjà reçu depuis minuit : demain).
     if (h && (h.count >= SERIES_STEPS || h.last >= midnight)) continue;
-    if (h) continuing.push({ profile: p, step: h.count + 1, last: h.last });
-    else starting.push({ profile: p, step: 1 });
+    if (h) continuing.push({ profile: p, step: h.count + 1, last: h.last, ...flashFor(p.id) });
+    else starting.push({ profile: p, step: 1, ...flashFor(p.id) });
   }
   // Les inscrits des 2 derniers jours d'abord (les plus chauds, les plus
   // récents en tête), puis les comptes jamais relancés (venus le plus
@@ -199,13 +215,42 @@ export const loadCompactCatalog = unstable_cache(async (): Promise<Catalog> => c
 
 export type RenderedSeriesEmail = { subject: string; html: string; text: string };
 
+const PARIS_DATE = new Intl.DateTimeFormat("fr-FR", {
+  timeZone: "Europe/Paris",
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
+// Fin de l'offre 48 h à l'heure de Paris, arrondie à la minute inférieure
+// (jamais plus tard que la vraie fin) : « jeudi 30 octobre à 18 h 30 », et
+// en court par rapport à maintenant : « ce soir à 18 h 30 », « demain à 9 h ».
+export function parisDeadline(endsAt: number, now: number): { long: string; short: string } {
+  const at = Math.floor(endsAt / 60_000) * 60_000;
+  const parts = PARIS_DATE.formatToParts(new Date(at));
+  const get = (type: string) => parts.find((x) => x.type === type)?.value ?? "";
+  const hour = Number(get("hour"));
+  const minute = get("minute");
+  const time = `${hour}\u00a0h${minute === "00" ? "" : `\u00a0${minute}`}`;
+  const days = Math.round((parisClock(at).midnight - parisClock(now).midnight) / DAY);
+  const short =
+    days <= 0 ? `${hour >= 18 ? "ce soir" : "aujourd'hui"} à ${time}` : days === 1 ? `demain à ${time}` : `${get("weekday")} à ${time}`;
+  return { long: `${get("weekday")} ${get("day")} ${get("month")} à ${time}`, short };
+}
+
 // trustCount : vrai nombre de comptes inscrits (même chiffre que le paywall).
+// flashEndsAt : fin de l'offre 48 h du compte (ouverte par cet envoi ou un
+// précédent), sinon null.
 export function renderSeriesEmail(
   p: CampaignProfile,
   step: number,
   catalog: Catalog,
   now: number = Date.now(),
   trustCount = 0,
+  flashEndsAt: number | null = null,
 ): RenderedSeriesEmail {
   const name = firstName(p.full_name);
   const greeting = name ? `Salut ${name},` : "Salut,";
@@ -218,8 +263,12 @@ export function renderSeriesEmail(
   const whereHtml = escapeHtml(where);
   const showCounts = counts.hasCriteria && counts.matching >= MIN_COUNT_TO_SHOW;
   const wantsAlternance = p.looking_for.length === 0 || p.looking_for.includes("alternance");
+  // Offre 48 h : au moins 1 h pour en profiter, sinon l'email habituel.
+  const flash = flashEndsAt !== null && now < flashEndsAt - 60 * 60_000 ? parisDeadline(flashEndsAt, now) : null;
+  // Envoi qui ouvre l'offre (fin dans 48 h) ; les suivants, au plus tôt le lendemain, la rappellent.
+  const opening = flash !== null && flashEndsAt! - now > FLASH_OFFER.windowMs - 60 * 60_000;
   // Au moins 30 min pour en profiter avant la fin de la vraie promo.
-  const promo = shown === 1 && now < LIFETIME_PROMO.endsAt - 30 * 60_000;
+  const promo = !flash && shown === 1 && now < LIFETIME_PROMO.endsAt - 30 * 60_000;
   const utm = `utm_source=email&utm_medium=serie&utm_campaign=${seriesUtmCampaign(step)}`;
   const go = (plan: "monthly" | "lifetime") => `${SITE_URL}/premium/go?plan=${plan}&${utm}`;
   const termsUrl = `${SITE_URL}/legal/cgv`;
@@ -243,7 +292,21 @@ export function renderSeriesEmail(
   // Les leviers sont vrais : délai légal du contrat d'apprentissage (guide
   // « calendrier de l'alternance », article L6222-12), offres réellement
   // masquées sans Premium, garantie, vrais prix et vrai nombre d'inscrits.
-  if (shown === 1 && promo) {
+  if (flash && opening) {
+    subject = `🎁 ${name ? `${name}, ` : ""}48 h rien que pour toi : Premium à vie à ${FLASH_OFFER.lifetimePrice}`;
+    hook = [
+      "J'ai une offre rien que pour toi, et elle ne dure que 48&nbsp;heures.",
+      `Jusqu'au <strong>${flash.long}</strong>, l'accès Premium <strong>à vie</strong> est à <strong>${FLASH_OFFER.lifetimePrice.replace(" ", "&nbsp;")}</strong> : tu paies une fois, et c'est Premium pour toujours. Tu préfères au mois ? Le mensuel est à <strong>${PLAN_PRICES.monthly.welcome.replace(" ", "&nbsp;")}/mois</strong>, sans engagement.`,
+      `En ce moment, ${offersLineHtml} t'attendent sur Stageio. Sans Premium, tu ne vois ni l'entreprise ni l'analyse de chaque offre ; avec, tu vois tout et tu postules en quelques secondes, lettre de motivation comprise.`,
+    ];
+  } else if (flash) {
+    subject = `⏳ ${name ? `${name}, t` : "T"}on offre à ${FLASH_OFFER.lifetimePrice} se termine ${flash.short}`;
+    hook = [
+      `Petit rappel : ton offre se termine <strong>${flash.short}</strong>.`,
+      `Jusque-là, l'accès Premium <strong>à vie</strong> est à <strong>${FLASH_OFFER.lifetimePrice.replace(" ", "&nbsp;")}</strong> (une fois, et c'est fini), ou le mensuel à <strong>${PLAN_PRICES.monthly.welcome.replace(" ", "&nbsp;")}/mois</strong>, sans engagement. Après, ce sera ${PLAN_PRICES.monthly.regular.replace(" ", "&nbsp;")}/mois ou ${PLAN_PRICES.lifetime.regular.replace(" ", "&nbsp;")} à vie.`,
+      `En ce moment, ${offersLineHtml} t'attendent sur Stageio.`,
+    ];
+  } else if (shown === 1 && promo) {
     subject = `⏳ ${name ? `${name}, l'` : "L'"}accès Premium à vie à ${LIFETIME_PROMO.price}, c'est jusqu'à cette nuit`;
     hook = [
       "Des candidatures envoyées, et pas de réponse ? Des heures sur chaque lettre de motivation ? C'est exactement ce que Premium règle.",
@@ -318,11 +381,13 @@ export function renderSeriesEmail(
 
   const button = (href: string, label: string, primary: boolean) =>
     `<a href="${href}" style="display:block;text-align:center;background:${primary ? "#0c7a44" : "#ffffff"};color:${primary ? "#ffffff" : "#0c7a44"};border:2px solid #0c7a44;text-decoration:none;padding:13px 18px;border-radius:12px;font-weight:bold;font-size:16px">${label}</a>`;
-  const lifetimePrice = promo
-    ? `${LIFETIME_PROMO.price.replace(" ", "&nbsp;")} <span style="font-size:16px;color:#888;text-decoration:line-through;font-weight:normal">${LIFETIME_PROMO.referencePrice.replace(" ", "&nbsp;")}</span>`
-    : PLAN_PRICES.lifetime.welcome.replace(" ", "&nbsp;");
+  const lifetimePrice = flash
+    ? FLASH_OFFER.lifetimePrice.replace(" ", "&nbsp;")
+    : promo
+      ? `${LIFETIME_PROMO.price.replace(" ", "&nbsp;")} <span style="font-size:16px;color:#888;text-decoration:line-through;font-weight:normal">${LIFETIME_PROMO.referencePrice.replace(" ", "&nbsp;")}</span>`
+      : PLAN_PRICES.lifetime.welcome.replace(" ", "&nbsp;");
   const cards = `<div style="border:2px solid #0c7a44;border-radius:16px;padding:16px 18px;margin:16px 0 12px;background:#f2fbf6">
-<p style="margin:0;font-size:12px;font-weight:bold;letter-spacing:.04em;color:#0c7a44;text-transform:uppercase">${promo ? "Promo · " : ""}Accès à vie · paiement unique</p>
+<p style="margin:0;font-size:12px;font-weight:bold;letter-spacing:.04em;color:#0c7a44;text-transform:uppercase">${flash ? "Offre 48 h · " : promo ? "Promo · " : ""}Accès à vie · paiement unique</p>
 <p style="margin:6px 0 0;font-size:28px;font-weight:bold;color:#132b33">${lifetimePrice}</p>
 <p style="margin:4px 0 14px;font-size:14px;color:#444">Une fois, et Premium pour toujours. Pas d'abonnement, rien d'autre à payer.${
     wantsAlternance ? " Ton premier salaire d'alternant le rembourse plusieurs fois." : ""
@@ -335,8 +400,10 @@ ${button(go("lifetime"), `Je prends l'accès à vie →`, true)}
 <p style="margin:4px 0 14px;font-size:14px;color:#444">Moins de 30 centimes par jour. Ce prix reste le tien tant que tu restes abonné.</p>
 ${button(go("monthly"), "Je prends le mensuel →", false)}
 </div>
-<p style="margin:0 0 4px;font-size:13px;color:#555">⏱ Prix de bienvenue valables 10 minutes à partir de ton clic${
-    promo ? " (promo à 30&nbsp;€ jusqu'à cette nuit 0&nbsp;h&nbsp;30)" : ""
+<p style="margin:0 0 4px;font-size:13px;color:#555">⏱ ${
+    flash
+      ? `Ton offre, rien que pour toi, jusqu'au ${flash.long}`
+      : `Prix de bienvenue valables 10 minutes à partir de ton clic${promo ? " (promo à 30&nbsp;€ jusqu'à cette nuit 0&nbsp;h&nbsp;30)" : ""}`
   }. Ensuite : ${PLAN_PRICES.monthly.regular.replace(" ", "&nbsp;")}/mois ou ${PLAN_PRICES.lifetime.regular.replace(" ", "&nbsp;")} à vie. Paiement sécurisé par Stripe.</p>`;
 
   const unsubscribeUrl = unsubscribeUrlFor(p.id);
@@ -370,10 +437,14 @@ ${social ? `<p style="margin:10px 0 0;font-size:14px">👥 ${social}</p>` : ""}
     "Avec Premium :",
     ...benefits.map((b) => `- ${b}`),
     "",
-    `Accès à vie, paiement unique : ${strip(promo ? `${LIFETIME_PROMO.price} au lieu de ${LIFETIME_PROMO.referencePrice}` : PLAN_PRICES.lifetime.welcome)} → ${go("lifetime")}`,
+    `Accès à vie, paiement unique : ${strip(flash ? FLASH_OFFER.lifetimePrice : promo ? `${LIFETIME_PROMO.price} au lieu de ${LIFETIME_PROMO.referencePrice}` : PLAN_PRICES.lifetime.welcome)} → ${go("lifetime")}`,
     `Mensuel sans engagement : ${PLAN_PRICES.monthly.welcome} / mois, moins de 30 centimes par jour → ${go("monthly")}`,
     strip(
-      `Prix de bienvenue valables 10 minutes à partir de ton clic${promo ? " (promo à 30 € jusqu'à cette nuit 0 h 30)" : ""}. Ensuite : ${PLAN_PRICES.monthly.regular}/mois ou ${PLAN_PRICES.lifetime.regular} à vie.`,
+      `${
+        flash
+          ? `Ton offre, rien que pour toi, jusqu'au ${flash.long}`
+          : `Prix de bienvenue valables 10 minutes à partir de ton clic${promo ? " (promo à 30 € jusqu'à cette nuit 0 h 30)" : ""}`
+      }. Ensuite : ${PLAN_PRICES.monthly.regular}/mois ou ${PLAN_PRICES.lifetime.regular} à vie.`,
     ),
     ...(social ? ["", social] : []),
     "",
@@ -419,7 +490,7 @@ export async function sendSeriesRun(now: number = Date.now()): Promise<SeriesRun
     const chunk = batch.slice(i, i + 100);
     const { data: reserved, error: reserveError } = await db
       .from("user_events")
-      .insert(chunk.map((d) => ({ user_id: d.profile.id, event_type: SALES_SERIES_EVENT, metadata: { step: d.step } })))
+      .insert(chunk.map((d) => ({ user_id: d.profile.id, event_type: SALES_SERIES_EVENT, metadata: d.opensFlash ? { step: d.step, flash: true } : { step: d.step } })))
       .select("id, user_id");
     if (reserveError || !reserved) {
       failures.push(`Base indisponible, rien envoyé : ${reserveError?.message ?? "réponse vide"}`);
@@ -436,7 +507,8 @@ export async function sendSeriesRun(now: number = Date.now()): Promise<SeriesRun
       chunk.map((d) => ({
         from,
         to: d.profile.email as string,
-        ...renderSeriesEmail(d.profile, d.step, catalog, now, trustCount),
+        // L'offre ouverte par cet envoi finit 48 h après sa notation (faite juste avant) : au plus tôt now + 48 h.
+        ...renderSeriesEmail(d.profile, d.step, catalog, now, trustCount, d.opensFlash ? now + FLASH_OFFER.windowMs : d.flashEndsAt),
         headers: unsubscribeHeaders(d.profile.id),
         tags: [
           { name: "campaign", value: TAG },

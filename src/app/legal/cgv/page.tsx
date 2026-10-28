@@ -56,6 +56,14 @@ export default function CGVPage() {
           minutes ; passé ce délai, le prix de 63,99&nbsp;€ s&apos;applique.
         </p>
         <p style={{ marginTop: 8 }}>
+          <strong>Offre 48 h par email :</strong> pour chaque destinataire d&apos;un email de la série « Premium »
+          envoyé entre le 28 octobre 2026 à 18 h et le 1er novembre 2026 à 21 h (heure de Paris), le premier de ces
+          emails ouvre, pour son seul compte, une offre de 48 heures à compter de son envoi : 7,99&nbsp;€ / mois ou
+          30&nbsp;€ pour l&apos;accès à vie. L&apos;heure de fin est indiquée dans l&apos;email et sur la page
+          Premium ; cette offre n&apos;est ouverte qu&apos;une fois par compte. Le prix mensuel souscrit pendant
+          l&apos;offre reste celui de l&apos;abonnement ; passé l&apos;offre, les prix ci-dessus s&apos;appliquent.
+        </p>
+        <p style={{ marginTop: 8 }}>
           <strong>Formule Stageio Auto</strong> (à partir du 24 octobre 2026) : <strong>17,99&nbsp;€ / mois</strong>,
           renouvelable automatiquement chaque mois, ou <strong>80&nbsp;€</strong> en un paiement unique pour un accès
           à vie. Elle comprend tous les avantages Premium et, en plus : l&apos;envoi automatique de la candidature
