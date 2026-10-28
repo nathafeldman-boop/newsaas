@@ -469,7 +469,7 @@ export default async function AdminDashboardPage({
 
       <SectionCard
         title="Série email Premium"
-        subtitle="Depuis le 24/10 : 5 emails au plus par compte, un tous les 2-3 jours, de 7 h 30 à 20 h 30, 1 000 par jour au plus (baissé le 24/10 pour laisser de la place aux candidatures Stageio Auto). Venus depuis l'email = personnes distinctes arrivées par un lien de la série."
+        subtitle="Depuis le 24/10 : 5 emails au plus par compte, un tous les 2-3 jours, de 7 h 30 à 20 h 30, 500 par heure au plus depuis le 28/10 (1 000 par jour avant). Venus depuis l'email = personnes distinctes arrivées par un lien de la série."
       >
         {series === null ? (
           <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>

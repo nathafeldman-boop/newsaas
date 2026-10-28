@@ -74,8 +74,8 @@ export default async function AdminRelancePage({
       <div className="card elev-sm flex flex-col gap-3" style={{ padding: "var(--space-5)" }}>
         <p style={{ fontSize: 15, margin: 0, fontWeight: 600 }}>Série Premium (depuis le 24/10, automatique)</p>
         <p style={{ fontSize: 13, margin: 0, ...muted }}>
-          {SERIES_STEPS} emails au plus par compte, un tous les 2-3 jours, de 7 h 30 à 20 h 30 ; {seriesCap} par
-          jour au plus aujourd&apos;hui. {series.recipients} comptes dans la série · {series.payers} ont payé après leur 1er email
+          {SERIES_STEPS} emails au plus par compte, un tous les 2-3 jours, de 7 h 30 à 20 h 30 ; 500 par heure,
+          {seriesCap} par jour au plus. {series.recipients} comptes dans la série · {series.payers} ont payé après leur 1er email
           {series.payersCents > 0 ? ` (${(series.payersCents / 100).toLocaleString("fr-FR")} €)` : ""}.
         </p>
         <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>

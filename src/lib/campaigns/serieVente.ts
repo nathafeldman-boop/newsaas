@@ -39,12 +39,10 @@ import type { Database } from "@/types/database";
 // - Chaque email reprend le paywall : avantages, prix, garantie, et deux
 //   boutons qui mènent droit au paiement Stripe (/premium/go). Le prix de
 //   bienvenue repart de zéro après chaque email (voir pricing/welcome.ts).
-// - Volume : 1 000 emails par jour au plus (Nathan, 24/10 : « au lieu
-//   d'en envoyer 3000, tu en envoies 1000 », pour laisser au quota Resend la
-//   place des candidatures envoyées par l'offre Auto ; avant : 1 500, et
-//   3 000 prévus à partir du lundi 26/10), répartis sur les passages de
-//   7 h 30 à 20 h 30 (heure de Paris) ; moins s'il y a moins de comptes à
-//   relancer ce jour-là.
+// - Volume : 500 emails par passage horaire de 7 h 30 à 20 h 30 (heure de
+//   Paris) depuis le 28/10 (avant : 1 000 par jour, Nathan, 24/10, pour
+//   laisser au quota Resend la place des candidatures de l'offre Auto) ;
+//   moins s'il y a moins de comptes à relancer ce jour-là.
 // Pas de fausse urgence : le seul compte à rebours est celui de la vraie
 // promo (accès à vie à 30 €, fin le 25/10 à 0 h 30) et des 10 minutes du
 // prix de bienvenue.
@@ -76,7 +74,12 @@ export const SERIES_START = Date.parse("2026-10-24T05:30:00Z");
 const FIRST_PARIS_HOUR = 7;
 const LAST_PARIS_HOUR = 20;
 
-export const SERIES_DAILY_CAP = 1000;
+// 500 emails par passage horaire (Nathan, 28/10 : « j'en veux le maximum
+// possible […] 500 par heure, tous les jours »), soit 7 000 par jour au plus
+// sur les 14 passages de 7 h 30 à 20 h 30 ; moins quand il reste moins de
+// comptes à relancer (un email par jour et 5 au plus par compte).
+export const SERIES_PER_RUN = 500;
+export const SERIES_DAILY_CAP = SERIES_PER_RUN * (LAST_PARIS_HOUR - FIRST_PARIS_HOUR + 1);
 
 export function seriesDailyCap(): number {
   return SERIES_DAILY_CAP;
@@ -463,7 +466,7 @@ export type SeriesRunResult =
   | { kind: "sent"; sent: number; due: number; quota: number; byStep: Record<number, number>; failures: string[] };
 
 // Un passage (cron, toutes les heures de 7 h 30 à 20 h 30, heure de Paris) :
-// le quota restant du jour réparti sur les passages restants.
+// 500 emails au plus, dans la limite du quota du jour.
 export async function sendSeriesRun(now: number = Date.now()): Promise<SeriesRunResult> {
   const from = campaignSender();
   if (!from) return { kind: "no_sender" };
@@ -473,8 +476,7 @@ export async function sendSeriesRun(now: number = Date.now()): Promise<SeriesRun
 
   const db = createAdminClient();
   const { due, sentToday } = await loadDue(db, now, clock.midnight);
-  const runsLeft = LAST_PARIS_HOUR - clock.hour + 1;
-  const quota = Math.max(0, Math.ceil((seriesDailyCap() - sentToday) / runsLeft));
+  const quota = Math.max(0, Math.min(SERIES_PER_RUN, seriesDailyCap() - sentToday));
   const batch = due.slice(0, quota);
   const byStep: Record<number, number> = {};
   const failures: string[] = [];
