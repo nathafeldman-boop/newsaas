@@ -3,6 +3,7 @@
 import assert from "node:assert/strict";
 import { byChannel, expectedRenewals, goalFor, monthLabel, monthProgress, planFor, shiftMonth, simulate } from "../src/lib/admin/goals";
 import type { InvoiceRecord, StripeSnapshot, SubRecord } from "../src/lib/admin/cockpit/types";
+import { forecastFor, totalRevenue } from "../src/lib/admin/history";
 
 const D = 86_400_000;
 
@@ -116,6 +117,28 @@ assert.equal(monthLabel("2026-11"), "novembre 2026");
   // Décembre : l'échéance du 1/12, après celle du 1/11.
   const dec = expectedRenewals(snap, { start: Date.UTC(2026, 11, 1) - 3_600_000, end: Date.UTC(2027, 0, 1) - 3_600_000 }, NOW);
   assert.equal(dec.cents, 1_000);
+}
+
+// Historique (28/10) : prévision du mois en cours et des mois à venir ; revenu total net.
+{
+  // Mois de 30 jours, 10 jours écoulés : 300 inscrits et 6 payants à date → ×3 en fin de mois.
+  const cur = forecastFor({ kind: "current", days: 30, elapsedDays: 10, actual: { revenueCents: 50_000, signups: 300, newPayers: 6 }, projectionCents: 140_000, renewalCents: 0, rates: null });
+  assert.deepEqual(cur, { revenueCents: 140_000, signups: 900, newPayers: 18 });
+  // Projection plus basse que le déjà encaissé : jamais en dessous du réel.
+  assert.equal(forecastFor({ kind: "current", days: 30, elapsedDays: 29, actual: { revenueCents: 90_000, signups: 1, newPayers: 1 }, projectionCents: 80_000, renewalCents: 0, rates: null })?.revenueCents, 90_000);
+  // Mois à venir : renouvellements attendus + 1ers paiements au rythme mesuré.
+  const next = forecastFor({ kind: "forecast", days: 30, elapsedDays: 0, actual: { revenueCents: 0, signups: 0, newPayers: 0 }, projectionCents: null, renewalCents: 20_000, rates: { firstPaymentCents: 3_000, firstPayments: 0.4, signups: 40 } });
+  assert.deepEqual(next, { revenueCents: 110_000, signups: 1_200, newPayers: 12 });
+  // Sans taux mesurés : seulement les renouvellements, rien d'inventé.
+  assert.deepEqual(forecastFor({ kind: "forecast", days: 30, elapsedDays: 0, actual: { revenueCents: 0, signups: 0, newPayers: 0 }, projectionCents: null, renewalCents: 20_000, rates: null }), { revenueCents: 20_000, signups: null, newPayers: null });
+
+  const snap: StripeSnapshot = {
+    computedAt: 0, since: 0, otherCurrencySubs: 0, subs: [], disputes: [],
+    oneTime: [{ id: "cs", customer: "c", userId: "u", amountCents: 3_000, currency: "eur", created: Date.UTC(2026, 9, 2), invoice: null }],
+    invoices: [{ id: "i1", customer: "c2", subscription: "s1", billingReason: "subscription_create", status: "paid", amountPaid: 799, amountDue: 799, currency: "eur", created: Date.UTC(2026, 8, 5), paidAt: Date.UTC(2026, 8, 5), attemptCount: 1 }],
+    refunds: [{ id: "r", customer: "c2", amount: 799, created: Date.UTC(2026, 9, 3) }],
+  };
+  assert.deepEqual(totalRevenue(snap, Date.UTC(2026, 9, 28)), { netCents: 3_000, grossCents: 3_799, refundedCents: 799 });
 }
 
 console.log("goals: ok");

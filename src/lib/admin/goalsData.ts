@@ -170,12 +170,21 @@ export const GOALS_TABLE_SQL = `create table if not exists public.revenue_goals 
 );
 alter table public.revenue_goals enable row level security;`;
 
-export async function loadSavedGoals(): Promise<{ goals: Record<string, number>; missingTable: boolean }> {
+// Objectif global (28/10, « revenu total de Stageio ») : rangé dans la même
+// table sous la clé « 0000-00 » (aucun mois réel), jamais listé avec les mois.
+export const GLOBAL_GOAL_KEY = "0000-00";
+
+export async function loadSavedGoals(): Promise<{ goals: Record<string, number>; globalCents: number | null; missingTable: boolean }> {
   const { data, error } = await createAdminClient().from("revenue_goals").select("month, target_cents").order("month");
   if (error) {
     const missingTable = error.code === "42P01" || error.code === "PGRST205";
     if (!missingTable) console.error("objectifs: lecture des objectifs en échec", error);
-    return { goals: {}, missingTable };
+    return { goals: {}, globalCents: null, missingTable };
   }
-  return { goals: Object.fromEntries((data ?? []).map((g) => [g.month as string, g.target_cents as number])), missingTable: false };
+  const rows = (data ?? []).map((g) => [g.month as string, g.target_cents as number] as const);
+  return {
+    goals: Object.fromEntries(rows.filter(([month]) => month !== GLOBAL_GOAL_KEY)),
+    globalCents: rows.find(([month]) => month === GLOBAL_GOAL_KEY)?.[1] ?? null,
+    missingTable: false,
+  };
 }

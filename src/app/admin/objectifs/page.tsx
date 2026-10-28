@@ -10,7 +10,8 @@ import { loadSnapshot, nowMs } from "@/lib/admin/cockpit/load";
 import { revenueIn } from "@/lib/admin/cockpit/metrics";
 import { DEFAULT_GOALS, MIN_CHANNEL_SIGNUPS, expectedRenewals, goalFor, monthLabel, monthProgress, planFor, shiftMonth } from "@/lib/admin/goals";
 import { GOALS_TABLE_SQL, getMeasuredRates, loadSavedGoals, monthDays, type MeasuredRates } from "@/lib/admin/goalsData";
-import { saveGoalAction } from "@/app/admin/objectifs/actions";
+import { DEFAULT_GLOBAL_GOAL_CENTS } from "@/lib/admin/history";
+import { saveGlobalGoalAction, saveGoalAction } from "@/app/admin/objectifs/actions";
 
 // Objectifs (26/10, demande de Nathan) : « octobre, finir à 1 300 € ;
 // novembre 3 000 € ; décembre 5 000 € ; à chaque fois une estimation de
@@ -449,6 +450,26 @@ export default async function ObjectifsPage({ searchParams }: { searchParams: Pr
               </Link>
             ))}
         </div>
+        <form id="objectif-global" action={saveGlobalGoalAction} className="cockpit-card flex flex-wrap items-end gap-3" style={{ marginTop: 16, scrollMarginTop: 80 }}>
+          <label className="flex flex-col gap-1" style={{ fontSize: 12, fontWeight: 600 }}>
+            Objectif global : revenu total de Stageio (€)
+            <input
+              name="amount"
+              required
+              inputMode="decimal"
+              placeholder={String(Math.round((savedGoals.globalCents ?? DEFAULT_GLOBAL_GOAL_CENTS) / 100))}
+              className="input"
+              style={{ width: 200 }}
+            />
+          </label>
+          <button type="submit" className="btn btn-primary">
+            Enregistrer
+          </button>
+          <span style={{ fontSize: 12, color: "var(--color-neutral-600)" }}>
+            Actuel : {euros(savedGoals.globalCents ?? DEFAULT_GLOBAL_GOAL_CENTS)}
+            {savedGoals.globalCents === null ? " (par défaut)" : ""} · affiché en haut de la vue d&apos;ensemble · 0 € = valeur par défaut
+          </span>
+        </form>
       </Section>
     </div>
   );

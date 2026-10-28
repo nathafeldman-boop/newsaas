@@ -24,6 +24,11 @@ import {
 import { requireAdminPage } from "@/lib/admin/accessCode";
 import { TodayLive } from "@/components/admin/cockpit/TodayLive";
 import { autoOfferBlockers } from "@/lib/admin/autoStatus";
+import { TotalRevenueGauge } from "@/components/admin/goals/TotalRevenueGauge";
+import { DEFAULT_GLOBAL_GOAL_CENTS, totalRevenue } from "@/lib/admin/history";
+import { loadSavedGoals } from "@/lib/admin/goalsData";
+import { monthRange } from "@/lib/admin/cockpit/format";
+import { monthLabel } from "@/lib/admin/goals";
 
 // Vue d'ensemble du cockpit : « comment se porte Stageio aujourd'hui ? ».
 // Chiffres de paiement lus dans Stripe (instantané de 30 min max), comptes
@@ -38,12 +43,13 @@ export default async function CockpitOverviewPage({ searchParams }: { searchPara
   const { current, previous } = periodRanges(period, now);
   const { snap, error } = await loadSnapshot();
 
-  const [signupsCur, signupsPrev, active7, active30, autoBlockers] = await Promise.all([
+  const [signupsCur, signupsPrev, active7, active30, autoBlockers, savedGoals] = await Promise.all([
     signupsIn(current).catch(() => null),
     signupsIn(previous).catch(() => null),
     activeSince(now - 7 * DAY_MS).catch(() => null),
     activeSince(now - 30 * DAY_MS).catch(() => null),
     autoOfferBlockers().catch(() => [] as string[]),
+    loadSavedGoals().catch(() => null),
   ]);
   const autoAlert =
     autoBlockers.length > 0
@@ -115,8 +121,23 @@ export default async function CockpitOverviewPage({ searchParams }: { searchPara
 
   const signed = (cents: number) => `${cents >= 0 ? "+" : "−"}${euros(Math.abs(cents))}`;
 
+  // Revenu total de Stageio face à l'objectif global (28/10).
+  const total = totalRevenue(snap, now);
+  const thisMonth = monthRange(undefined, now);
+  const globalGoal = savedGoals?.globalCents ?? null;
+
   return (
     <div>
+      <div style={{ marginBottom: 20 }}>
+        <TotalRevenueGauge
+          totalCents={total.netCents}
+          goalCents={globalGoal ?? DEFAULT_GLOBAL_GOAL_CENTS}
+          goalIsDefault={globalGoal === null}
+          monthCents={revenueIn(snap, thisMonth.range).netCents}
+          monthName={monthLabel(thisMonth.key).replace(/^./, (c) => c.toUpperCase())}
+          refundedCents={total.refundedCents}
+        />
+      </div>
       <h1 style={{ fontSize: 24, fontWeight: 700, margin: "0 0 4px" }}>Vue d&apos;ensemble</h1>
       <p style={{ margin: "0 0 16px", fontSize: 13, color: "var(--color-neutral-600)" }}>
         Comment se porte Stageio : {period} derniers jours, comparés aux {period} jours d&apos;avant.
