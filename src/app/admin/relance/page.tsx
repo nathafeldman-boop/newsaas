@@ -15,7 +15,7 @@ import {
   type ExclusionReason,
 } from "@/lib/campaigns/relanceOffres";
 import { MIN_SENT_PER_VARIANT, WINNER_SHARE, loadVariantReport } from "@/lib/campaigns/newsTest";
-import { SERIES_STEPS, loadSeriesReport, seriesDailyCap } from "@/lib/campaigns/serieVente";
+import { NEWS_STEP, SERIES_STEPS, loadSeriesReport, seriesDailyCap } from "@/lib/campaigns/serieVente";
 import { sendCampaignBatchAction, sendCampaignTestAction } from "./actions";
 import { requireAdminPage } from "@/lib/admin/accessCode";
 
@@ -89,7 +89,7 @@ export default async function AdminRelancePage({
           <tbody>
             {series.steps.map((row) => (
               <tr key={row.step} style={{ borderTop: "1px solid var(--color-divider)" }}>
-                <td style={{ padding: "6px 8px 6px 0" }}>Email {row.step}</td>
+                <td style={{ padding: "6px 8px 6px 0" }}>{row.step === NEWS_STEP ? "Nouveautés (série déjà finie)" : `Email ${row.step}`}</td>
                 <td style={{ padding: "6px 8px" }}>{row.sent}</td>
                 <td style={{ padding: "6px 8px" }}>
                   {row.clickers}

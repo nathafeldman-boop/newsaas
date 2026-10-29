@@ -7,7 +7,7 @@ import { unsubscribeHeaders, unsubscribeUrlFor } from "@/lib/resend/unsubscribe"
 import { isAdminEmail } from "@/lib/admin/assertAdmin";
 import { isPremium } from "@/lib/subscription/isPremium";
 import { GUARANTEE_MONTHS } from "@/lib/premium/guaranteeTerms";
-import { FLASH_OFFER, isFlashCampaignOpen, isLegacyOffer, LIFETIME_PROMO, PLAN_PRICES, priceSheet } from "@/lib/pricing/plans";
+import { AUTO_DAILY_LIMIT, FLASH_OFFER, isFlashCampaignOpen, isLegacyOffer, LIFETIME_PROMO, PLAN_PRICES, priceSheet } from "@/lib/pricing/plans";
 import { SITE_URL } from "@/lib/site";
 import { getTrustCount } from "@/lib/premium/trustCount";
 import { campaignSender } from "@/lib/campaigns/sendBatch";
@@ -71,6 +71,31 @@ const SAME_EMAIL_EVERY_DAY = true;
 const MIN_ACCOUNT_AGE_MS = 60 * 60 * 1000;
 const FRESH_SIGNUP_MS = 2 * DAY;
 export const SERIES_START = Date.parse("2026-10-24T05:30:00Z");
+
+// Campagne « nouveautés » (Nathan, 29/10 : « une campagne d'email [...] tu
+// mets toutes les nouvelles features [...] un objectif de vous faire avoir
+// votre alternance en 2 mois maximum [...] le but c'est vraiment que vous
+// trouviez votre alternance le plus vite possible »). À partir de
+// NEWS_LAUNCH, chaque email de la série montre les nouveautés et
+// l'objectif ; les comptes qui avaient déjà reçu les 5 emails reçoivent
+// celui-ci une fois (n° 6), puis plus rien. L'objectif est écrit comme un
+// objectif, jamais comme une promesse ; la seule garantie est celle des CGV
+// (aucun entretien en 2 mois de Premium = remboursé).
+export const NEWS_LAUNCH = Date.parse("2026-10-29T10:30:00Z");
+export const NEWS_STEP = 6;
+const NEWS_FEATURES: { title: string; text: string }[] = [
+  {
+    title: "Candidatures spontanées",
+    text: "les entreprises qui recrutent dans ton métier près de chez toi, même sans annonce publiée, avec La bonne alternance (le service public de l'alternance). Ta candidature part en un clic.",
+  },
+  {
+    title: "Stageio Auto",
+    text: `chaque like envoie ta candidature, lettre et CV, jusqu'à ${AUTO_DAILY_LIMIT} par jour, et les réponses des recruteurs arrivent dans ta boîte Stageio.`,
+  },
+  { title: "Relances", text: "7 jours sans réponse après une candidature ? On relance pour toi avec Auto, ou on te le rappelle." },
+  { title: "Alertes", text: "une nouvelle offre qui te correspond vraiment ? Tu la reçois dans l'heure (en journée), avant les autres." },
+  { title: "Entretiens", text: "un recruteur te répond ? Le simulateur d'entretien te prépare aux questions de ton métier." },
+];
 const FIRST_PARIS_HOUR = 7;
 const LAST_PARIS_HOUR = 20;
 
@@ -145,10 +170,13 @@ async function loadDue(db: Db, now: number, midnight: number): Promise<{ due: Du
   const history = new Map<string, { count: number; last: number }>();
   // Premier envoi qui a ouvert l'offre 48 h, par compte (événements triés par date).
   const flashOpened = new Map<string, number>();
+  // Comptes qui ont déjà reçu un email depuis le lancement des nouveautés.
+  const newsSent = new Set<string>();
   let sentToday = 0;
   for (const e of seriesEvents) {
     const at = Date.parse(e.created_at);
     if (at >= midnight) sentToday++;
+    if (at >= NEWS_LAUNCH) newsSent.add(e.user_id);
     const h = history.get(e.user_id) ?? { count: 0, last: 0 };
     history.set(e.user_id, { count: h.count + 1, last: Math.max(h.last, at) });
     if (e.metadata?.flash === true && !flashOpened.has(e.user_id)) flashOpened.set(e.user_id, at);
@@ -163,6 +191,8 @@ async function loadDue(db: Db, now: number, midnight: number): Promise<{ due: Du
 
   const continuing: (Due & { last: number })[] = [];
   const starting: Due[] = [];
+  const relaunch: Due[] = [];
+  const newsOpen = now >= NEWS_LAUNCH;
   for (const p of profiles) {
     if (!p.email || isAdminEmail(p.email) || !SENDABLE_EMAIL.test(p.email)) continue;
     if (p.notify_new_offers === false || p.search_completed_at) continue;
@@ -171,7 +201,12 @@ async function loadDue(db: Db, now: number, midnight: number): Promise<{ due: Du
     if (recentOther.has(p.id)) continue;
     const h = history.get(p.id);
     // Un par jour au plus (déjà reçu depuis minuit : demain).
-    if (h && (h.count >= SERIES_STEPS || h.last >= midnight)) continue;
+    if (h && h.last >= midnight) continue;
+    // Série finie : l'email des nouveautés une fois (n° 6), puis plus rien.
+    if (h && h.count >= SERIES_STEPS) {
+      if (newsOpen && h.count < NEWS_STEP && !newsSent.has(p.id)) relaunch.push({ profile: p, step: NEWS_STEP, ...flashFor(p.id) });
+      continue;
+    }
     if (h) continuing.push({ profile: p, step: h.count + 1, last: h.last, ...flashFor(p.id) });
     else starting.push({ profile: p, step: 1, ...flashFor(p.id) });
   }
@@ -186,7 +221,9 @@ async function loadDue(db: Db, now: number, midnight: number): Promise<{ due: Du
     .filter((d) => now - Date.parse(d.profile.created_at) < FRESH_SIGNUP_MS)
     .sort((a, b) => Date.parse(b.profile.created_at) - Date.parse(a.profile.created_at));
   const others = starting.filter((d) => now - Date.parse(d.profile.created_at) >= FRESH_SIGNUP_MS);
-  return { due: [...fresh, ...others, ...continuing], sentToday };
+  // Nouveautés : ceux qui avaient fini la série passent avant les rappels.
+  relaunch.sort((a, b) => recency(b.profile) - recency(a.profile));
+  return { due: [...fresh, ...others, ...relaunch, ...continuing], sentToday };
 }
 
 const fmt = (n: number) => n.toLocaleString("fr-FR");
@@ -273,6 +310,9 @@ export function renderSeriesEmail(
   const whereHtml = escapeHtml(where);
   const showCounts = counts.hasCriteria && counts.matching >= MIN_COUNT_TO_SHOW;
   const wantsAlternance = p.looking_for.length === 0 || p.looking_for.includes("alternance");
+  // Campagne nouveautés (voir NEWS_LAUNCH).
+  const news = now >= NEWS_LAUNCH;
+  const goal = wantsAlternance ? "ton alternance" : "ton stage";
   // Offre 48 h : au moins 1 h pour en profiter, sinon l'email habituel.
   const flash = flashEndsAt !== null && now < flashEndsAt - 60 * 60_000 ? parisDeadline(flashEndsAt, now) : null;
   // Envoi qui ouvre l'offre (fin dans 48 h) ; les suivants, au plus tôt le lendemain, la rappellent.
@@ -307,9 +347,13 @@ export function renderSeriesEmail(
   // « calendrier de l'alternance », article L6222-12), offres réellement
   // masquées sans Premium, garantie, vrais prix et vrai nombre d'inscrits.
   if (flash && opening) {
-    subject = `🎁 ${name ? `${name}, ` : ""}48 h rien que pour toi : Premium à vie à ${FLASH_OFFER.lifetimePrice}`;
+    subject = news
+      ? `🚀 ${name ? `${name}, l` : "L"}e nouveau Stageio est là, et 48 h rien que pour toi`
+      : `🎁 ${name ? `${name}, ` : ""}48 h rien que pour toi : Premium à vie à ${FLASH_OFFER.lifetimePrice}`;
     hook = [
-      "J'ai une offre rien que pour toi, et elle ne dure que 48&nbsp;heures.",
+      news
+        ? `On a beaucoup changé Stageio ces derniers jours, avec un seul but : que tu trouves ${goal} le plus vite possible. Et pour fêter ça, j'ai une offre rien que pour toi, pendant 48&nbsp;heures.`
+        : "J'ai une offre rien que pour toi, et elle ne dure que 48&nbsp;heures.",
       `Jusqu'au <strong>${flash.long}</strong>, l'accès Premium <strong>à vie</strong> est à <strong>${FLASH_OFFER.lifetimePrice.replace(" ", "&nbsp;")}</strong> : tu paies une fois, et c'est Premium pour toujours. Tu préfères au mois ? Le mensuel est à <strong>${monthlyWelcome.replace(" ", "&nbsp;")}/mois</strong>, sans engagement.`,
       `En ce moment, ${offersLineHtml} t'attendent sur Stageio. Sans Premium, tu ne vois ni l'entreprise ni l'analyse de chaque offre ; avec, tu vois tout et tu postules en quelques secondes, lettre de motivation comprise.`,
     ];
@@ -333,6 +377,12 @@ export function renderSeriesEmail(
       "Tu viens de t'inscrire sur Stageio, mais tu n'as pas encore débloqué tes offres.",
       `Bonne nouvelle : ton prix de bienvenue est de nouveau disponible, pendant 10 minutes à partir de ton clic. Et en ce moment, ${offersLineHtml} t'attendent.`,
       "Sans Premium, tu ne vois ni l'entreprise ni l'analyse de chaque offre. Avec Premium, tu vois tout, et tu postules en quelques secondes, lettre de motivation comprise.",
+    ];
+  } else if (shown === 1 && news) {
+    subject = `${name ? `${name}, n` : "N"}otre objectif : ${goal} en 2 mois maximum`;
+    hook = [
+      `On a beaucoup changé Stageio ces derniers jours, avec un seul but : que tu trouves ${goal} le plus vite possible.`,
+      `En ce moment, ${offersLineHtml} t'attendent sur Stageio. Et ton prix de bienvenue est de nouveau disponible, pendant 10 minutes à partir de ton clic.`,
     ];
   } else if (shown === 1) {
     subject = showCounts
@@ -420,8 +470,20 @@ ${button(go("monthly"), "Je prends le mensuel →", false)}
       : `Prix de bienvenue valables 10 minutes à partir de ton clic${promo ? " (promo à 30&nbsp;€ jusqu'à cette nuit 0&nbsp;h&nbsp;30)" : ""}`
   }. Ensuite : ${PLAN_PRICES.monthly.regular.replace(" ", "&nbsp;")}/mois ou ${PLAN_PRICES.lifetime.regular.replace(" ", "&nbsp;")} à vie. Paiement sécurisé par Stripe.</p>`;
 
+  const goalLine = `🎯 Notre objectif : ${goal} en 2 mois maximum. Dès le premier jour, tes candidatures partent. Et si tu n'as décroché aucun entretien au bout de ${GUARANTEE_MONTHS} mois de Premium, on te rembourse`;
+  const newsHtml = news
+    ? `<div style="border-radius:16px;background:#f2fbf6;border:1px solid #cfe9da;padding:16px 18px;margin:16px 0">
+<p style="margin:0 0 10px;font-size:13px;font-weight:bold;letter-spacing:.04em;color:#0c7a44;text-transform:uppercase">🆕 Nouveau sur Stageio</p>
+${NEWS_FEATURES.map((f) => `<p style="margin:0 0 8px;font-size:14.5px"><strong>${f.title}</strong> : ${escapeHtml(f.text)}</p>`).join("\n")}
+</div>
+<p style="font-weight:bold;margin:14px 0">${goalLine} (<a href="${termsUrl}" style="color:#0c7a44">conditions</a>).</p>`
+    : "";
+  const newsText = news ? ["", "Nouveau sur Stageio :", ...NEWS_FEATURES.map((f) => `- ${f.title} : ${f.text}`), "", `${goalLine} (conditions : ${termsUrl}).`] : [];
   const unsubscribeUrl = unsubscribeUrlFor(p.id);
-  const footer = `Tu reçois cet email parce que tu as un compte sur stageio.fr. Série de ${SERIES_STEPS} emails au plus, elle s'arrête dès que tu passes Premium.`;
+  const footer =
+    step > SERIES_STEPS
+      ? "Tu reçois cet email parce que tu as un compte sur stageio.fr : un seul email pour te présenter les nouveautés, il n'y en aura pas d'autre."
+      : `Tu reçois cet email parce que tu as un compte sur stageio.fr. Série de ${SERIES_STEPS} emails au plus, elle s'arrête dès que tu passes Premium.`;
   const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#1a1a1a;max-width:520px">
 <p>${escapeHtml(greeting)}</p>
 ${hook.map((h) => `<p>${h}</p>`).join("\n")}
@@ -432,6 +494,7 @@ ${
         .join("\n")}\n</ul>`
     : ""
 }
+${newsHtml}
 ${deadline ? `<p style="background:#fff7e6;border-radius:10px;padding:10px 12px;margin:14px 0">${deadline}</p>` : ""}
 <p style="margin:18px 0 6px;font-weight:bold">Avec Premium :</p>
 <p style="margin:0">${benefits.map((b) => `✅ ${b}`).join("<br>")}</p>
@@ -446,6 +509,7 @@ ${social ? `<p style="margin:10px 0 0;font-size:14px">👥 ${social}</p>` : ""}
     "",
     ...hook.map(strip),
     ...picks.map((o) => `- ${o.title}${o.company ? ` · ${o.company}` : ""}`),
+    ...newsText,
     ...(deadline ? ["", deadline] : []),
     "",
     "Avec Premium :",
@@ -559,7 +623,7 @@ export type SeriesReport = {
 // Pour /admin/relance : envois et arrivées par email de la série, et les
 // destinataires qui ont payé après leur premier email.
 export async function loadSeriesReport(db: Db, todayStartIso?: string): Promise<SeriesReport> {
-  const campaigns = Array.from({ length: SERIES_STEPS }, (_, i) => seriesUtmCampaign(i + 1));
+  const campaigns = Array.from({ length: NEWS_STEP }, (_, i) => seriesUtmCampaign(i + 1));
   const [events, visits] = await Promise.all([
     fetchAllRows<{ user_id: string; metadata: Record<string, unknown> | null; created_at: string }>((from, to) =>
       db
@@ -581,7 +645,7 @@ export async function loadSeriesReport(db: Db, todayStartIso?: string): Promise<
   ]);
   const firstSent = new Map<string, string>();
   for (const e of events) if (!firstSent.has(e.user_id)) firstSent.set(e.user_id, e.created_at);
-  const steps = Array.from({ length: SERIES_STEPS }, (_, i) => {
+  const steps = Array.from({ length: NEWS_STEP }, (_, i) => {
     const step = i + 1;
     return {
       step,
