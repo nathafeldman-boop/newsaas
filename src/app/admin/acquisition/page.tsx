@@ -171,9 +171,9 @@ export default async function AdminDashboardPage({
     HEAVY_STAT_BUDGET_MS,
     null,
   );
-  // Ventes réelles (Stripe) : lues dans le cache rempli par /admin/stripe ;
-  // sinon, les comptes qui ont au moins un paiement noté en base.
-  const stripeTotalsPromise = withTimeout(getStripeTotals().catch(() => null), 2500, null);
+  // Ventes réelles (Stripe) : le relevé du cockpit, chaque paiement compté
+  // (29/10) ; sinon, les comptes qui ont au moins un paiement noté en base.
+  const stripeTotalsPromise = withTimeout(getStripeTotals().catch(() => null), HEAVY_STAT_BUDGET_MS, null);
   const paidEverPromise = admin.from("profiles").select("id", { count: "exact", head: true }).gt("total_paid_cents", 0);
   const seriesPromise = withTimeout(
     loadSeriesReport(createAdminClient(), todayStart.toISOString()).catch((err) => {

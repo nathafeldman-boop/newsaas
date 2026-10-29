@@ -4,15 +4,16 @@ import { getStripeClient } from "@/lib/stripe/client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchAllRowsByIdCursor } from "@/lib/supabase/public";
 import type { BillingInterval, StripeSnapshot, SubRecord } from "@/lib/admin/cockpit/types";
-import { isStageioInvoice } from "@/lib/admin/stageioInvoice";
 
-// Source de vérité des paiements et des abonnements : Stripe. Le compte est
-// partagé avec d'autres sites : un objet n'est gardé que s'il appartient à
-// un compte Stageio (supabase_user_id des métadonnées de l'abonnement, ou
-// client Stripe noté sur un profil, ou session de paiement dont
-// client_reference_id est un profil). Toutes les générations de prix
-// (hebdo à 3,50 €, mensuel à 7,99 € puis 12,79 €, accès à vie) sont donc
-// incluses sans liste de prix à tenir à jour.
+// Source de vérité des paiements et des abonnements : Stripe. Tout le
+// compte Stripe est à Stageio (Nathan, 29/10 : « on n'a pas de deuxième
+// SaaS, chaque paiement vaut pour Stageio ») : chaque abonnement, facture,
+// remboursement et litige compte, relié à un profil ou non (compte
+// supprimé, client jamais relié). Avant, seuls les objets reliés à un
+// compte Stageio, ou portant un produit « Stageio », étaient gardés.
+// Toutes les générations de prix (quotidien à 1,50 €, hebdo à 3,50 €,
+// mensuel à 7,99 €, 9,99 € puis 12,79 €, accès à vie) sont incluses sans
+// liste de prix à tenir à jour.
 //
 // Gardé 30 min en cache (bouton « Actualiser » dans le cockpit) : une
 // lecture complète fait plusieurs dizaines d'appels à l'API Stripe.
@@ -108,12 +109,13 @@ async function compute(): Promise<StripeSnapshot> {
     const customer = idOf(s.customer) ?? "";
     const metaUser = s.metadata?.supabase_user_id;
     const userId = metaUser && profileIds.has(metaUser) ? metaUser : (userByCustomer.get(customer) ?? null);
-    if (!userId) continue;
     if (s.currency !== "eur") otherCurrencySubs++;
     subs.push(toSubRecord(s, userId));
-    if (!userByCustomer.has(customer)) userByCustomer.set(customer, userId);
+    if (userId && !userByCustomer.has(customer)) userByCustomer.set(customer, userId);
   }
 
+  // Achats à vie reliés à un profil ; ceux d'un compte supprimé depuis sont
+  // comptés par leur facture (voir revenueIn).
   const oneTime: StripeSnapshot["oneTime"] = [];
   for await (const cs of stripe.checkout.sessions.list({ created: { gte: since }, limit: 100 })) {
     const userId = cs.client_reference_id;
@@ -133,12 +135,9 @@ async function compute(): Promise<StripeSnapshot> {
 
   const invoices: StripeSnapshot["invoices"] = [];
   for await (const inv of stripe.invoices.list({ created: { gte: since }, limit: 100 })) {
-    const customer = idOf(inv.customer);
-    // Compte relié à un profil, ou produit Stageio (compte supprimé, client non relié).
-    if (!customer || (!userByCustomer.has(customer) && !isStageioInvoice(inv))) continue;
     invoices.push({
       id: inv.id ?? "",
-      customer,
+      customer: idOf(inv.customer) ?? "",
       subscription: idOf(inv.parent?.subscription_details?.subscription),
       billingReason: inv.billing_reason,
       status: inv.status ?? "draft",
@@ -155,16 +154,13 @@ async function compute(): Promise<StripeSnapshot> {
 
   const refunds: StripeSnapshot["refunds"] = [];
   for await (const r of stripe.refunds.list({ created: { gte: since }, limit: 100, expand: ["data.charge"] })) {
-    const customer = chargeCustomer(r.charge);
-    if (!customer || !userByCustomer.has(customer) || r.status === "failed" || r.status === "canceled") continue;
-    refunds.push({ id: r.id, customer, amount: r.amount, created: r.created * 1000 });
+    if (r.status === "failed" || r.status === "canceled") continue;
+    refunds.push({ id: r.id, customer: chargeCustomer(r.charge) ?? "", amount: r.amount, created: r.created * 1000 });
   }
 
   const disputes: StripeSnapshot["disputes"] = [];
   for await (const d of stripe.disputes.list({ created: { gte: since }, limit: 100, expand: ["data.charge"] })) {
-    const customer = chargeCustomer(d.charge);
-    if (!customer || !userByCustomer.has(customer)) continue;
-    disputes.push({ id: d.id, customer, amount: d.amount, status: d.status, created: d.created * 1000 });
+    disputes.push({ id: d.id, customer: chargeCustomer(d.charge) ?? "", amount: d.amount, status: d.status, created: d.created * 1000 });
   }
 
   console.log(
@@ -174,7 +170,7 @@ async function compute(): Promise<StripeSnapshot> {
   return { computedAt: Date.now(), since: SINCE, subs, invoices, oneTime, refunds, disputes, otherCurrencySubs };
 }
 
-export const getStripeSnapshot = unstable_cache(compute, ["cockpit-stripe-snapshot-v3"], {
+export const getStripeSnapshot = unstable_cache(compute, ["cockpit-stripe-snapshot-v4"], {
   revalidate: 1800,
   tags: [COCKPIT_STRIPE_TAG],
 });

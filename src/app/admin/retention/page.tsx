@@ -4,7 +4,7 @@ import { requireAdminPage } from "@/lib/admin/accessCode";
 // Rétention (SOP 27) : les cohortes d'abonnés suivies dans la durée (le
 // churn du 1er mois ment), les 48 premières heures, ventes et
 // renouvellements par jour sans jamais les mélanger, et les remboursements.
-// Calculé depuis Stripe (prix Stageio uniquement), en cache 30 min (ventes du jour : 15 min).
+// Calculé depuis le relevé Stripe du cockpit (chaque abonnement et chaque paiement du compte), gardé 30 min.
 
 const muted = "color-mix(in srgb, var(--color-text) 60%, transparent)";
 const euros = (cents: number) => `${(cents / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;

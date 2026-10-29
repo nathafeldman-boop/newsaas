@@ -18,7 +18,7 @@ type Check = { title: string; tone: "is-good" | "is-warn" | "is-bad"; detail: st
 
 const SOURCES: [string, string, string][] = [
   ["MRR, abonnements, renouvellements, churn", "Stripe (abonnements, factures)", "Instantané relu toutes les 30 min (bouton Actualiser)"],
-  ["Encaissements, remboursements, litiges", "Stripe (factures, sessions, remboursements, litiges)", "Compte partagé : seuls les clients Stageio sont gardés"],
+  ["Encaissements, remboursements, litiges", "Stripe (factures, sessions, remboursements, litiges)", "Tout le compte Stripe est à Stageio : chaque paiement compte"],
   ["Accès Premium dans l'appli", "Supabase (profiles.subscription_status, mis à jour par le webhook Stripe)", "Comparé à Stripe ci-dessous"],
   ["LTV par compte (profiles.total_paid_cents)", "Supabase, crédité par le webhook (registre idempotent)", "Diffère de Stripe si un webhook a échoué"],
   ["Inscriptions, dernière activité", "Supabase (profiles.created_at, last_active_at)", "Seule la dernière activité est gardée : pas d'historique d'actifs par jour"],

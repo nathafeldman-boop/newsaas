@@ -13,7 +13,6 @@ import { renderOfferAlert } from "../src/lib/alerts/offerAlert";
 import { METIERS, classifyMetier } from "../src/lib/seo/metiers";
 import type { LbaRecruiter } from "../src/lib/laBonneAlternance/client";
 import { interviewDomainFor } from "../src/lib/interview/domainForJob";
-import { isStageioInvoice } from "../src/lib/admin/stageioInvoice";
 
 // Codes ROME : chaque métier de la taxonomie en a, au bon format.
 for (const m of METIERS) assert.ok(METIER_ROMES[m.slug]?.length, `métier sans code ROME : ${m.slug}`);
@@ -97,11 +96,5 @@ assert.equal(interviewDomainFor("zzz"), null);
 // « sédentaire » contient « dentaire » : plus classé en santé (28/10).
 assert.equal(classifyMetier("Commercial sédentaire H/F")?.slug, "commercial");
 assert.equal(classifyMetier("Assistant dentaire")?.slug !== "commercial", true);
-
-// Factures Stageio reconnues par le nom du produit (compte Stripe partagé, 28/10).
-assert.equal(isStageioInvoice({ lines: { data: [{ description: "1 × Stageio Premium (at €7.99 / month)" }] } }), true);
-assert.equal(isStageioInvoice({ lines: { data: [{ description: "stageio ultime" }] } }), true);
-assert.equal(isStageioInvoice({ lines: { data: [{ description: "Autre site — abonnement" }] } }), false);
-assert.equal(isStageioInvoice({ lines: null }), false);
 
 console.log("abonnes: ok");
