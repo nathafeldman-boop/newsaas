@@ -8,6 +8,7 @@ import { fetchActiveOfferCount } from "@/lib/offers/fetchPublicOffers";
 import { resolveSignupIntent, signupHeadline } from "@/lib/signup/intent";
 import { normalizeUtmSource } from "@/lib/analytics/referrerSource";
 import { RememberSignupCity } from "@/components/signup/RememberSignupCity";
+import { inviterFor } from "@/lib/referrals/inviter";
 
 export const metadata: Metadata = {
   title: "Inscription gratuite",
@@ -19,9 +20,9 @@ export const metadata: Metadata = {
 export default async function InscriptionPage({
   searchParams,
 }: {
-  searchParams: Promise<{ aff?: string; utm_source?: string; type?: string; metier?: string; ville?: string }>;
+  searchParams: Promise<{ aff?: string; utm_source?: string; type?: string; metier?: string; ville?: string; ref?: string }>;
 }) {
-  const { aff, utm_source: utmSourceParam, type, metier, ville } = await searchParams;
+  const { aff, utm_source: utmSourceParam, type, metier, ville, ref } = await searchParams;
   // Contexte de la page d'où vient le visiteur (voir lib/signup/intent.ts).
   const intent = resolveSignupIntent({ type, metier, ville });
   const headline = signupHeadline(intent);
@@ -36,7 +37,8 @@ export default async function InscriptionPage({
     (utmSourceParam ? normalizeUtmSource(utmSourceParam).source : null) ?? cookieStore.get("utm_source")?.value ?? null;
   // Réassurance : le vrai nombre d'offres (compte en cache 10 min), arrondi à
   // la centaine inférieure. Sans compte disponible, la ligne disparaît.
-  const offerCount = await fetchActiveOfferCount("all").catch(() => 0);
+  // Lien de parrainage d'un abonné (29/10, bouche-à-oreille) : qui t'invite.
+  const [offerCount, inviter] = await Promise.all([fetchActiveOfferCount("all").catch(() => 0), ref ? inviterFor(ref) : Promise.resolve(null)]);
   const roundedCount = Math.floor(offerCount / 100) * 100;
 
   return (
@@ -45,6 +47,19 @@ export default async function InscriptionPage({
         <Link href="/" className="nav-brand" style={{ textDecoration: "none", color: "inherit" }}>
           Stageio
         </Link>
+        {inviter && (
+          <div
+            className="card animate-in"
+            style={{ marginTop: 18, padding: "12px 14px", background: "color-mix(in srgb, var(--color-accent) 9%, var(--color-surface))", border: "1px solid color-mix(in srgb, var(--color-accent) 30%, transparent)" }}
+          >
+            <p style={{ margin: 0, fontSize: 14.5, fontWeight: 700 }}>👋 {inviter.firstName} t&apos;invite sur Stageio</p>
+            <p style={{ margin: "3px 0 0", fontSize: 13, lineHeight: 1.45, color: "color-mix(in srgb, var(--color-text) 68%, transparent)" }}>
+              {inviter.signed
+                ? `${inviter.firstName} a trouvé son ${inviter.contract} avec Stageio. À ton tour !`
+                : "Les offres qui te correspondent, et ta lettre de motivation déjà écrite."}
+            </p>
+          </div>
+        )}
         <h1 style={{ fontSize: 32, margin: "20px 0 0" }}>Crée ton compte</h1>
         <p
           style={{

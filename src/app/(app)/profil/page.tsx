@@ -8,6 +8,7 @@ import { SearchCompletedToggle } from "@/components/profile/SearchCompletedToggl
 import { DeleteAccountPanel } from "@/components/profile/DeleteAccountPanel";
 import { PremiumCtaLink } from "@/components/premium/PremiumCtaLink";
 import { isPremium, isAutoTier } from "@/lib/subscription/isPremium";
+import { contractOf, referralUrl, shareMessage } from "@/lib/referrals/share";
 import { refreshStaleSubscription } from "@/lib/stripe/refreshStaleSubscription";
 import type { ApplicationStatus } from "@/types/database";
 
@@ -146,6 +147,7 @@ export default async function ProfilPage({
         <SearchCompletedToggle
           completedAt={profile.search_completed_at}
           completedReason={profile.search_completed_reason}
+          shareText={profile.referral_code ? shareMessage("signe", referralUrl(profile.referral_code), contractOf(profile.looking_for)) : null}
         />
         <Link
           href="/mes-candidatures"

@@ -8,6 +8,7 @@ import { runAutoSpontaneous } from "@/lib/spontaneous/autoRun";
 import { runWelcomeCatchUp } from "@/lib/subscribers/welcome";
 import { FIRST_APPLICATION_HOUR, runFirstApplicationNudges } from "@/lib/subscribers/firstApplication";
 import { isAutoTier } from "@/lib/subscription/isPremium";
+import { isMondayInParis, runWeeklyPlans, WEEKLY_PLAN_HOURS } from "@/lib/subscribers/weeklyPlan";
 
 // Aide aux abonnés après le paiement (28/10, Nathan : « dès qu'il paye,
 // fais pas en sorte qu'il churn […] faut qu'il trouve son alternance ») :
@@ -17,7 +18,9 @@ import { isAutoTier } from "@/lib/subscription/isPremium";
 // 3. candidatures spontanées envoyées toutes seules pour Stageio Auto ;
 // 4. (29/10, satisfaction) email d'accueil rattrapé si le webhook Stripe ne
 //    l'a pas envoyé, et à 18 h « ta 1re candidature » pour les abonnés qui
-//    n'ont encore rien envoyé le lendemain du paiement.
+//    n'ont encore rien envoyé le lendemain du paiement ;
+// 5. (29/10) le lundi matin, « ton point du lundi » : chiffres de la
+//    semaine, la priorité du moment et 5 offres (lib/subscribers/weeklyPlan).
 // Chaque partie a son budget de temps : une panne de l'une ne bloque pas les autres.
 export const maxDuration = 300;
 
@@ -74,6 +77,15 @@ export async function GET(request: NextRequest) {
       result.freshAlerts = { ...r, failures: r.failures.slice(0, 5) };
     } catch (err) {
       result.freshAlertsError = err instanceof Error ? err.message : String(err);
+    }
+  }
+
+  if (isMondayInParis(started) && WEEKLY_PLAN_HOURS.includes(hour) && subscribers.length > 0) {
+    try {
+      const r = await runWeeklyPlans(admin, subscribers, isAutoTier, started + 230_000, started);
+      result.weeklyPlan = { ...r, failures: r.failures.slice(0, 5) };
+    } catch (err) {
+      result.weeklyPlanError = err instanceof Error ? err.message : String(err);
     }
   }
 

@@ -3,6 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { logServerEvent } from "@/lib/analytics/logServerEvent";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { SIGNED_VIA_STAGEIO } from "@/lib/referrals/share";
+import { sendSignedCongratsOnce } from "@/lib/referrals/signedEmail";
 
 // "J'ai trouvé mon alternance" (RETENTION_AUDIT.md, section 17E) : jamais
 // traité comme un échec produit. Clôture la recherche sans rien supprimer --
@@ -30,6 +33,11 @@ export async function markSearchCompletedAction(reason: string): Promise<void> {
   }
 
   await logServerEvent(supabase, user.id, "search_completed", { reason });
+  // Trouvée via Stageio (29/10) : félicitations et recommandation à un ami.
+  if (reason === SIGNED_VIA_STAGEIO) {
+    const { error: mailError } = await sendSignedCongratsOnce(createAdminClient(), user.id);
+    if (mailError) console.error("markSearchCompletedAction: congrats email failed", mailError, { userId: user.id });
+  }
   revalidatePath("/swipe");
   revalidatePath("/profil");
   revalidatePath("/dashboard");

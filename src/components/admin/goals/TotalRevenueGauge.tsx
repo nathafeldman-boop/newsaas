@@ -44,16 +44,17 @@ export function TotalRevenueGauge({
   const tip = { x: CX + R * Math.cos(Math.PI * (1 - fill)), y: CY - R * Math.sin(Math.PI * (1 - fill)) };
 
   return (
-    <div className="goal-hero" style={{ padding: "18px 20px 20px" }}>
+    <div className="goal-hero" style={{ padding: "14px 18px 14px" }}>
       <div className="flex flex-wrap items-center justify-between gap-2" style={{ position: "relative", zIndex: 1 }}>
-        <p className="goal-hero-kicker" style={{ fontSize: 14 }}>Revenu total de Stageio</p>
+        <p className="goal-hero-kicker" style={{ fontSize: 13 }}>Revenu total de Stageio</p>
         <Link href="/admin/objectifs#objectif-global" className="goal-chip" style={{ color: "#fff", textDecoration: "none" }}>
           🎯 Objectif : {fmt(goalCents)}
           {goalIsDefault ? " · modifier" : ""}
         </Link>
       </div>
 
-      <div style={{ position: "relative", maxWidth: 420, margin: "6px auto 0" }}>
+      {/* Plus petite (29/10, Nathan : « mets-la plus petite ») : 240 px de large au plus. */}
+      <div style={{ position: "relative", maxWidth: 240, margin: "2px auto 0" }}>
         <svg viewBox="0 0 320 190" width="100%" role="img" aria-label={`Revenu total ${fmt(totalCents)} sur un objectif de ${fmt(goalCents)}, ${Math.round(ratio * 100)} %`}>
           <defs>
             <linearGradient id="total-gauge" x1="0" y1="0" x2="1" y2="0">
@@ -87,24 +88,24 @@ export function TotalRevenueGauge({
               transition={{ opacity: { delay: 1.4 }, scale: { delay: 1.5, duration: 1.6, repeat: Infinity } }}
             />
           )}
-          <text x={CX - R} y={CY + 30} textAnchor="middle" fontSize={10.5} fontWeight={700} fill="rgba(255,255,255,0.75)">
+          <text x={CX - R - 11} y={CY + 30} textAnchor="start" fontSize={14} fontWeight={700} fill="rgba(255,255,255,0.8)">
             0 €
           </text>
-          <text x={CX + R} y={CY + 30} textAnchor="middle" fontSize={10.5} fontWeight={700} fill="rgba(255,255,255,0.75)">
+          <text x={CX + R + 11} y={CY + 30} textAnchor="end" fontSize={14} fontWeight={700} fill="rgba(255,255,255,0.8)">
             {fmt(goalCents)}
           </text>
         </svg>
-        <div style={{ position: "absolute", left: 0, right: 0, bottom: 34, textAlign: "center" }}>
-          <p className="goal-hero-amount" style={{ margin: 0 }}>
+        <div style={{ position: "absolute", left: 0, right: 0, bottom: 26, textAlign: "center" }}>
+          <p className="goal-hero-amount" style={{ margin: 0, fontSize: 28 }}>
             <CountUp value={Math.round(totalCents / 100)} format={thousands} duration={1200} /> €
           </p>
-          <p style={{ margin: "6px 0 0", fontSize: 14, fontWeight: 800 }}>
+          <p style={{ margin: "4px 0 0", fontSize: 12, fontWeight: 800 }}>
             <CountUp value={Math.round(ratio * 100)} duration={1200} /> % de l&apos;objectif
           </p>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-center gap-2" style={{ marginTop: 6, position: "relative", zIndex: 1 }}>
+      <div className="flex flex-wrap items-center justify-center gap-2" style={{ marginTop: 2, position: "relative", zIndex: 1 }}>
         <span className="goal-chip">
           {monthName} : {fmt(monthCents)}
         </span>

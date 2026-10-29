@@ -2,9 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { markSearchCompletedAction, resumeSearchAction } from "@/app/(app)/profil/search-actions";
+import { ShareWin } from "@/components/referral/ShareWin";
+import { SIGNED_VIA_STAGEIO } from "@/lib/referrals/share";
 
 const REASONS = [
-  "Alternance trouvée via Stageio",
+  SIGNED_VIA_STAGEIO,
   "Alternance trouvée ailleurs",
   "Recherche mise en pause",
 ];
@@ -16,36 +18,48 @@ const REASONS = [
 export function SearchCompletedToggle({
   completedAt,
   completedReason,
+  shareText = null,
 }: {
   completedAt: string | null;
   completedReason: string | null;
+  /** Message de recommandation (lien de parrainage) montré après « trouvée via Stageio » (29/10). */
+  shareText?: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
 
   if (completedAt) {
+    const viaStageio = completedReason === SIGNED_VIA_STAGEIO && !!shareText;
     return (
-      <div
-        className="card flex-row items-center justify-between"
-        style={{ padding: "var(--space-3) var(--space-4)" }}
-      >
-        <div>
-          <span style={{ fontSize: 14 }}>🎉 Recherche clôturée</span>
-          {completedReason && (
-            <p style={{ fontSize: 12, margin: "2px 0 0", color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
-              {completedReason}
-            </p>
-          )}
+      <div className="card" style={{ padding: viaStageio ? "var(--space-4)" : "var(--space-3) var(--space-4)" }}>
+        <div className="flex flex-row items-center justify-between">
+          <div>
+            <span style={{ fontSize: 14 }}>🎉 Recherche clôturée</span>
+            {completedReason && (
+              <p style={{ fontSize: 12, margin: "2px 0 0", color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
+                {completedReason}
+              </p>
+            )}
+          </div>
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => startTransition(() => void resumeSearchAction())}
+            className="btn btn-secondary"
+            style={{ padding: "6px 12px", fontSize: 12, whiteSpace: "nowrap" }}
+          >
+            Reprendre
+          </button>
         </div>
-        <button
-          type="button"
-          disabled={pending}
-          onClick={() => startTransition(() => void resumeSearchAction())}
-          className="btn btn-secondary"
-          style={{ padding: "6px 12px", fontSize: 12, whiteSpace: "nowrap" }}
-        >
-          Reprendre
-        </button>
+        {viaStageio && (
+          <div className="animate-in">
+            <p style={{ fontSize: 13.5, fontWeight: 700, margin: "12px 0 0" }}>💚 Aide un pote qui cherche encore</p>
+            <p style={{ fontSize: 12.5, lineHeight: 1.5, margin: "2px 0 0", color: "color-mix(in srgb, var(--color-text) 62%, transparent)" }}>
+              Envoie-lui ce message : il arrive sur Stageio avec ton lien.
+            </p>
+            <ShareWin kind="signe" message={shareText!} compact />
+          </div>
+        )}
       </div>
     );
   }

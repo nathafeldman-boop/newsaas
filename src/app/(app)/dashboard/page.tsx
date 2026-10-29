@@ -22,6 +22,9 @@ import { SearchCompletedToggle } from "@/components/profile/SearchCompletedToggl
 import { interviewDomainFor } from "@/lib/interview/domainForJob";
 import { PREMIUM_PRICE_LINE } from "@/lib/pricing/plans";
 import { SatisfactionCard } from "@/components/dashboard/SatisfactionCard";
+import { ShareWin } from "@/components/referral/ShareWin";
+import { contractOf, referralUrl, shareMessage, SIGNED_VIA_STAGEIO } from "@/lib/referrals/share";
+import { WEEKLY_TARGET, weeklyFocus } from "@/lib/subscribers/weeklyPlan";
 import { SATISFACTION_DISMISS_EVENT, SATISFACTION_EVENT, surveyMomentFor } from "@/lib/satisfaction/survey";
 
 const DATE_FR = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", timeZone: "Europe/Paris" });
@@ -184,6 +187,20 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     now,
   });
 
+  // « Ta semaine » (29/10) : objectif de candidatures et la priorité du moment.
+  const focus = weeklyFocus({
+    results,
+    hasCv: !!profile?.cv_path,
+    daysSincePaid: profile?.premium_activated_at ? (now - Date.parse(profile.premium_activated_at)) / 86_400_000 : 0,
+    auto,
+  });
+  const weekShare = Math.min(1, results.sentWeek / WEEKLY_TARGET);
+  // Bouche-à-oreille (29/10) : au moment d'une victoire, recommander Stageio à un pote.
+  const contract = contractOf(profile?.looking_for);
+  const myLink = profile?.referral_code ? referralUrl(profile.referral_code) : null;
+  const signed = profile?.search_completed_reason === SIGNED_VIA_STAGEIO;
+  const winKind = signed || results.accepted > 0 ? "signe" : results.interviews > 0 ? "entretien" : null;
+
   const defaultJobHint = prep?.trim().slice(0, 120) || profile?.target_jobs?.[0] || profile?.sectors?.[0] || "";
   const cvSignedUrl = cvSignedUrlResult.data?.signedUrl ?? null;
 
@@ -241,15 +258,31 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             <p style={kpiLabel}>Entretiens</p>
           </div>
         </div>
-        <p style={{ fontSize: 13, lineHeight: 1.5, margin: "14px 0 0", ...mutedText }}>
-          {results.firstReplyAt
-            ? `Première réponse reçue le ${DATE_FR.format(new Date(results.firstReplyAt))}. Continue sur ta lancée : plus tu postules, plus tu décroches d'entretiens.`
-            : results.sentTotal === 0
-              ? "Ta première candidature est à un clic : like une offre ou contacte une entreprise en spontané."
-              : results.sentWeek < 10
-                ? "Vise au moins 10 candidatures par semaine : plus tu postules, plus tu décroches d'entretiens."
-                : "Beau rythme ! Les premières réponses arrivent souvent dans les jours qui suivent."}
-        </p>
+        <div style={{ marginTop: 16 }}>
+          <div className="flex items-center justify-between" style={{ fontSize: 12.5, fontWeight: 700 }}>
+            <span>Objectif de la semaine : {WEEKLY_TARGET} candidatures</span>
+            <span style={{ fontVariantNumeric: "tabular-nums", color: weekShare >= 1 ? "var(--color-accent-700)" : undefined }}>
+              {Math.min(results.sentWeek, 99)}/{WEEKLY_TARGET}
+              {weekShare >= 1 ? " ✓" : ""}
+            </span>
+          </div>
+          <div style={{ height: 8, marginTop: 6, borderRadius: 999, background: "var(--color-divider)", overflow: "hidden" }}>
+            <div className="animate-in" style={{ width: `${Math.max(weekShare * 100, 3)}%`, height: "100%", borderRadius: 999, background: "var(--color-accent)", transition: "width .6s ease" }} />
+          </div>
+        </div>
+        <div style={{ marginTop: 14, padding: "12px 14px", borderRadius: 14, background: "color-mix(in srgb, var(--color-accent) 7%, var(--color-surface))" }}>
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>Ta priorité cette semaine</p>
+          <p style={{ margin: "3px 0 0", fontSize: 14.5, fontWeight: 700 }}>{focus.title}</p>
+          <p style={{ margin: "3px 0 0", fontSize: 13, lineHeight: 1.5, ...mutedText }}>{focus.text}</p>
+          <Link href={focus.path} className="btn btn-primary" style={{ marginTop: 10, padding: "7px 13px", fontSize: 12.5 }}>
+            {focus.cta}
+          </Link>
+        </div>
+        {results.firstReplyAt && (
+          <p style={{ fontSize: 12.5, lineHeight: 1.5, margin: "10px 0 0", ...mutedText }}>
+            Première réponse reçue le {DATE_FR.format(new Date(results.firstReplyAt))}. Chaque lundi matin, ton point de la semaine arrive par email.
+          </p>
+        )}
       </div>
 
       {interviewApps.length > 0 && (
@@ -289,6 +322,16 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             <br />
             3. Note ta date de début et le nom de ton tuteur.
           </p>
+        </div>
+      )}
+
+      {winKind && myLink && !signed && (
+        <div className="card elev-sm mt-5" style={{ padding: "var(--space-6)" }}>
+          <p style={{ fontFamily: "var(--font-heading)", fontSize: 17, margin: 0 }}>💚 Un pote cherche encore ?</p>
+          <p style={{ fontSize: 13.5, lineHeight: 1.5, margin: "6px 0 0", ...mutedText }}>
+            {winKind === "signe" ? "Bravo pour ta réponse positive !" : "Bravo pour ton entretien !"} Si un ami galère à trouver son {contract}, envoie-lui ce message : il arrive sur Stageio avec ton lien.
+          </p>
+          <ShareWin kind={winKind} message={shareMessage(winKind, myLink, contract)} />
         </div>
       )}
 
@@ -397,7 +440,11 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       </div>
 
       <div className="mt-5">
-        <SearchCompletedToggle completedAt={profile?.search_completed_at ?? null} completedReason={profile?.search_completed_reason ?? null} />
+        <SearchCompletedToggle
+          completedAt={profile?.search_completed_at ?? null}
+          completedReason={profile?.search_completed_reason ?? null}
+          shareText={myLink ? shareMessage("signe", myLink, contract) : null}
+        />
       </div>
 
       {/* Aide (29/10) : un souci se règle par un humain, pas par une résiliation. */}

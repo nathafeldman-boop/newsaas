@@ -34,6 +34,7 @@ const KNOWN: Record<string, SourceInfo> = {
   mistral: { label: "Le Chat (Mistral)", group: "Assistants IA" },
   email: { label: "E-mails Stageio", group: "E-mails Stageio" },
   partage: { label: "Boutons de partage", group: "Partages" },
+  parrainage: { label: "Parrainage (lien d'un abonné)", group: "Partages" },
   direct: { label: "Direct / inconnu", group: "Direct / inconnu" },
 };
 
