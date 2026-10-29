@@ -24,13 +24,11 @@ import {
 import { requireAdminPage } from "@/lib/admin/accessCode";
 import { TodayLive } from "@/components/admin/cockpit/TodayLive";
 import { autoOfferBlockers } from "@/lib/admin/autoStatus";
-import { TotalRevenueGauge } from "@/components/admin/goals/TotalRevenueGauge";
-import { YearChallenge } from "@/components/admin/goals/YearChallenge";
-import { challengeState } from "@/lib/admin/challenge";
-import { DEFAULT_GLOBAL_GOAL_CENTS, totalRevenue } from "@/lib/admin/history";
+import { DailyGoalGauge } from "@/components/admin/goals/DailyGoalGauge";
+import { dailyGoalFrom } from "@/lib/admin/dailyGoal";
 import { loadSavedGoals } from "@/lib/admin/goalsData";
 import { monthRange } from "@/lib/admin/cockpit/format";
-import { monthLabel } from "@/lib/admin/goals";
+import { goalFor } from "@/lib/admin/goals";
 
 // Vue d'ensemble du cockpit : « comment se porte Stageio aujourd'hui ? ».
 // Chiffres de paiement lus dans Stripe (instantané de 30 min max), comptes
@@ -123,27 +121,17 @@ export default async function CockpitOverviewPage({ searchParams }: { searchPara
 
   const signed = (cents: number) => `${cents >= 0 ? "+" : "−"}${euros(Math.abs(cents))}`;
 
-  // Revenu total de Stageio face à l'objectif global (28/10).
-  const total = totalRevenue(snap, now);
+  // Objectif du jour (30/10) : ce qu'il faut encaisser aujourd'hui pour tenir
+  // l'objectif du mois. Revenu total et défi d'un an : onglet Objectifs.
   const thisMonth = monthRange(undefined, now);
-  const globalGoal = savedGoals?.globalCents ?? null;
-  // Défi d'un an (29/10) : 100 000 € encaissés d'ici le 29/10/2027.
-  const challenge = challengeState({ now, totalCents: total.netCents, last30Cents: revenueIn(snap, { start: now - 30 * DAY_MS, end: now }).netCents });
+  const todayGoal = dailyGoalFrom(snap, thisMonth.range, goalFor(thisMonth.key, savedGoals?.goals ?? {}), now);
+  const dayLabel = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Paris" }).format(now);
+  const monthName = new Intl.DateTimeFormat("fr-FR", { month: "long", timeZone: "Europe/Paris" }).format(now);
 
   return (
     <div>
       <div style={{ marginBottom: 20 }}>
-        <TotalRevenueGauge
-          totalCents={total.netCents}
-          goalCents={globalGoal ?? DEFAULT_GLOBAL_GOAL_CENTS}
-          goalIsDefault={globalGoal === null}
-          monthCents={revenueIn(snap, thisMonth.range).netCents}
-          monthName={monthLabel(thisMonth.key).replace(/^./, (c) => c.toUpperCase())}
-          refundedCents={total.refundedCents}
-        />
-        <div style={{ marginTop: 12 }}>
-          <YearChallenge now={now} state={challenge} />
-        </div>
+        <DailyGoalGauge goal={todayGoal} dayLabel={dayLabel} monthName={monthName} />
       </div>
       <h1 style={{ fontSize: 24, fontWeight: 700, margin: "0 0 4px" }}>Vue d&apos;ensemble</h1>
       <p style={{ margin: "0 0 16px", fontSize: 13, color: "var(--color-neutral-600)" }}>

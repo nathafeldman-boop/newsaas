@@ -10,7 +10,10 @@ import { loadSnapshot, nowMs } from "@/lib/admin/cockpit/load";
 import { revenueIn } from "@/lib/admin/cockpit/metrics";
 import { DEFAULT_GOALS, MIN_CHANNEL_SIGNUPS, expectedRenewals, goalFor, monthLabel, monthProgress, planFor, shiftMonth } from "@/lib/admin/goals";
 import { GOALS_TABLE_SQL, getMeasuredRates, loadSavedGoals, monthDays, type MeasuredRates } from "@/lib/admin/goalsData";
-import { DEFAULT_GLOBAL_GOAL_CENTS } from "@/lib/admin/history";
+import { DEFAULT_GLOBAL_GOAL_CENTS, totalRevenue } from "@/lib/admin/history";
+import { TotalRevenueGauge } from "@/components/admin/goals/TotalRevenueGauge";
+import { YearChallenge } from "@/components/admin/goals/YearChallenge";
+import { challengeState } from "@/lib/admin/challenge";
 import { saveGlobalGoalAction, saveGoalAction } from "@/app/admin/objectifs/actions";
 
 // Objectifs (26/10, demande de Nathan) : « octobre, finir à 1 300 € ;
@@ -75,6 +78,11 @@ export default async function ObjectifsPage({ searchParams }: { searchParams: Pr
       </Card>
     );
   }
+
+  // Revenu total et défi d'un an (déplacés ici depuis la vue d'ensemble, 30/10).
+  const total = totalRevenue(snap, now);
+  const thisMonth = monthRange(undefined, now);
+  const challenge = challengeState({ now, totalCents: total.netCents, last30Cents: revenueIn(snap, { start: now - 30 * 86_400_000, end: now }).netCents });
 
   const goals = { ...DEFAULT_GOALS, ...savedGoals.goals };
   const goal = goalFor(key, savedGoals.goals);
@@ -174,6 +182,20 @@ export default async function ObjectifsPage({ searchParams }: { searchParams: Pr
         Ce qu&apos;on veut encaisser chaque mois, où on en est, et ce qu&apos;il faut (payants, inscrits, vues) pour y arriver. Montants nets Stripe,
         remboursements déduits.
       </p>
+
+      <div style={{ marginBottom: 20 }}>
+        <TotalRevenueGauge
+          totalCents={total.netCents}
+          goalCents={savedGoals.globalCents ?? DEFAULT_GLOBAL_GOAL_CENTS}
+          goalIsDefault={savedGoals.globalCents === null}
+          monthCents={revenueIn(snap, thisMonth.range).netCents}
+          monthName={monthLabel(thisMonth.key).replace(/^./, (c) => c.toUpperCase())}
+          refundedCents={total.refundedCents}
+        />
+        <div style={{ marginTop: 12 }}>
+          <YearChallenge now={now} state={challenge} />
+        </div>
+      </div>
 
       {error && <p className="cockpit-pill is-bad" style={{ marginBottom: 12 }}>{ERRORS[error] ?? "Une erreur est survenue."}</p>}
       {saved && <p className="cockpit-pill is-good" style={{ marginBottom: 12 }}>Objectif enregistré.</p>}
