@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { revalidateTag } from "next/cache";
 import type Stripe from "stripe";
 import { getStripeClient } from "@/lib/stripe/client";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -10,6 +11,7 @@ import { cancelRemindersAfterPayment } from "@/lib/stripe/checkoutReminder";
 import { applyAutoCheckout } from "@/lib/stripe/autoPlan";
 import { onCancellationScheduled } from "@/lib/churn/outreach";
 import { sendWelcomeOnce } from "@/lib/subscribers/welcome";
+import { COCKPIT_STRIPE_TAG } from "@/lib/admin/cockpit/stripeSnapshot";
 
 export const maxDuration = 30;
 
@@ -61,6 +63,13 @@ async function syncSubscription(subscription: Stripe.Subscription): Promise<{ ok
   return { ok: true };
 }
 
+const DASHBOARD_EVENTS = new Set<string>([
+  "checkout.session.completed",
+  "invoice.paid",
+  "customer.subscription.updated",
+  "customer.subscription.deleted",
+]);
+
 export async function POST(request: NextRequest) {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   const signature = request.headers.get("stripe-signature");
@@ -81,6 +90,12 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   }
+
+  // Dashboard admin à jour dès qu'un paiement arrive (29/10, Nathan : « les
+  // paiements ne se mettent pas à jour sur le dashboard ») : le relevé
+  // Stripe du cockpit, gardé en cache, est jeté et relu au prochain
+  // affichage, au lieu d'attendre la fin du cache.
+  if (DASHBOARD_EVENTS.has(event.type)) revalidateTag(COCKPIT_STRIPE_TAG, { expire: 0 });
 
   switch (event.type) {
     case "checkout.session.completed": {

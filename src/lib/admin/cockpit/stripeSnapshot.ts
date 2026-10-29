@@ -15,8 +15,10 @@ import type { BillingInterval, StripeSnapshot, SubRecord } from "@/lib/admin/coc
 // mensuel à 7,99 €, 9,99 € puis 12,79 €, accès à vie) sont incluses sans
 // liste de prix à tenir à jour.
 //
-// Gardé 30 min en cache (bouton « Actualiser » dans le cockpit) : une
-// lecture complète fait plusieurs dizaines d'appels à l'API Stripe.
+// Gardé en cache : une lecture complète fait plusieurs dizaines d'appels à
+// l'API Stripe. Jeté à chaque paiement reçu par le webhook Stripe (29/10),
+// et au bouton « Actualiser » ; sinon relu toutes les 10 min (remboursements
+// et litiges, que le webhook ne reçoit pas).
 
 export const COCKPIT_STRIPE_TAG = "cockpit-stripe";
 // Premiers paiements Stageio : septembre 2026. Marge d'un mois.
@@ -171,6 +173,6 @@ async function compute(): Promise<StripeSnapshot> {
 }
 
 export const getStripeSnapshot = unstable_cache(compute, ["cockpit-stripe-snapshot-v4"], {
-  revalidate: 1800,
+  revalidate: 600,
   tags: [COCKPIT_STRIPE_TAG],
 });

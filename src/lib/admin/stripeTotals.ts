@@ -1,5 +1,5 @@
 import { unstable_cache } from "next/cache";
-import { getStripeSnapshot } from "@/lib/admin/cockpit/stripeSnapshot";
+import { COCKPIT_STRIPE_TAG, getStripeSnapshot } from "@/lib/admin/cockpit/stripeSnapshot";
 import { paidSubs } from "@/lib/admin/cockpit/metrics";
 import { profilesByIds } from "@/lib/admin/cockpit/db";
 import { totalRevenue } from "@/lib/admin/history";
@@ -47,5 +47,5 @@ async function compute(): Promise<StripeTotals> {
   };
 }
 
-// Relit le relevé du cockpit (gardé 30 min) : même chiffre partout.
-export const getStripeTotals = unstable_cache(compute, ["admin-stripe-totals-v3"], { revalidate: 1800 });
+// Relit le relevé du cockpit : même chiffre partout, jeté avec lui à chaque paiement.
+export const getStripeTotals = unstable_cache(compute, ["admin-stripe-totals-v3"], { revalidate: 600, tags: [COCKPIT_STRIPE_TAG] });

@@ -4,7 +4,7 @@ import { getStripeTotals } from "@/lib/admin/stripeTotals";
 import { requireAdminPage } from "@/lib/admin/accessCode";
 
 // Ventes réelles lues dans Stripe (voir lib/admin/stripeTotals.ts) : le
-// relevé Stripe du cockpit, relu toutes les 30 min (60 s permises quand il
+// relevé Stripe du cockpit, relu à chaque paiement et toutes les 10 min (60 s permises quand il
 // faut le recalculer) ; même chiffre sur le dashboard.
 export const maxDuration = 60;
 
@@ -27,7 +27,7 @@ export default async function AdminStripePage() {
         <p style={{ fontSize: 13, margin: 0, ...muted }}>
           Encaissé : chaque paiement réussi du compte Stripe (1ers paiements, renouvellements, accès à vie), relié à un
           compte ou non. Payeurs : les comptes Stageio qui ont payé au moins une fois, même si leur abonnement s&apos;est
-          arrêté depuis. Calculé le {new Date(totals.computedAt).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Paris" })}, mis à jour toutes les 30 min.
+          arrêté depuis. Calculé le {new Date(totals.computedAt).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Paris" })}, mis à jour à chaque paiement (et toutes les 10 min).
         </p>
       </div>
 

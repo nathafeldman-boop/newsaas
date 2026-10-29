@@ -17,7 +17,7 @@ export const maxDuration = 60;
 type Check = { title: string; tone: "is-good" | "is-warn" | "is-bad"; detail: string; rows: { userId: string | null; text: string; recover?: boolean }[] };
 
 const SOURCES: [string, string, string][] = [
-  ["MRR, abonnements, renouvellements, churn", "Stripe (abonnements, factures)", "Instantané relu toutes les 30 min (bouton Actualiser)"],
+  ["MRR, abonnements, renouvellements, churn", "Stripe (abonnements, factures)", "Instantané relu à chaque paiement reçu (webhook), toutes les 10 min sinon (bouton Actualiser)"],
   ["Encaissements, remboursements, litiges", "Stripe (factures, sessions, remboursements, litiges)", "Tout le compte Stripe est à Stageio : chaque paiement compte"],
   ["Accès Premium dans l'appli", "Supabase (profiles.subscription_status, mis à jour par le webhook Stripe)", "Comparé à Stripe ci-dessous"],
   ["LTV par compte (profiles.total_paid_cents)", "Supabase, crédité par le webhook (registre idempotent)", "Diffère de Stripe si un webhook a échoué"],
