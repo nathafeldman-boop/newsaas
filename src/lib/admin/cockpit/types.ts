@@ -39,6 +39,8 @@ export type SubRecord = {
   cancelReason: string | null;
   /** Motif choisi dans le portail Stripe (too_expensive, unused…). */
   feedback: string | null;
+  /** Commentaire laissé en résiliant (portail Stripe), s'il y en a un. */
+  cancelComment?: string | null;
   paused: boolean;
 };
 

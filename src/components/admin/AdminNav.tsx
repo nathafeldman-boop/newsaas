@@ -30,6 +30,7 @@ const GROUPS = [
     links: [
       { href: "/admin/users", label: "Utilisateurs" },
       { href: "/admin/premium", label: "Payants" },
+      { href: "/admin/satisfaction", label: "Satisfaction" },
       { href: "/admin/annulations", label: "Motifs d'annulation" },
       { href: "/admin/retention", label: "Rétention (SOP)" },
       { href: "/admin/stripe", label: "Ventes cumulées" },

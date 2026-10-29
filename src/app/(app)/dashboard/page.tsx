@@ -21,6 +21,8 @@ import { computeResults } from "@/lib/subscribers/results";
 import { SearchCompletedToggle } from "@/components/profile/SearchCompletedToggle";
 import { interviewDomainFor } from "@/lib/interview/domainForJob";
 import { PREMIUM_PRICE_LINE } from "@/lib/pricing/plans";
+import { SatisfactionCard } from "@/components/dashboard/SatisfactionCard";
+import { SATISFACTION_DISMISS_EVENT, SATISFACTION_EVENT, surveyMomentFor } from "@/lib/satisfaction/survey";
 
 const DATE_FR = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", timeZone: "Europe/Paris" });
 const mutedText = { color: "color-mix(in srgb, var(--color-text) 66%, transparent)" } as const;
@@ -76,7 +78,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   }
 
   const admin = createAdminClient();
-  const [{ data: applications }, cvSignedUrlResult, { data: likedSwipes }, todayOffers, quizEvents, { data: spontaneous }, { data: inbound }] =
+  const [{ data: applications }, cvSignedUrlResult, { data: likedSwipes }, todayOffers, quizEvents, { data: spontaneous }, { data: inbound }, { data: satisfactionEvents }] =
     await Promise.all([
       supabase.from("applications").select("*").eq("user_id", user.id),
       profile?.cv_path
@@ -108,6 +110,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       // Stageio (lues en service_role, sur son seul compte).
       admin.from("user_events").select("created_at").eq("user_id", user.id).eq("event_type", SPONTANEOUS_EVENT).limit(2000),
       admin.from("inbox_messages").select("created_at").eq("user_id", user.id).eq("direction", "in").limit(2000),
+      // Question de satisfaction (29/10) : réponses et « Plus tard » déjà donnés.
+      admin
+        .from("user_events")
+        .select("event_type, created_at")
+        .eq("user_id", user.id)
+        .in("event_type", [SATISFACTION_EVENT, SATISFACTION_DISMISS_EVENT])
+        .order("created_at", { ascending: true })
+        .limit(100),
     ]);
   const pastResults: QuizResult[] = [];
   for (const e of quizEvents as { metadata: Record<string, unknown> | null; created_at: string }[]) {
@@ -167,6 +177,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   ];
   const checklistLeft = checklist.filter((c) => !c.done);
 
+  const satisfactionMoment = surveyMomentFor({
+    paidAt: profile?.premium_activated_at ? Date.parse(profile.premium_activated_at) : null,
+    votes: (satisfactionEvents ?? []).filter((e) => e.event_type === SATISFACTION_EVENT).map((e) => ({ at: Date.parse(e.created_at) })),
+    dismissedAt: Math.max(0, ...(satisfactionEvents ?? []).filter((e) => e.event_type === SATISFACTION_DISMISS_EVENT).map((e) => Date.parse(e.created_at))) || null,
+    now,
+  });
+
   const defaultJobHint = prep?.trim().slice(0, 120) || profile?.target_jobs?.[0] || profile?.sectors?.[0] || "";
   const cvSignedUrl = cvSignedUrlResult.data?.signedUrl ?? null;
 
@@ -176,6 +193,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "4px 0 0" }}>
         Prépare tes entretiens et suis tes candidatures, au même endroit.
       </p>
+
+      {satisfactionMoment && <SatisfactionCard moment={satisfactionMoment} />}
 
       {checklistLeft.length > 0 && (
         <div className="card elev-sm mt-6" style={{ padding: "var(--space-6)" }}>
@@ -379,6 +398,21 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
       <div className="mt-5">
         <SearchCompletedToggle completedAt={profile?.search_completed_at ?? null} completedReason={profile?.search_completed_reason ?? null} />
+      </div>
+
+      {/* Aide (29/10) : un souci se règle par un humain, pas par une résiliation. */}
+      <div className="card elev-sm mt-5" style={{ padding: "16px 18px" }}>
+        <p style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>Un souci, une question ?</p>
+        <p style={{ margin: "4px 0 0", fontSize: 13.5, lineHeight: 1.5, color: "color-mix(in srgb, var(--color-text) 64%, transparent)" }}>
+          Une offre qui ne marche pas, une candidature qui ne part pas, un doute sur ton abonnement : écris-moi, je réponds moi-même.
+        </p>
+        <a
+          href={`mailto:contact@stageio.fr?subject=${encodeURIComponent("Stageio : besoin d'aide")}&body=${encodeURIComponent(`Bonjour Nathan,\n\n\n\n(Mon compte : ${user.email ?? user.id})`)}`}
+          className="btn btn-secondary"
+          style={{ marginTop: 10, padding: "8px 14px", fontSize: 13 }}
+        >
+          ✉️ Écrire à Nathan
+        </a>
       </div>
 
     </div>

@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchFranceTravailOfferStatus } from "@/lib/franceTravail/client";
 import { CoverLetterPanel } from "@/components/candidature/CoverLetterPanel";
 import { CvOfferMatchPanel } from "@/components/candidature/CvOfferMatchPanel";
+import { ReportOfferButton } from "@/components/candidature/ReportOfferButton";
 import { isPremium } from "@/lib/subscription/isPremium";
 import { STATUS_LABELS } from "@/lib/applications/status";
 import type { Application } from "@/types/database";
@@ -161,6 +162,14 @@ export default async function CandidaturePage({ params }: { params: Promise<{ of
             />
 
             {canAnalyzeOfferFit && <CvOfferMatchPanel offerId={offerId} />}
+
+            {offer.source === "france_travail" && (
+              <p style={{ margin: "12px 0 0", fontSize: 12.5, lineHeight: 1.5, color: "color-mix(in srgb, var(--color-text) 62%, transparent)" }}>
+                ℹ️ Offre France Travail : pour postuler sur leur site, il faut te connecter à ton compte France Travail (gratuit, 1 minute à créer si tu n&apos;en as pas).
+              </p>
+            )}
+
+            <ReportOfferButton offerId={offerId} />
           </>
         )}
       </div>

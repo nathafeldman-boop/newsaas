@@ -80,6 +80,7 @@ function toSubRecord(s: Stripe.Subscription, userId: string | null): SubRecord {
     currentPeriodEnd: ms(first?.current_period_end),
     cancelReason: s.cancellation_details?.reason ?? null,
     feedback: s.cancellation_details?.feedback ?? null,
+    cancelComment: s.cancellation_details?.comment?.slice(0, 500) ?? null,
     paused: !!s.pause_collection,
   };
 }
@@ -173,7 +174,7 @@ async function compute(): Promise<StripeSnapshot> {
   return { computedAt: Date.now(), since: SINCE, subs, invoices, oneTime, refunds, disputes, otherCurrencySubs };
 }
 
-export const getStripeSnapshot = unstable_cache(compute, ["cockpit-stripe-snapshot-v2"], {
+export const getStripeSnapshot = unstable_cache(compute, ["cockpit-stripe-snapshot-v3"], {
   revalidate: 1800,
   tags: [COCKPIT_STRIPE_TAG],
 });
