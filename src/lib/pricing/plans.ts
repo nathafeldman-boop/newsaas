@@ -74,7 +74,7 @@ export function lifetimeOfferFor(flashEndsAt: number | null, now: number = Date.
 // Offres déjà ouvertes avant le début (offre 48 h par email, chrono de
 // 10 minutes) : tenues à 7,99 €/mois jusqu'à leur fin (voir isLegacyOffer).
 // Suivi : onglet Tests de l'admin (lib/pricing/tests.ts).
-export const PRICE_TEST_START = Date.parse("2026-10-29T00:00:00Z");
+export const PRICE_TEST_START = Date.parse("2026-10-29T00:10:00Z");
 
 export const PLAN_PRICES = {
   monthly: { welcome: "9,99 €", regular: "15,99 €" },
