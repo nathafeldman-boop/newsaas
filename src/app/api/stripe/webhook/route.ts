@@ -9,6 +9,7 @@ import { creditAffiliateCommission } from "@/lib/affiliates/creditAffiliateCommi
 import { cancelRemindersAfterPayment } from "@/lib/stripe/checkoutReminder";
 import { applyAutoCheckout } from "@/lib/stripe/autoPlan";
 import { onCancellationScheduled } from "@/lib/churn/outreach";
+import { sendWelcomeOnce } from "@/lib/subscribers/welcome";
 
 export const maxDuration = 30;
 
@@ -178,6 +179,19 @@ export async function POST(request: NextRequest) {
       if (userId) await cancelRemindersAfterPayment(userId);
       // Formule Auto (24/10) : accès à vie Auto, arrêt de l'ancien abonnement Premium.
       if (userId) await applyAutoCheckout(session, userId);
+      // Accueil personnel juste après le paiement (29/10, satisfaction) :
+      // une fois par compte et par formule, jamais bloquant.
+      if (userId && session.payment_status === "paid") {
+        const { data: welcomeProfile } = await createAdminClient()
+          .from("profiles")
+          .select("id, email, full_name, looking_for, notify_new_offers, subscription_status")
+          .eq("id", userId)
+          .maybeSingle();
+        if (welcomeProfile) {
+          const { error: welcomeError } = await sendWelcomeOnce(createAdminClient(), welcomeProfile, session.metadata?.tier === "auto" ? "auto" : "premium");
+          if (welcomeError) console.error("Stripe webhook: welcome email failed", welcomeError, { userId });
+        }
+      }
 
       if (subscriptionId) {
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);

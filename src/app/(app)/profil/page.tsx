@@ -158,14 +158,16 @@ export default async function ProfilPage({
         {/* Abonnement (Nathan, 25/10) : géré d'ici, entre « Mes candidatures »
             et « Parrainage », plus depuis la page « Tu es Premium ». Un
             abonnement mène à l'étape avant résiliation puis au portail
-            Stripe (résiliation toujours à quelques clics). */}
+            Stripe (résiliation toujours à quelques clics). « Résilier » écrit
+            en toutes lettres (29/10) : résiliation en 3 clics, art. L215-1-1
+            du Code de la consommation. */}
         {hasSubscription ? (
           <Link
             href="/premium/annuler"
             className="card flex-row items-center justify-between no-underline"
             style={{ color: "inherit", padding: "var(--space-3) var(--space-4)" }}
           >
-            <span style={{ fontSize: 14 }}>{isAutoTier(profile) ? "Gérer mon abonnement Stageio Auto" : "Gérer mon abonnement Premium"}</span>
+            <span style={{ fontSize: 14 }}>{isAutoTier(profile) ? "Gérer ou résilier mon abonnement Stageio Auto" : "Gérer ou résilier mon abonnement Premium"}</span>
             <span>→</span>
           </Link>
         ) : premium ? (

@@ -5,13 +5,19 @@ import { loadSearchingSubscribers } from "@/lib/subscribers/premiumProfiles";
 import { runFollowUps } from "@/lib/subscribers/followUps";
 import { runFreshAlerts } from "@/lib/subscribers/freshAlerts";
 import { runAutoSpontaneous } from "@/lib/spontaneous/autoRun";
+import { runWelcomeCatchUp } from "@/lib/subscribers/welcome";
+import { FIRST_APPLICATION_HOUR, runFirstApplicationNudges } from "@/lib/subscribers/firstApplication";
+import { isAutoTier } from "@/lib/subscription/isPremium";
 
 // Aide aux abonnés après le paiement (28/10, Nathan : « dès qu'il paye,
 // fais pas en sorte qu'il churn […] faut qu'il trouve son alternance ») :
 // un seul passage par heure de 8 h 15 à 19 h 15 (heure de Paris) :
 // 1. relances des candidatures sans réponse, une fois par jour (10 h) ;
 // 2. alerte « offre de moins d'une heure » (voir lib/subscribers/freshAlerts) ;
-// 3. candidatures spontanées envoyées toutes seules pour Stageio Auto.
+// 3. candidatures spontanées envoyées toutes seules pour Stageio Auto ;
+// 4. (29/10, satisfaction) email d'accueil rattrapé si le webhook Stripe ne
+//    l'a pas envoyé, et à 18 h « ta 1re candidature » pour les abonnés qui
+//    n'ont encore rien envoyé le lendemain du paiement.
 // Chaque partie a son budget de temps : une panne de l'une ne bloque pas les autres.
 export const maxDuration = 300;
 
@@ -33,6 +39,24 @@ export async function GET(request: NextRequest) {
     result.subscribers = subscribers.length;
   } catch (err) {
     result.subscribersError = err instanceof Error ? err.message : String(err);
+  }
+
+  if (subscribers.length > 0) {
+    try {
+      const r = await runWelcomeCatchUp(admin, subscribers, (p) => (isAutoTier(p) ? "auto" : "premium"), started + 30_000, started);
+      result.welcome = { ...r, failures: r.failures.slice(0, 5) };
+    } catch (err) {
+      result.welcomeError = err instanceof Error ? err.message : String(err);
+    }
+  }
+
+  if (hour === FIRST_APPLICATION_HOUR && subscribers.length > 0) {
+    try {
+      const r = await runFirstApplicationNudges(admin, subscribers, isAutoTier, started + 75_000, started);
+      result.firstApplication = { ...r, failures: r.failures.slice(0, 5) };
+    } catch (err) {
+      result.firstApplicationError = err instanceof Error ? err.message : String(err);
+    }
   }
 
   if (hour === FOLLOW_UP_HOUR && subscribers.length > 0) {
