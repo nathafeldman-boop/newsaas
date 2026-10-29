@@ -81,7 +81,9 @@ export const SERIES_START = Date.parse("2026-10-24T05:30:00Z");
 // celui-ci une fois (n° 6), puis plus rien. L'objectif est écrit comme un
 // objectif, jamais comme une promesse ; la seule garantie est celle des CGV
 // (aucun entretien en 2 mois de Premium = remboursé).
-export const NEWS_LAUNCH = Date.parse("2026-10-29T10:30:00Z");
+// Fixé à la mise en ligne (29/10, 16 h 40 heure de Paris) : le passage de
+// 16 h 30 part encore avec l'email habituel.
+export const NEWS_LAUNCH = Date.parse("2026-10-29T15:40:00Z");
 export const NEWS_STEP = 6;
 const NEWS_FEATURES: { title: string; text: string }[] = [
   {
