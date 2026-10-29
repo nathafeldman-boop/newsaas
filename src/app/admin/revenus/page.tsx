@@ -7,7 +7,7 @@ import { SERIES_COLORS } from "@/components/admin/cockpit/chartUtils";
 import { profilesByIds } from "@/lib/admin/cockpit/db";
 import { date, delta, euros, int, maskEmail, parsePeriod, periodRanges } from "@/lib/admin/cockpit/format";
 import { loadSnapshot, nowMs } from "@/lib/admin/cockpit/load";
-import { DAY_MS, currentState, dailyRevenue, firstPaidBySub, mrrSeries, paidSubs, planLabel, revenueIn } from "@/lib/admin/cockpit/metrics";
+import { DAY_MS, currentState, dailyRevenue, firstPaidBySub, mrrSeries, paidSubs, planLabel, revenueIn, endOf } from "@/lib/admin/cockpit/metrics";
 import { requireAdminPage } from "@/lib/admin/accessCode";
 
 // Revenus et MRR : ce que Stageio encaisse réellement (Stripe), séparé en
@@ -51,7 +51,8 @@ export default async function RevenusPage({ searchParams }: { searchParams: Prom
   const daily = dailyRevenue(snap, current);
   const inCur = (t: number | null) => t !== null && t >= current.start && t < current.end;
 
-  // Mouvements par jour : nouveaux abonnements et abonnements terminés.
+  // Mouvements par jour : nouveaux abonnements et abonnements terminés (ou
+  // renouvellement refusé, compté comme un départ).
   const days = series.map((x) => x.t);
   const dayIndex = (t: number) => Math.floor((t - current.start) / DAY_MS);
   const newPerDay = days.map(() => 0);
@@ -59,7 +60,8 @@ export default async function RevenusPage({ searchParams }: { searchParams: Prom
   for (const s of paid) {
     const fp = firstPaid.get(s.id) ?? null;
     if (inCur(fp)) newPerDay[dayIndex(fp!)]++;
-    if (inCur(s.endedAt)) lostPerDay[dayIndex(s.endedAt!)]++;
+    const end = endOf(s);
+    if (inCur(end)) lostPerDay[dayIndex(end!)]++;
   }
 
   const userByCustomer = new Map<string, string>();
@@ -116,8 +118,8 @@ export default async function RevenusPage({ searchParams }: { searchParams: Prom
           <Kpi
             label="MRR en impayé"
             value={euros(state.pastDue.mrr)}
-            sub={`${state.pastDue.count} abonnement(s) past_due ou unpaid, hors MRR`}
-            definition="Abonnements dont le dernier paiement a échoué et n'est pas encore régularisé. Exclus du MRR actuel."
+            sub={`${state.pastDue.count} renouvellement(s) refusé(s), comptés comme partis`}
+            definition="Abonnements dont le renouvellement a été refusé et pas encore régularisé : comptés comme des départs (hors abonnés, hors MRR, dans le churn) tant qu'ils ne sont pas payés. Stripe réessaie encore ; s'il réussit, l'abonné revient."
             source="Stripe, statut de l'abonnement"
           />
           {state.paused.count > 0 && (

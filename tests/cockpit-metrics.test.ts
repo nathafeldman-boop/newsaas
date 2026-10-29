@@ -2,6 +2,7 @@
 // Lancer : npx tsx --tsconfig tsconfig.json tests/cockpit-metrics.test.ts
 import assert from "node:assert/strict";
 import * as m from "../src/lib/admin/cockpit/metrics";
+import { winbackCandidates } from "../src/lib/churn/candidates";
 import type { StripeSnapshot, SubRecord, InvoiceRecord } from "../src/lib/admin/cockpit/types";
 const D = m.DAY_MS;
 const T0 = Date.UTC(2026, 8, 1); // 1er sept
@@ -45,8 +46,12 @@ const paid = m.paidSubs(snap, fp);
 assert.deepEqual(paid.map((s) => s.id).sort(), ["A", "B", "C", "D"]);
 assert.equal(m.dueDate({ anchor: Date.UTC(2026, 0, 31, 10), interval: "month", intervalCount: 1 }, 1), Date.UTC(2026, 1, 28, 10));
 assert.equal(m.dueDate({ anchor: Date.UTC(2026, 0, 31, 10), interval: "month", intervalCount: 1 }, 2), Date.UTC(2026, 2, 31, 10));
-// MRR au 15/9 : A, B, C (799 chacun) + D (350*52/12=1517)
-assert.equal(m.mrrAt(paid, Date.UTC(2026, 8, 15)), 799 * 3 + 1517);
+// MRR au 15/9 : A, B, C (799 chacun). D n'y est plus : son renouvellement
+// du 8/9 a été refusé, compté comme un départ ce jour-là (29/10), même si
+// Stripe ne l'a arrêté que le 20/9.
+assert.equal(m.mrrAt(paid, Date.UTC(2026, 8, 15)), 799 * 3);
+assert.equal(paid.find((s) => s.id === "D")!.lostAt, T0 + 7 * D);
+assert.equal(m.mrrAt(paid, T0 + 7 * D - 1), 799 * 2 + 1517);
 // Au 5/10 : A, C (programmé mais en cours)
 const now = Date.UTC(2026, 9, 5);
 const st = m.currentState(paid, now);
@@ -103,3 +108,49 @@ assert.equal(cohorts[0].alive[30].alive, 2);
   assert.equal(mvLive.failedOpen, 1); assert.equal(mvLive.lostAfterFailure, 0);
 }
 console.log("cockpit-metrics : OK");
+
+// Renouvellement refusé (29/10, Nathan : « c'est comme s'il s'était désabonné ») :
+// parti à la date du refus, même si Stripe réessaie encore ; payé ensuite, il redevient client.
+{
+  const { activeAt, churnIn, currentState, endOf, paidSubs } = m;
+  const DAYMS = 86_400_000;
+  const T = Date.parse("2026-10-01T10:00:00Z");
+  const base = {
+    customer: "c", currency: "eur", interval: "month" as const, intervalCount: 1, amountCents: 799, mrrCents: 799, priceIds: ["p"],
+    created: T, startDate: T, anchor: T, canceledAt: null, endedAt: null, cancelAt: null, cancelAtPeriodEnd: false, currentPeriodEnd: T + 61 * DAYMS,
+    cancelReason: null, feedback: null, paused: false,
+  };
+  const inv = (id: string, subscription: string, created: number, status: string, attemptCount = 1) => ({
+    id, customer: "c", subscription, billingReason: created === T ? "subscription_create" : "subscription_cycle", status,
+    amountPaid: status === "paid" ? 799 : 0, amountDue: 799, currency: "eur", created, paidAt: status === "paid" ? created : null, attemptCount,
+  });
+  const refusedAt = T + 31 * DAYMS;
+  const snapR = {
+    computedAt: T + 40 * DAYMS, since: 0, refunds: [], disputes: [], oneTime: [], otherCurrencySubs: 0,
+    subs: [
+      { ...base, id: "refuse", userId: "u1", status: "past_due" },
+      { ...base, id: "sain", userId: "u2", status: "active" },
+      { ...base, id: "recupere", userId: "u3", status: "active" },
+    ],
+    invoices: [
+      inv("a1", "refuse", T, "paid"), inv("a2", "refuse", refusedAt, "open", 3),
+      inv("b1", "sain", T, "paid"), inv("b2", "sain", refusedAt, "paid"),
+      inv("c1", "recupere", T, "paid"), inv("c2", "recupere", refusedAt, "paid", 2),
+    ],
+  };
+  const subsR = paidSubs(snapR as never);
+  const refused = subsR.find((s) => s.id === "refuse")!;
+  assert.equal(refused.lostAt, refusedAt);
+  assert.equal(endOf(refused), refusedAt);
+  assert.equal(activeAt(refused, refusedAt - 1), true);
+  assert.equal(activeAt(refused, refusedAt + DAYMS), false);
+  assert.equal(subsR.find((s) => s.id === "recupere")!.lostAt, null, "payé après un échec : toujours client");
+  const stateR = currentState(subsR, T + 35 * DAYMS);
+  assert.equal(stateR.active, 2);
+  assert.equal(stateR.mrr, 1598);
+  assert.equal(stateR.pastDue.count, 1, "montré à part tant que Stripe réessaie");
+  const chR = churnIn(subsR, { start: T + 20 * DAYMS, end: T + 40 * DAYMS });
+  assert.equal(chR.churned, 1);
+  assert.equal(chR.involuntary, 1);
+  assert.deepEqual(winbackCandidates(snapR as never, T + 35 * DAYMS), [{ userId: "u1", subscriptionId: "refuse", endedAt: refusedAt }]);
+}

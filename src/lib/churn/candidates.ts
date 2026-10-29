@@ -1,4 +1,4 @@
-import { DAY_MS, activeAt, firstPaidBySub, paidSubs } from "@/lib/admin/cockpit/metrics";
+import { DAY_MS, activeAt, endOf, firstPaidBySub, paidSubs } from "@/lib/admin/cockpit/metrics";
 import type { StripeSnapshot } from "@/lib/admin/cockpit/types";
 
 // Qui reçoit les messages de départ (25/10), d'après l'instantané Stripe.
@@ -16,7 +16,8 @@ export function scheduledCandidates(snap: StripeSnapshot, now: number) {
 
 /**
  * Anciens abonnés partis ces derniers jours, un par compte (dernier
- * abonnement terminé). Exclus : ceux qui ont un abonnement en cours (revenus
+ * abonnement terminé, ou renouvellement refusé : compté comme un départ,
+ * Nathan 29/10). Exclus : ceux qui ont un abonnement en cours (revenus
  * ou passés à une autre formule) et ceux qui ont un accès à vie.
  */
 export function winbackCandidates(snap: StripeSnapshot, now: number, days = WINBACK_WINDOW_DAYS): { userId: string; subscriptionId: string; endedAt: number }[] {
@@ -25,10 +26,11 @@ export function winbackCandidates(snap: StripeSnapshot, now: number, days = WINB
   const lifetime = new Set(snap.oneTime.map((o) => o.userId));
   const latest = new Map<string, { userId: string; subscriptionId: string; endedAt: number }>();
   for (const s of paid) {
-    if (!s.userId || s.endedAt === null || s.endedAt > now || s.endedAt < now - days * DAY_MS) continue;
+    const end = endOf(s);
+    if (!s.userId || end === null || end > now || end < now - days * DAY_MS) continue;
     if (stillPaying.has(s.userId) || lifetime.has(s.userId)) continue;
     const cur = latest.get(s.userId);
-    if (!cur || s.endedAt > cur.endedAt) latest.set(s.userId, { userId: s.userId, subscriptionId: s.id, endedAt: s.endedAt });
+    if (!cur || end > cur.endedAt) latest.set(s.userId, { userId: s.userId, subscriptionId: s.id, endedAt: end });
   }
   return [...latest.values()];
 }

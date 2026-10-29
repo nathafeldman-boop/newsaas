@@ -5,7 +5,7 @@ import { PeriodBar } from "@/components/admin/cockpit/PeriodBar";
 import { premiumProfiles, profilesByIds } from "@/lib/admin/cockpit/db";
 import { date, euros, maskEmail } from "@/lib/admin/cockpit/format";
 import { loadSnapshot, nowMs } from "@/lib/admin/cockpit/load";
-import { DAY_MS, activeAt, duplicateSubs, firstPaidBySub, paidSubs } from "@/lib/admin/cockpit/metrics";
+import { DAY_MS, activeAt, duplicateSubs, firstPaidBySub, paidSubs, refusedNotClosed } from "@/lib/admin/cockpit/metrics";
 import { requireAdminPage } from "@/lib/admin/accessCode";
 import { syncUserPaymentsAction } from "@/app/admin/users/actions";
 
@@ -118,11 +118,11 @@ export default async function SantePage({ searchParams }: { searchParams: Promis
     });
   }
 
-  const pastDue = live.filter((s) => s.status === "past_due" || s.status === "unpaid");
+  const pastDue = paid.filter((s) => refusedNotClosed(s, now) || (activeAt(s, now) && (s.status === "past_due" || s.status === "unpaid")));
   checks.push({
     title: "Abonnements en impayé",
     tone: pastDue.length ? "is-bad" : "is-good",
-    detail: "Dernier paiement refusé. Stripe retente selon les réglages du compte (partagé : non modifiés ici).",
+    detail: "Renouvellement refusé : compté comme un départ (hors abonnés et MRR) tant qu'il n'est pas payé. Stripe retente selon les réglages du compte (partagé : non modifiés ici).",
     rows: pastDue.map((s) => ({ userId: s.userId, text: `${s.status}, échéance ${date(s.currentPeriodEnd)}` })),
   });
 

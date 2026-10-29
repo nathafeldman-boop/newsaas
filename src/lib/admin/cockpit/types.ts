@@ -25,6 +25,13 @@ export type SubRecord = {
   anchor: number;
   canceledAt: number | null;
   endedAt: number | null;
+  /**
+   * Renouvellement refusé et jamais payé ensuite (Nathan, 29/10 : « un
+   * paiement refusé pour son renouvellement, c'est comme s'il s'était
+   * désabonné ») : date de la facture refusée. Posé par paidSubs ; tous les
+   * calculs (abonnés, MRR, churn) comptent l'abonné comme parti à cette date.
+   */
+  lostAt?: number | null;
   cancelAt: number | null;
   cancelAtPeriodEnd: boolean;
   currentPeriodEnd: number | null;

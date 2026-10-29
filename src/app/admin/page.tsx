@@ -110,7 +110,7 @@ export default async function CockpitOverviewPage({ searchParams }: { searchPara
   const cancelsPrev7 = movementIn(snap, { start: now - 14 * DAY_MS, end: now - 7 * DAY_MS }, firstPaid).cancelRequests;
   const alerts = [
     autoAlert,
-    state.pastDue.count > 0 && { tone: "is-bad", text: `${state.pastDue.count} abonnement(s) en impayé (${euros(state.pastDue.mrr)} de MRR)`, href: "/admin/abonnements?statut=impaye" },
+    state.pastDue.count > 0 && { tone: "is-bad", text: `${state.pastDue.count} renouvellement(s) refusé(s), comptés comme partis (${euros(state.pastDue.mrr)}/mois si Stripe réussit à les encaisser)`, href: "/admin/abonnements?statut=impaye" },
     mvCur.failedOpen > 0 && { tone: "is-bad", text: `${mvCur.failedOpen} paiement(s) refusé(s) encore récupérable(s) (abonnement en cours)`, href: "/admin/abonnements?statut=impaye" },
     state.scheduled.count > 0 && { tone: "is-warn", text: `${state.scheduled.count} résiliation(s) programmée(s) (${euros(state.scheduled.mrr)} de MRR à risque)`, href: "/admin/abonnements?statut=programme" },
     cancels7 >= 3 && cancels7 >= 2 * Math.max(1, cancelsPrev7) && { tone: "is-bad", text: `Hausse des résiliations : ${cancels7} demandes en 7 jours contre ${cancelsPrev7} les 7 jours d'avant`, href: "/admin/abonnements" },
@@ -232,8 +232,8 @@ export default async function CockpitOverviewPage({ searchParams }: { searchPara
             delta={delta(chCur.churned, chPrev.churned)}
             goodWhen="down"
             sub={`Churn ${pct(chCur.rate)} · ${chCur.voluntary} volontaire${chCur.voluntary > 1 ? "s" : ""}, ${chCur.involuntary} impayé${chCur.involuntary > 1 ? "s" : ""}`}
-            definition="Abonnements en cours au début de la période et terminés pendant celle-ci. Une résiliation programmée ne compte qu'à la fin réelle de l'accès payé. Taux = perdus / abonnés au début de la période."
-            source="Stripe, fin réelle des abonnements"
+            definition="Abonnements en cours au début de la période et terminés pendant celle-ci. Un renouvellement refusé compte comme un départ dès le refus (impayé), même si Stripe réessaie encore ; une résiliation programmée ne compte qu'à la fin réelle de l'accès payé. Taux = perdus / abonnés au début de la période."
+            source="Stripe, fin réelle des abonnements et renouvellements refusés"
           />
           <Kpi
             accent="pink"

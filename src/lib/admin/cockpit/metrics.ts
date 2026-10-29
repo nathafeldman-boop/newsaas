@@ -5,7 +5,10 @@ import type { InvoiceRecord, StripeSnapshot, SubRecord } from "@/lib/admin/cockp
 // - Un abonnement compte comme client à partir de sa première facture payée
 //   (> 0 €) ; jamais payé (carte refusée à la création) : jamais client.
 // - Il reste client jusqu'à sa fin réelle (ended_at). Une résiliation
-//   programmée garde le client jusqu'à l'échéance payée.
+//   programmée garde le client jusqu'à l'échéance payée. Un renouvellement
+//   refusé (et pas payé depuis) compte comme un départ à la date du refus,
+//   même si Stripe réessaie encore (Nathan, 29/10) ; payé ensuite, il
+//   redevient client.
 // - MRR : montant récurrent ramené au mois (52 semaines, 365 jours par an),
 //   euros seulement. Le MRR du jour exclut les impayés (past_due, unpaid)
 //   et les pauses, affichés à part. La série historique ne peut pas savoir
@@ -28,11 +31,48 @@ export function firstPaidBySub(invoices: InvoiceRecord[]): Map<string, number> {
 }
 
 export function paidSubs(snap: StripeSnapshot, firstPaid = firstPaidBySub(snap.invoices)): SubRecord[] {
-  return snap.subs.filter((s) => firstPaid.has(s.id));
+  const bySub = new Map<string, InvoiceRecord[]>();
+  for (const inv of snap.invoices) {
+    if (!inv.subscription) continue;
+    const list = bySub.get(inv.subscription) ?? [];
+    list.push(inv);
+    bySub.set(inv.subscription, list);
+  }
+  return snap.subs.filter((s) => firstPaid.has(s.id)).map((s) => ({ ...s, lostAt: failedRenewalAt(s, bySub.get(s.id) ?? []) }));
+}
+
+const LOST_STATUSES = new Set(["past_due", "unpaid"]);
+
+/**
+ * Renouvellement refusé jamais payé ensuite : date de la 1re facture
+ * d'échéance refusée après le dernier paiement, pour un abonnement en
+ * impayé ou arrêté pour impayé ; sinon null.
+ */
+export function failedRenewalAt(sub: SubRecord, invoices: InvoiceRecord[]): number | null {
+  const failedEnd = sub.cancelReason === "payment_failed" && (sub.status === "canceled" || sub.status === "incomplete_expired");
+  if (!LOST_STATUSES.has(sub.status) && !failedEnd) return null;
+  const lastPaid = Math.max(0, ...invoices.filter((i) => i.status === "paid" && i.amountPaid > 0).map((i) => i.paidAt ?? i.created));
+  const refused = invoices
+    .filter((i) => i.billingReason === "subscription_cycle" && i.status !== "paid" && i.status !== "draft" && i.attemptCount > 0 && i.created > lastPaid)
+    .map((i) => i.created);
+  return refused.length ? Math.min(...refused) : null;
+}
+
+/** Fin retenue dans les calculs : fin réelle, ou renouvellement refusé s'il est antérieur. */
+export function endOf(sub: SubRecord): number | null {
+  const lost = sub.lostAt ?? null;
+  if (lost === null) return sub.endedAt;
+  return sub.endedAt === null ? lost : Math.min(lost, sub.endedAt);
+}
+
+/** Parti sur un renouvellement refusé que Stripe n'a pas encore clos (il réessaie encore). */
+export function refusedNotClosed(sub: SubRecord, t: number): boolean {
+  return sub.lostAt != null && sub.lostAt <= t && sub.endedAt === null;
 }
 
 export function activeAt(sub: SubRecord, t: number): boolean {
-  return t >= sub.startDate && (sub.endedAt === null || t < sub.endedAt);
+  const end = endOf(sub);
+  return t >= sub.startDate && (end === null || t < end);
 }
 
 const inRange = (t: number | null, r: Range) => t !== null && t >= r.start && t < r.end;
@@ -73,7 +113,9 @@ export function planLabel(s: Pick<SubRecord, "amountCents" | "interval" | "inter
 
 export function currentState(subs: SubRecord[], now: number): CurrentState {
   const live = subs.filter((s) => activeAt(s, now));
-  const pastDue = live.filter((s) => PAST_DUE.has(s.status));
+  // Impayés : renouvellement refusé, comptés comme partis (hors abonnés et
+  // MRR) tant que Stripe réessaie ; plus les impayés sans facture retrouvée.
+  const pastDue = subs.filter((s) => refusedNotClosed(s, now) || (activeAt(s, now) && PAST_DUE.has(s.status)));
   const paused = live.filter((s) => s.paused && !PAST_DUE.has(s.status));
   const healthy = live.filter((s) => !PAST_DUE.has(s.status) && !s.paused);
   const scheduled = healthy.filter((s) => s.cancelAt !== null || s.cancelAtPeriodEnd);
@@ -204,7 +246,8 @@ export type Churn = {
 
 export function churnIn(subs: SubRecord[], r: Range): Churn {
   const atStart = subs.filter((s) => activeAt(s, r.start));
-  const churned = atStart.filter((s) => inRange(s.endedAt, r));
+  const churned = atStart.filter((s) => inRange(endOf(s), r));
+  const refused = (s: SubRecord) => s.lostAt != null && endOf(s) === s.lostAt;
   const startMrr = sum(atStart.filter(eur).map((s) => s.mrrCents));
   const churnedMrr = sum(churned.filter(eur).map((s) => s.mrrCents));
   return {
@@ -212,12 +255,12 @@ export function churnIn(subs: SubRecord[], r: Range): Churn {
     startMrr,
     churned: churned.length,
     churnedMrr,
-    voluntary: churned.filter((s) => s.cancelReason === "cancellation_requested").length,
-    involuntary: churned.filter((s) => s.cancelReason === "payment_failed" || s.cancelReason === "payment_disputed").length,
-    unknown: churned.filter((s) => !s.cancelReason).length,
+    voluntary: churned.filter((s) => !refused(s) && s.cancelReason === "cancellation_requested").length,
+    involuntary: churned.filter((s) => refused(s) || s.cancelReason === "payment_failed" || s.cancelReason === "payment_disputed").length,
+    unknown: churned.filter((s) => !refused(s) && !s.cancelReason).length,
     rate: atStart.length > 0 ? churned.length / atStart.length : null,
     revenueRate: startMrr > 0 ? churnedMrr / startMrr : null,
-    startedAndEnded: subs.filter((s) => inRange(s.startDate, r) && inRange(s.endedAt, r)).length,
+    startedAndEnded: subs.filter((s) => inRange(s.startDate, r) && inRange(endOf(s), r)).length,
   };
 }
 
@@ -348,16 +391,17 @@ export function paidCohorts(snap: StripeSnapshot, now: number, grain: "month" | 
   }
   const firstRenewals = renewalsIn(snap, { start: 0, end: Number.MAX_SAFE_INTEGER / 2 }, now, firstPaid).filter((x) => x.k === 1);
   const firstRenewalBySub = new Map(firstRenewals.map((x) => [x.sub.id, x.outcome]));
-  for (const sub of snap.subs) {
+  for (const sub of paidSubs(snap, firstPaid)) {
     const fp = firstPaid.get(sub.id);
     if (fp === undefined) continue;
+    const end = endOf(sub);
     const c = get(keyOf(fp));
     c.subs++;
     c.revenueCents += paidBySub.get(sub.id) ?? 0;
     for (const days of [30, 60, 90] as const) {
       if (fp + days * DAY_MS > now) continue;
       c.alive[days].eligible++;
-      if (sub.endedAt === null || sub.endedAt > fp + days * DAY_MS) c.alive[days].alive++;
+      if (end === null || end > fp + days * DAY_MS) c.alive[days].alive++;
     }
     const o = firstRenewalBySub.get(sub.id);
     if (o === "réussi") c.firstRenewal.ok++;

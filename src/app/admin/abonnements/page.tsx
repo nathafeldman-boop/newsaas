@@ -16,6 +16,8 @@ import {
   renewalSummary,
   renewalsIn,
   type RenewalOutcome,
+  endOf,
+  refusedNotClosed,
 } from "@/lib/admin/cockpit/metrics";
 import type { SubRecord } from "@/lib/admin/cockpit/types";
 import { requireAdminPage } from "@/lib/admin/accessCode";
@@ -56,9 +58,12 @@ const FEEDBACK_LABELS: Record<string, string> = {
 };
 
 type StatusKey = "actif" | "programme" | "impaye" | "termine";
-const STATUS_LABELS: Record<StatusKey, string> = { actif: "En cours", programme: "Résiliation programmée", impaye: "Impayé", termine: "Terminé" };
+const STATUS_LABELS: Record<StatusKey, string> = { actif: "En cours", programme: "Résiliation programmée", impaye: "Renouvellement refusé (parti)", termine: "Terminé" };
 
+// Renouvellement refusé : compté comme parti (Nathan, 29/10), montré à part
+// tant que Stripe réessaie.
 function statusOf(s: SubRecord, now: number): StatusKey {
+  if (refusedNotClosed(s, now)) return "impaye";
   if (!activeAt(s, now)) return "termine";
   if (s.status === "past_due" || s.status === "unpaid") return "impaye";
   if (s.cancelAt !== null || s.cancelAtPeriodEnd) return "programme";
@@ -132,13 +137,14 @@ export default async function AbonnementsPage({
 
   const live = paid.filter((s) => activeAt(s, now));
   const alertList: { sub: SubRecord; text: string; tone: string }[] = [];
-  for (const s of live) {
+  // Abonnés en cours, plus les renouvellements refusés que Stripe réessaie encore.
+  for (const s of paid.filter((x) => activeAt(x, now) || refusedNotClosed(x, now))) {
     const u = s.userId ? usage.get(s.userId) : undefined;
     const fp = firstPaid.get(s.id) ?? s.startDate;
     const last = lastActivity(s);
     const inactiveFor = last === null ? null : (now - last) / DAY_MS;
     const status = statusOf(s, now);
-    if (status === "impaye") alertList.push({ sub: s, text: "Renouvellement échoué, accès en sursis", tone: "is-bad" });
+    if (status === "impaye") alertList.push({ sub: s, text: "Renouvellement refusé : compté comme parti, Stripe réessaie encore", tone: "is-bad" });
     if (status === "programme") alertList.push({ sub: s, text: `Résiliation programmée au ${date(s.cancelAt ?? s.currentPeriodEnd)}`, tone: "is-warn" });
     if (inactiveFor === null || inactiveFor >= ALERT_RULES.inactiveDays) {
       const dropped = (u?.applications ?? 0) >= ALERT_RULES.droppedAfterApplications;
@@ -293,7 +299,7 @@ export default async function AbonnementsPage({
 
       <PeriodBar path="/admin/abonnements" period={period} computedAt={snap.computedAt} extraParams={{ mois: month.key }} />
 
-      <Section title="Churn de la période" subtitle="Un client qui résilie mais garde son accès payé jusqu'à l'échéance n'est compté perdu qu'à la fin réelle de son abonnement.">
+      <Section title="Churn de la période" subtitle="Un client qui résilie mais garde son accès payé jusqu'à l'échéance n'est compté perdu qu'à la fin réelle de son abonnement. Un renouvellement refusé compte comme un départ dès le refus (s'il est payé ensuite, le client revient).">
         <KpiGrid>
           <Kpi
             label="Churn client"
@@ -316,7 +322,7 @@ export default async function AbonnementsPage({
             label="Volontaire / impayé"
             value={`${chCur.voluntary} / ${chCur.involuntary}`}
             sub={chCur.unknown > 0 ? `${chCur.unknown} sans motif Stripe` : "Motif Stripe connu pour tous"}
-            definition="Volontaire : résiliation demandée (portail, suppression de compte, admin). Impayé : abonnement arrêté par Stripe après échec de paiement ou litige."
+            definition="Volontaire : résiliation demandée (portail, suppression de compte, admin). Impayé : renouvellement refusé (compté dès le refus, même si Stripe réessaie encore), ou litige."
             source="Stripe, cancellation_details.reason"
           />
           <Kpi
@@ -578,7 +584,7 @@ export default async function AbonnementsPage({
                     <td>{c.paid}</td>
                     <td>{c.failed}</td>
                     <td>{date(s.canceledAt)}</td>
-                    <td>{date(s.endedAt ?? s.cancelAt)}</td>
+                    <td>{date(endOf(s) ?? s.cancelAt)}</td>
                     <td>{date(lastActivity(s))}</td>
                     <td>{u?.likes ?? 0}</td>
                     <td>{u?.applications ?? 0}</td>
