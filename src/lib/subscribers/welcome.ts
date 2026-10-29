@@ -20,7 +20,7 @@ type Admin = ReturnType<typeof createAdminClient>;
 
 export const WELCOME_EVENT = "premium_welcome_sent";
 /** Rattrapage : comptes passés Premium depuis moins de 48 h, et après la mise en ligne. */
-export const WELCOME_START = Date.parse("2026-10-29T16:00:00Z");
+export const WELCOME_START = Date.parse("2026-10-29T15:55:00Z");
 const CATCH_UP_MS = 48 * 3_600_000;
 
 export type WelcomeTier = "premium" | "auto";
