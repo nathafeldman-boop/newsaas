@@ -4,11 +4,14 @@ import { AutoHelpButton } from "@/components/premium/AutoExplainer";
 import { AUTO_DAILY_LIMIT, AUTO_PRICES } from "@/lib/pricing/plans";
 
 // Formule « Stageio Auto » (24/10, demande de Nathan) : 17,99 €/mois ou
-// 80 € à vie. Mêmes formulaires que les cartes Premium (plan en champ
+// 80 € à vie. Carte montrée aux comptes déjà Premium : prix normal depuis le
+// test de prix du 29/10 (28,79 €/mois ou 128 € à vie, voir startAutoCheckout).
+// Mêmes formulaires que les cartes Premium (plan en champ
 // caché, voir startCheckout). Les limites sont dites telles quelles : pas
 // d'envoi automatique quand le recruteur n'a laissé aucune adresse.
 
 const muted = "color-mix(in srgb, var(--color-text) 64%, transparent)";
+const PRICES = { monthly: AUTO_PRICES.monthly.regular, lifetime: AUTO_PRICES.lifetime.regular };
 
 const POINTS = [
   `Chaque like envoie ta candidature, lettre et CV, jusqu'à ${AUTO_DAILY_LIMIT} par jour`,
@@ -50,14 +53,14 @@ export function AutoPlanCard({ context, userId }: { context: "paywall" | "upgrad
         <form action={createCheckoutSessionAction}>
           <input type="hidden" name="plan" value="auto_monthly" />
           <button type="submit" className="btn btn-primary btn-block" style={{ marginTop: 0, flexDirection: "column", gap: 0, padding: "10px 8px" }}>
-            <span style={{ fontWeight: 800, fontSize: 16 }}>{AUTO_PRICES.monthly}</span>
+            <span style={{ fontWeight: 800, fontSize: 16 }}>{PRICES.monthly}</span>
             <span style={{ fontSize: 11.5 }}>par mois</span>
           </button>
         </form>
         <form action={createCheckoutSessionAction}>
           <input type="hidden" name="plan" value="auto_lifetime" />
           <button type="submit" className="btn btn-secondary btn-block" style={{ marginTop: 0, flexDirection: "column", gap: 0, padding: "10px 8px" }}>
-            <span style={{ fontWeight: 800, fontSize: 16 }}>{AUTO_PRICES.lifetime}</span>
+            <span style={{ fontWeight: 800, fontSize: 16 }}>{PRICES.lifetime}</span>
             <span style={{ fontSize: 11.5 }}>à vie, paiement unique</span>
           </button>
         </form>
@@ -65,7 +68,7 @@ export function AutoPlanCard({ context, userId }: { context: "paywall" | "upgrad
 
       {context === "upgrade_monthly" && (
         <p style={{ fontSize: 12, lineHeight: 1.5, margin: "10px 0 0", color: muted }}>
-          Mensuel : ton abonnement Premium passe à {AUTO_PRICES.monthly}/mois dès maintenant ; la différence pour les jours restants est
+          Mensuel : ton abonnement Premium passe à {PRICES.monthly}/mois dès maintenant ; la différence pour les jours restants est
           prélevée sur ta carte enregistrée. À vie : ton abonnement actuel s&apos;arrête à la fin de la période déjà payée.
         </p>
       )}

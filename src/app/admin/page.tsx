@@ -53,7 +53,7 @@ export default async function CockpitOverviewPage({ searchParams }: { searchPara
   ]);
   const autoAlert =
     autoBlockers.length > 0
-      ? { tone: "is-bad", text: `Stageio Auto (17,99 € et 80 €) n'est pas proposée : ${autoBlockers.join(" ; ")}`, href: "/admin/sante" }
+      ? { tone: "is-bad", text: `Stageio Auto n'est pas proposée : ${autoBlockers.join(" ; ")}`, href: "/admin/sante" }
       : null;
 
   if (!snap) {

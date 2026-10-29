@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useSyncExternalStore, type MouseEvent } fr
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { logButtonClick } from "@/lib/analytics/logButtonClick";
-import { AUTO_DAILY_LIMIT, AUTO_PRICES } from "@/lib/pricing/plans";
+import { AUTO_DAILY_LIMIT, AUTO_PRICES, type PriceTier } from "@/lib/pricing/plans";
 
 // « ? » en haut à droite de l'encadré Stageio Auto (25/10, demande de
 // Nathan : « une FAQ animée avec une VSL pour expliquer l'offre à 17,99 et
@@ -90,7 +90,14 @@ export function AutoComparison({ compact = false }: { compact?: boolean }) {
   );
 }
 
-const FAQ = [
+// Prix de l'Auto selon le moment (test de prix du 29/10) : bienvenue
+// (17,99 € / 80 €) pendant le chrono du paywall, normal (28,79 € / 128 €)
+// ensuite et pour un compte déjà Premium.
+function autoPricesFor(tier: PriceTier) {
+  return { monthly: AUTO_PRICES.monthly[tier], lifetime: AUTO_PRICES.lifetime[tier] };
+}
+
+const faqFor = (prices: { monthly: string; lifetime: string }) => [
   {
     q: "Comment ça marche ?",
     a: "Tu swipes comme d'habitude. Quand tu likes une offre, ta candidature part au recruteur : ta lettre de motivation et ton CV, depuis une adresse à ton nom. Tu continues à swiper pendant ce temps.",
@@ -120,10 +127,10 @@ const FAQ = [
     a: "Tout Premium est inclus : likes, lettres, simulateur d'entretien, suivi. Avec Premium, tu postules toi-même ; avec Auto, le like envoie la candidature.",
   },
   {
-    q: `${AUTO_PRICES.monthly}/mois ou ${AUTO_PRICES.lifetime} à vie ?`,
-    a: `Mensuel : ${AUTO_PRICES.monthly} par mois, sans engagement, résiliable à tout moment depuis ta page Premium. À vie : ${AUTO_PRICES.lifetime} en une seule fois, moins de 5 mois de mensuel, et plus rien à payer ensuite.`,
+    q: `${prices.monthly}/mois ou ${prices.lifetime} à vie ?`,
+    a: `Mensuel : ${prices.monthly} par mois, sans engagement, résiliable à tout moment depuis ta page Premium. À vie : ${prices.lifetime} en une seule fois, moins de 5 mois de mensuel, et plus rien à payer ensuite.`,
   },
-] as const;
+];
 
 function FaqItem({ q, a, index, open, onToggle }: { q: string; a: string; index: number; open: boolean; onToggle: () => void }) {
   const id = `auto-faq-${index}`;
@@ -172,7 +179,11 @@ function FaqItem({ q, a, index, open, onToggle }: { q: string; a: string; index:
   );
 }
 
-function AutoVideo() {
+// Deux versions de la vidéo, qui finissent sur les prix de bienvenue ou sur
+// les prix normaux (même animation, seul l'écran des prix change).
+function AutoVideo({ tier }: { tier: PriceTier }) {
+  const prices = autoPricesFor(tier);
+  const file = tier === "welcome" ? "/app/auto-vsl" : "/app/auto-vsl-regular";
   const ref = useRef<HTMLVideoElement>(null);
   const [progress, setProgress] = useState(0);
   return (
@@ -185,15 +196,15 @@ function AutoVideo() {
         playsInline
         preload="auto"
         poster="/app/auto-vsl-poster.jpg"
-        aria-label={`Vidéo : avec Stageio Auto, chaque like envoie ta candidature, jusqu'à ${AUTO_DAILY_LIMIT} par jour, ${AUTO_PRICES.monthly} par mois ou ${AUTO_PRICES.lifetime} à vie`}
+        aria-label={`Vidéo : avec Stageio Auto, chaque like envoie ta candidature, jusqu'à ${AUTO_DAILY_LIMIT} par jour, ${prices.monthly} par mois ou ${prices.lifetime} à vie`}
         onTimeUpdate={(e) => {
           const v = e.currentTarget;
           if (v.duration) setProgress(v.currentTime / v.duration);
         }}
         style={{ display: "block", width: "100%", aspectRatio: "4 / 5", borderRadius: 18, background: "#0f9c56", objectFit: "cover" }}
       >
-        <source src="/app/auto-vsl.webm" type='video/webm; codecs="vp9"' />
-        <source src="/app/auto-vsl.mp4" type="video/mp4" />
+        <source src={`${file}.webm`} type='video/webm; codecs="vp9"' />
+        <source src={`${file}.mp4`} type="video/mp4" />
       </video>
       <div aria-hidden style={{ position: "absolute", left: 14, right: 14, bottom: 10, height: 4, borderRadius: 999, background: "rgba(255,255,255,.35)", overflow: "hidden" }}>
         <div style={{ height: "100%", width: `${progress * 100}%`, background: "#fff", borderRadius: 999, transition: "width 0.25s linear" }} />
@@ -206,12 +217,15 @@ export function AutoHelpButton({
   userId,
   source,
   ctaLabel,
+  tier = "regular",
   onChoose,
 }: {
   userId?: string;
   // Emplacement du « ? » (paywall ou page Premium), pour l'admin.
   source: string;
   ctaLabel: string;
+  // Prix de bienvenue (chrono du paywall) ou prix normal (compte déjà Premium).
+  tier?: PriceTier;
   // Sur le paywall : coche Stageio Auto. Sinon le bouton ferme la fenêtre.
   onChoose?: () => void;
 }) {
@@ -312,7 +326,7 @@ export function AutoHelpButton({
                         Stageio Auto en 20 secondes
                       </p>
                       <p style={{ fontSize: 12.5, margin: "2px 0 0", color: muted }}>
-                        {AUTO_PRICES.monthly}/mois ou {AUTO_PRICES.lifetime} à vie
+                        {autoPricesFor(tier).monthly}/mois ou {autoPricesFor(tier).lifetime} à vie
                       </p>
                     </div>
                     <button
@@ -328,7 +342,7 @@ export function AutoHelpButton({
                   </div>
 
                   <div style={{ padding: "0 16px" }}>
-                    <AutoVideo />
+                    <AutoVideo tier={tier} />
                   </div>
 
                   <div style={{ margin: "14px 16px 0", padding: "12px 14px", borderRadius: 16, background: "var(--color-surface)", border: "1.5px solid var(--color-accent)" }}>
@@ -340,7 +354,7 @@ export function AutoHelpButton({
                       Questions fréquentes
                     </p>
                     <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
-                      {FAQ.map((item, i) => (
+                      {faqFor(autoPricesFor(tier)).map((item, i) => (
                         <FaqItem key={item.q} q={item.q} a={item.a} index={i} open={openItem === i} onToggle={() => setOpenItem(openItem === i ? null : i)} />
                       ))}
                     </ul>

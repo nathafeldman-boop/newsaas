@@ -14,7 +14,7 @@ import { createPortalSessionAction } from "./actions";
 import { PricingSelector } from "@/components/premium/PricingSelector";
 import { WelcomePriceBanner } from "@/components/premium/WelcomeCountdown";
 import { getWelcomeState } from "@/lib/pricing/welcome";
-import { lifetimeOfferFor } from "@/lib/pricing/plans";
+import { lifetimeOfferFor, priceSheet } from "@/lib/pricing/plans";
 import { PaywallPledge } from "@/components/premium/PaywallPledge";
 import { GuaranteeBadge, PaywallExitGuard } from "@/components/premium/PaywallExitGuard";
 import { GuaranteeCard, type GuaranteePhase } from "@/components/premium/GuaranteeCard";
@@ -177,6 +177,8 @@ export default async function PremiumPage({
   // 30 € jusqu'à la fin de l'offre du compte.
   const welcome = !premium && !paymentIssue ? await getWelcomeState(user.id) : null;
   const lifetimeOffer = welcome ? lifetimeOfferFor(welcome.flashEndsAt) : null;
+  // Test de prix du 29/10 : une offre ouverte avant garde 7,99 €/mois.
+  const prices = priceSheet(welcome?.legacy ?? false);
 
   const guarantee = premium && profile ? await loadGuarantee(user.id, profile) : null;
 
@@ -333,6 +335,7 @@ export default async function PremiumPage({
               welcomeEndsAt={welcome?.endsAt ?? null}
               welcomeActive={welcome?.active ?? false}
               lifetimeOffer={lifetimeOffer}
+              prices={prices}
             />
           )}
           <PaywallExitGuard />
@@ -418,7 +421,7 @@ export default async function PremiumPage({
                 « Offre spéciale rentrée » (tarifs garantis 1 mois puis hausse,
                 22/09) laisse la place au prix de bienvenue de 10 minutes. Voir
                 lib/pricing/plans.ts : jamais de « −X % » ni de prix barré. */}
-            <WelcomePriceBanner endsAt={welcome?.endsAt ?? null} initialActive={welcome?.active ?? false} flash={lifetimeOffer?.kind === "flash"} />
+            <WelcomePriceBanner endsAt={welcome?.endsAt ?? null} initialActive={welcome?.active ?? false} flash={lifetimeOffer?.kind === "flash"} prices={prices} />
 
             <h1
               className="animate-in"
@@ -447,6 +450,7 @@ export default async function PremiumPage({
               welcomeEndsAt={welcome?.endsAt ?? null}
               welcomeActive={welcome?.active ?? false}
               lifetimeOffer={lifetimeOffer}
+              prices={prices}
               lifetimeAvailable={!!process.env.STRIPE_PRICE_ID_LIFETIME}
               autoAvailable={isAutoOfferAvailable(profile)}
               initialOffer={offre === "auto" ? "auto" : "premium"}

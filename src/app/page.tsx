@@ -17,6 +17,7 @@ import { getCompanyIndex } from "@/lib/seo/companyIndex";
 import { getMetier, isFormation, isSpecialite } from "@/lib/seo/metiers";
 import { offerPath } from "@/lib/offers/publicUrl";
 import { isJobPostingEligible } from "@/lib/seo/jobPosting";
+import { PLAN_PRICES } from "@/lib/pricing/plans";
 
 export const metadata: Metadata = {
   // Marque en tête (la plupart des clics Google sont sur « stageio ») puis
@@ -108,7 +109,7 @@ const FAQ = [
   {
     question: "Est-ce que Stageio est gratuit ?",
     answer:
-      "L'inscription et la création de profil sont gratuites, et tu peux parcourir tout le catalogue d'offres sans limite. Liker une offre, candidater et générer une lettre de motivation par IA sont réservés aux membres Premium : 12,79€/mois sans engagement, ou 63,99€ en paiement unique pour un accès à vie. Prix de bienvenue de 7,99€/mois ou 39,99€ à vie pendant 10 minutes, à compter de la première fois où tu vois la page Premium.",
+      `L'inscription et la création de profil sont gratuites, et tu peux parcourir tout le catalogue d'offres sans limite. Liker une offre, candidater et générer une lettre de motivation par IA sont réservés aux membres Premium : ${PLAN_PRICES.monthly.regular}/mois sans engagement, ou ${PLAN_PRICES.lifetime.regular} en paiement unique pour un accès à vie. Prix de bienvenue de ${PLAN_PRICES.monthly.welcome}/mois ou ${PLAN_PRICES.lifetime.welcome} à vie pendant 10 minutes, à compter de la première fois où tu vois la page Premium.`,
   },
   {
     question: "Stageio propose des stages ou des alternances ?",
@@ -1223,10 +1224,10 @@ export default async function LandingPage() {
                     <span style={planBadge}>Le prix de 5 mois</span>
                   </div>
                   <p style={{ position: "relative", margin: "10px 0 0", fontSize: 42, fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1 }}>
-                    39,99 €<span style={{ fontSize: 14, fontWeight: 600, color: "var(--color-neutral-400)" }}> une seule fois</span>
+                    {PLAN_PRICES.lifetime.welcome}<span style={{ fontSize: 14, fontWeight: 600, color: "var(--color-neutral-400)" }}> une seule fois</span>
                   </p>
                   <p style={{ position: "relative", margin: "6px 0 0", fontSize: 12.5, color: "var(--color-neutral-400)" }}>
-                    Prix de bienvenue pendant 10 min après ton inscription, ensuite 63,99 €
+                    Prix de bienvenue pendant 10 min après ton inscription, ensuite {PLAN_PRICES.lifetime.regular}
                   </p>
                   <div className="flex flex-col gap-2.5" style={{ position: "relative", margin: "20px 0 24px", flex: 1 }}>
                     {[...PREMIUM_FEATURES, "Jamais de renouvellement"].map((line) => (
@@ -1263,11 +1264,11 @@ export default async function LandingPage() {
                 {!lifetimeAvailable && <div aria-hidden style={featuredPlanGlow} />}
                 <p style={{ position: "relative", margin: 0, fontSize: 16, fontWeight: 800 }}>Premium mensuel</p>
                 <p style={{ position: "relative", margin: "10px 0 0", fontSize: 42, fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1 }}>
-                  7,99 €
+                  {PLAN_PRICES.monthly.welcome}
                   <span style={{ fontSize: 14, fontWeight: 600, color: lifetimeAvailable ? mutedText : "var(--color-neutral-400)" }}> /mois</span>
                 </p>
                 <p style={{ position: "relative", margin: "6px 0 0", fontSize: 12.5, color: lifetimeAvailable ? mutedText : "var(--color-neutral-400)" }}>
-                  Prix de bienvenue pendant 10 min après ton inscription, ensuite 12,79 €/mois
+                  Prix de bienvenue pendant 10 min après ton inscription, ensuite {PLAN_PRICES.monthly.regular}/mois
                 </p>
                 <div className="flex flex-col gap-2.5" style={{ position: "relative", margin: "20px 0 24px", flex: 1 }}>
                   {PREMIUM_FEATURES.map((line) => (

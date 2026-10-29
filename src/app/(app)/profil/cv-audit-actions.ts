@@ -9,6 +9,7 @@ import { PROFILE_FOR_AI_COLUMNS } from "@/lib/ai/profileContext";
 import { isPremium } from "@/lib/subscription/isPremium";
 import { logServerEvent } from "@/lib/analytics/logServerEvent";
 import type { CvAudit } from "@/lib/cvAudit/schema";
+import { PREMIUM_PRICE_LINE } from "@/lib/pricing/plans";
 
 // maxDuration ne peut PAS être exporté depuis ce fichier : un fichier "use
 // server" ne peut exporter QUE des fonctions serveur (async) -- exporter
@@ -55,7 +56,7 @@ export async function auditCvAction(
   if (!isPremium(profile)) {
     return {
       status: "error",
-      message: "L'audit CV est réservé aux membres Premium (39,99 € à vie ou 7,99 €/mois).",
+      message: `L'audit CV est réservé aux membres Premium (${PREMIUM_PRICE_LINE}).`,
     };
   }
 

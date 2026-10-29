@@ -35,13 +35,17 @@ export default function CGVPage() {
       <Section title="Prix">
         <p>L&apos;accès Premium est proposé selon deux formules, au choix :</p>
         <ul style={{ margin: "8px 0 0", paddingLeft: 20, listStyle: "disc" }}>
-          <li><strong>12,79&nbsp;€ / mois</strong>, renouvelable automatiquement chaque mois ;</li>
+          <li><strong>15,99&nbsp;€ / mois</strong>, renouvelable automatiquement chaque mois ;</li>
           <li><strong>63,99&nbsp;€</strong>, en un paiement unique, donnant un accès Premium à vie (sans renouvellement, sans limite de durée).</li>
         </ul>
         <p style={{ marginTop: 8 }}>
+          Ces prix s&apos;appliquent à partir du 29 octobre 2026 (auparavant : 12,79&nbsp;€ / mois, prix de
+          bienvenue de 7,99&nbsp;€ / mois). Un abonnement déjà souscrit garde son prix.
+        </p>
+        <p style={{ marginTop: 8 }}>
           <strong>Prix de bienvenue :</strong> pendant 10 minutes à compter du premier affichage de la page Premium
-          sur son compte, l&apos;utilisateur peut souscrire au prix de 7,99&nbsp;€ / mois ou de 39,99&nbsp;€ pour
-          l&apos;accès à vie. Le prix de bienvenue souscrit pendant ce délai reste celui de l&apos;abonnement (pas
+          sur son compte, l&apos;utilisateur peut souscrire au prix de 9,99&nbsp;€ / mois ou de 39,99&nbsp;€ pour
+          l&apos;accès à vie (7,99&nbsp;€ / mois pour un délai ouvert avant le 29 octobre 2026). Le prix de bienvenue souscrit pendant ce délai reste celui de l&apos;abonnement (pas
           d&apos;augmentation au renouvellement). Le délai restant est affiché sur la page Premium ; passé ce
           délai, les prix ci-dessus s&apos;appliquent. Les destinataires de l&apos;email « nouveautés » envoyé à
           partir du 23 octobre 2026 bénéficient d&apos;un nouveau délai de 10 minutes, à compter de leur première
@@ -58,15 +62,19 @@ export default function CGVPage() {
         <p style={{ marginTop: 8 }}>
           <strong>Offre 48 h par email :</strong> pour chaque destinataire d&apos;un email de la série « Premium »
           envoyé entre le 28 octobre 2026 à 18 h et le 1er novembre 2026 à 21 h (heure de Paris), le premier de ces
-          emails ouvre, pour son seul compte, une offre de 48 heures à compter de son envoi : 7,99&nbsp;€ / mois ou
-          30&nbsp;€ pour l&apos;accès à vie. L&apos;heure de fin est indiquée dans l&apos;email et sur la page
+          emails ouvre, pour son seul compte, une offre de 48 heures à compter de son envoi : le prix de bienvenue
+          mensuel (7,99&nbsp;€ / mois pour une offre ouverte avant le 29 octobre 2026, 9,99&nbsp;€ / mois ensuite)
+          ou 30&nbsp;€ pour l&apos;accès à vie. L&apos;heure de fin est indiquée dans l&apos;email et sur la page
           Premium ; cette offre n&apos;est ouverte qu&apos;une fois par compte. Le prix mensuel souscrit pendant
           l&apos;offre reste celui de l&apos;abonnement ; passé l&apos;offre, les prix ci-dessus s&apos;appliquent.
         </p>
         <p style={{ marginTop: 8 }}>
-          <strong>Formule Stageio Auto</strong> (à partir du 24 octobre 2026) : <strong>17,99&nbsp;€ / mois</strong>,
-          renouvelable automatiquement chaque mois, ou <strong>80&nbsp;€</strong> en un paiement unique pour un accès
-          à vie. Elle comprend tous les avantages Premium et, en plus : l&apos;envoi automatique de la candidature
+          <strong>Formule Stageio Auto</strong> (à partir du 24 octobre 2026) : <strong>28,79&nbsp;€ / mois</strong>,
+          renouvelable automatiquement chaque mois, ou <strong>128&nbsp;€</strong> en un paiement unique pour un accès
+          à vie. Prix de bienvenue, dans le même délai de 10 minutes (ou pendant l&apos;offre 48 h par email) :
+          17,99&nbsp;€ / mois ou 80&nbsp;€ à vie. Un compte déjà Premium qui ajoute Stageio Auto paie le prix
+          ci-dessus. Avant le 29 octobre 2026, Stageio Auto était à 17,99&nbsp;€ / mois ou 80&nbsp;€ à vie, sans
+          prix de bienvenue. Elle comprend tous les avantages Premium et, en plus : l&apos;envoi automatique de la candidature
           de l&apos;utilisateur (lettre de motivation et CV) quand il like une offre, dans la limite de 100 envois
           par jour (heure de Paris) ; une adresse de candidature à son nom et une boîte de réception pour les
           réponses. L&apos;envoi automatique n&apos;est possible que pour les offres dont le recruteur a publié une

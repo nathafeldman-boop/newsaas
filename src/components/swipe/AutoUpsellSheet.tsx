@@ -38,8 +38,8 @@ export function AutoUpsellSheet({ offer, onClose, onDiscover }: { offer: Offer |
             </p>
             <p style={{ fontSize: 14, margin: "8px 0 0", color: "color-mix(in srgb, var(--color-text) 72%, transparent)" }}>
               Avec Stageio Auto, ce like aurait envoyé ta candidature tout seul : ta lettre et ton CV, jusqu&apos;à{" "}
-              {AUTO_DAILY_LIMIT} candidatures par jour, et une boîte mail pour suivre les réponses. {AUTO_PRICES.monthly}/mois ou{" "}
-              {AUTO_PRICES.lifetime} à vie.
+              {AUTO_DAILY_LIMIT} candidatures par jour, et une boîte mail pour suivre les réponses. {AUTO_PRICES.monthly.regular}/mois ou{" "}
+              {AUTO_PRICES.lifetime.regular} à vie.
             </p>
             <p style={{ fontSize: 12, margin: "8px 0 0", color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
               Envoi automatique quand le recruteur a laissé une adresse ou passe par La bonne alternance ; sinon, le like

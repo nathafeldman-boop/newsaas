@@ -2,7 +2,17 @@ import { cookies } from "next/headers";
 import { after } from "next/server";
 import Stripe from "stripe";
 import { recordCheckoutOpened } from "@/lib/stripe/checkoutReminder";
-import { AUTO_PRICE_IDS, LIFETIME_PROMO, REGULAR_PRICE_IDS } from "@/lib/pricing/plans";
+import {
+  AUTO_PRICE_IDS,
+  AUTO_REGULAR_PRICE_IDS,
+  isLegacyOffer,
+  LIFETIME_PROMO,
+  offerWindowStart,
+  PREVIOUS_MONTHLY_WELCOME,
+  REGULAR_PRICE_IDS,
+  WELCOME_PRICE_IDS,
+} from "@/lib/pricing/plans";
+import { isPremium } from "@/lib/subscription/isPremium";
 import { syncSubscriptionToProfile } from "@/lib/stripe/syncSubscription";
 import { isAutoTier } from "@/lib/subscription/isPremium";
 import { isAutoOfferAvailable } from "@/lib/subscription/autoAvailability";
@@ -143,10 +153,10 @@ export async function startCheckout(
   // de marge : un clic à 19:59 garde le prix affiché sur le bouton.
   // Offre 48 h par email (FLASH_OFFER) : prix de bienvenue et accès à vie à
   // 30 € jusqu'à la fin de l'offre du compte (même minute de marge).
-  const [welcomeEndsAt, flashEndsAt] = await Promise.all([getWelcomeEndsAt(user.id), getFlashEndsAt(user.id)]);
+  // Test de prix du 29/10 : 9,99 € de bienvenue, 15,99 € ensuite ; une offre
+  // ouverte avant le début du test garde 7,99 € (isLegacyOffer).
+  const { welcome, flash, legacy } = await welcomeAt(user.id);
   const now = Date.now();
-  const flash = flashEndsAt !== null && now <= flashEndsAt + 60_000;
-  const welcome = flash || now <= welcomeEndsAt + 60_000;
   // Promo accès à vie (30 € au lieu de 39,99 €) : pendant le prix de
   // bienvenue seulement, tant que la promo dure (même minute de marge).
   const promo = isLifetime && (flash || (welcome && now <= LIFETIME_PROMO.endsAt + 60_000));
@@ -155,7 +165,9 @@ export async function startCheckout(
     : welcome
     ? isLifetime
       ? process.env.STRIPE_PRICE_ID_LIFETIME
-      : process.env.STRIPE_PRICE_ID
+      : legacy
+        ? PREVIOUS_MONTHLY_WELCOME.priceId
+        : WELCOME_PRICE_IDS.monthly
     : isLifetime
       ? REGULAR_PRICE_IDS.lifetime
       : REGULAR_PRICE_IDS.monthly;
@@ -216,12 +228,26 @@ export async function startCheckout(
   // Noté (Chemin de Léo), et relance programmée à +10 min si le paiement
   // n'aboutit pas (annulée par le webhook sinon). Après la redirection.
   const checkoutUrl = session.url;
-  after(() => recordCheckoutOpened({ userId: user.id, email: user.email, checkoutUrl, lifetime: isLifetime, welcome, promo }));
+  after(() => recordCheckoutOpened({ userId: user.id, email: user.email, checkoutUrl, lifetime: isLifetime, welcome, promo, priceId }));
   return { url: checkoutUrl };
 }
 
+// Prix de bienvenue au moment du clic (10 minutes, ou offre 48 h par email),
+// avec une minute de marge : un clic à 9:59 garde le prix affiché.
+async function welcomeAt(userId: string): Promise<{ welcome: boolean; flash: boolean; legacy: boolean }> {
+  const [welcomeEndsAt, flashEndsAt] = await Promise.all([getWelcomeEndsAt(userId), getFlashEndsAt(userId)]);
+  const now = Date.now();
+  const flash = flashEndsAt !== null && now <= flashEndsAt + 60_000;
+  const welcome = flash || now <= welcomeEndsAt + 60_000;
+  return { welcome, flash, legacy: welcome && isLegacyOffer(offerWindowStart(welcomeEndsAt, flashEndsAt, now, 60_000)) };
+}
+
 // Formule « Stageio Auto » (24/10) : 17,99 €/mois ou 80 € à vie, ouverte
-// aussi aux comptes déjà Premium (c'est une montée en gamme) :
+// aussi aux comptes déjà Premium (c'est une montée en gamme). Depuis le test
+// de prix du 29/10, ce sont ses prix de bienvenue (mêmes 10 minutes que le
+// Premium, ou l'offre 48 h), puis 28,79 €/mois ou 128 € à vie ; un compte
+// déjà Premium n'a plus de prix de bienvenue (le paywall ne lui en montre
+// pas) : prix normal.
 // - abonné Premium mensuel qui prend l'Auto mensuel : son abonnement passe
 //   au prix Auto, au prorata, payé tout de suite avec sa carte enregistrée
 //   (et rien ne change si le paiement échoue : pending_if_incomplete) ;
@@ -243,7 +269,9 @@ async function startAutoCheckout(
   if (isAutoTier(profile as Profile)) return { error: "already_subscribed" };
 
   const lifetime = plan === "auto_lifetime";
-  const priceId = lifetime ? AUTO_PRICE_IDS.lifetime : AUTO_PRICE_IDS.monthly;
+  const welcome = !isPremium(profile as Profile) && (await welcomeAt(user.id)).welcome;
+  const prices = welcome ? AUTO_PRICE_IDS : AUTO_REGULAR_PRICE_IDS;
+  const priceId = lifetime ? prices.lifetime : prices.monthly;
   const activeSubscription =
     profile.stripe_subscription_id && (profile.subscription_status === "active" || profile.subscription_status === "trialing")
       ? profile.stripe_subscription_id
@@ -293,7 +321,7 @@ async function startAutoCheckout(
   after(async () => {
     await createAdminClient()
       .from("user_events")
-      .insert({ user_id: user.id, event_type: "checkout_opened", metadata: { plan: plan, welcome: false, promo: false, reminderEmailId: null } });
+      .insert({ user_id: user.id, event_type: "checkout_opened", metadata: { plan: plan, welcome, promo: false, priceId, reminderEmailId: null } });
   });
   return { url: session.url };
 }

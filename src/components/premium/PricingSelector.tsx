@@ -7,7 +7,7 @@ import { createCheckoutSessionAction } from "@/app/(app)/premium/actions";
 import { AccessCodeForm } from "@/components/premium/AccessCodeForm";
 import { AutoComparison, AutoHelpButton } from "@/components/premium/AutoExplainer";
 import { useWelcomeCountdown } from "@/components/premium/WelcomeCountdown";
-import { AUTO_DAILY_LIMIT, AUTO_PRICES, PLAN_PRICES, type LifetimeOffer } from "@/lib/pricing/plans";
+import { AUTO_DAILY_LIMIT, priceSheet, type LifetimeOffer, type PriceSheet } from "@/lib/pricing/plans";
 
 type Plan = "monthly" | "lifetime";
 
@@ -188,6 +188,7 @@ function OfferTabs({
   welcomeEndsAt = null,
   welcomeActive = false,
   lifetimeOffer = null,
+  prices = priceSheet(),
 }: {
   userId?: string;
   // Avantages Premium, affichés sous les prix (Nathan, 28/10).
@@ -203,6 +204,8 @@ function OfferTabs({
   welcomeActive?: boolean;
   // Prix spécial de l'accès à vie (offre 48 h du compte, ou promo) : lu côté serveur.
   lifetimeOffer?: LifetimeOffer | null;
+  // Prix du compte (lus côté serveur : offre ouverte avant le test de prix du 29/10 à 7,99 €).
+  prices?: PriceSheet;
 }) {
   const { active: welcome, remaining } = useWelcomeCountdown(welcomeEndsAt, welcomeActive);
   const { active: offerPeriod } = useWelcomeCountdown(lifetimeOffer?.endsAt ?? null, lifetimeOffer !== null);
@@ -210,8 +213,11 @@ function OfferTabs({
   // 30 € tant que le chrono de bienvenue tourne (39,99 € barré pendant la promo du 23-25/10 seulement).
   const promo = offerPeriod && welcome ? lifetimeOffer : null;
   const flash = promo?.kind === "flash";
-  const lifetimePrice = promo ? promo.price : PLAN_PRICES.lifetime[tier];
-  const monthlyPrice = PLAN_PRICES.monthly[tier];
+  const lifetimePrice = promo ? promo.price : prices.lifetime[tier];
+  const monthlyPrice = prices.monthly[tier];
+  // Stageio Auto : prix de bienvenue pendant le même chrono (test de prix du 29/10).
+  const autoMonthly = prices.auto.monthly[tier];
+  const autoLifetime = prices.auto.lifetime[tier];
   // Mensuel affiché d'abord (Nathan, 24/10) ; « À vie » s'il n'y a que ça.
   const hasLifetime = lifetimeAvailable || autoAvailable;
   const [plan, setPlan] = useState<Plan>("monthly");
@@ -224,15 +230,16 @@ function OfferTabs({
     <AutoHelpButton
       userId={userId}
       source="paywall"
-      ctaLabel={plan === "lifetime" ? `Choisir Stageio Auto à vie · ${AUTO_PRICES.lifetime}` : `Choisir Stageio Auto · ${AUTO_PRICES.monthly}/mois`}
+      ctaLabel={plan === "lifetime" ? `Choisir Stageio Auto à vie · ${autoLifetime}` : `Choisir Stageio Auto · ${autoMonthly}/mois`}
+      tier={tier}
       onChoose={() => setOffer("auto")}
     />
   );
 
   const ctaLabel = auto
     ? plan === "lifetime"
-      ? `Stageio Auto à vie · ${AUTO_PRICES.lifetime}`
-      : `Activer Stageio Auto · ${AUTO_PRICES.monthly}/mois`
+      ? `Stageio Auto à vie · ${autoLifetime}`
+      : `Activer Stageio Auto · ${autoMonthly}/mois`
     : plan === "lifetime"
       ? `Débloquer à vie · ${lifetimePrice}`
       : `Débloquer Premium · ${monthlyPrice}/mois`;
@@ -280,7 +287,7 @@ function OfferTabs({
               label="Premium"
               sublabel="Résiliable à tout moment"
               price={monthlyPrice}
-              afterPrice={welcome ? `${PLAN_PRICES.monthly.regular}/mois` : undefined}
+              afterPrice={welcome ? `${prices.monthly.regular}/mois` : undefined}
               priceSuffix="/mois"
             />
             {autoAvailable && (
@@ -289,7 +296,8 @@ function OfferTabs({
                 onSelect={() => setOffer("auto")}
                 label="Stageio Auto"
                 sublabel="Ta candidature part à chaque like"
-                price={AUTO_PRICES.monthly}
+                price={autoMonthly}
+                afterPrice={welcome ? `${prices.auto.monthly.regular}/mois` : undefined}
                 priceSuffix="/mois"
                 badge="Nouveau"
                 help={autoHelp}
@@ -308,7 +316,7 @@ function OfferTabs({
                 sublabel="Paiement unique"
                 price={lifetimePrice}
                 strikePrice={promo?.strike ?? undefined}
-                afterPrice={welcome ? PLAN_PRICES.lifetime.regular : undefined}
+                afterPrice={welcome ? prices.lifetime.regular : undefined}
                 badge={promo ? promo.badge : "Le prix de 5 mois"}
               />
             )}
@@ -318,7 +326,8 @@ function OfferTabs({
                 onSelect={() => setOffer("auto")}
                 label="Stageio Auto à vie"
                 sublabel="Paiement unique · candidature à chaque like"
-                price={AUTO_PRICES.lifetime}
+                price={autoLifetime}
+                afterPrice={welcome ? prices.auto.lifetime.regular : undefined}
                 badge="Nouveau"
                 help={autoHelp}
               >
@@ -353,13 +362,20 @@ function OfferTabs({
         </p>
       )}
 
-      {welcome && !auto && (
+      {welcome && (
         <p style={{ margin: "14px 0 0", fontSize: 14, fontWeight: 700, textAlign: "center", color: "var(--color-accent-700)" }}>
           {flash ? "🎁 Ton offre 48 h encore" : "🎁 Prix de bienvenue encore"}{" "}
           <span style={{ fontSize: 20, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{remaining ?? "––:––"}</span>
           <br />
           <span style={{ fontSize: 12.5, fontWeight: 600 }}>
-            ensuite {plan === "lifetime" ? PLAN_PRICES.lifetime.regular : `${PLAN_PRICES.monthly.regular}/mois`}
+            ensuite{" "}
+            {auto
+              ? plan === "lifetime"
+                ? prices.auto.lifetime.regular
+                : `${prices.auto.monthly.regular}/mois`
+              : plan === "lifetime"
+                ? prices.lifetime.regular
+                : `${prices.monthly.regular}/mois`}
           </span>
         </p>
       )}
@@ -412,6 +428,7 @@ function ClassicPricing({
   welcomeEndsAt = null,
   welcomeActive = false,
   lifetimeOffer = null,
+  prices = priceSheet(),
 }: {
   benefits?: ReactNode;
   lifetimeAvailable: boolean;
@@ -421,6 +438,7 @@ function ClassicPricing({
   welcomeActive?: boolean;
   // Prix spécial de l'accès à vie (offre 48 h du compte, ou promo) : lu côté serveur.
   lifetimeOffer?: LifetimeOffer | null;
+  prices?: PriceSheet;
 }) {
   const { active: welcome, remaining } = useWelcomeCountdown(welcomeEndsAt, welcomeActive);
   const { active: offerPeriod } = useWelcomeCountdown(lifetimeOffer?.endsAt ?? null, lifetimeOffer !== null);
@@ -428,8 +446,8 @@ function ClassicPricing({
   // 30 € tant que le chrono de bienvenue tourne (39,99 € barré pendant la promo du 23-25/10 seulement).
   const promo = offerPeriod && welcome ? lifetimeOffer : null;
   const flash = promo?.kind === "flash";
-  const lifetimePrice = promo ? promo.price : PLAN_PRICES.lifetime[tier];
-  const monthlyPrice = PLAN_PRICES.monthly[tier];
+  const lifetimePrice = promo ? promo.price : prices.lifetime[tier];
+  const monthlyPrice = prices.monthly[tier];
   // Accès à vie affiché en premier et présélectionné (demande de Nathan,
   // 14/10) ; le prix du plan choisi est écrit sur le bouton pour qu'il n'y
   // ait aucune surprise au paiement.
@@ -446,7 +464,7 @@ function ClassicPricing({
             sublabel="Paiement unique, jamais de renouvellement"
             price={lifetimePrice}
             strikePrice={promo?.strike ?? undefined}
-            afterPrice={welcome ? PLAN_PRICES.lifetime.regular : undefined}
+            afterPrice={welcome ? prices.lifetime.regular : undefined}
             badge={promo ? promo.badge : "Le prix de 5 mois"}
           />
         )}
@@ -456,7 +474,7 @@ function ClassicPricing({
           label="Mensuel"
           sublabel="Résiliable à tout moment"
           price={monthlyPrice}
-          afterPrice={welcome ? `${PLAN_PRICES.monthly.regular}/mois` : undefined}
+          afterPrice={welcome ? `${prices.monthly.regular}/mois` : undefined}
           priceSuffix="/mois"
         />
       </div>
@@ -484,7 +502,7 @@ function ClassicPricing({
           <span style={{ fontSize: 20, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{remaining ?? "––:––"}</span>
           <br />
           <span style={{ fontSize: 12.5, fontWeight: 600 }}>
-            ensuite {plan === "lifetime" ? PLAN_PRICES.lifetime.regular : `${PLAN_PRICES.monthly.regular}/mois`}
+            ensuite {plan === "lifetime" ? prices.lifetime.regular : `${prices.monthly.regular}/mois`}
           </span>
         </p>
       )}
@@ -536,6 +554,7 @@ type SelectorProps = {
   welcomeEndsAt?: number | null;
   welcomeActive?: boolean;
   lifetimeOffer?: LifetimeOffer | null;
+  prices?: PriceSheet;
 };
 
 // Paywall : onglets Mensuel / À vie avec Stageio Auto quand elle est en

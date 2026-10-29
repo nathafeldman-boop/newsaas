@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PremiumCtaLink } from "@/components/premium/PremiumCtaLink";
+import { PREMIUM_PRICE_LINE } from "@/lib/pricing/plans";
 
 // Vraie ressource pédagogique, pas juste une note automatique : demandé
 // explicitement en remplacement/complément de l'audit IA (devenu
@@ -231,7 +232,7 @@ export function CvGuideModule({
           Premium.
         </p>
         <PremiumCtaLink userId={userId} source="cv_guide" className="btn btn-primary mt-4" style={{ whiteSpace: "nowrap" }}>
-          🔓 Débloquer avec Premium (39,99 € à vie ou 7,99 €/mois)
+          🔓 Débloquer avec Premium ({PREMIUM_PRICE_LINE})
         </PremiumCtaLink>
       </div>
     );

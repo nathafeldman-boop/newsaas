@@ -14,6 +14,7 @@ const GROUPS = [
       { href: "/admin", label: "Vue d'ensemble" },
       { href: "/admin/objectifs", label: "Objectifs" },
       { href: "/admin/historique", label: "Historique" },
+      { href: "/admin/tests", label: "Tests de prix" },
       { href: "/admin/simulateur", label: "Simulateur" },
       { href: "/admin/trafic", label: "Trafic et sources" },
       { href: "/admin/inscriptions", label: "Inscriptions jour par jour" },

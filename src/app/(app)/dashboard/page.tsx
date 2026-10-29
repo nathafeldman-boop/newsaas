@@ -20,6 +20,7 @@ import { SPONTANEOUS_EVENT } from "@/lib/spontaneous/targets";
 import { computeResults } from "@/lib/subscribers/results";
 import { SearchCompletedToggle } from "@/components/profile/SearchCompletedToggle";
 import { interviewDomainFor } from "@/lib/interview/domainForJob";
+import { PREMIUM_PRICE_LINE } from "@/lib/pricing/plans";
 
 const DATE_FR = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", timeZone: "Europe/Paris" });
 const mutedText = { color: "color-mix(in srgb, var(--color-text) 66%, transparent)" } as const;
@@ -68,7 +69,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           className="btn btn-primary mt-5"
           style={{ whiteSpace: "nowrap" }}
         >
-          🔓 Débloquer avec Premium (39,99 € à vie ou 7,99 €/mois)
+          🔓 Débloquer avec Premium ({PREMIUM_PRICE_LINE})
         </PremiumCtaLink>
       </div>
     );

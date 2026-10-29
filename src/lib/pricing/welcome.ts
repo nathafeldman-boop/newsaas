@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { FLASH_OFFER, WELCOME_WINDOW_MS } from "@/lib/pricing/plans";
+import { FLASH_OFFER, isLegacyOffer, offerWindowStart, WELCOME_WINDOW_MS } from "@/lib/pricing/plans";
 import { NEWS_CAMPAIGN_EVENT } from "@/lib/campaigns/relanceOffres";
 import { SALES_SERIES_EVENT } from "@/lib/campaigns/serieEvents";
 
@@ -57,10 +57,11 @@ export async function getFlashEndsAt(userId: string): Promise<number | null> {
 
 // État au moment de l'affichage (hors du corps du composant : rendu pur).
 // Pendant l'offre 48 h, le prix de bienvenue dure jusqu'à la fin de l'offre.
-export async function getWelcomeState(userId: string): Promise<{ endsAt: number; active: boolean; flashEndsAt: number | null }> {
+// legacy : offre ouverte avant le test de prix du 29/10, tenue à 7,99 €/mois.
+export async function getWelcomeState(userId: string): Promise<{ endsAt: number; active: boolean; flashEndsAt: number | null; legacy: boolean }> {
   const [welcomeEndsAt, flash] = await Promise.all([getWelcomeEndsAt(userId), getFlashEndsAt(userId)]);
   const now = Date.now();
   const flashEndsAt = flash !== null && now < flash ? flash : null;
   const endsAt = Math.max(welcomeEndsAt, flashEndsAt ?? 0);
-  return { endsAt, active: now < endsAt, flashEndsAt };
+  return { endsAt, active: now < endsAt, flashEndsAt, legacy: isLegacyOffer(offerWindowStart(welcomeEndsAt, flashEndsAt, now)) };
 }

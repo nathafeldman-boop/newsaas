@@ -31,7 +31,8 @@ export function isLifetimePromoActive(now: number = Date.now()): boolean {
 // euros accès à vie […] pendant 48 heures juste pour vous », comme l'email
 // du 24/10 qui avait ramené des paiements). Le premier email de la série
 // Premium reçu pendant la campagne ouvre, pour ce compte seulement, 48 h de
-// prix de bienvenue (7,99 €/mois) avec l'accès à vie au prix de 30 € (le
+// prix de bienvenue (7,99 €/mois, 9,99 € pour une offre ouverte depuis le
+// test de prix du 29/10) avec l'accès à vie au prix de 30 € (le
 // même prix Stripe que la promo du 23-25/10). Délai compté côté serveur
 // depuis l'envoi, jamais rouvert. Ni prix barré ni « baisse de prix » : 30 €
 // est déjà le prix le plus bas de l'accès à vie sur les 30 derniers jours.
@@ -61,28 +62,114 @@ export function lifetimeOfferFor(flashEndsAt: number | null, now: number = Date.
   return null;
 }
 
+// Test de prix n°1 (Nathan, nuit du 28 au 29/10 : « le prix de base à
+// 7,99 €, tu l'augmentes à 10 € [...] ou 9,99 € [...] c'est le prix de
+// bienvenue, après tu l'augmentes à plus de 60 % [...] pareil pour celui à
+// 17,99 € [...] et son accès à vie à 80 € » ; 2 jours, puis il garde ou
+// revient aux anciens prix). Mensuel Premium : 9,99 € de bienvenue, 15,99 €
+// ensuite (+60 %). Stageio Auto : 17,99 €/mois et 80 € à vie deviennent les
+// prix de bienvenue (mêmes 10 minutes), ensuite 28,79 €/mois et 128 € à vie
+// (+60 %). L'accès à vie Premium ne change pas. Les abonnements déjà en
+// cours gardent leur prix (Stripe ne touche jamais à un abonnement existant).
+// Offres déjà ouvertes avant le début (offre 48 h par email, chrono de
+// 10 minutes) : tenues à 7,99 €/mois jusqu'à leur fin (voir isLegacyOffer).
+// Suivi : onglet Tests de l'admin (lib/pricing/tests.ts).
+export const PRICE_TEST_START = Date.parse("2026-10-29T00:00:00Z");
+
 export const PLAN_PRICES = {
-  monthly: { welcome: "7,99 €", regular: "12,79 €" },
+  monthly: { welcome: "9,99 €", regular: "15,99 €" },
   lifetime: { welcome: "39,99 €", regular: "63,99 €" },
 } as const;
 
-// Prix Stripe réguliers (créés le 20/10 sur le compte Stripe, clés de
-// recherche stageio_premium_monthly_1279 / stageio_premium_lifetime_6399).
-// Les prix de bienvenue restent STRIPE_PRICE_ID / STRIPE_PRICE_ID_LIFETIME.
+/** « 39,99 € à vie ou 9,99 €/mois » : rappel du prix dans les écrans réservés à Premium. */
+export const PREMIUM_PRICE_LINE = `${PLAN_PRICES.lifetime.welcome} à vie ou ${PLAN_PRICES.monthly.welcome}/mois`;
+
+// Prix de bienvenue mensuel d'avant le test (7,99 €, STRIPE_PRICE_ID) : pour
+// les offres ouvertes avant le début du test.
+export const PREVIOUS_MONTHLY_WELCOME = {
+  price: "7,99 €",
+  priceId: process.env.STRIPE_PRICE_ID?.trim() || "price_1UBI7gRd6r34OMU6p4OwQ4tB",
+};
+
+// Prix Stripe (identifiants écrits ici, jamais lus d'une variable : une
+// ancienne variable Vercel ne peut pas les remplacer). Créés le 29/10 sur
+// les produits Stageio Premium et Stageio Auto (clés de recherche
+// stageio_premium_monthly_999 / _1599, stageio_auto_monthly_2879,
+// stageio_auto_lifetime_12800). L'accès à vie Premium de bienvenue reste
+// STRIPE_PRICE_ID_LIFETIME (39,99 €).
+export const WELCOME_PRICE_IDS = {
+  monthly: "price_1UVgQ8Rd6r34OMU6ryHQt9VZ",
+};
+
 export const REGULAR_PRICE_IDS = {
-  monthly: process.env.STRIPE_PRICE_ID_REGULAR?.trim() || "price_1USaRfRd6r34OMU6D3mrspqO",
+  monthly: "price_1UTNd7Rd6r34OMU6HWEXPWsr",
   lifetime: process.env.STRIPE_PRICE_ID_LIFETIME_REGULAR?.trim() || "price_1USaRjRd6r34OMU6JhNZAkDw",
 };
+
+// Prix d'avant le test, toujours reconnus (abonnements déjà en cours,
+// commissions des affiliés, statistiques) : 12,79 €/mois (20/10).
+export const PREVIOUS_REGULAR_MONTHLY_PRICE_ID = process.env.STRIPE_PRICE_ID_REGULAR?.trim() || "price_1USaRfRd6r34OMU6D3mrspqO";
+
+/** Tous les prix du mensuel Premium, anciens compris. */
+export function premiumMonthlyPriceIds(): string[] {
+  return [PREVIOUS_MONTHLY_WELCOME.priceId, WELCOME_PRICE_IDS.monthly, PREVIOUS_REGULAR_MONTHLY_PRICE_ID, REGULAR_PRICE_IDS.monthly];
+}
+
+// Offre ouverte avant le début du test (offre 48 h reçue par email, ou
+// chrono de 10 minutes lancé juste avant) : son prix mensuel de bienvenue
+// reste celui annoncé, 7,99 €. windowStart : début de l'offre en cours.
+export function isLegacyOffer(windowStart: number | null): boolean {
+  return windowStart !== null && windowStart < PRICE_TEST_START;
+}
+
+// Début de l'offre en cours au moment `now` (offre 48 h d'abord, sinon
+// chrono de 10 minutes), ou null s'il n'y en a plus. marginMs : la minute de
+// marge du paiement (un clic à la dernière seconde garde le prix affiché).
+export function offerWindowStart(welcomeEndsAt: number, flashEndsAt: number | null, now: number, marginMs = 0): number | null {
+  if (flashEndsAt !== null && now <= flashEndsAt + marginMs) return flashEndsAt - FLASH_OFFER.windowMs;
+  if (now <= welcomeEndsAt + marginMs) return welcomeEndsAt - WELCOME_WINDOW_MS;
+  return null;
+}
+
+export type PriceTier = "welcome" | "regular";
+
+/** Prix affichés au paywall (un seul objet, lu côté serveur puis passé aux composants). */
+export type PriceSheet = {
+  monthly: { welcome: string; regular: string };
+  lifetime: { welcome: string; regular: string };
+  auto: { monthly: { welcome: string; regular: string }; lifetime: { welcome: string; regular: string } };
+};
+
+export function priceSheet(legacy = false): PriceSheet {
+  return {
+    monthly: { welcome: legacy ? PREVIOUS_MONTHLY_WELCOME.price : PLAN_PRICES.monthly.welcome, regular: PLAN_PRICES.monthly.regular },
+    lifetime: { ...PLAN_PRICES.lifetime },
+    auto: { monthly: { ...AUTO_PRICES.monthly }, lifetime: { ...AUTO_PRICES.lifetime } },
+  };
+}
 
 // Formule « Stageio Auto » (24/10, demande de Nathan) : Premium + chaque
 // like envoie la candidature tout seul (jusqu'à 100 par jour, au-delà le
 // like redevient un favori) + boîte mail de candidature. 17,99 €/mois ou
 // 80 € à vie. Prix créés le 24/10 sur le produit Stripe « Stageio Auto »
 // (clés de recherche stageio_auto_monthly_1799 / stageio_auto_lifetime_8000).
-export const AUTO_PRICES = { monthly: "17,99 €", lifetime: "80 €" } as const;
+// Test de prix du 29/10 : ces prix deviennent les prix de bienvenue de
+// l'Auto ; ensuite 28,79 €/mois et 128 € à vie (voir PRICE_TEST_START).
+export const AUTO_PRICES = {
+  monthly: { welcome: "17,99 €", regular: "28,79 €" },
+  lifetime: { welcome: "80 €", regular: "128 €" },
+} as const;
 export const AUTO_MONTHLY_CENTS = 1799;
+/** Montants mensuels de l'Auto (bienvenue et normal) : repli de isAutoTier. */
+export const AUTO_MONTHLY_CENTS_ALL = [1799, 2879];
 export const AUTO_DAILY_LIMIT = 100;
 export const AUTO_PRICE_IDS = {
   monthly: process.env.STRIPE_PRICE_ID_AUTO_MONTHLY?.trim() || "price_1UU96mRd6r34OMU6vrO0Mhln",
   lifetime: process.env.STRIPE_PRICE_ID_AUTO_LIFETIME?.trim() || "price_1UU96qRd6r34OMU6aTrAx6Ho",
 };
+export const AUTO_REGULAR_PRICE_IDS = {
+  monthly: "price_1UVgQQRd6r34OMU6AQ5zKrNg",
+  lifetime: "price_1UVgQSRd6r34OMU6uBNB4JD5",
+};
+/** Tous les prix du mensuel Auto : un abonnement à l'un d'eux est l'Auto. */
+export const AUTO_MONTHLY_PRICE_IDS = [AUTO_PRICE_IDS.monthly, AUTO_REGULAR_PRICE_IDS.monthly];

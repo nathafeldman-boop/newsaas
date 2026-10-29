@@ -1,4 +1,5 @@
 import type { Profile } from "@/types/database";
+import { AUTO_MONTHLY_CENTS_ALL } from "@/lib/pricing/plans";
 
 // "comp" = débloqué via un code d'accès admin (voir access_codes), pas un
 // paiement Stripe réel : compte pour l'accès Premium mais jamais pour le LTV.
@@ -38,13 +39,14 @@ export function isPremium(profile: PremiumFields | null | undefined): boolean {
 // Formule « Stageio Auto » (24/10) : envoi de la candidature au like.
 // premium_tier est posé par le webhook Stripe ("auto" tant que l'abonnement
 // Auto est sain, "auto_lifetime" pour l'accès à vie Auto). Tant que la
-// colonne n'existe pas (SQL du 24/10), un abonnement mensuel à 17,99 € suffit.
+// colonne n'existe pas (SQL du 24/10), un abonnement mensuel à 17,99 € (ou
+// 28,79 €, test de prix du 29/10) suffit.
 export function isAutoTier(profile: AutoFields | null | undefined): boolean {
   if (!profile || !isPremium(profile)) return false;
   if (profile.premium_tier === "auto" || profile.premium_tier === "auto_lifetime") return true;
   return (
     (profile.subscription_status === "active" || profile.subscription_status === "trialing") &&
-    profile.subscription_price_cents === 1799 &&
+    AUTO_MONTHLY_CENTS_ALL.includes(profile.subscription_price_cents ?? 0) &&
     profile.subscription_interval === "month"
   );
 }

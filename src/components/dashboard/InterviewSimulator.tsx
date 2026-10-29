@@ -7,6 +7,7 @@ import { INTERVIEW_DOMAINS, QUESTION_COUNT_BY_LEVEL, type InterviewLevel, type I
 import { getInterviewResultMessage } from "@/lib/interview/resultMessages";
 import { LEVEL_LABELS, LEVEL_ORDER, MASTERY_SCORE, buildQuiz, nextLevel, progressFor, shuffledQuestions, type QuizResult } from "@/lib/interview/session";
 import { PremiumCtaLink } from "@/components/premium/PremiumCtaLink";
+import { PREMIUM_PRICE_LINE } from "@/lib/pricing/plans";
 
 // Trouve le domaine le plus proche du métier/secteur visé du profil (simple
 // correspondance sous-chaîne, insensible à la casse) -- à défaut, premier
@@ -109,7 +110,7 @@ export function InterviewSimulator({
           ta progression.
         </p>
         <PremiumCtaLink userId={userId} source="interview_simulator" className="btn btn-primary mt-4" style={{ whiteSpace: "nowrap" }}>
-          🔓 Débloquer avec Premium (39,99 € à vie ou 7,99 €/mois)
+          🔓 Débloquer avec Premium ({PREMIUM_PRICE_LINE})
         </PremiumCtaLink>
       </div>
     );

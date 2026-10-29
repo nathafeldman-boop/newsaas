@@ -1,6 +1,6 @@
 import type Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { AUTO_PRICE_IDS } from "@/lib/pricing/plans";
+import { AUTO_MONTHLY_PRICE_IDS } from "@/lib/pricing/plans";
 
 export function periodEndOf(subscription: Stripe.Subscription): string | null {
   const ts = subscription.items.data[0]?.current_period_end;
@@ -124,7 +124,8 @@ async function syncAutoTier(
   isHealthy: boolean,
   isKeeper: boolean,
 ) {
-  const isAuto = subscription.items.data.some((item) => item.price?.id === AUTO_PRICE_IDS.monthly);
+  // Prix de bienvenue (17,99 €) ou normal (28,79 €, test de prix du 29/10).
+  const isAuto = subscription.items.data.some((item) => !!item.price?.id && AUTO_MONTHLY_PRICE_IDS.includes(item.price.id));
   if (!isAuto && isKeeper) return;
   const next = isAuto && isHealthy ? "auto" : null;
   let query = admin.from("profiles").update({ premium_tier: next }).eq("stripe_customer_id", customerId).or("premium_tier.is.null,premium_tier.eq.auto");

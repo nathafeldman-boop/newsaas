@@ -2,7 +2,7 @@ import { unstable_cache } from "next/cache";
 import type Stripe from "stripe";
 import { getStripeClient } from "@/lib/stripe/client";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { REGULAR_PRICE_IDS } from "@/lib/pricing/plans";
+import { premiumMonthlyPriceIds } from "@/lib/pricing/plans";
 
 // Rétention (SOP 27 « Churn & rétention : la lecture par cohortes »).
 // Source de vérité : les abonnements Stripe eux-mêmes (date de début,
@@ -31,7 +31,7 @@ export type RetentionStats = {
 };
 
 function stageioPriceIds(): string[] {
-  return [process.env.STRIPE_PRICE_ID, process.env.STRIPE_PRICE_ID_WEEKLY, REGULAR_PRICE_IDS.monthly]
+  return [process.env.STRIPE_PRICE_ID, process.env.STRIPE_PRICE_ID_WEEKLY, ...premiumMonthlyPriceIds()]
     .map((p) => p?.trim())
     .filter((p): p is string => !!p);
 }

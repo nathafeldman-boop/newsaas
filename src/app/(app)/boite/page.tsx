@@ -40,7 +40,7 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
         <div className="card elev-sm mt-4" style={{ padding: "var(--space-6)", alignItems: "flex-start", background: "var(--color-surface)" }}>
           <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.55 }}>
             Avec Stageio Auto, chaque like envoie ta candidature depuis ton adresse de candidature (jusqu&apos;à {AUTO_DAILY_LIMIT} par jour),
-            et les réponses des recruteurs arrivent ici. {AUTO_PRICES.monthly}/mois ou {AUTO_PRICES.lifetime} à vie.
+            et les réponses des recruteurs arrivent ici. {AUTO_PRICES.monthly.regular}/mois ou {AUTO_PRICES.lifetime.regular} à vie.
           </p>
           <Link href="/premium?offre=auto#auto" className="btn btn-primary" style={{ marginTop: 10 }}>
             Découvrir Stageio Auto

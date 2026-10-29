@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { FLASH_OFFER, PLAN_PRICES, WELCOME_WINDOW_MS } from "@/lib/pricing/plans";
+import { FLASH_OFFER, priceSheet, WELCOME_WINDOW_MS, type PriceSheet } from "@/lib/pricing/plans";
 
 // Compte à rebours du prix de bienvenue (voir lib/pricing/plans.ts). La
 // fin est fixée côté serveur : recharger la page ne rajoute pas de temps.
@@ -74,10 +74,12 @@ export function WelcomePriceBanner({
   endsAt,
   initialActive,
   flash = false,
+  prices = priceSheet(),
 }: {
   endsAt: number | null;
   initialActive: boolean;
   flash?: boolean;
+  prices?: PriceSheet;
 }) {
   const { active, remaining, msLeft } = useWelcomeCountdown(endsAt, initialActive);
   if (!active) return null;
@@ -170,7 +172,7 @@ export function WelcomePriceBanner({
         />
       </div>
       <p style={{ position: "relative", margin: "7px 0 0", fontSize: 12, fontWeight: 600, opacity: 0.92 }}>
-        Ensuite : {PLAN_PRICES.monthly.regular}/mois · {PLAN_PRICES.lifetime.regular} à vie
+        Ensuite : {prices.monthly.regular}/mois · {prices.lifetime.regular} à vie
       </p>
     </motion.div>
   );

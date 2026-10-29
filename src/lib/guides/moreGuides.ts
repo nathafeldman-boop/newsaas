@@ -3849,7 +3849,7 @@ export const MORE_GUIDES: Guide[] = [
             ["LinkedIn", "Les offres, mais surtout le réseau : contacter directement les recruteurs et les anciens de ton école.", "Oui (options payantes)"],
             ["Welcome to the Jungle", "Des pages entreprises très détaillées, surtout pour les startups et les entreprises du digital.", "Oui"],
             ["JobTeaser", "Les offres ciblées sur ton école, si elle y est abonnée.", "Oui, via ton école"],
-            ["Stageio", "Des offres de plusieurs sources (France Travail, Adzuna, sites carrières) réunies et mises à jour chaque jour, à swiper et triées selon ton profil, avec des pages par métier, ville et entreprise.", "Consultation gratuite ; Premium 7,99 €/mois ou 39,99 € à vie pour candidater"],
+            ["Stageio", "Des offres de plusieurs sources (France Travail, Adzuna, sites carrières) réunies et mises à jour chaque jour, à swiper et triées selon ton profil, avec des pages par métier, ville et entreprise.", "Consultation gratuite ; Premium dès 9,99 €/mois ou 39,99 € à vie pour candidater"],
           ],
         },
       },
@@ -3893,7 +3893,7 @@ export const MORE_GUIDES: Guide[] = [
       },
       {
         q: "Stageio est-il gratuit ?",
-        a: "La consultation de toutes les offres est gratuite. Le Premium (7,99 € par mois sans engagement, ou 39,99 € une fois pour un accès à vie) sert à liker les offres, candidater, générer une lettre de motivation par IA et faire auditer son CV.",
+        a: "La consultation de toutes les offres est gratuite. Le Premium (à partir de 9,99 € par mois sans engagement, ou 39,99 € une fois pour un accès à vie) sert à liker les offres, candidater, générer une lettre de motivation par IA et faire auditer son CV.",
       },
       {
         q: "Faut-il payer pour trouver une alternance ?",

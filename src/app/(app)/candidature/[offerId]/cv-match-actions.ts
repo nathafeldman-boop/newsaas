@@ -7,6 +7,7 @@ import { generateOfferFitWithAnthropic } from "@/lib/cvAudit/generateOfferFitWit
 import { computeStaticOfferFit } from "@/lib/cvAudit/staticOfferFit";
 import { logServerEvent } from "@/lib/analytics/logServerEvent";
 import type { OfferFit } from "@/lib/cvAudit/offerFitSchema";
+import { PREMIUM_PRICE_LINE } from "@/lib/pricing/plans";
 
 // maxDuration ne peut pas être exporté ici (fichier "use server", voir le
 // commentaire équivalent dans profil/cv-audit-actions.ts) -- posé sur
@@ -38,7 +39,7 @@ export async function analyzeOfferFitAction(offerId: string): Promise<OfferFitSt
   ]);
 
   if (!isPremium(profile)) {
-    return { status: "error", message: "Réservé aux membres Premium (39,99 € à vie ou 7,99 €/mois)." };
+    return { status: "error", message: `Réservé aux membres Premium (${PREMIUM_PRICE_LINE}).` };
   }
   if (!offer) return { status: "error", message: "Offre introuvable." };
   if (!profile?.cv_text) {

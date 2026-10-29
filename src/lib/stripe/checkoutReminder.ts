@@ -35,6 +35,8 @@ export async function recordCheckoutOpened(params: {
   lifetime: boolean;
   welcome: boolean;
   promo?: boolean;
+  // Prix Stripe de la session (onglet Tests de l'admin : qui a ouvert le paiement à quel prix).
+  priceId?: string;
 }): Promise<void> {
   const admin = createAdminClient();
   const openedAt = Date.now();
@@ -59,7 +61,7 @@ export async function recordCheckoutOpened(params: {
   const { error } = await admin.from("user_events").insert({
     user_id: params.userId,
     event_type: "checkout_opened",
-    metadata: { plan: params.lifetime ? "lifetime" : "monthly", welcome: params.welcome, promo: params.promo ?? false, reminderEmailId },
+    metadata: { plan: params.lifetime ? "lifetime" : "monthly", welcome: params.welcome, promo: params.promo ?? false, priceId: params.priceId ?? null, reminderEmailId },
   });
   if (error) console.error("recordCheckoutOpened: event insert failed", error);
 

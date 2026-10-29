@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { auditCvAction, type CvAuditState } from "@/app/(app)/profil/cv-audit-actions";
 import { PremiumCtaLink } from "@/components/premium/PremiumCtaLink";
+import { PREMIUM_PRICE_LINE } from "@/lib/pricing/plans";
 
 const initialState: CvAuditState = { status: "idle" };
 
@@ -122,7 +123,7 @@ export function CvAuditPanel({
           className="btn btn-primary"
           style={{ marginTop: 14, background: "var(--color-accent-2)", whiteSpace: "nowrap" }}
         >
-          🔓 Débloquer avec Premium (39,99 € à vie ou 7,99 €/mois)
+          🔓 Débloquer avec Premium ({PREMIUM_PRICE_LINE})
         </PremiumCtaLink>
       )}
 

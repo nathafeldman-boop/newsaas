@@ -7,7 +7,7 @@ import { GUARANTEE_COOKIE, setBrowserCookie } from "@/lib/premium/guaranteeTerms
 import { GUARANTEE_EVENT } from "@/components/premium/PaywallExitGuard";
 import { GuaranteeHero } from "@/components/premium/GuaranteeHero";
 import { useWelcomeCountdown } from "@/components/premium/WelcomeCountdown";
-import { PLAN_PRICES, type LifetimeOffer } from "@/lib/pricing/plans";
+import { priceSheet, type LifetimeOffer, type PriceSheet } from "@/lib/pricing/plans";
 
 // Avant le paywall, à chaque arrivée (Nathan, 22/10) : combien de
 // personnes nous ont fait confiance (vrai chiffre), la garantie remboursé
@@ -53,18 +53,21 @@ export function PaywallPledge({
   welcomeEndsAt = null,
   welcomeActive = false,
   lifetimeOffer = null,
+  prices = priceSheet(),
 }: {
   trustCount: number;
   welcomeEndsAt?: number | null;
   welcomeActive?: boolean;
   // Prix spécial de l'accès à vie (offre 48 h du compte, ou promo) : lu côté serveur.
   lifetimeOffer?: LifetimeOffer | null;
+  // Prix du compte (lus côté serveur, voir priceSheet).
+  prices?: PriceSheet;
 }) {
   const showTrust = trustCount >= 100;
   const trustTarget = trustFloor(trustCount);
   const [phase, setPhase] = useState<Phase>(showTrust ? "trust" : "guarantee");
   const welcome = useWelcomeCountdown(welcomeEndsAt, welcomeActive);
-  const lifetimeNow = lifetimeOffer ? lifetimeOffer.price : PLAN_PRICES.lifetime.welcome;
+  const lifetimeNow = lifetimeOffer ? lifetimeOffer.price : prices.lifetime.welcome;
   const flash = lifetimeOffer?.kind === "flash";
 
   // Bloque le défilement du paywall en dessous tant que l'écran est affiché.
@@ -172,7 +175,7 @@ export function PaywallPledge({
                   >
                     <p style={{ margin: 0, fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em" }}>Maintenant</p>
                     <p style={{ margin: "10px 0 0", fontFamily: "var(--font-heading)", fontSize: 30, fontWeight: 800, lineHeight: 1 }}>
-                      {PLAN_PRICES.monthly.welcome}
+                      {prices.monthly.welcome}
                     </p>
                     <p style={{ margin: "2px 0 0", fontSize: 12.5, fontWeight: 700 }}>par mois</p>
                     <div style={{ height: 1, margin: "12px 6px", background: "color-mix(in srgb, var(--color-bg) 35%, transparent)" }} />
@@ -191,15 +194,15 @@ export function PaywallPledge({
                       Ensuite
                     </p>
                     <p style={{ margin: "10px 0 0", fontFamily: "var(--font-heading)", fontSize: 30, fontWeight: 800, lineHeight: 1 }}>
-                      {PLAN_PRICES.monthly.regular}
+                      {prices.monthly.regular}
                     </p>
                     <p style={{ margin: "2px 0 0", fontSize: 12.5, fontWeight: 700, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
-                      par mois · <span style={{ color: "#c2262b" }}>{increase(PLAN_PRICES.monthly.welcome, PLAN_PRICES.monthly.regular)}</span>
+                      par mois · <span style={{ color: "#c2262b" }}>{increase(prices.monthly.welcome, prices.monthly.regular)}</span>
                     </p>
                     <div style={{ height: 1, margin: "12px 6px", background: "var(--color-divider)" }} />
-                    <p style={{ margin: 0, fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 800, lineHeight: 1 }}>{PLAN_PRICES.lifetime.regular}</p>
+                    <p style={{ margin: 0, fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 800, lineHeight: 1 }}>{prices.lifetime.regular}</p>
                     <p style={{ margin: "2px 0 0", fontSize: 12.5, fontWeight: 700, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
-                      à vie · <span style={{ color: "#c2262b" }}>{increase(lifetimeNow, PLAN_PRICES.lifetime.regular)}</span>
+                      à vie · <span style={{ color: "#c2262b" }}>{increase(lifetimeNow, prices.lifetime.regular)}</span>
                     </p>
                   </div>
                 </div>

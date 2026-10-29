@@ -7,7 +7,7 @@ import { unsubscribeHeaders, unsubscribeUrlFor } from "@/lib/resend/unsubscribe"
 import { isAdminEmail } from "@/lib/admin/assertAdmin";
 import { isPremium } from "@/lib/subscription/isPremium";
 import { GUARANTEE_MONTHS } from "@/lib/premium/guaranteeTerms";
-import { FLASH_OFFER, isFlashCampaignOpen, LIFETIME_PROMO, PLAN_PRICES } from "@/lib/pricing/plans";
+import { FLASH_OFFER, isFlashCampaignOpen, isLegacyOffer, LIFETIME_PROMO, PLAN_PRICES, priceSheet } from "@/lib/pricing/plans";
 import { SITE_URL } from "@/lib/site";
 import { getTrustCount } from "@/lib/premium/trustCount";
 import { campaignSender } from "@/lib/campaigns/sendBatch";
@@ -231,6 +231,13 @@ const PARIS_DATE = new Intl.DateTimeFormat("fr-FR", {
 // Fin de l'offre 48 h à l'heure de Paris, arrondie à la minute inférieure
 // (jamais plus tard que la vraie fin) : « jeudi 30 octobre à 18 h 30 », et
 // en court par rapport à maintenant : « ce soir à 18 h 30 », « demain à 9 h ».
+// « Moins de N centimes par jour » (30 jours par mois), N arrondi aux 5
+// centimes au-dessus : 7,99 € → 30, 9,99 € → 35.
+export function centsPerDayCeiling(monthlyPrice: string): number {
+  const cents = Math.round(Number(monthlyPrice.replace(/[^\d,]/g, "").replace(",", ".")) * 100);
+  return Math.ceil(cents / 30 / 5) * 5;
+}
+
 export function parisDeadline(endsAt: number, now: number): { long: string; short: string } {
   const at = Math.floor(endsAt / 60_000) * 60_000;
   const parts = PARIS_DATE.formatToParts(new Date(at));
@@ -270,6 +277,10 @@ export function renderSeriesEmail(
   const flash = flashEndsAt !== null && now < flashEndsAt - 60 * 60_000 ? parisDeadline(flashEndsAt, now) : null;
   // Envoi qui ouvre l'offre (fin dans 48 h) ; les suivants, au plus tôt le lendemain, la rappellent.
   const opening = flash !== null && flashEndsAt! - now > FLASH_OFFER.windowMs - 60 * 60_000;
+  // Test de prix du 29/10 : mensuel de bienvenue à 9,99 € ; une offre 48 h
+  // ouverte avant garde le prix annoncé dans son premier email (7,99 €).
+  const monthlyWelcome = priceSheet(flash !== null && isLegacyOffer(flashEndsAt! - FLASH_OFFER.windowMs)).monthly.welcome;
+  const perDay = `Moins de ${centsPerDayCeiling(monthlyWelcome)} centimes par jour`;
   // Au moins 30 min pour en profiter avant la fin de la vraie promo.
   const promo = !flash && shown === 1 && now < LIFETIME_PROMO.endsAt - 30 * 60_000;
   const utm = `utm_source=email&utm_medium=serie&utm_campaign=${seriesUtmCampaign(step)}`;
@@ -299,14 +310,14 @@ export function renderSeriesEmail(
     subject = `🎁 ${name ? `${name}, ` : ""}48 h rien que pour toi : Premium à vie à ${FLASH_OFFER.lifetimePrice}`;
     hook = [
       "J'ai une offre rien que pour toi, et elle ne dure que 48&nbsp;heures.",
-      `Jusqu'au <strong>${flash.long}</strong>, l'accès Premium <strong>à vie</strong> est à <strong>${FLASH_OFFER.lifetimePrice.replace(" ", "&nbsp;")}</strong> : tu paies une fois, et c'est Premium pour toujours. Tu préfères au mois ? Le mensuel est à <strong>${PLAN_PRICES.monthly.welcome.replace(" ", "&nbsp;")}/mois</strong>, sans engagement.`,
+      `Jusqu'au <strong>${flash.long}</strong>, l'accès Premium <strong>à vie</strong> est à <strong>${FLASH_OFFER.lifetimePrice.replace(" ", "&nbsp;")}</strong> : tu paies une fois, et c'est Premium pour toujours. Tu préfères au mois ? Le mensuel est à <strong>${monthlyWelcome.replace(" ", "&nbsp;")}/mois</strong>, sans engagement.`,
       `En ce moment, ${offersLineHtml} t'attendent sur Stageio. Sans Premium, tu ne vois ni l'entreprise ni l'analyse de chaque offre ; avec, tu vois tout et tu postules en quelques secondes, lettre de motivation comprise.`,
     ];
   } else if (flash) {
     subject = `⏳ ${name ? `${name}, t` : "T"}on offre à ${FLASH_OFFER.lifetimePrice} se termine ${flash.short}`;
     hook = [
       `Petit rappel : ton offre se termine <strong>${flash.short}</strong>.`,
-      `Jusque-là, l'accès Premium <strong>à vie</strong> est à <strong>${FLASH_OFFER.lifetimePrice.replace(" ", "&nbsp;")}</strong> (une fois, et c'est fini), ou le mensuel à <strong>${PLAN_PRICES.monthly.welcome.replace(" ", "&nbsp;")}/mois</strong>, sans engagement. Après, ce sera ${PLAN_PRICES.monthly.regular.replace(" ", "&nbsp;")}/mois ou ${PLAN_PRICES.lifetime.regular.replace(" ", "&nbsp;")} à vie.`,
+      `Jusque-là, l'accès Premium <strong>à vie</strong> est à <strong>${FLASH_OFFER.lifetimePrice.replace(" ", "&nbsp;")}</strong> (une fois, et c'est fini), ou le mensuel à <strong>${monthlyWelcome.replace(" ", "&nbsp;")}/mois</strong>, sans engagement. Après, ce sera ${PLAN_PRICES.monthly.regular.replace(" ", "&nbsp;")}/mois ou ${PLAN_PRICES.lifetime.regular.replace(" ", "&nbsp;")} à vie.`,
       `En ce moment, ${offersLineHtml} t'attendent sur Stageio.`,
     ];
   } else if (shown === 1 && promo) {
@@ -361,7 +372,7 @@ export function renderSeriesEmail(
     subject = `${name ? `${name}, d` : "D"}ernier email (et dernière fois pour ton prix de bienvenue)`;
     hook = [
       "C'est mon dernier email de cette série, je ne vais pas te relancer encore et encore.",
-      `Ton prix de bienvenue (${PLAN_PRICES.monthly.welcome.replace(" ", "&nbsp;")}/mois ou ${PLAN_PRICES.lifetime.welcome.replace(" ", "&nbsp;")} à vie) t'attend une dernière fois, 10 minutes à partir de ton clic. Après, ce sera ${PLAN_PRICES.monthly.regular.replace(" ", "&nbsp;")}/mois ou ${PLAN_PRICES.lifetime.regular.replace(" ", "&nbsp;")}. Si tu cherches encore, c'est maintenant.`,
+      `Ton prix de bienvenue (${monthlyWelcome.replace(" ", "&nbsp;")}/mois ou ${PLAN_PRICES.lifetime.welcome.replace(" ", "&nbsp;")} à vie) t'attend une dernière fois, 10 minutes à partir de ton clic. Après, ce sera ${PLAN_PRICES.monthly.regular.replace(" ", "&nbsp;")}/mois ou ${PLAN_PRICES.lifetime.regular.replace(" ", "&nbsp;")}. Si tu cherches encore, c'est maintenant.`,
     ];
   }
 
@@ -399,8 +410,8 @@ ${button(go("lifetime"), `Je prends l'accès à vie →`, true)}
 </div>
 <div style="border:1px solid #d6e4dc;border-radius:16px;padding:16px 18px;margin:0 0 12px">
 <p style="margin:0;font-size:12px;font-weight:bold;letter-spacing:.04em;color:#4a5f66;text-transform:uppercase">Mensuel · sans engagement</p>
-<p style="margin:6px 0 0;font-size:28px;font-weight:bold;color:#132b33">${PLAN_PRICES.monthly.welcome.replace(" ", "&nbsp;")} <span style="font-size:15px;font-weight:normal;color:#444">/ mois</span></p>
-<p style="margin:4px 0 14px;font-size:14px;color:#444">Moins de 30 centimes par jour. Ce prix reste le tien tant que tu restes abonné.</p>
+<p style="margin:6px 0 0;font-size:28px;font-weight:bold;color:#132b33">${monthlyWelcome.replace(" ", "&nbsp;")} <span style="font-size:15px;font-weight:normal;color:#444">/ mois</span></p>
+<p style="margin:4px 0 14px;font-size:14px;color:#444">${perDay}. Ce prix reste le tien tant que tu restes abonné.</p>
 ${button(go("monthly"), "Je prends le mensuel →", false)}
 </div>
 <p style="margin:0 0 4px;font-size:13px;color:#555">⏱ ${
@@ -441,7 +452,7 @@ ${social ? `<p style="margin:10px 0 0;font-size:14px">👥 ${social}</p>` : ""}
     ...benefits.map((b) => `- ${b}`),
     "",
     `Accès à vie, paiement unique : ${strip(flash ? FLASH_OFFER.lifetimePrice : promo ? `${LIFETIME_PROMO.price} au lieu de ${LIFETIME_PROMO.referencePrice}` : PLAN_PRICES.lifetime.welcome)} → ${go("lifetime")}`,
-    `Mensuel sans engagement : ${PLAN_PRICES.monthly.welcome} / mois, moins de 30 centimes par jour → ${go("monthly")}`,
+    `Mensuel sans engagement : ${monthlyWelcome} / mois, ${perDay.toLowerCase()} → ${go("monthly")}`,
     strip(
       `${
         flash
