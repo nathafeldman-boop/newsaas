@@ -8,8 +8,8 @@ import type { StripeSnapshot } from "@/lib/admin/cockpit/types";
 // vient de Stripe (net des remboursements) et des profils ; la prévision le
 // dit toujours et part de rythmes mesurés, jamais d'un chiffre inventé.
 
-/** Objectif global par défaut (modifiable dans Objectifs) : 10 000 € encaissés depuis le début. */
-export const DEFAULT_GLOBAL_GOAL_CENTS = 1_000_000;
+/** Objectif global par défaut (modifiable dans Objectifs) : 100 000 € encaissés, le défi d'un an (29/10). */
+export const DEFAULT_GLOBAL_GOAL_CENTS = 10_000_000;
 
 export type HistoryRow = {
   key: string;
