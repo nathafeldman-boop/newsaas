@@ -362,3 +362,8 @@ export function renderTemplate(domainId: string, style: TemplateStyle, input: Te
 export function countPlaceholders(text: string): number {
   return text.match(PLACEHOLDER_RE)?.length ?? 0;
 }
+
+/** Passages à compléter, sans les crochets et sans doublon (« ton rythme, par ex. … »). */
+export function placeholdersIn(text: string): string[] {
+  return [...new Set((text.match(PLACEHOLDER_RE) ?? []).map((p) => p.slice(1, -1).trim()))];
+}

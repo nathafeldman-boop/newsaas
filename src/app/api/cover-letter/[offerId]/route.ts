@@ -1,27 +1,20 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { generateStaticCoverLetter, type CoverLetterExtra } from "@/lib/coverLetter/staticGenerator";
-import { streamCoverLetterWithAnthropic } from "@/lib/coverLetter/generateWithAnthropic";
-import { COVER_LETTER_RESET } from "@/lib/coverLetter/stream";
-import { isAnthropicConfigured } from "@/lib/anthropic/client";
+import { generateMetierLetter, type MetierLetterStyle } from "@/lib/coverLetter/metierLetter";
 import { PROFILE_FOR_AI_COLUMNS } from "@/lib/ai/profileContext";
 import { isPremium } from "@/lib/subscription/isPremium";
 import { logServerEvent } from "@/lib/analytics/logServerEvent";
 import { isInvalidEnumError } from "@/lib/applications/status";
 
-// Lettre de motivation écrite en direct (16/10, demande de Nathan : plus
-// rapide, animation refaite) : la réponse est un flux de texte, les premiers
-// mots s'affichent pendant que Claude écrit la suite. Remplace la server
-// action generateCoverLetterAction, avec les mêmes règles :
+// Lettre de motivation (16/10, animation refaite ; sans IA depuis le 30/10,
+// Nathan : « 100 templates […] sans IA ») : modèle du métier de l'offre
+// (lib/coverLetter/metierLetter), sinon générateur par famille de secteurs.
+// La réponse reste un flux de texte que l'écran écrit à la volée.
 // - candidater est réservé aux Premium (hard paywall du 26/09, miroir du
 //   trigger SQL enforce_premium_application) ;
 // - la candidature et le like sont enregistrés à l'ouverture de la page,
-//   en parallèle de l'écriture (avant : l'un après l'autre, puis Claude) ;
-// - repli automatique sur le générateur statique dès que Claude échoue,
-//   dépasse son délai ou n'est pas configuré -- jamais un simple appel IA seul
-//   en bout de chaîne (pannes Mistral/Gemini de septembre). Si Claude lâche
-//   en cours de route, COVER_LETTER_RESET dit au navigateur d'effacer le
-//   début et d'afficher la lettre statique à la place.
+//   en parallèle de l'écriture.
 // Réponses hors flux : 401 (non connecté), 404 (offre), 402 (Premium requis).
 export const maxDuration = 60;
 
@@ -63,25 +56,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      let sentText = false;
-      let letter: string | null = null;
-      let source: "anthropic" | "static" = "static";
-
-      if (isAnthropicConfigured()) {
-        try {
-          letter = await streamCoverLetterWithAnthropic(offer, profile, profile?.cv_text ?? null, extra, (text) => {
-            sentText = true;
-            controller.enqueue(encoder.encode(text));
-          });
-          source = "anthropic";
-        } catch (err) {
-          console.error("cover-letter: Claude a échoué, repli sur le générateur statique", err);
-        }
-      }
-      if (!letter) {
-        letter = generateStaticCoverLetter(offer, profile, extra, attempt);
-        controller.enqueue(encoder.encode((sentText ? COVER_LETTER_RESET : "") + letter));
-      }
+      // Sans IA (30/10, Nathan) : le modèle du métier de l'offre, style
+      // « classique » puis « directe » à chaque « Régénérer », puis le
+      // générateur par famille de secteurs (aussi quand le métier n'a pas de
+      // modèle). L'écran l'écrit à la volée, comme avant.
+      const styles: (MetierLetterStyle | null)[] = ["classique", "directe", null];
+      const style = styles[attempt % styles.length];
+      const metierLetter = style ? generateMetierLetter(offer, profile, style, extra) : null;
+      const letter = metierLetter ?? generateStaticCoverLetter(offer, profile, extra, attempt);
+      const source = metierLetter ? `metier_${style}` : "static";
+      controller.enqueue(encoder.encode(letter));
 
       await bookkeeping;
       await logServerEvent(supabase, user.id, "cover_letter_generated", { offerId, source, attempt });

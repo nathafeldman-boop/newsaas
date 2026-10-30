@@ -2,12 +2,14 @@ import Anthropic from "@anthropic-ai/sdk";
 
 let cached: Anthropic | null = null;
 
-// true tant que la clé n'est pas renseignée : sert à décider, côté appelant,
-// de tenter Claude ou de retomber directement sur le générateur statique
-// (même doctrine que Gemini avant lui -- voir api/cover-letter /
-// auditCvAction) sans même faire d'appel.
+// Sert à décider, côté appelant, de tenter Claude ou de retomber
+// directement sur la version sans IA (audit de CV, comparaison CV / offre,
+// tri des réponses de la boîte) sans même faire d'appel.
+// Coupé par défaut depuis le 30/10 (Nathan : « pas d'IA » ; crédit
+// Anthropic épuisé, chaque appel échouait avant le repli) : il faut en plus
+// STAGEIO_USE_AI=1 dans Vercel pour le rallumer.
 export function isAnthropicConfigured() {
-  return !!process.env.ANTHROPIC_API_KEY?.trim();
+  return process.env.STAGEIO_USE_AI === "1" && !!process.env.ANTHROPIC_API_KEY?.trim();
 }
 
 export function getAnthropicClient() {

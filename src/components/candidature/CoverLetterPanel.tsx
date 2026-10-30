@@ -9,7 +9,7 @@ import { prefersReducedMotion } from "@/lib/fx/events";
 import { MarkSentControl } from "@/components/candidature/MarkSentControl";
 import { TemplateLetterPicker, type TemplateContext } from "@/components/candidature/TemplateLetterPicker";
 import { saveCoverLetterAction } from "@/app/(app)/candidature/[offerId]/letter-actions";
-import { countPlaceholders, type TemplateStyle } from "@/lib/coverLetter/templates";
+import { countPlaceholders, placeholdersIn, type TemplateStyle } from "@/lib/coverLetter/templates";
 
 // Lettre de motivation (refaite le 16/10, demande de Nathan : « plus rapide,
 // animation refaite de A à Z, ultra stylée pour TikTok ») : la lettre arrive
@@ -146,7 +146,11 @@ export function CoverLetterPanel({
       triggered.current = true;
       void generate();
     }
-    return () => abortRef.current?.abort();
+    return () => {
+      abortRef.current?.abort();
+      // Effet relancé (mode strict en dev) : l'écriture annulée repart.
+      triggered.current = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -470,9 +474,15 @@ export function CoverLetterPanel({
               )}
             </div>
             {countPlaceholders(letter) > 0 && (
-              <p role="status" style={{ fontSize: 12, margin: 0, fontWeight: 600, color: "var(--color-accent-700)" }}>
-                Remplace les passages entre crochets [ … ] avant d&apos;envoyer ta lettre.
-              </p>
+              <div role="status" className="card" style={{ padding: "10px 12px", border: "1.5px solid var(--color-accent)", background: "var(--color-accent-100)" }}>
+                <p style={{ fontSize: 12.5, margin: 0, fontWeight: 800 }}>✍️ À compléter avant d&apos;envoyer ({countPlaceholders(letter)}) :</p>
+                <ul style={{ margin: "6px 0 0", paddingLeft: 18, fontSize: 12.5, lineHeight: 1.5, listStyle: "disc", display: "grid", gap: 3 }}>
+                  {placeholdersIn(letter).map((p) => (
+                    <li key={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</li>
+                  ))}
+                </ul>
+                <p style={{ fontSize: 11.5, margin: "6px 0 0" }}>Remplace chaque passage entre crochets [ … ] dans la lettre : tout le reste est prêt.</p>
+              </div>
             )}
             {saveState && (
               <p role="status" style={{ fontSize: 11.5, margin: 0, color: saveState.ok ? "var(--color-accent-2-700)" : "var(--color-accent-700)" }}>
