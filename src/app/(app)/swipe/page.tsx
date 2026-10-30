@@ -26,6 +26,7 @@ import { isSchoolOrJobBoard } from "@/lib/seo/schools";
 import { normalizeTitle } from "@/lib/seo/metiers";
 import { normalizePhone, splitFullName } from "@/lib/laBonneAlternance/applicant";
 import { isAutoOfferAvailable } from "@/lib/subscription/autoAvailability";
+import { REGION_BONUS, regionDepartementLabels, regionName, sameRegionElsewhere, SPARSE_LOCAL_POOL } from "@/lib/matching/region";
 
 export default async function SwipePage() {
   const supabase = await createClient();
@@ -253,8 +254,20 @@ export default async function SwipePage() {
         })
       : Promise.resolve([]),
   ]);
+  // Abonné dans un département où il y a peu d'offres (30/10, « pas assez
+  // d'offres dans les Vosges ») : les offres des autres départements de sa
+  // région, classées avant le reste de la France (voir lib/matching/region).
+  // Abonnés seulement : le deck d'avant le paiement ne change pas.
+  const sparseRegion = premium && localPool.length < SPARSE_LOCAL_POOL ? regionDepartementLabels(profileDep) : [];
+  const regionPool =
+    sparseRegion.length > 0
+      ? await fetchActiveOffers(supabase, { excludeIds, sectors: hardSectors, locations: sparseRegion, limit: 300 }).catch((error) => {
+          console.error("SwipePage: offres de la région en échec", error);
+          return [];
+        })
+      : [];
   const pooledIds = new Set<string>();
-  const pooled = [...nationalPool, ...localPool, ...freshPool, ...jobPool].filter((o) => {
+  const pooled = [...nationalPool, ...localPool, ...freshPool, ...jobPool, ...regionPool].filter((o) => {
     if (pooledIds.has(o.id)) return false;
     pooledIds.add(o.id);
     return true;
@@ -331,7 +344,8 @@ export default async function SwipePage() {
         affinity.keywordBonus(offer.title);
       const cvBonus = computeCvMatchBonus(cvText, offer);
       const passPenalty = passLearning.penalty(tags[offer.id], tags[offer.id].targetJob);
-      scores[offer.id] = Math.max(30, Math.min(99, Math.round(base + learnedBonus + cvBonus + passPenalty)));
+      const regionBonus = sparseRegion.length > 0 && geoMatch(profile, offer).points < 0 && sameRegionElsewhere(profileDep, offer.location) ? REGION_BONUS : 0;
+      scores[offer.id] = Math.max(30, Math.min(99, Math.round(base + learnedBonus + cvBonus + passPenalty + regionBonus)));
     }
   }
 
@@ -428,7 +442,9 @@ export default async function SwipePage() {
       if (offerReasons.length < 3 && affinity.isStrongContentMatch(offer)) {
         offerReasons.push("Proche d'offres que tu as aimées");
       }
-      reasons[offer.id] = offerReasons;
+      const region = sparseRegion.length > 0 ? sameRegionElsewhere(profileDep, offer.location) : null;
+      // En tête : c'est ce qui explique qu'elle soit là (hors du département).
+      reasons[offer.id] = region ? [`Dans ta région (${region})`, ...offerReasons].slice(0, 3) : offerReasons;
     }
   }
 
@@ -442,7 +458,9 @@ export default async function SwipePage() {
     cityBanner =
       nearCount === sortedOffers.length
         ? `${sortedOffers.length} offre${sortedOffers.length > 1 ? "s" : ""} à ${profile.city} et alentours.`
-        : `${sortedOffers.length} offres près de ${profile.city}, puis d'autres villes.`;
+        : sparseRegion.length > 0 && regionPool.length > 0
+          ? `Peu d'offres autour de toi : on a ajouté celles de ta région (${regionName(profileDep)}).`
+          : `${sortedOffers.length} offres près de ${profile.city}, puis d'autres villes.`;
   }
 
   const sectorLabel =

@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { dedupeActiveOffers } from "@/lib/offers/dedupe";
 import { OFFER_EXPIRY_DAYS, OFFER_UNSEEN_GRACE_DAYS } from "@/lib/offers/expiry";
+import { verifyUnseenFranceTravailOffers } from "@/lib/offers/staleCheck";
 
 // Cron quotidien (voir vercel.json) : désactive les offres ingérées qui
 // traînent depuis trop longtemps sans avoir été retraitées (probablement
@@ -13,9 +14,16 @@ import { OFFER_EXPIRY_DAYS, OFFER_UNSEEN_GRACE_DAYS } from "@/lib/offers/expiry"
 // RETENTION_AUDIT.md, "déduplication" et src/lib/offers/dedupe.ts) : cette
 // même tâche d'hygiène du catalogue est le point naturel pour ça, plutôt que
 // d'ajouter un cron dédié.
+//
+// Et (30/10) : les offres France Travail que la synchro ne revoit plus sont
+// vérifiées auprès de leur API, et retirées si elles n'existent plus, sans
+// attendre leurs 30 jours (voir lib/offers/staleCheck.ts).
+
+export const maxDuration = 300;
 
 
 export async function GET(request: NextRequest) {
+  const started = Date.now();
   const secret = process.env.CRON_SECRET;
   if (secret) {
     const authHeader = request.headers.get("authorization");
@@ -47,8 +55,17 @@ export async function GET(request: NextRequest) {
 
   const dedupeResult = await dedupeActiveOffers(admin);
 
+  let franceTravail: Awaited<ReturnType<typeof verifyUnseenFranceTravailOffers>> | { error: string };
+  try {
+    franceTravail = await verifyUnseenFranceTravailOffers(admin, started + 260_000);
+  } catch (err) {
+    franceTravail = { error: err instanceof Error ? err.message : String(err) };
+  }
+  console.log("deactivate-expired-offers", JSON.stringify({ deactivated: data?.length ?? 0, franceTravail }));
+
   return NextResponse.json({
     deactivated: data?.length ?? 0,
     dedupe: dedupeResult,
+    franceTravail,
   });
 }
