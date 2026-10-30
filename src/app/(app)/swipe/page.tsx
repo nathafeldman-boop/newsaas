@@ -27,6 +27,7 @@ import { normalizeTitle } from "@/lib/seo/metiers";
 import { normalizePhone, splitFullName } from "@/lib/laBonneAlternance/applicant";
 import { isAutoOfferAvailable } from "@/lib/subscription/autoAvailability";
 import { REGION_BONUS, regionDepartementLabels, regionName, sameRegionElsewhere, SPARSE_LOCAL_POOL } from "@/lib/matching/region";
+import type { Offer } from "@/types/database";
 
 export default async function SwipePage() {
   const supabase = await createClient();
@@ -409,19 +410,38 @@ export default async function SwipePage() {
   const relevantOffers =
     hasPreferences && filteredByRelevance.length >= MIN_RELEVANT_POOL ? filteredByRelevance : rankedOffers;
 
+  // « C'est trop loin » (30/10, retours des abonnés et commentaires de
+  // résiliation) : le bon métier et le bon secteur suffisaient à faire passer
+  // une offre à 400 km au-dessus du seuil, même pour quelqu'un qui a coché
+  // « sur place uniquement ». Pour un abonné, plus que les offres proches au
+  // sens de SA mobilité (geoMatch : sa ville et son département, sa région
+  // s'il est mobile dans la région ou si elle a été ajoutée, toute la France
+  // s'il l'a choisie, le télétravail), dès qu'il y en a au moins 10. Sinon,
+  // comme avant, les plus lointaines restent en fin de paquet. Le deck
+  // d'avant le paiement ne change pas.
+  const isNearForUser = (o: Offer) =>
+    !profile ||
+    o.remote_policy === "remote" ||
+    geoMatch(profile, o).points >= 0 ||
+    (sparseRegion.length > 0 && !!sameRegionElsewhere(profileDep, o.location));
+  const nearOffers = premium ? relevantOffers.filter(isNearForUser) : relevantOffers;
+  const deckPool = premium && nearOffers.length >= MIN_RELEVANT_POOL ? nearOffers : relevantOffers;
+
   // Composition du paquet (25/10) : une carte par annonce (doublons entre
   // sources retirés), le métier visé d'abord quand il y en a au moins 12
   // pas trop loin, et au plus 2 cartes par entreprise.
   const composed = profile
     ? diversifyByCompany(
         preferTargetJobs(
-          dedupeOffers(relevantOffers),
+          dedupeOffers(deckPool),
           (o) => profile.target_jobs.length > 0 && matchesTargetJob(profile, o) && geoMatch(profile, o).points >= 0,
         ),
         DECK_SIZE,
       )
-    : relevantOffers;
-  const { deck: sortedOffers, freshPicks } = orderFreshFirst(composed, scores, DECK_SIZE);
+    : deckPool;
+  // Nouveautés en tête : pour un abonné, seulement celles qui sont proches
+  // (voir isNearForUser), jamais une offre neuve à l'autre bout de la France.
+  const { deck: sortedOffers, freshPicks } = orderFreshFirst(composed, scores, DECK_SIZE, undefined, premium ? isNearForUser : undefined);
   // Notification « Nouveautés » à l'arrivée sur le deck : les plus récentes.
   const freshInbox = [...freshPicks]
     .sort((a, b) => b.published_at.localeCompare(a.published_at))

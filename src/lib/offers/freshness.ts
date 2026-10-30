@@ -33,15 +33,22 @@ export function shortAge(publishedAt: string, now: number = Date.now()): string 
 // matcher (score au moins celui de la dernière carte du deck, ou 70) --
 // jamais une offre hors sujet juste parce qu'elle est neuve. Le score
 // affiché reste le vrai score, seul l'ordre change.
+// `pinnable` (30/10, « c'est trop loin ») : seules ces offres peuvent passer
+// devant. Sans lui, dans une zone où il y a peu d'offres, la barre tombait au
+// score plancher et toutes les nouveautés de France passaient avant les
+// offres de la ville de l'étudiant.
 export function orderFreshFirst<T extends { id: string; published_at: string }>(
   ranked: T[],
   scores: Record<string, number>,
   deckSize: number,
   now: number = Date.now(),
+  pinnable: (offer: T) => boolean = () => true,
 ): { deck: T[]; freshPicks: T[] } {
   const last = ranked[Math.min(deckSize, ranked.length) - 1];
   const bar = Math.min(last ? (scores[last.id] ?? 0) : 0, 70);
-  const freshPicks = ranked.filter((o) => now - new Date(o.published_at).getTime() < HOT_OFFER_MS && (scores[o.id] ?? 0) >= bar);
+  const freshPicks = ranked.filter(
+    (o) => now - new Date(o.published_at).getTime() < HOT_OFFER_MS && (scores[o.id] ?? 0) >= bar && pinnable(o),
+  );
   const freshIds = new Set(freshPicks.map((o) => o.id));
   return { deck: [...freshPicks, ...ranked.filter((o) => !freshIds.has(o.id))].slice(0, deckSize), freshPicks };
 }
