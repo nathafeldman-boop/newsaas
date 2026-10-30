@@ -2,6 +2,7 @@ import type { createAdminClient } from "@/lib/supabase/admin";
 import { domainOf } from "@/lib/inbox/parse";
 import { classifyEmailReply } from "@/lib/google/classifyEmailReplyWithAnthropic";
 import { isAnthropicConfigured } from "@/lib/anthropic/client";
+import { classifyReplyByRules } from "@/lib/inbox/replyRules";
 import { notifyInboxMessage } from "@/lib/resend/notifyInboxMessage";
 import { notifyInterviewReply } from "@/lib/resend/notifyInterviewReply";
 import type { ApplicationStatus } from "@/types/database";
@@ -74,17 +75,19 @@ export async function storeInboundEmail(admin: ReturnType<typeof createAdminClie
 
   // Statut de la candidature d'après la réponse (entretien, refus).
   let interview: { company: string; title: string | null } | null = null;
-  if (offerId && isAnthropicConfigured()) {
+  if (offerId) {
     try {
       const { data: offer } = await admin.from("offers").select("company, title").eq("id", offerId).maybeSingle();
-      const verdict = await classifyEmailReply(
-        {
-          from: email.from.name ? `${email.from.name} <${email.from.address}>` : email.from.address,
-          subject: email.subject,
-          snippet: email.bodyText.slice(0, 1500),
-        },
-        offer?.company ? [offer.company] : [],
-      );
+      const reply = {
+        from: email.from.name ? `${email.from.name} <${email.from.address}>` : email.from.address,
+        subject: email.subject,
+        snippet: email.bodyText.slice(0, 1500),
+      };
+      const companies = offer?.company ? [offer.company] : [];
+      // Sans IA (coupée par défaut) ou si elle échoue : classement par règles.
+      const verdict = isAnthropicConfigured()
+        ? await classifyEmailReply(reply, companies).catch(() => classifyReplyByRules(reply, companies))
+        : classifyReplyByRules(reply, companies);
       const status = verdict.is_recruiting_reply ? sentimentToStatus(verdict.sentiment) : null;
       // Jamais par-dessus une réponse déjà tranchée (acceptée, refusée,
       // clôturée) : même garde-fou que la synchro Gmail.

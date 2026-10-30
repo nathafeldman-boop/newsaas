@@ -3,6 +3,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { refreshGmailAccess, listRecentMessages } from "@/lib/google/gmailClient";
 import { GMAIL_READ_SCOPE } from "@/lib/google/gmailOAuth";
 import { classifyEmailReply } from "@/lib/google/classifyEmailReplyWithAnthropic";
+import { classifyReplyByRules } from "@/lib/inbox/replyRules";
+import { isAnthropicConfigured } from "@/lib/anthropic/client";
 import { isTerminalStatus } from "@/lib/applications/status";
 import type { ApplicationStatus } from "@/types/database";
 
@@ -101,12 +103,13 @@ export async function GET(request: NextRequest) {
 
         if (companies.length === 0) continue;
 
+        const reply = { from: message.from, subject: message.subject, snippet: message.snippet };
         let result;
         try {
-          result = await classifyEmailReply(
-            { from: message.from, subject: message.subject, snippet: message.snippet },
-            companies,
-          );
+          // Sans IA (coupée par défaut) ou si elle échoue : classement par règles.
+          result = isAnthropicConfigured()
+            ? await classifyEmailReply(reply, companies).catch(() => classifyReplyByRules(reply, companies, { requireCompany: true }))
+            : classifyReplyByRules(reply, companies, { requireCompany: true });
           classified++;
         } catch {
           continue; // une classification ratée ne doit pas casser le sync
