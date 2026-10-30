@@ -32,6 +32,7 @@ const GROUPS = [
       { href: "/admin/premium", label: "Payants" },
       { href: "/admin/satisfaction", label: "Satisfaction" },
       { href: "/admin/annulations", label: "Motifs d'annulation" },
+      { href: "/admin/remboursements", label: "Remboursements" },
       { href: "/admin/retention", label: "Rétention (SOP)" },
       { href: "/admin/stripe", label: "Ventes cumulées" },
     ],
