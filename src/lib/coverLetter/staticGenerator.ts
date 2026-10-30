@@ -1,4 +1,5 @@
 import type { Offer, Profile } from "@/types/database";
+import { letterJobTitle } from "@/lib/coverLetter/jobTitle";
 
 // Générateur de lettre de motivation entièrement statique -- ZÉRO appel IA.
 // Remplace l'ancienne version Mistral (src/lib/mistral/generateCoverLetter.ts,
@@ -1308,7 +1309,7 @@ export function generateStaticCoverLetter(
 
   const hasFormationInfo = !!(profile?.formation || profile?.education_level);
   const vars: Record<string, string> = {
-    poste: offer.title,
+    poste: letterJobTitle(offer.title, offer.contract_type),
     entreprise: offer.company,
     contrat: offer.contract_type === "alternance" ? "alternance" : "stage",
     formation: profile?.formation || profile?.education_level || "",

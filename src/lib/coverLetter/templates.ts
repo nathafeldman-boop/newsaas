@@ -1,4 +1,5 @@
 import { normalizeForSector } from "@/lib/offers/sectors";
+import { letterJobTitle } from "@/lib/coverLetter/jobTitle";
 
 // Bibliothèque de modèles de lettres (24/10, mission churn) : 13 domaines ×
 // 3 styles, écrits à la main, sans IA (aucun coût par lettre). L'étudiant
@@ -231,14 +232,6 @@ export type TemplateInput = {
 /** Passages à compléter : entre crochets dans le texte. */
 export const PLACEHOLDER_RE = /\[[^\]\n]{3,}\]/g;
 
-function cleanTitle(title: string): string {
-  return title
-    .replace(/\(\s*[hf]\s*\/\s*[hf]\s*\)|\b[hf]\s*\/\s*[hf]\b/gi, "")
-    .replace(/\s{2,}/g, " ")
-    .replace(/[\s\-–,]+$/, "")
-    .trim();
-}
-
 function companyName(company: string): string {
   const c = company.trim();
   return !c || /confidenti|non communiqu|anonyme/i.test(c) ? "votre entreprise" : c;
@@ -276,7 +269,7 @@ function availability(date: string | null): string | null {
 export function renderTemplate(domainId: string, style: TemplateStyle, input: TemplateInput): string {
   const domain = TEMPLATE_DOMAINS.find((d) => d.id === domainId) ?? GENERALISTE;
   const alternance = input.offer.contractType === "alternance";
-  const poste = cleanTitle(input.offer.title) || "[intitulé du poste]";
+  const poste = letterJobTitle(input.offer.title, input.offer.contractType) || "[intitulé du poste]";
   const entreprise = companyName(input.offer.company);
   const vars: Record<string, string> = {
     poste,
