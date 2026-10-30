@@ -3,6 +3,7 @@
 import assert from "node:assert/strict";
 import { buildRefundRequests, mentionsRefund, paymentsByCustomer, pendingPeople, stripeRefundComments } from "../src/lib/admin/refunds";
 import type { StripeSnapshot, SubRecord } from "../src/lib/admin/cockpit/types";
+import { followUpAt, renderFreeMonthEmail, renderRefundAckEmail } from "../src/lib/refunds/process";
 
 const DAY = 86_400_000;
 const T0 = Date.parse("2026-10-26T09:11:00Z");
@@ -69,5 +70,18 @@ assert.equal(d.daysAfterFirstPayment, 5);
 // Deux personnes à traiter, toutes deux dans les 14 jours ; une même personne ne compte qu'une fois.
 assert.deepEqual(pendingPeople(requests), { total: 2, withinWithdrawal: 2 });
 assert.deepEqual(pendingPeople([...requests, { ...a, source: "questionnaire", at: a.at + 1000 }]), { total: 2, withinWithdrawal: 2 });
+
+// Procédure : accusé « on traite ta demande », puis mois offert 20 jours après.
+const ack = renderRefundAckEmail("Léa Martin");
+assert.equal(ack.subject, "On traite ta demande de remboursement");
+assert.match(ack.text, /^Salut Léa,/);
+assert.match(ack.text, /On la traite et on te répond au plus vite\./);
+assert.doesNotMatch(ack.text, /rembourser? sous|on te rembourse/i);
+assert.match(renderRefundAckEmail(null).text, /^Salut,/);
+assert.match(renderRefundAckEmail("<b>x</b>").html, /&lt;b&gt;/);
+const month = renderFreeMonthEmail("Léa", "26 décembre");
+assert.match(month.text, /on ne peut pas te rembourser/);
+assert.match(month.text, /prolongé jusqu'au 26 décembre, sans aucun prélèvement/);
+assert.equal(followUpAt(T0) - T0, 20 * DAY);
 
 console.log("remboursements.test.ts OK");

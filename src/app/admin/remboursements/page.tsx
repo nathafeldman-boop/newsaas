@@ -15,6 +15,7 @@ import {
   type RawRefundRequest,
 } from "@/lib/admin/refunds";
 import { GUARANTEE_REQUESTED_EVENT } from "@/lib/premium/guaranteeTerms";
+import { REFUND_ACK_EVENT, REFUND_FOLLOW_UP_DAYS, followUpAt } from "@/lib/refunds/process";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 // Remboursements (30/10, Nathan : « crée un onglet remboursement ») : toutes
@@ -33,7 +34,7 @@ export default async function RemboursementsPage() {
   await requireAdminPage();
   const now = nowMs();
   const db = createAdminClient();
-  const [{ snap, error }, cancellations, guarantee] = await Promise.all([
+  const [{ snap, error }, cancellations, guarantee, acks] = await Promise.all([
     loadSnapshot(),
     db
       .from("subscription_cancellations")
@@ -48,6 +49,13 @@ export default async function RemboursementsPage() {
       .eq("event_type", GUARANTEE_REQUESTED_EVENT)
       .order("created_at", { ascending: false })
       .limit(500)
+      .then(({ data, error: e }) => (e ? null : ((data ?? []) as EventRow[]))),
+    db
+      .from("user_events")
+      .select("user_id, created_at, metadata")
+      .eq("event_type", REFUND_ACK_EVENT)
+      .gte("created_at", new Date(now - 180 * DAY).toISOString())
+      .limit(2000)
       .then(({ data, error: e }) => (e ? null : ((data ?? []) as EventRow[]))),
   ]);
 
@@ -76,6 +84,14 @@ export default async function RemboursementsPage() {
     })),
   ];
   const requests = buildRefundRequests(raw, snap);
+  // Accusé « on traite ta demande » envoyé pour cette demande (lib/refunds/process).
+  const ackAt = (userId: string | null, at: number) =>
+    userId
+      ? ((acks ?? [])
+          .filter((a) => a.user_id === userId && Date.parse(a.created_at) >= at - DAY)
+          .map((a) => Date.parse(a.created_at))
+          .sort((a, b) => a - b)[0] ?? null)
+      : null;
   const pending = pendingPeople(requests);
 
   const since90 = now - 90 * DAY;
@@ -95,6 +111,9 @@ export default async function RemboursementsPage() {
         Toutes les demandes de remboursement que l&apos;app peut lire : commentaire laissé en résiliant dans Stripe, questionnaire de départ et
         formulaire de la garantie. Le remboursement se fait à la main dans Stripe (fiche du client › paiement › Rembourser) ; la demande passe
         alors toute seule en « remboursé ». Les e-mails envoyés à contact@stageio.fr n&apos;apparaissent pas ici : regarde ta boîte.
+        Procédure : dès la demande, l&apos;e-mail « on traite ta demande, on te répond au plus vite » part tout seul (résiliation Stripe et
+        questionnaire) ; {REFUND_FOLLOW_UP_DAYS} jours après, sans remboursement, un mois offert (abonnement prolongé dans Stripe, sans
+        prélèvement) et l&apos;e-mail qui l&apos;annonce. Accès à vie : à décider.
       </p>
 
       <div style={{ marginTop: 16 }}>
@@ -191,6 +210,19 @@ export default async function RemboursementsPage() {
                       </td>
                       <td style={{ textAlign: "left" }}>
                         {r.refundedCents > 0 ? `✅ ${euros(r.refundedCents, { decimals: true })} le ${date(r.refundedAt)}` : "⏳ À traiter"}
+                        {r.refundedCents === 0 &&
+                          (() => {
+                            const ack = ackAt(r.userId, r.at);
+                            if (ack === null) return <div style={{ fontSize: 12, ...muted }}>Pas d&apos;accusé envoyé</div>;
+                            const due = followUpAt(ack);
+                            return (
+                              <>
+                                <div style={{ fontSize: 12, ...muted }}>Accusé envoyé le {date(ack)}</div>
+                                <div style={{ fontSize: 12, ...muted }}>Mois offert prévu le {date(due)}</div>
+                                {now >= due && <span className="cockpit-pill">réponse à faire</span>}
+                              </>
+                            );
+                          })()}
                       </td>
                     </tr>
                   );

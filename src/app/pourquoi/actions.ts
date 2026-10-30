@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { onRefundAnswer } from "@/lib/refunds/process";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -35,5 +36,7 @@ export async function submitChurnSurveyAction(formData: FormData): Promise<void>
     redirect(`/pourquoi?u=${userId}&k=${kind}&erreur=1`);
   }
   await db.from("user_events").insert({ user_id: userId, event_type: "churn_survey", metadata: { reason, kind, comeBack } });
+  // Demande de remboursement (30/10) : accusé de réception, voir lib/refunds/process.
+  await onRefundAnswer(db, userId, `${reason} ${stay} ${comeBackOther}`);
   redirect(`/pourquoi?merci=1&k=${kind}${/trouvé/i.test(reason) ? "&r=trouve" : ""}`);
 }

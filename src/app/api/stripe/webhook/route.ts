@@ -10,6 +10,7 @@ import { creditAffiliateCommission } from "@/lib/affiliates/creditAffiliateCommi
 import { cancelRemindersAfterPayment } from "@/lib/stripe/checkoutReminder";
 import { applyAutoCheckout } from "@/lib/stripe/autoPlan";
 import { onCancellationScheduled } from "@/lib/churn/outreach";
+import { onRefundComment } from "@/lib/refunds/process";
 import { sendWelcomeOnce } from "@/lib/subscribers/welcome";
 import { COCKPIT_STRIPE_TAG } from "@/lib/admin/cockpit/stripeSnapshot";
 
@@ -244,8 +245,14 @@ export async function POST(request: NextRequest) {
         event.type === "customer.subscription.updated" &&
         !!before &&
         ((subscription.cancel_at_period_end && before.cancel_at_period_end === false) || (!!subscription.cancel_at && "cancel_at" in before && !before.cancel_at));
-      if (justScheduled) {
-        const customerId = typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
+      // Demande de remboursement dans le commentaire de résiliation (30/10) :
+      // accusé de réception (« on traite ta demande ») à la place du message
+      // de résiliation. Seulement quand le commentaire vient d'être écrit :
+      // la fin de l'abonnement, plus tard, ne renvoie rien.
+      const customerId = typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
+      const commentJustWritten = event.type === "customer.subscription.updated" && !!before && "cancellation_details" in before;
+      const refundAsked = commentJustWritten && (await onRefundComment(createAdminClient(), customerId, subscription.cancellation_details?.comment));
+      if (justScheduled && !refundAsked) {
         await onCancellationScheduled(customerId);
       }
       break;

@@ -1,6 +1,8 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { onRefundAnswer } from "@/lib/refunds/process";
 import { logServerEvent } from "@/lib/analytics/logServerEvent";
 import { createPortalSessionAction } from "@/app/(app)/premium/actions";
 
@@ -27,6 +29,8 @@ export async function submitCancellationFeedbackAction(formData: FormData): Prom
         console.error("submitCancellationFeedbackAction insert failed", error, { userId: user.id });
       } else {
         await logServerEvent(supabase, user.id, "subscription_cancellation_feedback", { reason });
+        // Demande de remboursement (30/10) : accusé de réception, voir lib/refunds/process.
+        await onRefundAnswer(createAdminClient(), user.id, `${reason} ${detail}`);
       }
     }
   }
