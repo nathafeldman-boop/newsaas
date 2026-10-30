@@ -65,7 +65,8 @@ async function checkoutPresentation(lifetime: boolean): Promise<Pick<Stripe.Chec
   const message = [
     "🔒 Paiement sécurisé par Stripe pour Stageio. Ton accès s'ouvre dès le paiement.",
     lifetime ? "Paiement unique : aucun abonnement, rien à résilier." : "Sans engagement : tu résilies quand tu veux, depuis ton compte Stageio.",
-    guarantee ? `🛡️ Garantie : aucun entretien en ${GUARANTEE_MONTHS} mois de Premium = remboursé (conditions dans les CGV).` : null,
+    // Garantie : abonnement mensuel seulement (accès à vie exclu depuis le 31/10, CGV).
+    guarantee && !lifetime ? `🛡️ Garantie : aucun entretien en ${GUARANTEE_MONTHS} mois de Premium = remboursé (conditions dans les CGV).` : null,
   ]
     .filter(Boolean)
     .join(" ");

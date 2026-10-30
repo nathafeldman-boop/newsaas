@@ -15,7 +15,7 @@ import {
   type RawRefundRequest,
 } from "@/lib/admin/refunds";
 import { GUARANTEE_REQUESTED_EVENT } from "@/lib/premium/guaranteeTerms";
-import { REFUND_ACK_EVENT, REFUND_FOLLOW_UP_DAYS, followUpAt } from "@/lib/refunds/process";
+import { REFUND_ACK_EVENT, REFUND_FOLLOW_UP_DAYS, REFUND_FOLLOW_UP_EVENT, followUpAt } from "@/lib/refunds/process";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 // Remboursements (30/10, Nathan : « crée un onglet remboursement ») : toutes
@@ -28,13 +28,13 @@ const muted = { color: "var(--color-neutral-600)" } as const;
 const stripeCustomerUrl = (customer: string) => `https://dashboard.stripe.com/customers/${customer}`;
 
 type CancellationRow = { user_id: string; reason: string; detail: string | null; created_at: string };
-type EventRow = { user_id: string; created_at: string; metadata: Record<string, unknown> | null };
+type EventRow = { user_id: string; created_at: string; event_type?: string; metadata: Record<string, unknown> | null };
 
 export default async function RemboursementsPage() {
   await requireAdminPage();
   const now = nowMs();
   const db = createAdminClient();
-  const [{ snap, error }, cancellations, guarantee, acks] = await Promise.all([
+  const [{ snap, error }, cancellations, guarantee, procedure] = await Promise.all([
     loadSnapshot(),
     db
       .from("subscription_cancellations")
@@ -52,8 +52,8 @@ export default async function RemboursementsPage() {
       .then(({ data, error: e }) => (e ? null : ((data ?? []) as EventRow[]))),
     db
       .from("user_events")
-      .select("user_id, created_at, metadata")
-      .eq("event_type", REFUND_ACK_EVENT)
+      .select("user_id, created_at, event_type, metadata")
+      .in("event_type", [REFUND_ACK_EVENT, REFUND_FOLLOW_UP_EVENT])
       .gte("created_at", new Date(now - 180 * DAY).toISOString())
       .limit(2000)
       .then(({ data, error: e }) => (e ? null : ((data ?? []) as EventRow[]))),
@@ -84,13 +84,12 @@ export default async function RemboursementsPage() {
     })),
   ];
   const requests = buildRefundRequests(raw, snap);
-  // Accusé « on traite ta demande » envoyé pour cette demande (lib/refunds/process).
-  const ackAt = (userId: string | null, at: number) =>
+  // Procédure (lib/refunds/process) : accusé « on traite ta demande », puis réponse à 20 jours.
+  const firstEvent = (type: string, userId: string | null, after: number) =>
     userId
-      ? ((acks ?? [])
-          .filter((a) => a.user_id === userId && Date.parse(a.created_at) >= at - DAY)
-          .map((a) => Date.parse(a.created_at))
-          .sort((a, b) => a - b)[0] ?? null)
+      ? ((procedure ?? [])
+          .filter((e) => e.event_type === type && e.user_id === userId && Date.parse(e.created_at) >= after)
+          .sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at))[0] ?? null)
       : null;
   const pending = pendingPeople(requests);
 
@@ -111,9 +110,10 @@ export default async function RemboursementsPage() {
         Toutes les demandes de remboursement que l&apos;app peut lire : commentaire laissé en résiliant dans Stripe, questionnaire de départ et
         formulaire de la garantie. Le remboursement se fait à la main dans Stripe (fiche du client › paiement › Rembourser) ; la demande passe
         alors toute seule en « remboursé ». Les e-mails envoyés à contact@stageio.fr n&apos;apparaissent pas ici : regarde ta boîte.
-        Procédure : dès la demande, l&apos;e-mail « on traite ta demande, on te répond au plus vite » part tout seul (résiliation Stripe et
-        questionnaire) ; {REFUND_FOLLOW_UP_DAYS} jours après, sans remboursement, un mois offert (abonnement prolongé dans Stripe, sans
-        prélèvement) et l&apos;e-mail qui l&apos;annonce. Accès à vie : à décider.
+        Procédure : dès une nouvelle demande, l&apos;e-mail « on traite ta demande, on te répond au plus vite » part tout seul
+        (résiliation Stripe et questionnaire) ; {REFUND_FOLLOW_UP_DAYS} jours après, si tu n&apos;as pas remboursé entre-temps, un
+        second e-mail part tout seul : pas de remboursement (conditions des CGV), et un geste au choix, un mois gratuit ou la formule
+        supérieure (accès à vie : passage à Stageio Auto). Le client répond avec son choix, tu l&apos;appliques.
       </p>
 
       <div style={{ marginTop: 16 }}>
@@ -212,14 +212,19 @@ export default async function RemboursementsPage() {
                         {r.refundedCents > 0 ? `✅ ${euros(r.refundedCents, { decimals: true })} le ${date(r.refundedAt)}` : "⏳ À traiter"}
                         {r.refundedCents === 0 &&
                           (() => {
-                            const ack = ackAt(r.userId, r.at);
-                            if (ack === null) return <div style={{ fontSize: 12, ...muted }}>Pas d&apos;accusé envoyé</div>;
-                            const due = followUpAt(ack);
+                            const ackEvent = firstEvent(REFUND_ACK_EVENT, r.userId, r.at - DAY);
+                            if (!ackEvent) return <div style={{ fontSize: 12, ...muted }}>Pas d&apos;accusé envoyé</div>;
+                            const ack = Date.parse(ackEvent.created_at);
+                            const reply = firstEvent(REFUND_FOLLOW_UP_EVENT, r.userId, ack);
                             return (
                               <>
                                 <div style={{ fontSize: 12, ...muted }}>Accusé envoyé le {date(ack)}</div>
-                                <div style={{ fontSize: 12, ...muted }}>Mois offert prévu le {date(due)}</div>
-                                {now >= due && <span className="cockpit-pill">réponse à faire</span>}
+                                <div style={{ fontSize: 12, ...muted }}>
+                                  {reply
+                                    ? `Réponse (geste commercial) envoyée le ${date(Date.parse(reply.created_at))}`
+                                    : `Réponse automatique le ${date(followUpAt(ack))}`}
+                                </div>
+                                {!reply && now >= followUpAt(ack) + DAY && <span className="cockpit-pill">réponse en retard</span>}
                               </>
                             );
                           })()}

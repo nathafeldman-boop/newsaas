@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import {
   GUARANTEE_OFFERED_EVENT,
   GUARANTEE_REQUESTED_EVENT,
+  guaranteeCoversPurchase,
   guaranteeWindow,
 } from "@/lib/premium/guaranteeTerms";
 
@@ -16,7 +17,7 @@ export type GuaranteeStatus = {
 };
 
 // null = pas de garantie sur cet achat (message jamais vu avant l'achat,
-// accès offert, ou rien payé).
+// accès offert, rien payé, ou accès à vie acheté à partir du 31/10).
 export async function getGuaranteeStatus(
   userId: string,
   profile: { subscription_status: string | null; premium_activated_at: string | null; total_paid_cents: number | null },
@@ -25,6 +26,7 @@ export async function getGuaranteeStatus(
   if (!activatedAt || !PAID_STATUSES.includes(profile.subscription_status ?? "") || !(profile.total_paid_cents ?? 0)) {
     return null;
   }
+  if (!guaranteeCoversPurchase(profile.subscription_status, activatedAt)) return null;
   const admin = createAdminClient();
   const { data: offered, error: offeredError } = await admin
     .from("user_events")

@@ -3,7 +3,8 @@
 import assert from "node:assert/strict";
 import { buildRefundRequests, mentionsRefund, paymentsByCustomer, pendingPeople, stripeRefundComments } from "../src/lib/admin/refunds";
 import type { StripeSnapshot, SubRecord } from "../src/lib/admin/cockpit/types";
-import { followUpAt, renderFreeMonthEmail, renderRefundAckEmail } from "../src/lib/refunds/process";
+import { followUpAt, followUpDue, renderRefundAckEmail, renderRefundFollowUpEmail } from "../src/lib/refunds/process";
+import { guaranteeCoversPurchase } from "../src/lib/premium/guaranteeTerms";
 
 const DAY = 86_400_000;
 const T0 = Date.parse("2026-10-26T09:11:00Z");
@@ -79,9 +80,27 @@ assert.match(ack.text, /On la traite et on te répond au plus vite\./);
 assert.doesNotMatch(ack.text, /rembourser? sous|on te rembourse/i);
 assert.match(renderRefundAckEmail(null).text, /^Salut,/);
 assert.match(renderRefundAckEmail("<b>x</b>").html, /&lt;b&gt;/);
-const month = renderFreeMonthEmail("Léa", "26 décembre");
-assert.match(month.text, /on ne peut pas te rembourser/);
-assert.match(month.text, /prolongé jusqu'au 26 décembre, sans aucun prélèvement/);
+const monthly = renderRefundFollowUpEmail("Léa", false);
+assert.equal(monthly.subject, "Ta demande de remboursement Stageio");
+assert.match(monthly.text, /On a bien traité ta demande de remboursement\./);
+assert.match(monthly.text, /ne remplit pas les conditions de remboursement prévues par nos conditions générales de vente/);
+assert.match(monthly.text, /\/legal\/cgv/);
+assert.match(monthly.text, /un mois de Premium gratuit, ou un mois gratuit de Stageio Auto/);
+assert.match(monthly.text, /Réponds simplement à cet e-mail avec ton choix/);
+const lifetime = renderRefundFollowUpEmail(null, true);
+assert.match(lifetime.text, /^Salut,/);
+assert.match(lifetime.text, /ton accès à vie à Stageio Auto/);
+assert.doesNotMatch(lifetime.text, /un mois de Premium gratuit/);
+assert.match(monthly.html, /<a href="[^"]+\/legal\/cgv"/);
+// Réponse due à J+20, plus au-delà de 40 jours (cron arrêté longtemps).
 assert.equal(followUpAt(T0) - T0, 20 * DAY);
+assert.equal(followUpDue(T0, T0 + 19 * DAY), false);
+assert.equal(followUpDue(T0, T0 + 20 * DAY), true);
+assert.equal(followUpDue(T0, T0 + 41 * DAY), false);
+
+// Accès à vie achetés à partir du 31/10 (heure de Paris) : plus de garantie ; les abonnements, toujours.
+assert.equal(guaranteeCoversPurchase("lifetime", "2026-10-30T22:59:00Z"), true);
+assert.equal(guaranteeCoversPurchase("lifetime", "2026-10-30T23:00:00Z"), false);
+assert.equal(guaranteeCoversPurchase("active", "2026-11-05T10:00:00Z"), true);
 
 console.log("remboursements.test.ts OK");

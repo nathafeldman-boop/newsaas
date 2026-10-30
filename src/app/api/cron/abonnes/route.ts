@@ -9,6 +9,7 @@ import { runWelcomeCatchUp } from "@/lib/subscribers/welcome";
 import { FIRST_APPLICATION_HOUR, runFirstApplicationNudges } from "@/lib/subscribers/firstApplication";
 import { isAutoTier } from "@/lib/subscription/isPremium";
 import { isMondayInParis, runWeeklyPlans, WEEKLY_PLAN_HOURS } from "@/lib/subscribers/weeklyPlan";
+import { runRefundFollowUps } from "@/lib/refunds/process";
 
 // Aide aux abonnés après le paiement (28/10, Nathan : « dès qu'il paye,
 // fais pas en sorte qu'il churn […] faut qu'il trouve son alternance ») :
@@ -86,6 +87,16 @@ export async function GET(request: NextRequest) {
       result.weeklyPlan = { ...r, failures: r.failures.slice(0, 5) };
     } catch (err) {
       result.weeklyPlanError = err instanceof Error ? err.message : String(err);
+    }
+  }
+
+  // Demandes de remboursement : réponse 20 jours après l'accusé (lib/refunds/process).
+  if (hour === FOLLOW_UP_HOUR) {
+    try {
+      const r = await runRefundFollowUps(admin, started + 250_000, started);
+      result.refundFollowUps = { ...r, failures: r.failures.slice(0, 5) };
+    } catch (err) {
+      result.refundFollowUpsError = err instanceof Error ? err.message : String(err);
     }
   }
 

@@ -10,6 +10,17 @@
 // refund-guarantee-reminder). Remboursement fait à la main dans Stripe.
 // Module sans dépendance serveur : importé aussi par les composants client.
 export const GUARANTEE_MONTHS = 2;
+/**
+ * Accès à vie achetés à partir de cette date : pas de garantie ni de
+ * remboursement (Nathan, 30/10 ; CGV, section « Garantie »). Ceux achetés
+ * avant restent couverts.
+ */
+export const LIFETIME_GUARANTEE_END = Date.parse("2026-10-31T00:00:00+01:00");
+
+/** Cet achat ouvre-t-il droit à la garantie (hors accès à vie récents) ? */
+export function guaranteeCoversPurchase(subscriptionStatus: string | null, activatedAt: string): boolean {
+  return subscriptionStatus !== "lifetime" || Date.parse(activatedAt) < LIFETIME_GUARANTEE_END;
+}
 export const GUARANTEE_WINDOW_HOURS = 12;
 export const GUARANTEE_MIN_LIKES = 50;
 export const GUARANTEE_REFUND_DAYS = 14;

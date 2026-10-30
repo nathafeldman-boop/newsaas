@@ -126,7 +126,9 @@ export default function CGVPage() {
         <p style={{ marginTop: 8 }}>
           Formule à vie : il n&apos;y a rien à résilier, aucun prélèvement
           récurrent n&apos;étant mis en place. L&apos;accès Premium reste
-          acquis sans limite de durée après ce paiement unique.
+          acquis sans limite de durée après ce paiement unique. L&apos;accès à
+          vie acheté à partir du 31 octobre 2026 n&apos;est pas remboursable, en
+          dehors des cas prévus par la loi.
         </p>
       </Section>
 
@@ -153,9 +155,10 @@ export default function CGVPage() {
           <p>
             <strong>Qui en bénéficie :</strong> uniquement l&apos;utilisateur à qui cette garantie a été présentée sur la
             page Premium de Stageio (écran &laquo;&nbsp;Des résultats, ou on te rembourse&nbsp;&raquo; affiché avant les
-            offres, ou message affiché quand il quitte cette page), pour un achat Premium effectué après cet affichage,
-            quelle que soit la formule (mensuelle ou à vie). Une seule garantie par personne. Les accès
-            Premium offerts (codes d&apos;accès, parrainage) en sont exclus.
+            offres, ou message affiché quand il quitte cette page), pour un abonnement Premium mensuel souscrit après
+            cet affichage. L&apos;accès à vie acheté à partir du 31 octobre 2026 n&apos;ouvre pas droit à cette
+            garantie ; celui acheté avant cette date reste couvert aux conditions ci-dessous. Une seule garantie par
+            personne. Les accès Premium offerts (codes d&apos;accès, parrainage) en sont exclus.
           </p>
           <p style={{ marginTop: 8 }}>
             <strong>Conditions, toutes cumulatives :</strong>

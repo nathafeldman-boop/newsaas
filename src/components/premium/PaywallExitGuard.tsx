@@ -158,8 +158,8 @@ export function GuaranteeBadge({ initialVisible }: { initialVisible: boolean }) 
         lineHeight: 1.45,
       }}
     >
-      <strong>🛡️ Ta garantie est activée :</strong> aucun entretien en {GUARANTEE_MONTHS} mois de Premium = remboursé, sur toutes les
-      formules.{" "}
+      <strong>🛡️ Ta garantie est activée :</strong> aucun entretien en {GUARANTEE_MONTHS} mois de Premium = remboursé, sur
+      l&apos;abonnement mensuel.{" "}
       <a href="/legal/cgv#garantie" target="_blank" rel="noopener" style={{ textDecoration: "underline" }}>
         Conditions
       </a>
