@@ -498,3 +498,8 @@ a:hover > .card, button:hover > .card,
 body:has([data-paywall-fullscreen]) .app-sidebar,
 body:has([data-paywall-fullscreen]) .app-menu-btn { display: none !important; }
 body:has([data-paywall-fullscreen]) .app-shell-content { padding-left: 0 !important; }
+
+/* Écran avant résiliation (30/10) : grand cœur brisé qui bat doucement. */
+.cancel-heart { animation: cancel-heart-beat 1.8s ease-in-out infinite; filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.25)); }
+@keyframes cancel-heart-beat { 0%, 100% { transform: scale(1); } 15% { transform: scale(1.12); } 30% { transform: scale(0.98); } 45% { transform: scale(1.06); } }
+@media (prefers-reduced-motion: reduce) { .cancel-heart { animation: none; } }
