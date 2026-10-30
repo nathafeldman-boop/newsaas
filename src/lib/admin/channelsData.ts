@@ -7,13 +7,9 @@ import { channelLabel } from "@/lib/admin/channels";
 // chaque compte (réponse « Tu nous as connus comment ? », sinon utm_source)
 // et vues saisies par jour. Les paiements viennent de Stripe (cockpit).
 
-export const CHANNEL_VIEWS_SQL = `create table if not exists public.channel_views (
-  day date not null,
-  channel text not null,
-  views integer not null check (views >= 0),
-  created_at timestamptz not null default now(),
-  primary key (day, channel)
-);
+// Une ligne par instruction : un collage incomplet (ligne « primary key »
+// perdue) donnait « syntax error at or near ")" ».
+export const CHANNEL_VIEWS_SQL = `create table if not exists public.channel_views (day date not null, channel text not null, views integer not null check (views >= 0), created_at timestamptz not null default now(), primary key (day, channel));
 alter table public.channel_views enable row level security;`;
 
 export type ChannelInputs = {
