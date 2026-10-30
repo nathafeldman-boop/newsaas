@@ -41,6 +41,7 @@ const GROUPS = [
     title: "Acquisition",
     links: [
       { href: "/admin/acquisition", label: "Conversion et paywall" },
+      { href: "/admin/canaux", label: "Revenus par canal" },
       { href: "/admin/rpm", label: "RPM" },
       { href: "/admin/affiliates", label: "Affiliés" },
       { href: "/admin/emails", label: "E-mails et relances" },

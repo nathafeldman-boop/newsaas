@@ -18,6 +18,8 @@ export function BarChart({
   height = 200,
   caption,
   hrefs,
+  notes,
+  maxValue,
 }: {
   times: number[];
   series: BarSeries[];
@@ -27,6 +29,10 @@ export function BarChart({
   caption: string;
   // Détail de chaque colonne (25/10) : un clic sur un jour ouvre sa page.
   hrefs?: (string | null)[];
+  /** Lignes en plus dans l'infobulle de chaque colonne (inscrits, vues, RPM…). */
+  notes?: (string[] | null)[];
+  /** Même échelle pour plusieurs graphiques (petits multiples) : le plus haut de tous. */
+  maxValue?: number;
 }) {
   const router = useRouter();
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -51,7 +57,7 @@ export function BarChart({
   const plotW = width - padLeft - padRight;
   const plotH = height - padTop - axisBand;
   const totals = times.map((_, i) => (mode === "stacked" ? series.reduce((s, x) => s + x.values[i], 0) : Math.max(...series.map((x) => x.values[i]))));
-  const max = niceMax(Math.max(...totals, 0));
+  const max = niceMax(Math.max(...totals, maxValue ?? 0, 0));
   const band = plotW / n;
   const groupW = Math.min(mode === "stacked" ? 24 : 24 * series.length + 2 * (series.length - 1), band * 0.7);
   const barW = mode === "stacked" ? groupW : (groupW - 2 * (series.length - 1)) / series.length;
@@ -151,8 +157,13 @@ export function BarChart({
             {series.map((s) => (
               <div key={s.name} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <span aria-hidden style={{ width: 12, height: 2, background: s.color, borderRadius: 1 }} />
-                <strong>{formatValue(s.values[hover], unit)}</strong>
+                <strong style={{ whiteSpace: "nowrap" }}>{formatValue(s.values[hover], unit)}</strong>
                 <span style={{ color: AXIS_TEXT }}>{s.name}</span>
+              </div>
+            ))}
+            {notes?.[hover]?.map((line) => (
+              <div key={line} style={{ color: AXIS_TEXT }}>
+                {line}
               </div>
             ))}
             {hrefs?.[hover] && <div style={{ marginTop: 4, fontWeight: 700, color: "var(--color-accent-700)" }}>Cliquer pour le détail →</div>}

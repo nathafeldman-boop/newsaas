@@ -251,6 +251,15 @@ export type ContentView = {
   created_at: string;
 };
 
+// Vues d'un jour pour un canal (« TikTok · commentaire »…), saisies dans
+// /admin/canaux pour le RPM par canal (30/10).
+export type ChannelView = {
+  day: string;
+  channel: string;
+  views: number;
+  created_at: string;
+};
+
 export type ReviewStatus = "pending" | "approved" | "rejected";
 
 export type Review = {
@@ -444,6 +453,12 @@ export type Database = {
         Row: ContentView;
         Insert: Partial<ContentView> & { recorded_on: string; source: string; views: number };
         Update: Partial<ContentView>;
+        Relationships: [];
+      };
+      channel_views: {
+        Row: ChannelView;
+        Insert: Partial<ChannelView> & { day: string; channel: string; views: number };
+        Update: Partial<ChannelView>;
         Relationships: [];
       };
       site_visits: {
