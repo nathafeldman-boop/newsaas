@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CvUploadPanel } from "@/components/profile/CvUploadPanel";
@@ -48,7 +49,24 @@ export default async function CvPage() {
         Un CV à jour améliore tes matchs et débloque l&apos;audit Premium.
       </p>
 
-      <div className="mt-6">
+      <Link
+        href="/cv/modeles"
+        className="card elev-sm mt-6 flex items-center gap-3"
+        style={{ flexDirection: "row", padding: "14px 16px", textDecoration: "none", color: "inherit", border: "1.5px solid var(--color-accent)", background: "var(--color-accent-100)" }}
+      >
+        <span aria-hidden style={{ fontSize: 28 }}>
+          📄
+        </span>
+        <span style={{ flex: 1 }}>
+          <strong style={{ display: "block", fontSize: 15 }}>Crée ton CV avec un modèle</strong>
+          <span style={{ fontSize: 13 }}>Prêt pour ton métier, avec les mots-clés que les recruteurs cherchent. PDF en 2 minutes.</span>
+        </span>
+        <span aria-hidden style={{ fontWeight: 800 }}>
+          →
+        </span>
+      </Link>
+
+      <div className="mt-4">
         <CvUploadPanel userId={user.id} cvSignedUrl={cvSignedUrl} />
       </div>
 

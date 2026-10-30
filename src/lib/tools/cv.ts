@@ -23,6 +23,8 @@ export type CvInput = {
   education: CvEntry[];
   experience: CvEntry[];
   skills: string;
+  // Qualités (savoir-être), séparées par des virgules.
+  qualities: string;
   languages: string;
   interests: string;
 };
@@ -45,6 +47,7 @@ export const EMPTY_CV_INPUT: CvInput = {
   education: [{ ...EMPTY_ENTRY }],
   experience: [{ ...EMPTY_ENTRY }],
   skills: "",
+  qualities: "",
   languages: "",
   interests: "",
 };
@@ -67,4 +70,25 @@ export function splitList(text: string): string[] {
 
 export function isEmptyEntry(entry: CvEntry): boolean {
   return !entry.dates.trim() && !entry.title.trim() && !entry.place.trim() && !entry.details.trim();
+}
+
+const foldKeyword = (text: string) =>
+  text
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase();
+
+/** Mots-clés du métier présents ou non dans le texte du CV (sans accents ni majuscules). */
+export function keywordCoverage(keywords: string[], cvText: string): { keyword: string; present: boolean }[] {
+  const text = foldKeyword(cvText);
+  return keywords.map((keyword) => ({ keyword, present: text.includes(foldKeyword(keyword)) }));
+}
+
+const PLACEHOLDER_RE = /\[[^\]\n]{3,}\]/g;
+
+/** Passages entre crochets encore à remplacer dans le CV (sans doublon). */
+export function cvPlaceholders(cv: CvInput): string[] {
+  const texts = [cv.headline, cv.summary, cv.availability, cv.skills, cv.qualities, ...cv.education.flatMap(Object.values), ...cv.experience.flatMap(Object.values)];
+  const found = texts.flatMap((t) => (t ?? "").match(PLACEHOLDER_RE) ?? []).map((p) => p.slice(1, -1));
+  return [...new Set(found)];
 }

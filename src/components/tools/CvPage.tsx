@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { CvBuilder } from "@/components/tools/CvBuilder";
 import { CvSheet } from "@/components/tools/CvSheet";
+import { CV_METIER_OPTIONS } from "@/lib/tools/cvTemplates";
 import { EMPTY_CV_INPUT, type CvContract, type CvInput } from "@/lib/tools/cv";
 import { SITE_URL } from "@/lib/site";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
@@ -28,10 +29,10 @@ export const CV_PAGES: Record<CvContract, PageContent> = {
     path: "/outils/cv-alternance",
     title: "CV alternance : générateur gratuit en PDF et exemple (2026)",
     description:
-      "Crée ton CV d'alternance gratuitement et télécharge-le en PDF, sans compte : modèle clair d'une page, exemple complet, ce qu'il faut mettre et les erreurs à éviter.",
+      "Crée ton CV d'alternance gratuitement et télécharge-le en PDF, sans compte : 6 modèles d'une page lisibles par les logiciels de tri, contenu prêt pour 60 métiers, exemple complet, ce qu'il faut mettre et les erreurs à éviter.",
     h1: "CV d'alternance : le générateur gratuit",
     intro:
-      "Remplis les champs : ton CV se met en page tout seul, sur une page A4, et se télécharge en PDF. C'est gratuit, sans compte, et rien n'est enregistré. Un CV d'alternance doit dire en 5 secondes quel poste tu vises, quelle formation tu prépares et à quel rythme.",
+      "Choisis ton métier et un des 6 modèles : ton CV se prépare avec les compétences que les recruteurs cherchent, se met en page sur une page A4 et se télécharge en PDF. C'est gratuit, sans compte, et rien n'est envoyé sur nos serveurs. Un CV d'alternance doit dire en 5 secondes quel poste tu vises, quelle formation tu prépares et à quel rythme.",
     structure: [
       "Le titre : le poste visé, le contrat et la date (« Alternance en BTS MCO – vendeur – rentrée septembre 2027 »).",
       "Tes coordonnées : ville, téléphone, mail, et ton LinkedIn si tu en as un.",
@@ -109,10 +110,10 @@ export const CV_PAGES: Record<CvContract, PageContent> = {
     path: "/outils/cv-stage",
     title: "CV de stage : générateur gratuit en PDF et exemple (2026)",
     description:
-      "Crée ton CV de stage gratuitement et télécharge-le en PDF, sans compte : modèle clair d'une page, exemple complet, ce qu'il faut mettre et les erreurs à éviter.",
+      "Crée ton CV de stage gratuitement et télécharge-le en PDF, sans compte : 6 modèles d'une page lisibles par les logiciels de tri, contenu prêt pour 60 métiers, exemple complet, ce qu'il faut mettre et les erreurs à éviter.",
     h1: "CV de stage : le générateur gratuit",
     intro:
-      "Remplis les champs : ton CV se met en page tout seul, sur une page A4, et se télécharge en PDF. C'est gratuit, sans compte, et rien n'est enregistré. Un CV de stage doit dire en 5 secondes quel stage tu cherches, à quelles dates, et ce que tu sais déjà faire.",
+      "Choisis ton métier et un des 6 modèles : ton CV se prépare avec les compétences que les recruteurs cherchent, se met en page sur une page A4 et se télécharge en PDF. C'est gratuit, sans compte, et rien n'est envoyé sur nos serveurs. Un CV de stage doit dire en 5 secondes quel stage tu cherches, à quelles dates, et ce que tu sais déjà faire.",
     structure: [
       "Le titre : le stage visé, sa durée et ses dates (« Stage de 10 semaines en marketing digital – avril 2027 »).",
       "Tes coordonnées : ville, téléphone, mail, et ton LinkedIn si tu en as un.",
@@ -242,7 +243,7 @@ export function CvPage({ contract }: { contract: CvContract }) {
       <h1 style={{ fontSize: 30, margin: "12px 0 0" }}>{page.h1}</h1>
       <p style={{ fontSize: 15, margin: "12px 0 24px", maxWidth: "70ch" }}>{page.intro}</p>
 
-      <CvBuilder defaultContract={contract} />
+      <CvBuilder defaultContract={contract} metierOptions={CV_METIER_OPTIONS} />
 
       <div style={{ maxWidth: "70ch" }}>
         <h2 style={sectionTitle}>Ce qu&apos;il faut mettre, dans l&apos;ordre</h2>
