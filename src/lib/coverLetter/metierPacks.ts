@@ -41,7 +41,7 @@ export const METIER_PACKS: Record<string, MetierPack> = {
   developpeur: {
     missions: "concevoir, coder et tester des fonctionnalités, puis les maintenir au sein d'une équipe de développement",
     skills: ["développement web", "Git", "qualité de code"],
-    motive: "Voir une fonctionnalité que j'ai codée utilisée par de vrais utilisateurs est ce qui me pousse à progresser chaque jour.",
+    motive: "Voir une fonctionnalité utilisée par de vrais utilisateurs, c'est ce qui me donne envie de progresser chaque jour.",
     keywords: ["javascript", "typescript", "react", "node", "java", "python", "php", "symfony", "angular", "api", "git", "sql", "agile", "scrum"],
   },
   design: {
@@ -335,7 +335,7 @@ export const METIER_PACKS: Record<string, MetierPack> = {
   "aide-soignant": {
     missions: "accompagner les patients dans les gestes du quotidien, assurer leur confort et participer aux soins avec l'équipe",
     skills: ["soins d'hygiène et de confort", "écoute des patients", "travail en équipe soignante"],
-    motive: "Être présent pour les patients et contribuer à leur confort au quotidien est ce qui me motive dans ce métier.",
+    motive: "Être là pour les patients et contribuer à leur confort au quotidien, c'est ce qui me motive dans ce métier.",
     keywords: ["soins", "patients", "ehpad", "hopital", "hygiene", "transmissions", "deas"],
   },
   "petite-enfance": {

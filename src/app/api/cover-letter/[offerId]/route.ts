@@ -1,15 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { generateStaticCoverLetter, type CoverLetterExtra } from "@/lib/coverLetter/staticGenerator";
-import { generateMetierLetter, type MetierLetterStyle } from "@/lib/coverLetter/metierLetter";
+import { generateTailoredLetter } from "@/lib/coverLetter/tailoredLetter";
 import { PROFILE_FOR_AI_COLUMNS } from "@/lib/ai/profileContext";
 import { isPremium } from "@/lib/subscription/isPremium";
 import { logServerEvent } from "@/lib/analytics/logServerEvent";
 import { isInvalidEnumError } from "@/lib/applications/status";
 
 // Lettre de motivation (16/10, animation refaite ; sans IA depuis le 30/10,
-// Nathan : « 100 templates […] sans IA ») : modèle du métier de l'offre
-// (lib/coverLetter/metierLetter), sinon générateur par famille de secteurs.
+// sur mesure depuis le 31/10) : lib/coverLetter/tailoredLetter, sinon
+// générateur par famille de secteurs.
 // La réponse reste un flux de texte que l'écran écrit à la volée.
 // - candidater est réservé aux Premium (hard paywall du 26/09, miroir du
 //   trigger SQL enforce_premium_application) ;
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const [{ data: offer }, { data: profile }] = await Promise.all([
     supabase
       .from("offers")
-      .select("title, company, description, location, requirements, contract_type, sector")
+      .select("title, company, description, location, requirements, contract_type, sector, start_date")
       .eq("id", offerId)
       .single(),
     supabase
@@ -56,15 +56,20 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      // Sans IA (30/10, Nathan) : le modèle du métier de l'offre, style
-      // « classique » puis « directe » à chaque « Régénérer », puis le
-      // générateur par famille de secteurs (aussi quand le métier n'a pas de
-      // modèle). L'écran l'écrit à la volée, comme avant.
-      const styles: (MetierLetterStyle | null)[] = ["classique", "directe", null];
-      const style = styles[attempt % styles.length];
-      const metierLetter = style ? generateMetierLetter(offer, profile, style, extra) : null;
-      const letter = metierLetter ?? generateStaticCoverLetter(offer, profile, extra, attempt);
-      const source = metierLetter ? `metier_${style}` : "static";
+      // Sans IA (30/10) et sur mesure (31/10, Nathan : « ultra générique »)
+      // : missions de l'annonce, voix du métier, profil ; ce qu'on ne sait
+      // pas reste entre crochets. « Régénérer » alterne les styles et change
+      // d'accroche. Générateur par famille en secours seulement.
+      const style = attempt % 2 === 0 ? "classique" : "directe";
+      let letter: string;
+      let source = `tailored_${style}`;
+      try {
+        letter = generateTailoredLetter(offer, profile, { style, mode: "assist", seed: attempt, extra });
+      } catch (err) {
+        console.error("cover-letter: lettre sur mesure en échec, générateur par famille", err);
+        letter = generateStaticCoverLetter(offer, profile, extra, attempt);
+        source = "static";
+      }
       controller.enqueue(encoder.encode(letter));
 
       await bookkeeping;

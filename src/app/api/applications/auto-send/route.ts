@@ -6,7 +6,8 @@ import { recipientForOffer } from "@/lib/offers/recruiterEmail";
 import { getOrCreateInboxAddress, inboxDomain } from "@/lib/inbox/address";
 import { studentSender } from "@/lib/inbox/sender";
 import { getResendClient } from "@/lib/resend/client";
-import { generateStaticCoverLetter } from "@/lib/coverLetter/staticGenerator";
+import { generateTailoredLetter } from "@/lib/coverLetter/tailoredLetter";
+import { countPlaceholders } from "@/lib/coverLetter/templates";
 import { logServerEvent } from "@/lib/analytics/logServerEvent";
 import { LbaError, lbaApiKey, MAX_CV_BYTES, sendLbaApplication } from "@/lib/laBonneAlternance/client";
 import { normalizePhone, splitFullName } from "@/lib/laBonneAlternance/applicant";
@@ -141,8 +142,13 @@ type Context = {
   count: number;
 };
 
+// Lettre envoyée telle quelle : celle que l'étudiant a écrite pour cette
+// offre, sauf si elle contient encore des passages à compléter (« [ta
+// formation] »…) ; sinon la lettre sur mesure sans crochets (31/10).
 function letterFor({ offer, profile, application }: Context): string {
-  return application?.cover_note?.trim() || generateStaticCoverLetter(offer, profile);
+  const saved = application?.cover_note?.trim();
+  if (saved && countPlaceholders(saved) === 0) return saved;
+  return generateTailoredLetter(offer, profile, { style: "classique", mode: "auto" });
 }
 
 async function applyViaLba(admin: Admin, supabase: Supabase, context: Context) {

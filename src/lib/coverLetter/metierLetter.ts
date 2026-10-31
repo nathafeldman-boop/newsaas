@@ -62,27 +62,32 @@ const PROPER_NAMES = new Set([
   "office 365", "power bi", "ms project", "meta business", "active directory", "scrum", "agile", "sap", "vba",
 ]);
 
-function displayKeyword(original: string, folded: string): string {
+export function displayKeyword(original: string, folded: string): string {
   if (/[A-Z]/.test(original.slice(1))) return original;
   if (PROPER_NAMES.has(folded)) return original.replace(/(^|\s)(\S)/g, (_, sp: string, c: string) => sp + c.toUpperCase());
   return original.toLowerCase();
 }
 
 const VOWEL = /^[aeiouyhâàéèêëîïôûùœ]/i;
-const de = (word: string) => (VOWEL.test(word) ? `d'${word}` : `de ${word}`);
+export const de = (word: string) => (VOWEL.test(word) ? `d'${word}` : `de ${word}`);
 
-function posteLabel(title: string, contract: string): string {
-  const t = letterJobTitle(title, contract);
+export function posteLabel(title: string, contract: string): string {
+  // « Aide-soignant(e) », « Chargé·e » : l'intitulé du poste, sans marque d'écriture inclusive.
+  const t = letterJobTitle(title, contract)
+    .replace(/\((?:e|ne|se|le|te|ère|euse|rice|trice)\)/gi, "")
+    .replace(/[·.](?:e|ne|se|ère|euse|rice|trice)\b/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
   // « Vendeur » → « vendeur », mais « RH », « BTS MCO » restent en majuscules.
   return /^[A-Z]{2}/.test(t) ? t : t.charAt(0).toLowerCase() + t.slice(1);
 }
 
-function companyName(company: string): string {
+export function companyName(company: string): string {
   const c = company.trim();
   return !c || /confidenti|non communiqu|anonyme/i.test(c) ? "votre entreprise" : c;
 }
 
-function sentence(text: string): string {
+export function sentence(text: string): string {
   const t = text.trim();
   if (!t) return t;
   const first = t.charAt(0).toUpperCase() + t.slice(1);
@@ -90,7 +95,7 @@ function sentence(text: string): string {
 }
 
 // Après deux-points : minuscule (sauf sigle), point final.
-function afterColon(text: string): string {
+export function afterColon(text: string): string {
   const t = sentence(text);
   return /^[A-Z]{2}/.test(t) ? t : t.charAt(0).toLowerCase() + t.slice(1);
 }
