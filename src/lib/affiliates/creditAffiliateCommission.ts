@@ -19,7 +19,7 @@ function planLabelForPriceId(priceId: string | null): "week" | "month" | "lifeti
   // Tous les prix du mensuel Premium, ceux du test de prix du 29/10 compris.
   if (priceId === process.env.STRIPE_PRICE_ID?.trim() || premiumMonthlyPriceIds().includes(priceId)) return "month";
   if (
-    // Prix de bienvenue de 50 € (31/10), puis l'ancien (variable d'environnement, 40 €).
+    // Prix de bienvenue à vie (40 €), puis la variable d'environnement (même prix, ou un ancien).
     priceId === WELCOME_PRICE_IDS.lifetime ||
     priceId === process.env.STRIPE_PRICE_ID_LIFETIME?.trim() ||
     priceId === REGULAR_PRICE_IDS.lifetime ||
