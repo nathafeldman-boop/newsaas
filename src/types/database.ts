@@ -117,6 +117,9 @@ export type Offer = {
   // Optionnelle : colonne ajoutée à la main en base (14/10), absente tant
   // que le SQL n'a pas été passé -- toujours lire avec select("*").
   contact_email?: string | null;
+  // Colonne calculée par Postgres (SCHOOL_AD_COLUMN_SQL, 31/10), absente
+  // tant que le SQL n'a pas été passé. Jamais écrite par le code.
+  is_school_ad?: boolean | null;
 };
 
 export type Swipe = {

@@ -266,3 +266,8 @@ export function regionOfDepartement(code: string): Region | undefined {
   return departement ? REGION_BY_NAME.get(departement.region) : undefined;
 }
 
+
+/** Départements et collectivités d'outre-mer (971 à 976, 977, 978, 98x). */
+export function isOverseasDepartement(code: string | null | undefined): boolean {
+  return !!code && /^9[78]\d$/.test(code);
+}

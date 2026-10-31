@@ -94,6 +94,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         return fetchActiveOffers(supabase, {
           sectors: profile ? knownProfileSectors(profile.sectors) : [],
           publishedAfter: todayStart.toISOString(),
+          employersOnly: premium,
           limit: 300,
         });
       })(),

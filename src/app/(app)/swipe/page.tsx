@@ -11,7 +11,8 @@ import {
   matchesTargetJob,
   profileDepartement,
 } from "@/lib/matching/score";
-import { dedupeOffers, diversifyByCompany, preferTargetJobs, targetJobTitlePatterns } from "@/lib/matching/deck";
+import { dedupeOffers, diversifyByCompany, fitsSubscriber, preferTargetJobs, subscriberOrder, targetJobTitlePatterns } from "@/lib/matching/deck";
+import { lookupCommuneDepartement, overseasMismatch, parseProfileLocation, type ProfileLocation } from "@/lib/matching/profileLocation";
 import { isPassReason, learnFromPassReasons, passReasonsSinceIso, type OfferTags, type PassReasonEvent } from "@/lib/matching/passReasons";
 import { classifyFormations, classifyMetier } from "@/lib/seo/metiers";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -22,7 +23,7 @@ import { computeApplicationStreak } from "@/lib/engagement/applicationStreak";
 import { fetchActiveOffers } from "@/lib/offers/fetchActiveOffers";
 import { hotSinceIso, orderFreshFirst } from "@/lib/offers/freshness";
 import { knownProfileSectors } from "@/lib/offers/sectors";
-import { isSchoolOrJobBoard } from "@/lib/seo/schools";
+import { isSchoolAd, isSchoolOrJobBoard } from "@/lib/seo/schools";
 import { normalizeTitle } from "@/lib/seo/metiers";
 import { normalizePhone, splitFullName } from "@/lib/laBonneAlternance/applicant";
 import { isAutoOfferAvailable } from "@/lib/subscription/autoAvailability";
@@ -190,7 +191,31 @@ export default async function SwipePage() {
   // Secteurs saisis à la main (« + Autre ») ramenés à la liste connue, voir
   // knownProfileSectors : sinon le filtre ne trouvait aucune offre.
   const hardSectors = profile ? knownProfileSectors(profile.sectors) : [];
-  const matchProfile = profile ? { ...profile, sectors: hardSectors } : profile;
+
+  // Abonné (31/10, avis « trop loin ») : département lu aussi dans
+  // « Toul 54200 », « Ain 01 », « Île-de-France », ou retrouvé d'après les
+  // offres de sa commune (« Melun » -> 77). Une région saisie compte comme
+  // « mobile dans la région ». Le deck d'avant le paiement ne change pas.
+  let subscriberLocation: ProfileLocation | null = null;
+  if (premium && profile?.city) {
+    subscriberLocation = parseProfileLocation(profile.city);
+    if (!subscriberLocation.departement) {
+      const departement = await lookupCommuneDepartement(supabase, profile.city).catch(() => null);
+      subscriberLocation = { departement, regionWide: false };
+    }
+  }
+  const geoProfile =
+    profile && subscriberLocation
+      ? {
+          ...profile,
+          departement: subscriberLocation.departement,
+          mobility:
+            subscriberLocation.regionWide && (!profile.mobility || profile.mobility === "Sur place uniquement")
+              ? "Mobile dans la région"
+              : profile.mobility,
+        }
+      : profile;
+  const matchProfile = geoProfile ? { ...geoProfile, sectors: hardSectors } : geoProfile;
 
   // Offres de la ville du profil (et de son agglomération), cherchées EN
   // PLUS du bassin ci-dessus. Le bassin prend les 600 offres les mieux
@@ -209,7 +234,7 @@ export default async function SwipePage() {
   // l'onboarding : avant le 25/10, un département choisi n'avait AUCUNE
   // offre locale cherchée en plus, et une ville moyenne aucune commune
   // voisine.
-  const profileDep = profileDepartement(profile?.city);
+  const profileDep = subscriberLocation ? subscriberLocation.departement : profileDepartement(profile?.city);
   const localCities = [...localCitiesFor(profile?.city), ...(profileDep ? [`${profileDep} -`] : [])];
   // Offres du métier visé près de chez lui, cherchées par intitulé et sans
   // filtre secteur (le secteur est deviné à l'import et peut se tromper) :
@@ -220,13 +245,17 @@ export default async function SwipePage() {
   // Offres publiées ces dernières 24 h, cherchées EN PLUS : elles partent
   // vite (24/10) et le bassin national, trié par qualité, peut les rater.
   const FRESH_POOL_SIZE = 150;
-  const [nationalPool, localPool, freshPool, jobPool] = await Promise.all([
-    fetchActiveOffers(supabase, { excludeIds, sectors: hardSectors, limit: CANDIDATE_POOL_SIZE }),
+  // Abonnés : jamais d'annonces d'écoles (isSchoolAd, 31/10). Elles
+  // prenaient jusqu'à 95 % des meilleures places du bassin national.
+  const employersOnly = premium;
+  const [nationalPool, localPool, freshPool, jobPool, jobPoolFar] = await Promise.all([
+    fetchActiveOffers(supabase, { excludeIds, sectors: hardSectors, employersOnly, limit: CANDIDATE_POOL_SIZE }),
     localCities.length > 0
       ? fetchActiveOffers(supabase, {
           excludeIds,
           sectors: hardSectors,
           locations: localCities,
+          employersOnly,
           limit: LOCAL_POOL_SIZE,
         }).catch((error) => {
           // Jamais bloquant : sans ces offres, le deck reste celui d'avant.
@@ -238,6 +267,7 @@ export default async function SwipePage() {
       excludeIds,
       sectors: hardSectors,
       publishedAfter: hotSinceIso(),
+      employersOnly,
       limit: FRESH_POOL_SIZE,
     }).catch((error) => {
       console.error("SwipePage: offres fraîches en échec", error);
@@ -248,9 +278,19 @@ export default async function SwipePage() {
           excludeIds,
           titles: jobPatterns,
           locations: localCities.length > 0 ? localCities : undefined,
+          employersOnly,
           limit: JOB_POOL_SIZE,
         }).catch((error) => {
           console.error("SwipePage: offres du métier visé en échec", error);
+          return [];
+        })
+      : Promise.resolve([]),
+    // Abonné : son métier partout en France aussi (31/10). À court d'offres
+    // de son métier près de chez lui, mieux vaut le bon métier plus loin
+    // qu'un autre métier (voir subscriberOrder).
+    premium && jobPatterns.length > 0 && localCities.length > 0
+      ? fetchActiveOffers(supabase, { excludeIds, titles: jobPatterns, employersOnly, limit: 150 }).catch((error) => {
+          console.error("SwipePage: offres du métier visé (France) en échec", error);
           return [];
         })
       : Promise.resolve([]),
@@ -259,16 +299,17 @@ export default async function SwipePage() {
   // d'offres dans les Vosges ») : les offres des autres départements de sa
   // région, classées avant le reste de la France (voir lib/matching/region).
   // Abonnés seulement : le deck d'avant le paiement ne change pas.
-  const sparseRegion = premium && localPool.length < SPARSE_LOCAL_POOL ? regionDepartementLabels(profileDep) : [];
+  const sparseRegion =
+    premium && (localPool.length < SPARSE_LOCAL_POOL || subscriberLocation?.regionWide) ? regionDepartementLabels(profileDep) : [];
   const regionPool =
     sparseRegion.length > 0
-      ? await fetchActiveOffers(supabase, { excludeIds, sectors: hardSectors, locations: sparseRegion, limit: 300 }).catch((error) => {
+      ? await fetchActiveOffers(supabase, { excludeIds, sectors: hardSectors, locations: sparseRegion, employersOnly, limit: 300 }).catch((error) => {
           console.error("SwipePage: offres de la région en échec", error);
           return [];
         })
       : [];
   const pooledIds = new Set<string>();
-  const pooled = [...nationalPool, ...localPool, ...freshPool, ...jobPool, ...regionPool].filter((o) => {
+  const pooled = [...nationalPool, ...localPool, ...freshPool, ...jobPool, ...jobPoolFar, ...regionPool].filter((o) => {
     if (pooledIds.has(o.id)) return false;
     pooledIds.add(o.id);
     return true;
@@ -285,13 +326,17 @@ export default async function SwipePage() {
   // près : on écarte ces jumelles quand l'annonce d'école est dans le lot.
   const schoolTitleKey = (title: string) =>
     normalizeTitle(title).replace(/\((h\/f|f\/h)\)|\b(h\/f|f\/h)\b/g, "").replace(/\s+/g, " ").trim();
-  const schoolTitles = new Set(pooled.filter((o) => isSchoolOrJobBoard(o.company)).map((o) => schoolTitleKey(o.title)));
+  // Abonné : détection plus large (nom de l'annonceur et ce que dit
+  // l'annonce, voir isSchoolAd) et plus de dernier recours : un paquet plus
+  // court de vraies offres plutôt que des pubs d'écoles (31/10).
+  const isSchoolish = (o: Offer) => (premium ? isSchoolAd(o) : isSchoolOrJobBoard(o.company));
+  const schoolTitles = new Set(pooled.filter(isSchoolish).map((o) => schoolTitleKey(o.title)));
   const employers = pooled.filter(
     (o) =>
-      !isSchoolOrJobBoard(o.company) &&
+      !isSchoolish(o) &&
       !(/non communiqu/i.test(o.company) && schoolTitles.has(schoolTitleKey(o.title))),
   );
-  let offers = employers.length >= 10 ? employers : pooled;
+  let offers = premium || employers.length >= 10 ? employers : pooled;
 
   // Un seul type coché à l'onboarding (« alternance ») : l'autre ne sort plus
   // (25/10). Gardé seulement s'il ne resterait presque rien sans lui.
@@ -306,7 +351,7 @@ export default async function SwipePage() {
   // parcourir une seule carte. On retente sans le filtre secteur plutôt que
   // de bloquer sur un filtre qu'on a nous-même ajouté.
   if (offers.length === 0 && hardSectors.length > 0) {
-    offers = await fetchActiveOffers(supabase, { excludeIds, limit: CANDIDATE_POOL_SIZE });
+    offers = await fetchActiveOffers(supabase, { excludeIds, employersOnly, limit: CANDIDATE_POOL_SIZE });
   }
 
   // Score de base (réponses onboarding) + bonus appris de l'historique réel
@@ -319,7 +364,7 @@ export default async function SwipePage() {
   const tags: Record<string, OfferTags> = {};
   if (profile) {
     for (const offer of offers) {
-      const geoPoints = geoMatch(profile, offer).points;
+      const geoPoints = geoMatch(geoProfile!, offer).points;
       tags[offer.id] = {
         near: offer.remote_policy === "remote" || geoPoints >= 8,
         local: offer.remote_policy === "remote" || geoPoints >= 10,
@@ -345,7 +390,7 @@ export default async function SwipePage() {
         affinity.keywordBonus(offer.title);
       const cvBonus = computeCvMatchBonus(cvText, offer);
       const passPenalty = passLearning.penalty(tags[offer.id], tags[offer.id].targetJob);
-      const regionBonus = sparseRegion.length > 0 && geoMatch(profile, offer).points < 0 && sameRegionElsewhere(profileDep, offer.location) ? REGION_BONUS : 0;
+      const regionBonus = sparseRegion.length > 0 && geoMatch(geoProfile!, offer).points < 0 && sameRegionElsewhere(profileDep, offer.location) ? REGION_BONUS : 0;
       scores[offer.id] = Math.max(30, Math.min(99, Math.round(base + learnedBonus + cvBonus + passPenalty + regionBonus)));
     }
   }
@@ -353,6 +398,27 @@ export default async function SwipePage() {
   const rankedOffers = profile
     ? [...offers].sort((a, b) => (scores[b.id] ?? 0) - (scores[a.id] ?? 0))
     : offers;
+
+  // Proche au sens de SA mobilité : voir « C'est trop loin » plus bas.
+  const isNearForUser = (o: Offer) =>
+    !geoProfile ||
+    o.remote_policy === "remote" ||
+    geoMatch(geoProfile, o).points >= 0 ||
+    (sparseRegion.length > 0 && !!sameRegionElsewhere(profileDep, o.location));
+  const fitTags = (o: Offer) => ({ targetJob: tags[o.id]?.targetJob ?? false, near: isNearForUser(o) });
+
+  // Abonné (31/10, raisons « pas mon métier » et « trop loin ») : pas
+  // d'offres d'outre-mer s'il vit en métropole, et un autre métier
+  // seulement s'il est de son secteur et proche (fitsSubscriber). Le deck
+  // d'avant le paiement ne change pas.
+  const candidateOffers =
+    premium && profile
+      ? rankedOffers.filter(
+          (o) =>
+            !overseasMismatch(profileDep, o.location) &&
+            fitsSubscriber(o, fitTags(o), { hasTargetJobs: profile.target_jobs.length > 0, sectors: hardSectors }),
+        )
+      : rankedOffers;
 
   // Un profil qui a renseigné des préférences (secteur, métier visé ou
   // compétences) attend des offres qui matchent réellement au moins un de
@@ -406,9 +472,9 @@ export default async function SwipePage() {
   // "plus d'offres", malgré un vrai pool bien plus large derrière (signalé
   // par Nathan le 29/09 : "je swipe une seule fois et il n'y en a plus").
   const MIN_RELEVANT_POOL = 10;
-  const filteredByRelevance = rankedOffers.filter((o) => (scores[o.id] ?? 0) > relevanceThreshold);
+  const filteredByRelevance = candidateOffers.filter((o) => (scores[o.id] ?? 0) > relevanceThreshold);
   const relevantOffers =
-    hasPreferences && filteredByRelevance.length >= MIN_RELEVANT_POOL ? filteredByRelevance : rankedOffers;
+    hasPreferences && filteredByRelevance.length >= MIN_RELEVANT_POOL ? filteredByRelevance : candidateOffers;
 
   // « C'est trop loin » (30/10, retours des abonnés et commentaires de
   // résiliation) : le bon métier et le bon secteur suffisaient à faire passer
@@ -416,32 +482,38 @@ export default async function SwipePage() {
   // « sur place uniquement ». Pour un abonné, plus que les offres proches au
   // sens de SA mobilité (geoMatch : sa ville et son département, sa région
   // s'il est mobile dans la région ou si elle a été ajoutée, toute la France
-  // s'il l'a choisie, le télétravail), dès qu'il y en a au moins 10. Sinon,
-  // comme avant, les plus lointaines restent en fin de paquet. Le deck
-  // d'avant le paiement ne change pas.
-  const isNearForUser = (o: Offer) =>
-    !profile ||
-    o.remote_policy === "remote" ||
-    geoMatch(profile, o).points >= 0 ||
-    (sparseRegion.length > 0 && !!sameRegionElsewhere(profileDep, o.location));
+  // s'il l'a choisie, le télétravail : isNearForUser), dès qu'il y en a au
+  // moins 10. Sinon, comme avant, les plus lointaines restent en fin de
+  // paquet. Le deck d'avant le paiement ne change pas.
   const nearOffers = premium ? relevantOffers.filter(isNearForUser) : relevantOffers;
   const deckPool = premium && nearOffers.length >= MIN_RELEVANT_POOL ? nearOffers : relevantOffers;
 
   // Composition du paquet (25/10) : une carte par annonce (doublons entre
   // sources retirés), le métier visé d'abord quand il y en a au moins 12
   // pas trop loin, et au plus 2 cartes par entreprise.
+  // Abonné (31/10) : le bon métier près de chez lui, puis le bon métier plus
+  // loin, puis les autres métiers de son secteur (subscriberOrder).
   const composed = profile
     ? diversifyByCompany(
-        preferTargetJobs(
-          dedupeOffers(deckPool),
-          (o) => profile.target_jobs.length > 0 && matchesTargetJob(profile, o) && geoMatch(profile, o).points >= 0,
-        ),
+        premium
+          ? subscriberOrder(dedupeOffers(deckPool), fitTags)
+          : preferTargetJobs(
+              dedupeOffers(deckPool),
+              (o) => profile.target_jobs.length > 0 && matchesTargetJob(profile, o) && geoMatch(profile, o).points >= 0,
+            ),
         DECK_SIZE,
       )
     : deckPool;
   // Nouveautés en tête : pour un abonné, seulement celles qui sont proches
   // (voir isNearForUser), jamais une offre neuve à l'autre bout de la France.
-  const { deck: sortedOffers, freshPicks } = orderFreshFirst(composed, scores, DECK_SIZE, undefined, premium ? isNearForUser : undefined);
+  // Abonné avec un métier visé : seules les nouveautés de son métier passent devant.
+  const { deck: sortedOffers, freshPicks } = orderFreshFirst(
+    composed,
+    scores,
+    DECK_SIZE,
+    undefined,
+    premium ? (o) => isNearForUser(o) && (!profile?.target_jobs.length || fitTags(o).targetJob) : undefined,
+  );
   // Notification « Nouveautés » à l'arrivée sur le deck : les plus récentes.
   const freshInbox = [...freshPicks]
     .sort((a, b) => b.published_at.localeCompare(a.published_at))
@@ -474,7 +546,7 @@ export default async function SwipePage() {
   let cityBanner: string | null = null;
   if (profile?.city && sortedOffers.length > 0) {
     // « Près de » = ville, agglomération ou même département (geoMatch).
-    const nearCount = sortedOffers.filter((o) => o.remote_policy !== "remote" && geoMatch(profile, o).points >= 8).length;
+    const nearCount = sortedOffers.filter((o) => o.remote_policy !== "remote" && geoMatch(geoProfile!, o).points >= 8).length;
     cityBanner =
       nearCount === sortedOffers.length
         ? `${sortedOffers.length} offre${sortedOffers.length > 1 ? "s" : ""} à ${profile.city} et alentours.`

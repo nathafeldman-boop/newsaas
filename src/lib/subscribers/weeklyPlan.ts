@@ -3,7 +3,8 @@ import { getResendClient } from "@/lib/resend/client";
 import { unsubscribeFooterHtml, unsubscribeHeaders } from "@/lib/resend/unsubscribe";
 import { campaignSender } from "@/lib/campaigns/sendBatch";
 import { escapeHtml } from "@/lib/alerts/offerAlert";
-import { computeMatchScore } from "@/lib/matching/score";
+import { computeMatchScore, profileDepartement } from "@/lib/matching/score";
+import { overseasMismatch } from "@/lib/matching/profileLocation";
 import { fetchActiveOffers } from "@/lib/offers/fetchActiveOffers";
 import { knownProfileSectors } from "@/lib/offers/sectors";
 import { parisMidnightIso } from "@/lib/applications/autoSend";
@@ -184,12 +185,12 @@ export async function runWeeklyPlans(admin: Admin, subscribers: Profile[], isAut
       const key = sectors.slice().sort().join("|");
       let offers = offersBySectors.get(key);
       if (!offers) {
-        offers = await fetchActiveOffers(admin, { sectors, publishedAfter: new Date(now - 10 * DAY).toISOString(), limit: 400 });
+        offers = await fetchActiveOffers(admin, { sectors, publishedAfter: new Date(now - 10 * DAY).toISOString(), employersOnly: true, limit: 400 });
         offersBySectors.set(key, offers);
       }
       const seen = new Set([...(apps ?? []).map((a) => a.offer_id), ...(swiped ?? []).map((s) => s.offer_id)]);
       const picks = offers
-        .filter((o) => !seen.has(o.id))
+        .filter((o) => !seen.has(o.id) && !overseasMismatch(profileDepartement(profile.city), o.location))
         .map((offer) => ({ offer, score: computeMatchScore(profile, offer, now) }))
         .filter((m) => m.score >= MIN_SCORE)
         .sort((a, b) => b.score - a.score)

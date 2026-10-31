@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Offer } from "@/types/database";
 import { MIN_QUALITY_FOR_FEED } from "@/lib/offers/quality";
+import { isSchoolAd } from "@/lib/seo/schools";
 
 type Filters = {
   excludeIds?: string[];
@@ -13,8 +14,22 @@ type Filters = {
   locations?: string[];
   /** Ne renvoyer que les offres dont l'intitulé contient l'un de ces motifs ILIKE (voir targetJobTitlePatterns). */
   titles?: string[];
+  /**
+   * Sans les annonces d'écoles (isSchoolAd) : abonnés (deck et e-mails).
+   * Filtré en base par offers.is_school_ad quand la colonne existe, sinon
+   * après lecture.
+   */
+  employersOnly?: boolean;
   limit?: number;
 };
+
+// Colonne offers.is_school_ad (SCHOOL_AD_COLUMN_SQL) pas encore créée en
+// base : filtre après lecture seulement, et on la redemande toutes les
+// 10 minutes (elle sert dès que le SQL est passé, sans redéploiement).
+let schoolColumnMissingAt = 0;
+const SCHOOL_COLUMN_RETRY_MS = 10 * 60_000;
+const isMissingSchoolColumn = (error: { code?: string; message: string }) =>
+  /is_school_ad/.test(error.message) && (error.code === "42703" || error.code === "PGRST204" || /does not exist|n'existe pas/i.test(error.message));
 
 // Filtre PostgREST « lieu contient X ou Y » : la ville peut être saisie
 // librement à l'onboarding, donc on retire ce qui casserait la syntaxe de
@@ -40,7 +55,9 @@ export async function fetchActiveOffers(
   supabase: SupabaseClient<Database>,
   filters: Filters,
 ): Promise<Offer[]> {
-  const { excludeIds = [], sectors = [], publishedAfter, createdAfter, locations, titles, limit = 600 } = filters;
+  const { excludeIds = [], sectors = [], publishedAfter, createdAfter, locations, titles, employersOnly = false, limit = 600 } = filters;
+  const schoolFilter = employersOnly && Date.now() - schoolColumnMissingAt > SCHOOL_COLUMN_RETRY_MS;
+  const keep = (rows: Offer[]) => (employersOnly ? rows.filter((o) => !isSchoolAd(o)) : rows);
   const locationOr = locations ? locationsFilter(locations) : null;
   if (locations && !locationOr) return [];
   // Motifs déjà propres (lettres, espaces, « _ ») : rien qui casse .or().
@@ -56,6 +73,7 @@ export async function fetchActiveOffers(
     if (locationOr) q = q.or(locationOr);
     // Deux .or() se combinent en ET : lieu ET intitulé.
     if (titleOr) q = q.or(titleOr);
+    if (schoolFilter) q = q.eq("is_school_ad", false);
     return q;
   }
 
@@ -64,7 +82,11 @@ export async function fetchActiveOffers(
     .order("quality_score", { ascending: false })
     .order("published_at", { ascending: false });
 
-  if (!error) return data ?? [];
+  if (!error) return keep(data ?? []);
+  if (schoolFilter && isMissingSchoolColumn(error)) {
+    schoolColumnMissingAt = Date.now();
+    return fetchActiveOffers(supabase, filters);
+  }
 
   // Délai dépassé (base chargée : 6 fois sur /swipe du 24/09 au 13/10) : le
   // repli d'origine abandonnait AUSSI le filtre qualité et servait les
@@ -77,7 +99,7 @@ export async function fetchActiveOffers(
       .gte("quality_score", MIN_QUALITY_FOR_FEED)
       .order("published_at", { ascending: false });
     if (!recentError) {
-      return [...(recent ?? [])].sort((a, b) => (b.quality_score ?? 0) - (a.quality_score ?? 0));
+      return keep([...(recent ?? [])].sort((a, b) => (b.quality_score ?? 0) - (a.quality_score ?? 0)));
     }
     console.error("fetchActiveOffers: lecture par date en échec aussi", recentError);
   }
@@ -87,5 +109,5 @@ export async function fetchActiveOffers(
     error,
   );
   const { data: fallbackData } = await baseQuery().order("published_at", { ascending: false });
-  return fallbackData ?? [];
+  return keep(fallbackData ?? []);
 }

@@ -3,7 +3,8 @@ import { fetchAllRows } from "@/lib/supabase/public";
 import { getResendClient } from "@/lib/resend/client";
 import { unsubscribeFooterHtml, unsubscribeHeaders } from "@/lib/resend/unsubscribe";
 import { campaignSender } from "@/lib/campaigns/sendBatch";
-import { computeMatchScore } from "@/lib/matching/score";
+import { computeMatchScore, profileDepartement } from "@/lib/matching/score";
+import { overseasMismatch } from "@/lib/matching/profileLocation";
 import { fetchActiveOffers } from "@/lib/offers/fetchActiveOffers";
 import { offerPath } from "@/lib/offers/publicUrl";
 import { escapeHtml } from "@/lib/alerts/offerAlert";
@@ -63,7 +64,8 @@ export async function runFreshAlerts(admin: Admin, subscribers: Profile[], deadl
   const from = campaignSender();
   if (!from) return summary;
 
-  const offers = await fetchActiveOffers(admin, { createdAfter: new Date(now - WINDOW_MS).toISOString(), limit: 1500 });
+  // Sans annonces d'écoles (31/10, voir isSchoolAd).
+  const offers = await fetchActiveOffers(admin, { createdAfter: new Date(now - WINDOW_MS).toISOString(), employersOnly: true, limit: 1500 });
   summary.offers = offers.length;
   if (offers.length === 0) return summary;
 
@@ -91,7 +93,9 @@ export async function runFreshAlerts(admin: Admin, subscribers: Profile[], deadl
   for (const profile of eligible) {
     if (Date.now() > deadline) break;
     if ((sentToday.get(profile.id) ?? 0) >= MAX_PER_DAY) continue;
+    const dep = profileDepartement(profile.city);
     const scored = offers
+      .filter((offer) => !overseasMismatch(dep, offer.location))
       .map((offer) => ({ offer, score: computeMatchScore(profile, offer, now) }))
       .filter((m) => m.score >= MIN_SCORE)
       .sort((a, b) => b.score - a.score)

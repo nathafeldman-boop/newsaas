@@ -121,6 +121,8 @@ export async function GET(request: NextRequest) {
     const offers = await fetchActiveOffers(admin, {
       createdAfter: windowStart(profile.last_offer_alert_sent_at, now),
       sectors: knownProfileSectors(profile.sectors ?? []),
+      // Abonnés : sans annonces d'écoles (31/10, voir isSchoolAd).
+      employersOnly: isPremium(profile),
       limit: 150,
     });
     if (offers.length === 0) return { profile, frequency, matches: [] };

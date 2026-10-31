@@ -167,7 +167,12 @@ export type GeoMatch = { points: number; reason: string | null };
 // a dit « mobile dans la région ». Avant : un département choisi à
 // l'onboarding valait +4 pour TOUTE la France, et une ville hors des 13
 // métropoles n'avait aucune commune voisine (Cholet à -30 pour Angers).
-export function geoMatch(profile: Pick<Profile, "city" | "mobility">, offer: Pick<Offer, "location" | "remote_policy">): GeoMatch {
+// `departement` : déjà résolu par l'appelant (parseProfileLocation et
+// lookupCommuneDepartement, deck des abonnés) ; sinon lu depuis la ville.
+export function geoMatch(
+  profile: Pick<Profile, "city" | "mobility"> & { departement?: string | null },
+  offer: Pick<Offer, "location" | "remote_policy">,
+): GeoMatch {
   const city = profile.city?.trim() ?? "";
   const cityLower = city.toLowerCase();
   const offerLocationLower = offer.location.toLowerCase();
@@ -175,7 +180,7 @@ export function geoMatch(profile: Pick<Profile, "city" | "mobility">, offer: Pic
   if (!isDepartmentSelection && cityLower && offerLocationLower.includes(cityLower)) return { points: 14, reason: `À ${city}, comme toi` };
   if (!isDepartmentSelection && cityLower && isNearbyCity(cityLower, offerLocationLower)) return { points: 10, reason: `Près de ${city}` };
 
-  const profileDep = profileDepartement(city);
+  const profileDep = profile.departement !== undefined ? profile.departement : profileDepartement(city);
   const offerDep = departementFromLocation(offer.location);
   if (profileDep && offerDep === profileDep) {
     const name = getDepartement(profileDep)?.name ?? profileDep;

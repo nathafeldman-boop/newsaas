@@ -543,6 +543,14 @@ function SwipeDeckInner({
             >
               🎤 M&apos;entraîner à l&apos;entretien
             </Link>
+            {/* Paquet d'abonné sans écoles ni autres métiers lointains (31/10) : il peut finir plus tôt. */}
+            <Link
+              href="/profil"
+              className="mt-4 text-sm font-semibold underline underline-offset-4"
+              onClick={() => void logButtonClick(userId, "widen_search_cta", { source: "swipe_empty_deck" })}
+            >
+              Élargir ma recherche (métier, ville, mobilité)
+            </Link>
           </>
         ) : (
           <>

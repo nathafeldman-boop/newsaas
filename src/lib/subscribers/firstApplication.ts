@@ -3,7 +3,8 @@ import { getResendClient } from "@/lib/resend/client";
 import { unsubscribeFooterHtml, unsubscribeHeaders } from "@/lib/resend/unsubscribe";
 import { campaignSender } from "@/lib/campaigns/sendBatch";
 import { escapeHtml } from "@/lib/alerts/offerAlert";
-import { computeMatchScore } from "@/lib/matching/score";
+import { computeMatchScore, profileDepartement } from "@/lib/matching/score";
+import { overseasMismatch } from "@/lib/matching/profileLocation";
 import { fetchActiveOffers } from "@/lib/offers/fetchActiveOffers";
 import { knownProfileSectors } from "@/lib/offers/sectors";
 import { isSentStatus } from "@/lib/applications/status";
@@ -103,9 +104,9 @@ export async function runFirstApplicationNudges(admin: Admin, subscribers: Profi
     }
     if (!hasNotAppliedYet((apps ?? []).map((a) => a.status), spontaneousSent ?? 0)) continue;
     const already = new Set((apps ?? []).map((a) => a.offer_id));
-    const offers = await fetchActiveOffers(admin, { sectors: knownProfileSectors(profile.sectors), limit: 300 });
+    const offers = await fetchActiveOffers(admin, { sectors: knownProfileSectors(profile.sectors), employersOnly: true, limit: 300 });
     const picks = offers
-      .filter((o) => !already.has(o.id))
+      .filter((o) => !already.has(o.id) && !overseasMismatch(profileDepartement(profile.city), o.location))
       .map((offer) => ({ offer, score: computeMatchScore(profile, offer, now) }))
       .filter((m) => m.score >= MIN_SCORE)
       .sort((a, b) => b.score - a.score)

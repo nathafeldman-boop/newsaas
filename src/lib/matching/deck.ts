@@ -96,3 +96,40 @@ export function targetJobTitlePatterns(targetJobs: string[], max = 8): string[] 
   }
   return [...out].slice(0, max);
 }
+
+type FitTags = { targetJob: boolean; near: boolean };
+
+/**
+ * Deck d'un abonné (31/10, raisons « pas mon métier » et « trop loin ») :
+ * une carte d'un autre métier n'a sa place que si elle est de son secteur
+ * ET proche de chez lui -- plus jamais un « Apprenti cuisinier » à Antibes
+ * pour un technicien de laboratoire de Lyon parce qu'il ne restait rien
+ * d'autre. Le bon métier, lui, reste partout en métropole. Sans métier ni
+ * secteur renseigné : tout passe.
+ */
+export function fitsSubscriber(
+  offer: { sector: string | null },
+  tags: FitTags,
+  profile: { hasTargetJobs: boolean; sectors: string[] },
+): boolean {
+  if (tags.targetJob) return true;
+  const sectorOk = profile.sectors.length === 0 || (!!offer.sector && profile.sectors.includes(offer.sector));
+  if (!profile.hasTargetJobs) return sectorOk;
+  return sectorOk && tags.near;
+}
+
+/**
+ * Ordre du deck d'un abonné : le bon métier près de chez lui, puis le bon
+ * métier plus loin, puis les autres métiers de son secteur près de chez
+ * lui, puis le reste. Dans chaque groupe, l'ordre du score est gardé.
+ */
+export function subscriberOrder<T>(ranked: T[], tagsOf: (o: T) => FitTags): T[] {
+  const rank = (o: T) => {
+    const t = tagsOf(o);
+    return (t.targetJob ? 0 : 2) + (t.near ? 0 : 1);
+  };
+  return ranked
+    .map((o, i) => ({ o, i, r: rank(o) }))
+    .sort((a, b) => a.r - b.r || a.i - b.i)
+    .map(({ o }) => o);
+}
