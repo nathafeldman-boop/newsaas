@@ -32,7 +32,7 @@ export type BatchResult =
   | { kind: "done" }
   | { kind: "sent"; sent: number; left: number; failures: string[] };
 
-export async function sendNextCampaignBatch(campaign: CampaignDef, batchSize = BATCH_SIZE): Promise<BatchResult> {
+export async function sendNextCampaignBatch(campaign: CampaignDef, batchSize = campaign.batch ?? BATCH_SIZE): Promise<BatchResult> {
   const from = campaignSender();
   if (!from) return { kind: "no_sender" };
 
@@ -46,7 +46,11 @@ export async function sendNextCampaignBatch(campaign: CampaignDef, batchSize = B
   // Relance « nouveautés » : chaque compte reçoit une des versions testées
   // (newsTest.ts), notée avec l'envoi pour compter les résultats par version.
   const isNews = campaign.id === "nouveautes";
-  const [catalog, variantCounts] = await Promise.all([loadCatalog(db), isNews ? loadVariantCounts(db) : null]);
+  // « Dernier appel » : un message identique pour tous, pas de catalogue à charger.
+  const [catalog, variantCounts] = await Promise.all([
+    campaign.id === "dernierappel" ? Promise.resolve({ offers: [] }) : loadCatalog(db),
+    isNews ? loadVariantCounts(db) : null,
+  ]);
   const variantOf = new Map<string, NewsVariant>();
   if (variantCounts) {
     allocateVariants(variantCounts, batch.length).forEach((v, i) => variantOf.set(batch[i].id, v));

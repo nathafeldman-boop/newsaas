@@ -10,6 +10,7 @@ import { offerPath } from "@/lib/offers/publicUrl";
 import { GUARANTEE_MONTHS } from "@/lib/premium/guaranteeTerms";
 import type { ContractType, Database } from "@/types/database";
 import { knownProfileSectors } from "@/lib/offers/sectors";
+import { renderLastCallEmail } from "@/lib/campaigns/dernierAppel";
 
 // Relances ponctuelles des inscrits qui n'ont jamais payé : UN email par
 // campagne, envoyé par lots depuis /admin/relance, jamais automatiquement.
@@ -28,6 +29,11 @@ export const CAMPAIGN_EVENT = "email_relance_offres_2026_10";
 export const CAMPAIGN_TAG = "relance_offres_2026_10";
 export const NEWS_CAMPAIGN_EVENT = "email_relance_nouveautes_2026_10";
 export const NEWS_CAMPAIGN_TAG = "relance_nouveautes_2026_10";
+// « Dernier appel » (31/10) : un email, l'accès à vie. Voir dernierAppel.ts.
+export const LASTCALL_CAMPAIGN_EVENT = "email_dernier_appel_2026_10";
+export const LASTCALL_CAMPAIGN_TAG = "dernier_appel_2026_10";
+// Envoi plus gros par clic pour cette campagne : 1 000 emails (10 lots de 100).
+export const LASTCALL_BATCH_SIZE = 1000;
 const NEWS_INACTIVE_DAYS = 7;
 // Test de 4 versions de l'email (Nathan, 23/10 : « tu vois la template qui
 // marche le mieux et tu la gardes ») : du lundi 26/10 9 h au dimanche 1/11
@@ -125,7 +131,7 @@ function newsExclusion(
   return null;
 }
 
-export type CampaignId = "offres" | "nouveautes";
+export type CampaignId = "offres" | "nouveautes" | "dernierappel";
 
 export type CampaignDef = {
   id: CampaignId;
@@ -133,9 +139,19 @@ export type CampaignDef = {
   tag: string;
   title: string;
   description: string;
+  /** Emails envoyés par clic (BATCH_SIZE sinon). */
+  batch?: number;
 };
 
 export const CAMPAIGNS: Record<CampaignId, CampaignDef> = {
+  dernierappel: {
+    id: "dernierappel",
+    event: LASTCALL_CAMPAIGN_EVENT,
+    tag: LASTCALL_CAMPAIGN_TAG,
+    title: "« Dernier appel » : accès à vie (31/10)",
+    description: "Inscrits jamais payants : un email, l'accès à vie en un seul paiement, avant la hausse des prix. Chaque destinataire reçoit un nouveau prix de bienvenue de 10 minutes à sa première visite de la page Premium.",
+    batch: LASTCALL_BATCH_SIZE,
+  },
   nouveautes: {
     id: "nouveautes",
     event: NEWS_CAMPAIGN_EVENT,
@@ -160,7 +176,7 @@ export function audienceTime(campaign: CampaignDef, now: number = Date.now()): n
 }
 
 export function campaignFrom(value: unknown): CampaignDef {
-  return value === "offres" ? CAMPAIGNS.offres : CAMPAIGNS.nouveautes;
+  return value === "offres" ? CAMPAIGNS.offres : value === "dernierappel" ? CAMPAIGNS.dernierappel : CAMPAIGNS.nouveautes;
 }
 
 export type Audience = {
@@ -188,8 +204,10 @@ export async function loadAudience(
   campaign: CampaignDef = CAMPAIGNS.offres,
   now: number = Date.now(),
 ): Promise<Audience> {
-  const other = campaign.id === "offres" ? CAMPAIGNS.nouveautes : CAMPAIGNS.offres;
-  const [profiles, sent, otherSent] = await Promise.all([
+  // Les autres campagnes : comptées dans le plafond par 24 h, et (relance
+  // nouveautés) pas deux relances dans la même semaine.
+  const others = Object.values(CAMPAIGNS).filter((c) => c.id !== campaign.id);
+  const [profiles, sent, otherSentLists] = await Promise.all([
     fetchAllRowsByIdCursor<CampaignProfile>((afterId, limit) => {
       let q = db.from("profiles").select(PROFILE_COLUMNS);
       if (afterId) q = q.gt("id", afterId);
@@ -199,8 +217,9 @@ export async function loadAudience(
       }>;
     }),
     fetchSentEvents(db, campaign.event),
-    fetchSentEvents(db, other.event),
+    Promise.all(others.map((c) => fetchSentEvents(db, c.event))),
   ]);
+  const otherSent = otherSentLists.flat();
 
   const alreadySent = new Set(sent.map((e) => e.user_id));
   const otherRecent = new Set(
@@ -675,6 +694,7 @@ export function renderForCampaign(
   catalog: Catalog,
   variant: NewsVariant = "a",
 ): RenderedEmail {
+  if (campaign.id === "dernierappel") return renderLastCallEmail(p);
   return campaign.id === "nouveautes"
     ? renderNewsEmail(p, catalog, variant)
     : renderCampaignEmail(p, countForProfile(catalog, p), catalog.offers.length);

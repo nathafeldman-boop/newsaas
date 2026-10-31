@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { FLASH_OFFER, isLegacyOffer, offerWindowStart, WELCOME_WINDOW_MS } from "@/lib/pricing/plans";
-import { NEWS_CAMPAIGN_EVENT } from "@/lib/campaigns/relanceOffres";
+import { LASTCALL_CAMPAIGN_EVENT, NEWS_CAMPAIGN_EVENT } from "@/lib/campaigns/relanceOffres";
 import { SALES_SERIES_EVENT } from "@/lib/campaigns/serieEvents";
 
 // Mise en place des nouveaux tarifs : seuls les affichages de la page
@@ -22,7 +22,7 @@ export async function getWelcomeEndsAt(userId: string): Promise<number> {
     .from("user_events")
     .select("created_at")
     .eq("user_id", userId)
-    .in("event_type", [NEWS_CAMPAIGN_EVENT, SALES_SERIES_EVENT])
+    .in("event_type", [NEWS_CAMPAIGN_EVENT, LASTCALL_CAMPAIGN_EVENT, SALES_SERIES_EVENT])
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();

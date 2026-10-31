@@ -105,8 +105,8 @@ export default async function AdminRelancePage({
         <h1 style={{ fontSize: 26, margin: "0 0 6px" }}>{campaign.title}</h1>
         <p style={{ fontSize: 13, margin: "0 0 6px", ...muted }}>{campaign.description}</p>
         <p style={{ fontSize: 13, margin: 0, ...muted }}>
-          Un seul email par compte, jamais renvoyé. Envoi par lots de {BATCH_SIZE}, {MAX_SENT_PER_24H} maximum par 24 h
-          (les deux campagnes ensemble). Les chiffres de chaque email sont calculés sur son profil (type, secteurs, ville).
+          Un seul email par compte, jamais renvoyé. Envoi par lots de {campaign.batch ?? BATCH_SIZE}, {MAX_SENT_PER_24H} maximum par 24 h
+          (toutes les campagnes ensemble).{campaign.id === "dernierappel" ? " Même message pour tous." : " Les chiffres de chaque email sont calculés sur son profil (type, secteurs, ville)."}
         </p>
       </div>
 
@@ -249,7 +249,7 @@ export default async function AdminRelancePage({
         <input type="hidden" name="c" value={campaign.id} />
         <p style={{ fontSize: 15, margin: 0, fontWeight: 600 }}>3. Envoyer le lot suivant</p>
         <p style={{ fontSize: 13, margin: 0, ...muted }}>
-          {Math.min(BATCH_SIZE, room, audience.eligible.length)} emails partiront maintenant, aux inscrits les plus récents
+          {Math.min(campaign.batch ?? BATCH_SIZE, room, audience.eligible.length)} emails partiront maintenant, aux inscrits les plus récents
           d&apos;abord. Attends la réponse avant de recliquer.
         </p>
         <button
@@ -257,7 +257,7 @@ export default async function AdminRelancePage({
           className="btn btn-primary"
           disabled={!senderReady || room === 0 || audience.eligible.length === 0}
         >
-          Envoyer {Math.min(BATCH_SIZE, room, audience.eligible.length)} emails
+          Envoyer {Math.min(campaign.batch ?? BATCH_SIZE, room, audience.eligible.length)} emails
         </button>
       </form>
     </div>
