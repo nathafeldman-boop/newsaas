@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Icon } from "@/components/ui/Icon";
-import { FIXABLE_REASONS, type AutoSendChannel, type AutoSendManualReason, type AutoSendResult } from "@/lib/applications/autoSend";
+import { AUTO_PACE_LIMIT, FIXABLE_REASONS, resumeLabel, type AutoSendChannel, type AutoSendManualReason, type AutoSendResult } from "@/lib/applications/autoSend";
 import type { OfferSource } from "@/types/database";
 
 export type ApplyTarget = { id: string; company: string; source?: OfferSource };
@@ -72,6 +72,11 @@ export function useAutoApply() {
       if (check.status !== "ready") {
         const reason = check.status === "manual" ? check.reason : "error";
         const limit = check.status === "manual" ? (check.limit ?? 100) : 100;
+        if (check.status === "manual" && check.reason === "pace_pause" && check.resumeAt) {
+          put({ id: offer.id, ...paceNotice(check.resumeAt, `/candidature/${offer.id}`, "Postuler à la main", "Ce like reste en favori : postule à la main.") });
+          setTimeout(() => dismiss(offer.id), 14000);
+          return;
+        }
         put({
           id: offer.id,
           kind: "notice",
@@ -104,6 +109,12 @@ export function useAutoApply() {
           channel: result.channel,
         });
         setTimeout(() => dismiss(offer.id), 9000);
+        // 25e envoi en moins de 4 h : le stop arrive tout de suite, pas au like suivant.
+        if (result.pausedUntil) {
+          const pauseId = `${offer.id}-pause`;
+          put({ id: pauseId, ...paceNotice(result.pausedUntil, "/favoris", "Voir mes favoris", "Les prochains likes restent en favoris : postule à la main.") });
+          setTimeout(() => dismiss(pauseId), 20000);
+        }
       } else {
         put({ id: offer.id, kind: "failed", company: offer.company });
       }
@@ -120,6 +131,19 @@ export function useAutoApply() {
 }
 
 const muted = "color-mix(in srgb, var(--color-text) 68%, transparent)";
+
+// Pause de sécurité (31/10) : 25 envois automatiques en moins de 4 h. Dite au
+// moment où elle s'applique seulement, jamais sur le paywall.
+function paceNotice(resumeAt: string, href: string, hrefLabel: string, next: string): Omit<Extract<Toast, { kind: "notice" }>, "id"> {
+  const when = resumeLabel(Date.parse(resumeAt), Date.now());
+  return {
+    kind: "notice",
+    title: `Stop : ${AUTO_PACE_LIMIT} candidatures en moins de 4 h`,
+    text: `À ce rythme, ton adresse d'envoi risque d'être classée en spam ou bloquée : l'envoi automatique fait une pause et reprend à ${when}. ${next}`,
+    href,
+    hrefLabel,
+  };
+}
 
 // Pourquoi un like n'a pas pu partir tout seul (le like reste un favori).
 const MANUAL_TEXT: Partial<Record<AutoSendManualReason, string>> = {

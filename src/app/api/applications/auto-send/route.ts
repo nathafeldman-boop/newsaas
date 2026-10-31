@@ -11,7 +11,7 @@ import { countPlaceholders } from "@/lib/coverLetter/templates";
 import { logServerEvent } from "@/lib/analytics/logServerEvent";
 import { LbaError, lbaApiKey, MAX_CV_BYTES, sendLbaApplication } from "@/lib/laBonneAlternance/client";
 import { normalizePhone, splitFullName } from "@/lib/laBonneAlternance/applicant";
-import { LBA_LABEL, parisMidnightIso, type AutoSendResult } from "@/lib/applications/autoSend";
+import { AUTO_PACE_LIMIT, AUTO_PACE_WINDOW_MS, autoPace, LBA_LABEL, parisMidnightIso, type AutoSendResult } from "@/lib/applications/autoSend";
 import { FOLLOW_UP_DAYS, isMissingColumnError } from "@/lib/applications/status";
 import { AUTO_DAILY_LIMIT } from "@/lib/pricing/plans";
 import type { Application, Offer, Profile } from "@/types/database";
@@ -57,6 +57,26 @@ async function sentToday(admin: Admin, userId: string): Promise<number> {
     .eq("event_type", EVENT)
     .gte("created_at", parisMidnightIso(Date.now()));
   return count ?? 0;
+}
+
+// Envois automatiques des 4 dernières heures (les 25 derniers suffisent) :
+// pause de sécurité, voir autoPace.
+async function recentSendTimes(admin: Admin, userId: string, now: number): Promise<number[]> {
+  const { data } = await admin
+    .from("user_events")
+    .select("created_at")
+    .eq("user_id", userId)
+    .eq("event_type", EVENT)
+    .gt("created_at", new Date(now - AUTO_PACE_WINDOW_MS).toISOString())
+    .order("created_at", { ascending: false })
+    .limit(AUTO_PACE_LIMIT);
+  return (data ?? []).map((row) => Date.parse(row.created_at));
+}
+
+// Pause jusqu'à cette heure (ISO) si `times` (plus l'envoi qui vient de partir) atteint la limite.
+function pausedUntilIso(times: number[], now: number): string | undefined {
+  const resume = autoPace([...times, now], now);
+  return resume === null ? undefined : new Date(resume).toISOString();
 }
 
 // Copie dans la boîte (onglet « envoyés ») : sert aussi à rattacher la
@@ -112,12 +132,14 @@ export async function POST(request: NextRequest) {
   const admin = createAdminClient();
   // select("*") : phone, inbox_address et premium_tier sont des colonnes
   // ajoutées à la main, une liste explicite casserait tout tant qu'elles manquent.
-  const [{ data: offer }, { data: profile }, { data: alreadySent }, { data: application }, count] = await Promise.all([
+  const now = Date.now();
+  const [{ data: offer }, { data: profile }, { data: alreadySent }, { data: application }, count, recent] = await Promise.all([
     supabase.from("offers").select("*").eq("id", offerId).maybeSingle(),
     supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
     admin.from("user_events").select("id").eq("user_id", user.id).eq("event_type", EVENT).contains("metadata", { offerId }).limit(1),
     supabase.from("applications").select("*").eq("user_id", user.id).eq("offer_id", offerId).maybeSingle(),
     sentToday(admin, user.id),
+    recentSendTimes(admin, user.id, now),
   ]);
 
   if (!offer) return json({ status: "manual", reason: "not_found" });
@@ -127,10 +149,23 @@ export async function POST(request: NextRequest) {
     return json({ status: "manual", reason: "already_sent", company });
   }
   if (count >= AUTO_DAILY_LIMIT) return json({ status: "manual", reason: "daily_limit", company, sentToday: count, limit: AUTO_DAILY_LIMIT });
+  // 25 envois en moins de 4 h : pause de sécurité (autoPace). Le like reste un favori.
+  const resumeAt = autoPace(recent, now);
+  if (resumeAt !== null) {
+    return json({ status: "manual", reason: "pace_pause", company, sentToday: count, limit: AUTO_DAILY_LIMIT, resumeAt: new Date(resumeAt).toISOString() });
+  }
 
-  const context: Context = { request: body, user: { id: user.id, email: user.email ?? null }, offer, profile, application: application ?? null, count };
+  const context: Context = { request: body, user: { id: user.id, email: user.email ?? null }, offer, profile, application: application ?? null, count, recent };
   if (offer.source === "la_bonne_alternance" && offer.external_id) return applyViaLba(admin, supabase, context);
   return applyByEmail(admin, supabase, context);
+}
+
+// Le 25e envoi en moins de 4 h prévient tout de suite (sans attendre le like
+// suivant), et laisse une trace pour l'admin.
+async function pauseAfterSend(supabase: Supabase, userId: string, recent: number[]): Promise<string | undefined> {
+  const pausedUntil = pausedUntilIso(recent, Date.now());
+  if (pausedUntil) await logServerEvent(supabase, userId, "auto_send_paused", { until: pausedUntil, limit: AUTO_PACE_LIMIT });
+  return pausedUntil;
 }
 
 type Context = {
@@ -140,6 +175,8 @@ type Context = {
   profile: Profile;
   application: Application | null;
   count: number;
+  // Heures (ms) des envois automatiques des 4 dernières heures.
+  recent: number[];
 };
 
 // Lettre envoyée telle quelle : celle que l'étudiant a écrite pour cette
@@ -204,7 +241,16 @@ async function applyViaLba(admin: Admin, supabase: Supabase, context: Context) {
     offer_id: offer.id,
   });
 
-  return json({ status: "sent", company, to: LBA_LABEL, from: replyAddress, sentToday: count + 1, limit: AUTO_DAILY_LIMIT, channel: "lba" });
+  return json({
+    status: "sent",
+    company,
+    to: LBA_LABEL,
+    from: replyAddress,
+    sentToday: count + 1,
+    limit: AUTO_DAILY_LIMIT,
+    channel: "lba",
+    pausedUntil: await pauseAfterSend(supabase, user.id, context.recent),
+  });
 }
 
 async function applyByEmail(admin: Admin, supabase: Supabase, context: Context) {
@@ -264,5 +310,14 @@ async function applyByEmail(admin: Admin, supabase: Supabase, context: Context) 
     offer_id: offer.id,
   });
 
-  return json({ status: "sent", company, to, from: fromAddress, sentToday: count + 1, limit: AUTO_DAILY_LIMIT, channel: "email" });
+  return json({
+    status: "sent",
+    company,
+    to,
+    from: fromAddress,
+    sentToday: count + 1,
+    limit: AUTO_DAILY_LIMIT,
+    channel: "email",
+    pausedUntil: await pauseAfterSend(supabase, user.id, context.recent),
+  });
 }
