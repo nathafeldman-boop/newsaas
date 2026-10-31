@@ -44,8 +44,9 @@ export default function CGVPage() {
         </p>
         <p style={{ marginTop: 8 }}>
           <strong>Prix de bienvenue :</strong> pendant 10 minutes à compter du premier affichage de la page Premium
-          sur son compte, l&apos;utilisateur peut souscrire au prix de 9,99&nbsp;€ / mois ou de 39,99&nbsp;€ pour
-          l&apos;accès à vie (7,99&nbsp;€ / mois pour un délai ouvert avant le 29 octobre 2026). Le prix de bienvenue souscrit pendant ce délai reste celui de l&apos;abonnement (pas
+          sur son compte, l&apos;utilisateur peut souscrire au prix de 9,99&nbsp;€ / mois ou de 50&nbsp;€ pour
+          l&apos;accès à vie (7,99&nbsp;€ / mois pour un délai ouvert avant le 29 octobre 2026 ; 39,99&nbsp;€ pour
+          l&apos;accès à vie avant le 31 octobre 2026). Le prix de bienvenue souscrit pendant ce délai reste celui de l&apos;abonnement (pas
           d&apos;augmentation au renouvellement). Le délai restant est affiché sur la page Premium ; passé ce
           délai, les prix ci-dessus s&apos;appliquent. Les destinataires de l&apos;email « nouveautés » envoyé à
           partir du 23 octobre 2026 bénéficient d&apos;un nouveau délai de 10 minutes, à compter de leur première

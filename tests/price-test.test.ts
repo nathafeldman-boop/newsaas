@@ -35,7 +35,16 @@ for (const [w, r] of [
 ]) {
   assert.ok(cents(r) >= cents(w) * 1.6, `${r} doit faire au moins +60 % sur ${w}`);
 }
-assert.equal(PREMIUM_PRICE_LINE, "39,99 € à vie ou 9,99 €/mois");
+assert.equal(PREMIUM_PRICE_LINE, "50 € à vie ou 9,99 €/mois");
+
+// Accès à vie Premium de bienvenue : 50 € depuis le 31/10, prix Stripe écrit ici (plus lu d'une variable d'environnement).
+assert.equal(PLAN_PRICES.lifetime.welcome, "50 €");
+assert.equal(PLAN_PRICES.lifetime.regular, "63,99 €");
+assert.equal(cents(PLAN_PRICES.lifetime.welcome), 5000);
+assert.equal(WELCOME_PRICE_IDS.lifetime, "price_1UWeVYRd6r34OMU6dpfEj5Nz");
+assert.notEqual(WELCOME_PRICE_IDS.lifetime, REGULAR_PRICE_IDS.lifetime);
+assert.equal(priceSheet().lifetime.welcome, "50 €");
+assert.equal(priceSheet(true).lifetime.welcome, "50 €", "une offre ouverte avant le test garde 7,99 € au mensuel, pas à vie");
 
 // Identifiants Stripe : écrits en dur, reconnus partout (anciens compris).
 for (const id of [WELCOME_PRICE_IDS.monthly, REGULAR_PRICE_IDS.monthly, AUTO_REGULAR_PRICE_IDS.monthly, AUTO_REGULAR_PRICE_IDS.lifetime]) assert.match(id, /^price_/);

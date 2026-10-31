@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
         typeof session.customer === "string" ? session.customer : session.customer?.id;
       const subscriptionId =
         typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
-      // mode "payment" = achat à vie (39,99€, paiement unique -- voir
+      // mode "payment" = achat à vie (50 € depuis le 31/10, paiement unique -- voir
       // premium/actions.ts) : pas de subscriptionId, jamais de subscription
       // Stripe derrière. On le distingue ici pour logger le bon event
       // analytics et poser directement subscription_status="lifetime" plus

@@ -165,7 +165,7 @@ export async function startCheckout(
     ? LIFETIME_PROMO.priceId
     : welcome
     ? isLifetime
-      ? process.env.STRIPE_PRICE_ID_LIFETIME
+      ? WELCOME_PRICE_IDS.lifetime
       : legacy
         ? PREVIOUS_MONTHLY_WELCOME.priceId
         : WELCOME_PRICE_IDS.monthly

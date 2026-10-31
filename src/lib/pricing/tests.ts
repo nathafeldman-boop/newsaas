@@ -28,7 +28,7 @@ export const PRICE_TESTS: PriceTest[] = [
     changes: [
       { label: "Premium mensuel, prix de bienvenue (10 min)", before: "7,99 €", after: PLAN_PRICES.monthly.welcome },
       { label: "Premium mensuel, ensuite", before: "12,79 €", after: PLAN_PRICES.monthly.regular },
-      { label: "Premium à vie", before: "39,99 € puis 63,99 €", after: `${PLAN_PRICES.lifetime.welcome} puis ${PLAN_PRICES.lifetime.regular} (inchangé)` },
+      { label: "Premium à vie", before: "39,99 € puis 63,99 €", after: "39,99 € puis 63,99 € (inchangé pendant le test ; 50 € de bienvenue à partir du 31/10)" },
       { label: "Stageio Auto mensuel", before: "17,99 €", after: `${AUTO_PRICES.monthly.welcome} puis ${AUTO_PRICES.monthly.regular}` },
       { label: "Stageio Auto à vie", before: "80 €", after: `${AUTO_PRICES.lifetime.welcome} puis ${AUTO_PRICES.lifetime.regular}` },
     ],

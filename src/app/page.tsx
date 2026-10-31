@@ -363,9 +363,9 @@ export default async function LandingPage() {
   ];
 
   const webApplicationJsonLd = buildWebApplicationJsonLd(reviewStats);
-  // Même condition que /premium : tant que le Price à vie n'est pas
-  // configuré côté Stripe, cette formule ne s'affiche nulle part.
-  const lifetimeAvailable = !!process.env.STRIPE_PRICE_ID_LIFETIME?.trim();
+  // L'accès à vie a son prix Stripe écrit dans plans.ts (31/10) : il ne
+  // dépend plus d'une variable d'environnement.
+  const lifetimeAvailable = true;
 
   return (
     <div style={{ minHeight: "100vh", overflowX: "hidden", position: "relative" }}>

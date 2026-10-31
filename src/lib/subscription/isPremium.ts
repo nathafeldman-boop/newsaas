@@ -3,7 +3,7 @@ import { AUTO_MONTHLY_CENTS_ALL } from "@/lib/pricing/plans";
 
 // "comp" = débloqué via un code d'accès admin (voir access_codes), pas un
 // paiement Stripe réel : compte pour l'accès Premium mais jamais pour le LTV.
-// "lifetime" = paiement Stripe unique (39,99€, voir premium/actions.ts) : compte
+// "lifetime" = paiement Stripe unique (50 € depuis le 31/10, voir premium/actions.ts) : compte
 // à la fois pour l'accès Premium ET pour le LTV (crédité via
 // creditInvoicePayment comme n'importe quel autre paiement, voir le webhook
 // Stripe), mais sans stripe_subscription_id ni current_period_end -- il n'y

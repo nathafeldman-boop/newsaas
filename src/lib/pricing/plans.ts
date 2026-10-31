@@ -76,12 +76,18 @@ export function lifetimeOfferFor(flashEndsAt: number | null, now: number = Date.
 // Suivi : onglet Tests de l'admin (lib/pricing/tests.ts).
 export const PRICE_TEST_START = Date.parse("2026-10-29T00:10:00Z");
 
+// Accès à vie de bienvenue : 50 € depuis le 31/10 (Nathan : « augmente le
+// prix de l'accès à vie à 50 € au lieu de 40 € »). Auparavant 39,99 € affiché
+// (prix Stripe de 40,00 €). Prix créé dans Stripe le 31/10, voir
+// WELCOME_PRICE_IDS.lifetime. Ni « −X % » ni prix barré : le prix de
+// bienvenue n'est plus le plus bas des 30 derniers jours (30 € jusqu'au
+// 25/10), donc on ne dit plus qu'il l'est.
 export const PLAN_PRICES = {
   monthly: { welcome: "9,99 €", regular: "15,99 €" },
-  lifetime: { welcome: "39,99 €", regular: "63,99 €" },
+  lifetime: { welcome: "50 €", regular: "63,99 €" },
 } as const;
 
-/** « 39,99 € à vie ou 9,99 €/mois » : rappel du prix dans les écrans réservés à Premium. */
+/** « 50 € à vie ou 9,99 €/mois » : rappel du prix dans les écrans réservés à Premium. */
 export const PREMIUM_PRICE_LINE = `${PLAN_PRICES.lifetime.welcome} à vie ou ${PLAN_PRICES.monthly.welcome}/mois`;
 
 // Prix de bienvenue mensuel d'avant le test (7,99 €, STRIPE_PRICE_ID) : pour
@@ -95,10 +101,14 @@ export const PREVIOUS_MONTHLY_WELCOME = {
 // ancienne variable Vercel ne peut pas les remplacer). Créés le 29/10 sur
 // les produits Stageio Premium et Stageio Auto (clés de recherche
 // stageio_premium_monthly_999 / _1599, stageio_auto_monthly_2879,
-// stageio_auto_lifetime_12800). L'accès à vie Premium de bienvenue reste
-// STRIPE_PRICE_ID_LIFETIME (39,99 €).
+// stageio_auto_lifetime_12800). L'accès à vie Premium de bienvenue, 50 €
+// (créé le 31/10 sur le produit « Stageio Premium à vie », clé de recherche
+// stageio_premium_lifetime_5000), est écrit ici lui aussi : l'ancienne
+// variable STRIPE_PRICE_ID_LIFETIME (prix de 40 €) ne sert plus qu'à
+// reconnaître les anciens achats (voir creditAffiliateCommission).
 export const WELCOME_PRICE_IDS = {
   monthly: "price_1UVgQ8Rd6r34OMU6ryHQt9VZ",
+  lifetime: "price_1UWeVYRd6r34OMU6dpfEj5Nz",
 };
 
 export const REGULAR_PRICE_IDS = {

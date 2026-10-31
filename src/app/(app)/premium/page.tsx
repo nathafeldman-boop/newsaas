@@ -451,7 +451,7 @@ export default async function PremiumPage({
               welcomeActive={welcome?.active ?? false}
               lifetimeOffer={lifetimeOffer}
               prices={prices}
-              lifetimeAvailable={!!process.env.STRIPE_PRICE_ID_LIFETIME}
+              lifetimeAvailable
               autoAvailable={isAutoOfferAvailable(profile)}
               initialOffer={offre === "auto" ? "auto" : "premium"}
               errorMessage={error ? (ERROR_MESSAGES[error] ?? "Une erreur est survenue.") : null}

@@ -1,5 +1,5 @@
 import type Stripe from "stripe";
-import { LIFETIME_PROMO, premiumMonthlyPriceIds, REGULAR_PRICE_IDS } from "@/lib/pricing/plans";
+import { LIFETIME_PROMO, premiumMonthlyPriceIds, REGULAR_PRICE_IDS, WELCOME_PRICE_IDS } from "@/lib/pricing/plans";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 // 50% sur mensuel et à vie (formule hebdomadaire retirée le 26/09, voir
@@ -19,6 +19,8 @@ function planLabelForPriceId(priceId: string | null): "week" | "month" | "lifeti
   // Tous les prix du mensuel Premium, ceux du test de prix du 29/10 compris.
   if (priceId === process.env.STRIPE_PRICE_ID?.trim() || premiumMonthlyPriceIds().includes(priceId)) return "month";
   if (
+    // Prix de bienvenue de 50 € (31/10), puis l'ancien (variable d'environnement, 40 €).
+    priceId === WELCOME_PRICE_IDS.lifetime ||
     priceId === process.env.STRIPE_PRICE_ID_LIFETIME?.trim() ||
     priceId === REGULAR_PRICE_IDS.lifetime ||
     priceId === LIFETIME_PROMO.priceId
