@@ -13,8 +13,10 @@ import { getTrustCount } from "@/lib/premium/trustCount";
 import { campaignSender } from "@/lib/campaigns/sendBatch";
 import { CHECKOUT_DAILY_EVENT, SALES_SERIES_EVENT } from "@/lib/campaigns/serieEvents";
 import { CHECKOUT_RELANCE_EVENT } from "@/lib/campaigns/relanceCheckout";
+import { inLastCallSalves } from "@/lib/campaigns/dernierAppelSalves";
 import {
   CAMPAIGN_EVENT,
+  LASTCALL_CAMPAIGN_EVENT,
   MIN_COUNT_TO_SHOW,
   catalogSize,
   NEWS_CAMPAIGN_EVENT,
@@ -162,7 +164,7 @@ async function loadDue(db: Db, now: number, midnight: number): Promise<{ due: Du
       db
         .from("user_events")
         .select("user_id")
-        .in("event_type", [NEWS_CAMPAIGN_EVENT, CAMPAIGN_EVENT, CHECKOUT_RELANCE_EVENT, CHECKOUT_DAILY_EVENT])
+        .in("event_type", [NEWS_CAMPAIGN_EVENT, CAMPAIGN_EVENT, LASTCALL_CAMPAIGN_EVENT, CHECKOUT_RELANCE_EVENT, CHECKOUT_DAILY_EVENT])
         .gte("created_at", new Date(midnight).toISOString())
         .order("created_at")
         .range(from, to),
@@ -539,7 +541,7 @@ ${social ? `<p style="margin:10px 0 0;font-size:14px">👥 ${social}</p>` : ""}
 }
 
 export type SeriesRunResult =
-  | { kind: "no_sender" | "not_started" | "outside_hours" }
+  | { kind: "no_sender" | "not_started" | "outside_hours" | "paused" }
   | { kind: "sent"; sent: number; due: number; quota: number; byStep: Record<number, number>; failures: string[] };
 
 // Un passage (cron, toutes les heures de 7 h 30 à 20 h 30, heure de Paris) :
@@ -550,6 +552,10 @@ export async function sendSeriesRun(now: number = Date.now()): Promise<SeriesRun
   if (now < SERIES_START) return { kind: "not_started" };
   const clock = parisClock(now);
   if (clock.hour < FIRST_PARIS_HOUR || clock.hour > LAST_PARIS_HOUR) return { kind: "outside_hours" };
+  // Salves « Dernier appel » du 1/11 (10 h à 19 h, voir dernierAppelSalves.ts) :
+  // même public, même jour, un message plus fort. La série laisse la place,
+  // pour que personne ne reçoive les deux à 30 minutes d'écart.
+  if (inLastCallSalves(now)) return { kind: "paused" };
 
   const db = createAdminClient();
   const { due, sentToday } = await loadDue(db, now, clock.midnight);
