@@ -43,6 +43,7 @@ const GROUPS = [
       { href: "/admin/acquisition", label: "Conversion et paywall" },
       { href: "/admin/canaux", label: "Revenus par canal" },
       { href: "/admin/rpm", label: "RPM" },
+      { href: "/admin/linkedin", label: "Publications LinkedIn" },
       { href: "/admin/affiliates", label: "Affiliés" },
       { href: "/admin/emails", label: "E-mails et relances" },
       { href: "/admin/relance", label: "Pilotage des envois" },

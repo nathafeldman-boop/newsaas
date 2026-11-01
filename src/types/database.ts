@@ -263,6 +263,21 @@ export type ChannelView = {
   created_at: string;
 };
 
+// Publications LinkedIn préparées dans /admin/linkedin (voir lib/linkedin/posts.ts).
+export type LinkedinPostRow = {
+  id: string;
+  format: "jour" | "secteur" | "ville" | "hebdo";
+  segment: string | null;
+  offer_ids: string[];
+  offers_snapshot: unknown;
+  body: string;
+  first_comment: string | null;
+  status: "brouillon" | "publie" | "abandonne";
+  utm_campaign: string;
+  created_at: string;
+  published_at: string | null;
+};
+
 export type ReviewStatus = "pending" | "approved" | "rejected";
 
 export type Review = {
@@ -462,6 +477,12 @@ export type Database = {
         Row: ChannelView;
         Insert: Partial<ChannelView> & { day: string; channel: string; views: number };
         Update: Partial<ChannelView>;
+        Relationships: [];
+      };
+      linkedin_posts: {
+        Row: LinkedinPostRow;
+        Insert: Partial<LinkedinPostRow> & Pick<LinkedinPostRow, "format" | "body" | "utm_campaign">;
+        Update: Partial<LinkedinPostRow>;
         Relationships: [];
       };
       site_visits: {
