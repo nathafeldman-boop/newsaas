@@ -46,6 +46,7 @@ const GROUPS = [
       { href: "/admin/affiliates", label: "Affiliés" },
       { href: "/admin/emails", label: "E-mails et relances" },
       { href: "/admin/relance", label: "Pilotage des envois" },
+      { href: "/admin/linkedin", label: "Publications LinkedIn" },
     ],
   },
   {
