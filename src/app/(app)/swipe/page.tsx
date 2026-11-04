@@ -11,7 +11,7 @@ import {
   matchesTargetJob,
   profileDepartement,
 } from "@/lib/matching/score";
-import { dedupeOffers, diversifyByCompany, fitsSubscriber, preferTargetJobs, subscriberOrder, targetJobTitlePatterns } from "@/lib/matching/deck";
+import { dedupeOffers, deckUsesNearOnly, diversifyByCompany, fitsSubscriber, preferTargetJobs, subscriberOrder, targetJobTitlePatterns } from "@/lib/matching/deck";
 import { lookupCommuneDepartement, overseasMismatch, parseProfileLocation, type ProfileLocation } from "@/lib/matching/profileLocation";
 import { isPassReason, learnFromPassReasons, passReasonsSinceIso, type OfferTags, type PassReasonEvent } from "@/lib/matching/passReasons";
 import { classifyFormations, classifyMetier } from "@/lib/seo/metiers";
@@ -486,7 +486,11 @@ export default async function SwipePage() {
   // moins 10. Sinon, comme avant, les plus lointaines restent en fin de
   // paquet. Le deck d'avant le paiement ne change pas.
   const nearOffers = premium ? relevantOffers.filter(isNearForUser) : relevantOffers;
-  const deckPool = premium && nearOffers.length >= MIN_RELEVANT_POOL ? nearOffers : relevantOffers;
+  // « Sur place uniquement » (4/11) : jamais de repli sur toute la France, même
+  // avec moins de 10 offres proches (voir deckUsesNearOnly) ; l'écran de fin
+  // propose d'élargir.
+  const onSiteOnly = premium && geoProfile?.mobility === "Sur place uniquement";
+  const deckPool = deckUsesNearOnly(premium, geoProfile?.mobility, nearOffers.length, MIN_RELEVANT_POOL) ? nearOffers : relevantOffers;
 
   // Composition du paquet (25/10) : une carte par annonce (doublons entre
   // sources retirés), le métier visé d'abord quand il y en a au moins 12
@@ -572,6 +576,8 @@ export default async function SwipePage() {
         userId={user.id}
         totalSwipesEver={totalSwipesEver}
         isPremium={premium}
+        onSiteOnly={onSiteOnly}
+        onSiteCity={profile?.city ?? null}
         cityBanner={cityBanner}
         sectorLabel={sectorLabel}
         applicationStreak={applicationStreak}

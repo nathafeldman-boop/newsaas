@@ -51,7 +51,7 @@ export default async function CandidaturePage({ params }: { params: Promise<{ of
   // l'étudiant tomber sur « offre en cours d'actualisation » (24/10). Un
   // doute (délai, quota) ne bloque jamais : on garde l'état en base.
   const liveStatus =
-    offer.source === "france_travail" && offer.external_id ? await fetchFranceTravailOfferStatus(offer.external_id) : "unknown";
+    offer.source === "france_travail" && offer.external_id ? await fetchFranceTravailOfferStatus(offer.external_id, 2500, { checkPage: true }) : "unknown";
   const gone = liveStatus === "gone" || (!offer.is_active && liveStatus !== "live");
   if (liveStatus !== "unknown" && offer.is_active !== (liveStatus === "live")) {
     after(async () => {

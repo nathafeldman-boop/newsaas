@@ -21,6 +21,7 @@ import { useApplyOnLike, type AutoApplySetup } from "@/components/swipe/ApplyOnL
 import { markAutoUpsellShown, readLikeAction, saveLikeAction, shouldShowAutoUpsell, type LikeAction } from "@/lib/swipe/likePreference";
 import { Icon } from "@/components/ui/Icon";
 import { PassReasonBar } from "@/components/swipe/PassReasonBar";
+import { widenSearchToFranceAction } from "@/app/(app)/swipe/actions";
 import { cardsToDrop, type OfferTags, type PassReason } from "@/lib/matching/passReasons";
 import { cn } from "@/lib/utils";
 import type { ContractType, Offer, SwipeDirection } from "@/types/database";
@@ -307,6 +308,8 @@ function SwipeDeckInner({
   autoApplySetup,
   onStackChange,
   onSwipesUsedChange,
+  onSiteOnly = false,
+  onSiteCity = null,
   tags = {},
 }: {
   offers: Offer[];
@@ -321,8 +324,11 @@ function SwipeDeckInner({
   autoApplySetup?: AutoApplySetup;
   onStackChange?: (count: number) => void;
   onSwipesUsedChange?: (count: number) => void;
+  onSiteOnly?: boolean;
+  onSiteCity?: string | null;
 }) {
   const router = useRouter();
+  const [widening, setWidening] = useState(false);
   // Formule Auto (24/10) : au premier like, on demande si un like envoie la
   // candidature ou met juste en favori ; ensuite le réglage s'applique. Un
   // compte Premium sans Auto voit la proposition une fois par jour au plus.
@@ -531,26 +537,50 @@ function SwipeDeckInner({
         <p style={{ marginTop: 8, color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
           {eta ? `De nouvelles offres arrivent ${eta}.` : "On en ajoute régulièrement."}
         </p>
+        {isPremium && onSiteOnly && (
+          <>
+            <p style={{ marginTop: 6, maxWidth: "34ch", fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
+              Tu as choisi « Sur place uniquement » : on ne te montre que les offres{onSiteCity ? ` près de ${onSiteCity}` : " près de chez toi"}.
+            </p>
+            <button
+              type="button"
+              className="btn btn-gradient mt-5"
+              disabled={widening}
+              onClick={() => {
+                setWidening(true);
+                void logButtonClick(userId, "widen_to_france_cta", { source: "swipe_empty_deck" });
+                void widenSearchToFranceAction().then((result) => {
+                  if (result.ok) router.refresh();
+                  else setWidening(false);
+                });
+              }}
+            >
+              {widening ? "Un instant…" : "Voir aussi les offres partout en France"}
+            </button>
+          </>
+        )}
         {isPremium ? (
           <>
-            <p style={{ marginTop: 6, fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
+            <p style={{ marginTop: onSiteOnly ? 22 : 6, fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
               En attendant, entraîne-toi pour ton prochain entretien.
             </p>
             <Link
               href="/dashboard"
-              className="btn btn-gradient mt-6"
+              className={onSiteOnly ? "mt-3 text-sm font-semibold underline underline-offset-4" : "btn btn-gradient mt-6"}
               onClick={() => void logButtonClick(userId, "interview_practice_cta", { source: "swipe_empty_deck" })}
             >
               🎤 M&apos;entraîner à l&apos;entretien
             </Link>
             {/* Paquet d'abonné sans écoles ni autres métiers lointains (31/10) : il peut finir plus tôt. */}
-            <Link
-              href="/profil"
-              className="mt-4 text-sm font-semibold underline underline-offset-4"
-              onClick={() => void logButtonClick(userId, "widen_search_cta", { source: "swipe_empty_deck" })}
-            >
-              Élargir ma recherche (métier, ville, mobilité)
-            </Link>
+            {!onSiteOnly && (
+              <Link
+                href="/profil"
+                className="mt-4 text-sm font-semibold underline underline-offset-4"
+                onClick={() => void logButtonClick(userId, "widen_search_cta", { source: "swipe_empty_deck" })}
+              >
+                Élargir ma recherche (métier, ville, mobilité)
+              </Link>
+            )}
           </>
         ) : (
           <>
@@ -689,6 +719,8 @@ export function SwipeDeck({
   isAuto = false,
   autoOfferAvailable = false,
   autoApplySetup,
+  onSiteOnly = false,
+  onSiteCity = null,
 }: {
   offers: Offer[];
   scores: Record<string, number>;
@@ -706,6 +738,9 @@ export function SwipeDeck({
   /** Formule Auto vendable (SQL passé, boîte configurée) : proposition au like. */
   autoOfferAvailable?: boolean;
   autoApplySetup?: AutoApplySetup;
+  /** Abonné « Sur place uniquement » : l'écran de fin propose d'élargir à la France. */
+  onSiteOnly?: boolean;
+  onSiteCity?: string | null;
 }) {
   const [contractFilter, setContractFilter] = useState<ContractType | "all">("all");
   // Compteur d'offres restantes DANS LE DECK EN COURS, affiché juste
@@ -837,6 +872,8 @@ export function SwipeDeck({
         isAuto={isAuto}
         autoOfferAvailable={autoOfferAvailable}
         autoApplySetup={autoApplySetup}
+        onSiteOnly={onSiteOnly}
+        onSiteCity={onSiteCity}
         onStackChange={setCardsLeft}
         onSwipesUsedChange={setSwipesUsed}
       />

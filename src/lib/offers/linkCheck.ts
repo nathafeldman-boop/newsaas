@@ -51,7 +51,7 @@ export function verdictFromPage(status: number, html: string): LinkVerdict {
 
 export async function checkOfferLink(offer: { source: string; external_id: string | null; apply_url: string | null }): Promise<LinkVerdict> {
   if (offer.source === "france_travail" && offer.external_id) {
-    const status = await fetchFranceTravailOfferStatus(offer.external_id, 4000);
+    const status = await fetchFranceTravailOfferStatus(offer.external_id, 4000, { checkPage: true });
     return status === "gone" ? "dead" : status === "live" ? "alive" : "unknown";
   }
   if (!isCheckableUrl(offer.apply_url)) return "unknown";

@@ -133,3 +133,17 @@ export function subscriberOrder<T>(ranked: T[], tagsOf: (o: T) => FitTags): T[] 
     .sort((a, b) => a.r - b.r || a.i - b.i)
     .map(({ o }) => o);
 }
+
+/**
+ * Abonné : le paquet se limite-t-il à sa zone ? Oui dès qu'il y a assez
+ * d'offres proches, et TOUJOURS s'il a choisi « Sur place uniquement »
+ * (4/11, satisfaction : un abonné de Metz, « Sur place uniquement », notait
+ * 1/5 « Les lieux sont beaucoup trop lointains » : avec moins de `min` offres
+ * proches, le paquet se remplissait de toute la France, de Brest à
+ * Fort-de-France). Quand il ne reste rien près de chez lui, l'écran de fin
+ * lui propose d'élargir à la France en un geste.
+ */
+export function deckUsesNearOnly(premium: boolean, mobility: string | null | undefined, nearCount: number, min: number): boolean {
+  if (!premium) return false;
+  return mobility === "Sur place uniquement" || nearCount >= min;
+}

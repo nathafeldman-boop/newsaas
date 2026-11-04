@@ -211,11 +211,41 @@ export async function searchFranceTravailPage(
   return { jobs: json.resultats ?? [], totalResults };
 }
 
+// Page publique de l'offre (celle où l'étudiant clique « Postuler »).
+export const OFFER_PAGE_URL = "https://candidat.francetravail.fr/offres/recherche/detail";
+
+// La page publique répond-elle ? (4/11, satisfaction : « Lorsque je vais sur
+// le site pour postuler celui-ci est indisponible d'accès ».) L'API peut
+// encore lister une offre dont la page publique renvoie 404 : l'offre
+// « Logisticien » signalée le 30/10 était revue chaque nuit par la synchro, et
+// sa page était en 404. Seul un 404 ou un 410 compte comme « disparue » ; un
+// refus de France Travail (403, 429, délai) reste « unknown », jamais un
+// motif de retirer l'offre.
+export async function fetchFranceTravailPageStatus(id: string, timeoutMs = 2500): Promise<"live" | "gone" | "unknown"> {
+  try {
+    const res = await fetch(`${OFFER_PAGE_URL}/${encodeURIComponent(id)}`, {
+      redirect: "follow",
+      signal: AbortSignal.timeout(timeoutMs),
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; StageioLinkCheck/1.0; +https://www.stageio.fr)", Accept: "text/html" },
+    });
+    if (res.status === 404 || res.status === 410) return "gone";
+    return res.ok ? "live" : "unknown";
+  } catch {
+    return "unknown";
+  }
+}
+
 // Offre encore en ligne chez France Travail ? Vérifié avant de candidater
 // (24/10 : offre ouverte depuis Stageio, « en cours d'actualisation » sur
 // francetravail.fr). "unknown" (délai, quota, erreur) : on ne bloque jamais
 // l'étudiant sur un doute.
-export async function fetchFranceTravailOfferStatus(id: string, timeoutMs = 2500): Promise<"live" | "gone" | "unknown"> {
+// `checkPage` : si l'API dit « en ligne », vérifie aussi la page publique (un
+// seul appel de plus) : elle seule compte pour l'étudiant qui veut postuler.
+export async function fetchFranceTravailOfferStatus(
+  id: string,
+  timeoutMs = 2500,
+  options: { checkPage?: boolean } = {},
+): Promise<"live" | "gone" | "unknown"> {
   try {
     const token = await getAccessToken();
     await throttle();
@@ -226,7 +256,9 @@ export async function fetchFranceTravailOfferStatus(id: string, timeoutMs = 2500
     if (res.status === 204 || res.status === 404 || res.status === 410) return "gone";
     if (!res.ok) return "unknown";
     const json = (await res.json().catch(() => null)) as { id?: string } | null;
-    return json?.id ? "live" : "unknown";
+    if (!json?.id) return "unknown";
+    if (options.checkPage && (await fetchFranceTravailPageStatus(id, timeoutMs)) === "gone") return "gone";
+    return "live";
   } catch {
     return "unknown";
   }
