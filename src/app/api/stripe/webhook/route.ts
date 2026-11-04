@@ -56,10 +56,11 @@ async function syncSubscription(subscription: Stripe.Subscription): Promise<{ ok
   // notifyIncompletePaymentOnce), donc sans risque de doublon si le
   // statut oscille entre les deux avant d'être résolu.
   // Paiement refusé = abonnement coupé (Nathan, 4/11 : « paiement refusé, pas
-  // récupérable, tu coupes leur abonnement »). Un renouvellement ou un
-  // passage à Stageio Auto refusé par la banque ou par Radar arrête
-  // l'abonnement tout de suite, sans relance ; seuls les refus que la
-  // personne règle elle-même (3D Secure) gardent le parcours ci-dessous.
+  // récupérable, tu coupes leur abonnement »). Un RENOUVELLEMENT refusé par
+  // la banque ou par Radar arrête l'abonnement tout de suite, sans relance ;
+  // un passage à Stageio Auto refusé ne coupe rien (l'abonné garde son
+  // Premium) ; et les refus que la personne règle elle-même (3D Secure)
+  // gardent le parcours ci-dessous.
   // Voir lib/stripe/refusedPayment.ts. Jamais bloquant : en cas d'erreur
   // Stripe, on retombe sur le comportement d'avant.
   if (looksRefused(subscription)) {

@@ -23,7 +23,7 @@ const sub = (over: Partial<Stripe.Subscription> = {}) =>
   ({ id: "sub_1", status: "active", customer: "cus_1", latest_invoice: "in_1", pending_update: null, ...over }) as unknown as Stripe.Subscription;
 assert.equal(looksRefused(sub({ status: "past_due" })), true);
 assert.equal(looksRefused(sub({ status: "unpaid" })), true);
-assert.equal(looksRefused(sub({ pending_update: {} as never })), true, "changement d'offre refusé");
+assert.equal(looksRefused(sub({ pending_update: {} as never })), false, "changement d'offre refusé : l'abonné garde son offre");
 assert.equal(looksRefused(sub()), false);
 
 // 3. Couper, ou non, avec un faux Stripe.
@@ -54,10 +54,17 @@ void (async () => {
   assert.equal(t.calls.cancelled.length, 1);
   assert.deepEqual(t.calls.cancelled[0], { id: "sub_1", params: { prorate: false, invoice_now: false, cancellation_details: { comment: REFUSED_CUT_COMMENT } } });
 
-  // Passage à Stageio Auto refusé (abonnement encore actif, changement en attente) : coupé aussi.
+  // Passage à Stageio Auto refusé (abonnement encore actif, changement en attente) :
+  // l'abonné GARDE son Premium, rien n'est coupé (Nathan, 4/11).
   t = fakeStripe({ billingReason: "subscription_update", charges: [failed("card_declined", { type: "blocked" })] });
+  assert.equal(looksRefused(sub({ pending_update: {} as never })), false, "un changement en attente n'est pas un renouvellement refusé");
   r = await cutIfPaymentRefused(t.stripe, sub({ pending_update: {} as never }));
-  assert.equal(r.cut, true);
+  assert.deepEqual(r, { cut: false, reason: "pas_un_refus" });
+  assert.equal(t.calls.cancelled.length, 0);
+  // Même si l'abonnement était impayé avec une facture de changement d'offre : on ne coupe pas.
+  t = fakeStripe({ billingReason: "subscription_update", charges: [failed("card_declined")] });
+  assert.deepEqual(await cutIfPaymentRefused(t.stripe, sub({ status: "past_due" })), { cut: false, reason: "changement_offre" });
+  assert.equal(t.calls.cancelled.length, 0);
 
   // 3D Secure demandé : rien n'est coupé, la relance habituelle continue.
   t = fakeStripe({ charges: [failed("authentication_required")] });

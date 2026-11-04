@@ -331,7 +331,7 @@ export default async function AbonnementsPage({
             delta={delta(mvCur.lostAfterFailure, mvPrev.lostAfterFailure)}
             goodWhen="down"
             sub={mvCur.failedOpen > 0 ? `${mvCur.failedOpen} refus en attente d'une authentification 3D Secure ou d'une panne de banque` : "aucun refus en attente : un refus coupe l'abonnement"}
-            definition="Abonnements terminés pendant la période après un renouvellement ou un changement d'offre refusé (carte refusée, sans provision, expirée, bloquée). Depuis le 4/11, un refus coupe l'abonnement tout de suite : un refus n'est plus « récupérable ». Seuls restent en attente les refus que la personne règle elle-même (3D Secure) ou qui viennent d'une panne de la banque."
+            definition="Abonnements terminés pendant la période après un renouvellement refusé (un passage à l'Auto refusé ne coupe pas : l'abonné garde son Premium) (carte refusée, sans provision, expirée, bloquée). Depuis le 4/11, un refus coupe l'abonnement tout de suite : un refus n'est plus « récupérable ». Seuls restent en attente les refus que la personne règle elle-même (3D Secure) ou qui viennent d'une panne de la banque."
             source="Stripe, factures et abonnements"
           />
           <Kpi
