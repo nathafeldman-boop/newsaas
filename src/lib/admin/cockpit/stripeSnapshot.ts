@@ -1,6 +1,7 @@
 import { unstable_cache } from "next/cache";
 import type Stripe from "stripe";
 import { getStripeClient } from "@/lib/stripe/client";
+import { isRefusedCut } from "@/lib/stripe/refusedPayment";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchAllRowsByIdCursor } from "@/lib/supabase/public";
 import type { BillingInterval, StripeSnapshot, SubRecord } from "@/lib/admin/cockpit/types";
@@ -81,7 +82,9 @@ function toSubRecord(s: Stripe.Subscription, userId: string | null): SubRecord {
     cancelAt: ms(s.cancel_at),
     cancelAtPeriodEnd: s.cancel_at_period_end,
     currentPeriodEnd: ms(first?.current_period_end),
-    cancelReason: s.cancellation_details?.reason ?? null,
+    // Coupé par la règle « paiement refusé = abonnement coupé » (lib/stripe/refusedPayment.ts) :
+    // Stripe le range en « cancellation_requested », on le compte comme impayé.
+    cancelReason: isRefusedCut(s.cancellation_details?.comment) ? "payment_failed" : (s.cancellation_details?.reason ?? null),
     feedback: s.cancellation_details?.feedback ?? null,
     cancelComment: s.cancellation_details?.comment?.slice(0, 500) ?? null,
     paused: !!s.pause_collection,

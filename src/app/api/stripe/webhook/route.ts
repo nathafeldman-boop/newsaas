@@ -4,6 +4,7 @@ import type Stripe from "stripe";
 import { getStripeClient } from "@/lib/stripe/client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { syncSubscriptionToProfile } from "@/lib/stripe/syncSubscription";
+import { cutIfPaymentRefused, looksRefused } from "@/lib/stripe/refusedPayment";
 import { creditCheckoutPayment, creditInvoicePayment } from "@/lib/stripe/creditInvoicePayment";
 import { notifyIncompletePaymentByCustomerId } from "@/lib/stripe/notifyIncompletePayment";
 import { creditAffiliateCommission } from "@/lib/affiliates/creditAffiliateCommission";
@@ -54,6 +55,25 @@ async function syncSubscription(subscription: Stripe.Subscription): Promise<{ ok
   // signalé par Nathan (voir RETENTION_AUDIT.md). Idempotent (voir
   // notifyIncompletePaymentOnce), donc sans risque de doublon si le
   // statut oscille entre les deux avant d'être résolu.
+  // Paiement refusé = abonnement coupé (Nathan, 4/11 : « paiement refusé, pas
+  // récupérable, tu coupes leur abonnement »). Un renouvellement ou un
+  // passage à Stageio Auto refusé par la banque ou par Radar arrête
+  // l'abonnement tout de suite, sans relance ; seuls les refus que la
+  // personne règle elle-même (3D Secure) gardent le parcours ci-dessous.
+  // Voir lib/stripe/refusedPayment.ts. Jamais bloquant : en cas d'erreur
+  // Stripe, on retombe sur le comportement d'avant.
+  if (looksRefused(subscription)) {
+    try {
+      const refused = await cutIfPaymentRefused(getStripeClient(), subscription);
+      if (refused.cut) {
+        console.log("Stripe webhook: paiement refusé, abonnement coupé", { customerId, subscription: subscription.id, code: refused.chargeCode });
+        return { ok: true };
+      }
+    } catch (err) {
+      console.error("Stripe webhook: coupure après paiement refusé en échec", err instanceof Error ? err.message : err, { customerId });
+    }
+  }
+
   if (subscription.status === "incomplete" || subscription.status === "past_due") {
     const { error: notifyError } = await notifyIncompletePaymentByCustomerId(customerId);
     if (notifyError) {

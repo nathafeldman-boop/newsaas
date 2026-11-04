@@ -330,8 +330,8 @@ export default async function AbonnementsPage({
             value={int(mvCur.lostAfterFailure)}
             delta={delta(mvCur.lostAfterFailure, mvPrev.lostAfterFailure)}
             goodWhen="down"
-            sub={mvCur.failedOpen > 0 ? `${mvCur.failedOpen} paiement(s) refusé(s) encore récupérable(s)` : "aucun paiement refusé encore récupérable"}
-            definition="Abonnements terminés pendant la période alors qu'un renouvellement venait d'être refusé (carte sans provision, expirée, 3D Secure). Stripe ne retente plus : ces factures restent ouvertes mais ne seront pas encaissées. Récupérables : refus sur un abonnement encore en cours, que Stripe retente."
+            sub={mvCur.failedOpen > 0 ? `${mvCur.failedOpen} refus en attente d'une authentification 3D Secure ou d'une panne de banque` : "aucun refus en attente : un refus coupe l'abonnement"}
+            definition="Abonnements terminés pendant la période après un renouvellement ou un changement d'offre refusé (carte refusée, sans provision, expirée, bloquée). Depuis le 4/11, un refus coupe l'abonnement tout de suite : un refus n'est plus « récupérable ». Seuls restent en attente les refus que la personne règle elle-même (3D Secure) ou qui viennent d'une panne de la banque."
             source="Stripe, factures et abonnements"
           />
           <Kpi
