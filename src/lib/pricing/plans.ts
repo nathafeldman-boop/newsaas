@@ -37,12 +37,14 @@ export function isLifetimePromoActive(now: number = Date.now()): boolean {
 // depuis l'envoi, jamais rouvert. Ni prix barré ni « baisse de prix » : 30 €
 // est déjà le prix le plus bas de l'accès à vie sur les 30 derniers jours.
 // Salve du 5/11 (Nathan : « une autre salve de 400 emails avec l'accès à vie
-// à 30 € et l'Auto à 63,23 € ») : l'email ouvre la même offre 48 h, avec en
-// plus l'Auto à vie à 63,23 € (prix Stripe créé le 5/11, clé de recherche
+// à 30 € et l'Auto à 63,23 € […] dès qu'ils reçoivent l'email, ils ont 20
+// minutes pour faire leur choix ») : l'email ouvre une offre rien qu'au
+// destinataire (EMAIL_OFFER), mêmes prix que l'offre 48 h, avec en plus
+// l'Auto à vie à 63,23 € (prix Stripe créé le 5/11, clé de recherche
 // stageio_auto_lifetime_6323). Les offres 48 h ouvertes avant (série
-// Premium, 28/10-1/11) étaient toutes finies le 3/11 : toute offre 48 h en
-// cours a donc ce prix. Ni prix barré ni « réduction » : jamais moins cher
-// avant, seulement le prix et celui d'après.
+// Premium, 28/10-1/11) étaient toutes finies le 3/11 : toute offre en cours
+// a donc ce prix. Ni prix barré ni « réduction » (30 € était déjà le prix le
+// plus bas des 30 derniers jours) : seulement le prix et celui d'après.
 export const FLASH_OFFER = {
   windowMs: 48 * 60 * 60 * 1000,
   lifetimePrice: LIFETIME_PROMO.price,
@@ -54,11 +56,21 @@ export const FLASH_OFFER = {
   end: Date.parse("2026-11-01T20:00:00Z"),
 };
 
-// Fin de l'offre 48 h d'un compte à partir des dates d'ouverture (série
-// Premium, salve du 5/11 ; null : pas ouverte par ce canal) : la plus récente.
-export function flashEndFrom(opened: (string | null)[]): number | null {
-  const times = opened.filter((t): t is string => t !== null).map((t) => Date.parse(t));
-  return times.length > 0 ? Math.max(...times) + FLASH_OFFER.windowMs : null;
+// Offre de l'email du 5/11 : le lien marche 48 h après l'envoi ; dès la
+// première visite de la page Premium (ou du lien de paiement) après l'email,
+// le prix est bloqué 20 minutes, une seule fois, compté côté serveur.
+export const EMAIL_OFFER = {
+  windowMs: 20 * 60_000,
+  linkMs: 48 * 60 * 60 * 1000,
+};
+
+// Fin de l'offre de l'email d'un compte. emailAt : envoi de l'email (null :
+// pas reçu) ; firstViewAt : première visite après l'email (null : pas encore
+// venu, le délai commence maintenant si le lien marche encore).
+export function emailOfferEnd(emailAt: string | null, firstViewAt: string | null, now: number): number | null {
+  if (!emailAt) return null;
+  if (firstViewAt) return Date.parse(firstViewAt) + EMAIL_OFFER.windowMs;
+  return now < Date.parse(emailAt) + EMAIL_OFFER.linkMs ? now + EMAIL_OFFER.windowMs : null;
 }
 
 export function isFlashCampaignOpen(now: number = Date.now()): boolean {
@@ -72,7 +84,7 @@ export type LifetimeOffer = { kind: "flash" | "promo"; price: string; endsAt: nu
 
 export function lifetimeOfferFor(flashEndsAt: number | null, now: number = Date.now()): LifetimeOffer | null {
   if (flashEndsAt !== null && now < flashEndsAt) {
-    return { kind: "flash", price: FLASH_OFFER.lifetimePrice, endsAt: flashEndsAt, strike: null, badge: "Offre 48 h", autoPrice: FLASH_OFFER.autoLifetimePrice };
+    return { kind: "flash", price: FLASH_OFFER.lifetimePrice, endsAt: flashEndsAt, strike: null, badge: "Offre de l'email", autoPrice: FLASH_OFFER.autoLifetimePrice };
   }
   if (isLifetimePromoActive(now)) {
     return { kind: "promo", price: LIFETIME_PROMO.price, endsAt: LIFETIME_PROMO.endsAt, strike: LIFETIME_PROMO.referencePrice, badge: "Promo", autoPrice: null };

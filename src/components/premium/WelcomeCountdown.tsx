@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { FLASH_OFFER, priceSheet, WELCOME_WINDOW_MS, type PriceSheet } from "@/lib/pricing/plans";
+import { EMAIL_OFFER, priceSheet, WELCOME_WINDOW_MS, type PriceSheet } from "@/lib/pricing/plans";
 
 // Compte à rebours du prix de bienvenue (voir lib/pricing/plans.ts). La
 // fin est fixée côté serveur : recharger la page ne rajoute pas de temps.
@@ -84,23 +84,24 @@ export function WelcomePriceBanner({
   const { active, remaining, msLeft } = useWelcomeCountdown(endsAt, initialActive);
   if (!active) return null;
   const lastMinutes = msLeft !== null && msLeft < 2 * 60_000;
-  const parts = remaining ? remaining.split(":").map((part) => part.padStart(2, "0")) : flash ? ["––", "––", "––"] : ["––", "––"];
+  const parts = remaining ? remaining.split(":").map((part) => part.padStart(2, "0")) : ["––", "––"];
   const withHours = parts.length === 3;
-  const windowMs = flash ? FLASH_OFFER.windowMs : WELCOME_WINDOW_MS;
+  // Offre de l'email (5/11) : 20 minutes.
+  const windowMs = flash ? EMAIL_OFFER.windowMs : WELCOME_WINDOW_MS;
   const progress = msLeft !== null ? Math.max(0, Math.min(1, msLeft / windowMs)) : 1;
   const label = lastMinutes
     ? flash
       ? "⚡ Dernières minutes de ton offre"
       : "⚡ Dernières minutes du prix de bienvenue"
     : flash
-      ? "🎁 Ton offre 48 h, rien que pour toi"
+      ? "🎁 Ton offre de l'email, rien que pour toi"
       : "🎁 Ton prix de bienvenue, encore";
   return (
     <motion.div
       className="animate-in"
       role="timer"
       aria-live="off"
-      aria-label={`${flash ? "Ton offre 48 h" : "Prix de bienvenue"} : encore ${withHours ? `${parts[0]} h ` : ""}${parts[parts.length - 2]} min ${parts[parts.length - 1]} s`}
+      aria-label={`${flash ? "Ton offre de l'email" : "Prix de bienvenue"} : encore ${withHours ? `${parts[0]} h ` : ""}${parts[parts.length - 2]} min ${parts[parts.length - 1]} s`}
       animate={lastMinutes ? { scale: [1, 1.015, 1] } : { scale: 1 }}
       transition={lastMinutes ? { duration: 1.2, repeat: Infinity } : { duration: 0.2 }}
       style={{

@@ -33,7 +33,8 @@ export const NEWS_CAMPAIGN_TAG = "relance_nouveautes_2026_10";
 // « Dernier appel » (31/10) : un email, l'accès à vie. Voir dernierAppel.ts.
 export const LASTCALL_CAMPAIGN_EVENT = "email_dernier_appel_2026_10";
 export const LASTCALL_CAMPAIGN_TAG = "dernier_appel_2026_10";
-// Offre 48 h (5/11) : Premium à vie à 30 €, Auto à vie à 63,23 €. Voir offre48.ts.
+// Offre de l'email (5/11) : Premium à vie à 30 €, Auto à vie à 63,23 €,
+// 20 minutes après le clic. Voir offre48.ts.
 export const OFFER48_CAMPAIGN_EVENT = "email_offre_48h_2026_11";
 export const OFFER48_CAMPAIGN_TAG = "offre_48h_2026_11";
 // Envoi plus gros par clic pour cette campagne : 1 000 emails (10 lots de 100).
@@ -174,8 +175,8 @@ export const CAMPAIGNS: Record<CampaignId, CampaignDef> = {
     id: "offre48",
     event: OFFER48_CAMPAIGN_EVENT,
     tag: OFFER48_CAMPAIGN_TAG,
-    title: "« Offre 48 h » : à vie à 30 €, Auto à 63,23 € (5/11)",
-    description: "Inscrits jamais payants, les plus récemment venus d'abord : un email qui ouvre pour eux 48 h de prix rien qu'à eux (Premium à vie 30 €, Auto à vie 63,23 €, mensuel au prix de bienvenue).",
+    title: "« Offre de l'email » : à vie à 30 €, Auto à 63,23 € (5/11)",
+    description: "Inscrits jamais payants, les plus récemment venus d'abord : un email façon paywall (nouveautés, Premium à vie 30 €, Auto à vie 63,23 €, mensuel au prix de bienvenue), prix bloqué 20 minutes à partir du clic, lien valable 48 h.",
     batch: OFFER48_SALVE_TOTAL,
   },
 };

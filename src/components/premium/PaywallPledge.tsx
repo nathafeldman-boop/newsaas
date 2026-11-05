@@ -154,11 +154,11 @@ export function PaywallPledge({
                 style={{ maxWidth: 400, margin: "auto" }}
               >
                 <p style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", margin: 0, color: "var(--color-accent-700)" }}>
-                  {flash ? "⏳ Ton offre 48 h, rien que pour toi" : "⏳ Ton prix de bienvenue"}
+                  {flash ? "⏳ Ton offre de l'email, rien que pour toi" : "⏳ Ton prix de bienvenue"}
                 </p>
                 <h1 style={{ fontSize: 28, fontWeight: 800, lineHeight: 1.15, margin: "8px 0 0" }}>
                   Il te reste{" "}
-                  <span style={{ color: "var(--color-accent-700)", fontVariantNumeric: "tabular-nums" }}>{welcome.remaining ?? (flash ? "––:––:––" : "10:00")}</span>
+                  <span style={{ color: "var(--color-accent-700)", fontVariantNumeric: "tabular-nums" }}>{welcome.remaining ?? (flash ? "20:00" : "10:00")}</span>
                 </h1>
                 <p style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.45, margin: "8px 0 0", color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
                   {flash ? "pour profiter de ton offre" : "pour payer le prix de bienvenue"}. Après, c&apos;est <strong style={{ color: "#c2262b" }}>au moins 60 % plus cher</strong>.

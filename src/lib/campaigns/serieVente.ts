@@ -7,7 +7,7 @@ import { unsubscribeHeaders, unsubscribeUrlFor } from "@/lib/resend/unsubscribe"
 import { isAdminEmail } from "@/lib/admin/assertAdmin";
 import { isPremium } from "@/lib/subscription/isPremium";
 import { GUARANTEE_MONTHS } from "@/lib/premium/guaranteeTerms";
-import { AUTO_DAILY_LIMIT, FLASH_OFFER, isFlashCampaignOpen, isLegacyOffer, LIFETIME_PROMO, PLAN_PRICES, priceSheet } from "@/lib/pricing/plans";
+import { AUTO_DAILY_LIMIT, EMAIL_OFFER, FLASH_OFFER, isFlashCampaignOpen, isLegacyOffer, LIFETIME_PROMO, PLAN_PRICES, priceSheet } from "@/lib/pricing/plans";
 import { SITE_URL } from "@/lib/site";
 import { getTrustCount } from "@/lib/premium/trustCount";
 import { campaignSender } from "@/lib/campaigns/sendBatch";
@@ -170,13 +170,13 @@ async function loadDue(db: Db, now: number, midnight: number): Promise<{ due: Du
         .order("created_at")
         .range(from, to),
     ),
-    // Offre 48 h ouverte par la salve du 5/11 : les emails de la série la rappellent.
+    // Email du 5/11 (offre de 20 minutes, lien valable 48 h) : la série attend.
     fetchAllRows<{ user_id: string; created_at: string }>((from, to) =>
       db
         .from("user_events")
         .select("user_id, created_at")
         .eq("event_type", OFFER48_CAMPAIGN_EVENT)
-        .gte("created_at", new Date(now - FLASH_OFFER.windowMs).toISOString())
+        .gte("created_at", new Date(now - EMAIL_OFFER.linkMs).toISOString())
         .order("created_at")
         .range(from, to),
     ),
@@ -196,18 +196,16 @@ async function loadDue(db: Db, now: number, midnight: number): Promise<{ due: Du
     history.set(e.user_id, { count: h.count + 1, last: Math.max(h.last, at) });
     if (e.metadata?.flash === true && !flashOpened.has(e.user_id)) flashOpened.set(e.user_id, at);
   }
-  // Ouverture par la salve du 5/11 (la plus récente des deux compte, comme au paiement).
-  for (const e of offer48Events) {
-    const at = Date.parse(e.created_at);
-    if (at > (flashOpened.get(e.user_id) ?? 0)) flashOpened.set(e.user_id, at);
-  }
+
   const campaignOpen = isFlashCampaignOpen(now);
   const flashFor = (userId: string): Pick<Due, "flashEndsAt" | "opensFlash"> => {
     const opened = flashOpened.get(userId);
     if (opened !== undefined) return { flashEndsAt: opened + FLASH_OFFER.windowMs, opensFlash: false };
     return { flashEndsAt: null, opensFlash: campaignOpen };
   };
-  const recentOther = new Set(otherEvents.map((e) => e.user_id));
+  // Email du 5/11 reçu il y a moins de 48 h (son lien marche encore) : pas
+  // d'email de la série, qui annoncerait d'autres prix que les siens.
+  const recentOther = new Set([...otherEvents, ...offer48Events].map((e) => e.user_id));
 
   const continuing: (Due & { last: number })[] = [];
   const starting: Due[] = [];

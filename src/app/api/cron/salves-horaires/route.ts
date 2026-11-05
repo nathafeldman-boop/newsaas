@@ -4,7 +4,7 @@ import { fetchAllRowsByIdCursor } from "@/lib/supabase/public";
 import { CAMPAIGNS } from "@/lib/campaigns/relanceOffres";
 import { sendNextCampaignBatch, type BatchResult } from "@/lib/campaigns/sendBatch";
 import { CHECKOUT_DAILY_EVENT, SALES_SERIES_EVENT } from "@/lib/campaigns/serieEvents";
-import { FLASH_OFFER } from "@/lib/pricing/plans";
+import { EMAIL_OFFER } from "@/lib/pricing/plans";
 import {
   HOURLY_SALVE_GAP_MS,
   HOURLY_SALVE_QUEUE,
@@ -35,15 +35,15 @@ async function recentRecipients(db: Db, events: string[], since: number): Promis
 
 // À laisser pour un prochain passage : série Premium ou relance de paiement
 // reçue il y a moins de 3 h, ou un email de salve (ou de relance) il y a
-// moins de 24 h, ou l'offre 48 h du 5/11 pas encore finie (sinon un « Dernier
-// appel » à 40 € arriverait en pleine offre à 30 €). Relu avant chaque
+// moins de 24 h, ou l'email du 5/11 il y a moins de 48 h (son lien marche
+// encore : sinon un « Dernier appel » à 40 € arriverait en pleine offre à 30 €). Relu avant chaque
 // campagne : les comptes notés par la campagne précédente du même passage en
 // font partie.
 async function skipList(db: Db, now: number): Promise<Set<string>> {
   const [series, salves, offer48] = await Promise.all([
     recentRecipients(db, [SALES_SERIES_EVENT, CHECKOUT_DAILY_EVENT], now - HOURLY_SERIES_GUARD_MS),
     recentRecipients(db, [...SALVE_EVENTS, CAMPAIGNS.nouveautes.event], now - DAY_MS),
-    recentRecipients(db, [CAMPAIGNS.offre48.event], now - FLASH_OFFER.windowMs),
+    recentRecipients(db, [CAMPAIGNS.offre48.event], now - EMAIL_OFFER.linkMs),
   ]);
   return new Set([...series, ...salves, ...offer48]);
 }

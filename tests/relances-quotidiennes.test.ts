@@ -108,8 +108,8 @@ console.log("relances-quotidiennes : OK");
   assert.equal(renderSeriesEmail(profile, 3, catalog, ends - 30 * 60_000, 0, ends).subject, renderSeriesEmail(profile, 3, catalog, ends - 30 * 60_000).subject);
 
   // Paywall : 30 € pendant l'offre du compte, sans prix barré ; rien après.
-  // Depuis la salve du 5/11, l'offre 48 h montre aussi l'Auto à vie à 63,23 €.
-  assert.deepEqual(lifetimeOfferFor(ends, SEND + H), { kind: "flash", price: "30 €", endsAt: ends, strike: null, badge: "Offre 48 h", autoPrice: "63,23 €" });
+  // Depuis l'email du 5/11, l'offre montre aussi l'Auto à vie à 63,23 €.
+  assert.deepEqual(lifetimeOfferFor(ends, SEND + H), { kind: "flash", price: "30 €", endsAt: ends, strike: null, badge: "Offre de l'email", autoPrice: "63,23 €" });
   assert.equal(lifetimeOfferFor(ends, ends), null);
   assert.equal(lifetimeOfferFor(null, SEND), null);
 }

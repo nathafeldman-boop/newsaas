@@ -217,7 +217,7 @@ function OfferTabs({
   const monthlyPrice = prices.monthly[tier];
   // Stageio Auto : prix de bienvenue pendant le même chrono (test de prix du 29/10).
   const autoMonthly = prices.auto.monthly[tier];
-  // Offre 48 h (salve du 5/11) : l'Auto à vie à 63,23 €.
+  // Offre de l'email du 5/11 : l'Auto à vie à 63,23 €.
   const autoLifetime = promo?.autoPrice ?? prices.auto.lifetime[tier];
   // Mensuel affiché d'abord (Nathan, 24/10) ; « À vie » s'il n'y a que ça.
   const hasLifetime = lifetimeAvailable || autoAvailable;
@@ -366,7 +366,7 @@ function OfferTabs({
 
       {welcome && (
         <p style={{ margin: "14px 0 0", fontSize: 14, fontWeight: 700, textAlign: "center", color: "var(--color-accent-700)" }}>
-          {flash ? "🎁 Ton offre 48 h encore" : "🎁 Prix de bienvenue encore"}{" "}
+          {flash ? "🎁 Ton offre de l'email encore" : "🎁 Prix de bienvenue encore"}{" "}
           <span style={{ fontSize: 20, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{remaining ?? "––:––"}</span>
           <br />
           <span style={{ fontSize: 12.5, fontWeight: 600 }}>
@@ -500,7 +500,7 @@ function ClassicPricing({
 
       {welcome && (
         <p style={{ margin: "14px 0 0", fontSize: 14, fontWeight: 700, textAlign: "center", color: "var(--color-accent-700)" }}>
-          {flash ? "🎁 Ton offre 48 h encore" : "🎁 Prix de bienvenue encore"}{" "}
+          {flash ? "🎁 Ton offre de l'email encore" : "🎁 Prix de bienvenue encore"}{" "}
           <span style={{ fontSize: 20, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{remaining ?? "––:––"}</span>
           <br />
           <span style={{ fontSize: 12.5, fontWeight: 600 }}>

@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { flashEndFrom, isLegacyOffer, offerWindowStart, WELCOME_WINDOW_MS } from "@/lib/pricing/plans";
+import { emailOfferEnd, FLASH_OFFER, isLegacyOffer, offerWindowStart, WELCOME_WINDOW_MS } from "@/lib/pricing/plans";
 import { LASTCALL_CAMPAIGN_EVENT, NEWS_CAMPAIGN_EVENT, OFFER48_CAMPAIGN_EVENT } from "@/lib/campaigns/relanceOffres";
 import { SALES_SERIES_EVENT } from "@/lib/campaigns/serieEvents";
 
@@ -40,13 +40,16 @@ export async function getWelcomeEndsAt(userId: string): Promise<number> {
   return start + WELCOME_WINDOW_MS;
 }
 
-// Offre 48 h par email (voir FLASH_OFFER) : fin de l'offre du compte, 48 h
-// après le premier email qui l'a ouverte (série Premium du 28/10-1/11, ou
-// salve du 5/11), ou null. Les deux ouvertures possibles : la plus récente.
+// Offre par email : fin de l'offre du compte, ou null. Deux sources, la
+// plus tardive compte :
+// - offre 48 h de la série Premium (28/10-1/11) : 48 h après le premier
+//   email qui l'a ouverte ;
+// - offre de l'email du 5/11 (EMAIL_OFFER) : 20 minutes à partir de la
+//   première visite après l'email (lien valable 48 h).
 export async function getFlashEndsAt(userId: string): Promise<number | null> {
   const admin = createAdminClient();
   const first = (q: PromiseLike<{ data: { created_at: string } | null }>) => Promise.resolve(q).then(({ data }) => data?.created_at ?? null);
-  const opened = await Promise.all([
+  const [seriesAt, emailAt] = await Promise.all([
     first(
       admin
         .from("user_events")
@@ -69,7 +72,25 @@ export async function getFlashEndsAt(userId: string): Promise<number | null> {
         .maybeSingle(),
     ),
   ]);
-  return flashEndFrom(opened);
+  const now = Date.now();
+  // Première visite de la page Premium (ou du lien de paiement) après l'email.
+  const firstViewAt = emailAt
+    ? await first(
+        admin
+          .from("user_events")
+          .select("created_at")
+          .eq("user_id", userId)
+          .eq("event_type", "paywall_viewed")
+          .gte("created_at", emailAt)
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle(),
+      )
+    : null;
+  const ends = [seriesAt ? Date.parse(seriesAt) + FLASH_OFFER.windowMs : null, emailOfferEnd(emailAt, firstViewAt, now)].filter(
+    (t): t is number => t !== null,
+  );
+  return ends.length > 0 ? Math.max(...ends) : null;
 }
 
 // État au moment de l'affichage (hors du corps du composant : rendu pur).

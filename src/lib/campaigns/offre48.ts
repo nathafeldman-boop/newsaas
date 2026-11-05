@@ -1,24 +1,29 @@
 import { SITE_URL } from "@/lib/site";
-import { AUTO_DAILY_LIMIT, AUTO_PRICES, FLASH_OFFER, PLAN_PRICES } from "@/lib/pricing/plans";
+import { AUTO_DAILY_LIMIT, AUTO_PRICES, EMAIL_OFFER, FLASH_OFFER, PLAN_PRICES } from "@/lib/pricing/plans";
 import { unsubscribeUrlFor } from "@/lib/resend/unsubscribe";
 import type { CampaignProfile, RenderedEmail } from "@/lib/campaigns/relanceOffres";
 
-// Salve « offre 48 h » (Nathan, 5/11 : « Programme une autre salve de 400
-// emails avec l'accès à vie à 30 € et l'Auto à 63,23 € »). Un seul email :
-// l'envoi ouvre pour ce compte 48 h de prix rien qu'à lui (FLASH_OFFER,
-// compté côté serveur depuis l'envoi, jamais rouvert) :
+// Salve « offre de l'email » (Nathan, 5/11 : « une autre salve de 400 emails
+// avec l'accès à vie à 30 € et l'Auto à 63,23 € […] dès qu'ils reçoivent
+// l'email, ils ont 20 minutes pour faire leur choix […] le truc le plus
+// marketing possible, genre un paywall avec ce qu'il y a de nouveau sur
+// l'application »). Un seul email, présenté comme un paywall :
 // - Premium à vie à 30 € (même prix Stripe que les offres 48 h d'octobre) ;
 // - Stageio Auto à vie à 63,23 € (prix Stripe créé le 5/11) ;
-// - le mensuel au prix de bienvenue (9,99 €).
-// Chaque phrase est vraie à l'envoi : ni prix barré ni « réduction » (jamais
-// moins cher avant), seulement la vraie fin de l'offre et le prix d'après.
+// - le mensuel au prix de bienvenue (9,99 €) ;
+// - le prix est bloqué 20 minutes à partir du clic (EMAIL_OFFER, compté
+//   côté serveur, une seule fois), le lien marche 48 h.
+// Chaque phrase est vraie à l'envoi : ni prix barré ni « −10 € » (30 € était
+// déjà le prix le plus bas de l'accès à vie sur les 30 derniers jours), la
+// hausse à 50 € est la décision de Nathan, sans date inventée ; les
+// nouveautés sont celles en ligne (série Premium, 29/10 ; modèles de CV, 30/10).
 //
 // Envoi : 400 emails en tout, en une fois, par le cron /api/cron/offre-48h
-// (à 18 h 05 à Paris, ou au passage suivant jusqu'à 21 h 05 si la mise en
-// ligne arrive plus tard), avec les garde-fous de /admin/relance.
+// (toutes les 5 minutes le 5/11 de 18 h à 21 h 55 à Paris : le premier
+// passage après la mise en ligne envoie tout), garde-fous de /admin/relance.
 
 export const OFFER48_SALVE_TOTAL = 400;
-// 17 h UTC = 18 h à Paris (heure d'hiver) ; dernier passage à 20 h 05 UTC.
+// 17 h UTC = 18 h à Paris (heure d'hiver) ; dernier passage à 20 h 55 UTC.
 export const OFFER48_SALVE_START = Date.parse("2026-11-05T17:00:00Z");
 export const OFFER48_SALVE_END = Date.parse("2026-11-05T21:00:00Z");
 
@@ -33,7 +38,8 @@ export function planOffer48Salve(now: number, sentTotal: number): Offer48Plan {
 }
 
 const escapeHtml = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-const nbsp = (s: string) => escapeHtml(s).replace(/ /g, "&nbsp;");
+// Espaces insécables : « 30 € », « 18 h 05 » jamais coupés en fin de ligne.
+const keep = (s: string) => escapeHtml(s).replace(/ (€|h|à) /g, "&nbsp;$1&nbsp;").replace(/ €/g, "&nbsp;€");
 
 function firstName(fullName: string | null): string | null {
   const first = fullName?.trim().split(/\s+/)[0];
@@ -60,17 +66,24 @@ export function offer48Deadline(endsAt: number): string {
 
 export const OFFER48_UTM = "utm_source=email&utm_medium=campagne&utm_campaign=offre_48h_2026_11";
 
-const PREMIUM_BENEFITS = [
-  "Likes et candidatures illimités",
-  "Une lettre de motivation pour chaque offre",
-  "L'audit de ton CV et le simulateur d'entretien",
+// Nouveautés réellement en ligne.
+export const OFFER48_NEWS: { icon: string; title: string; text: string }[] = [
+  { icon: "🤖", title: "Stageio Auto", text: `chaque like envoie ta candidature, lettre et CV, jusqu'à ${AUTO_DAILY_LIMIT} par jour.` },
+  { icon: "🏢", title: "Candidatures spontanées", text: "les entreprises qui recrutent près de chez toi, même sans annonce publiée." },
+  { icon: "🔁", title: "Relances", text: "7 jours sans réponse ? On relance pour toi, ou on te le rappelle." },
+  { icon: "⚡", title: "Alertes dans l'heure", text: "une nouvelle offre faite pour toi, avant les autres." },
+  { icon: "🎤", title: "Simulateur d'entretien", text: "les questions de ton métier, et tes réponses corrigées." },
+  { icon: "📄", title: "Modèles de CV", text: "6 mises en page, 8 couleurs, prêts pour ton métier." },
 ];
 
-// now : moment de l'envoi (la fin de l'offre est 48 h plus tard).
+const PREMIUM_BENEFITS = ["Likes et candidatures illimités", "Une lettre de motivation pour chaque offre", "L'audit de ton CV et le simulateur d'entretien"];
+
+const minutes = Math.round(EMAIL_OFFER.windowMs / 60_000);
+
+// now : moment de l'envoi (le lien marche 48 h, le prix tient 20 minutes après le clic).
 export function renderOffer48Email(p: CampaignProfile, now: number = Date.now()): RenderedEmail {
   const name = firstName(p.full_name);
-  const greeting = name ? `${name},` : "Salut,";
-  const deadline = offer48Deadline(now + FLASH_OFFER.windowMs);
+  const linkEnd = offer48Deadline(now + EMAIL_OFFER.linkMs);
   const premium = FLASH_OFFER.lifetimePrice;
   const auto = FLASH_OFFER.autoLifetimePrice;
   const monthly = PLAN_PRICES.monthly.welcome;
@@ -78,56 +91,84 @@ export function renderOffer48Email(p: CampaignProfile, now: number = Date.now())
   const goAuto = `${SITE_URL}/premium/go?plan=auto_lifetime&${OFFER48_UTM}`;
   const goMonthly = `${SITE_URL}/premium/go?plan=monthly&${OFFER48_UTM}`;
   const unsubscribe = unsubscribeUrlFor(p.id);
-  const autoLine = `Tout Premium, et en plus chaque like envoie ta candidature tout seul (ta lettre et ton CV, depuis une adresse à ton nom), jusqu'à ${AUTO_DAILY_LIMIT} par jour.`;
-  const after = `Après, ce sera ${PLAN_PRICES.lifetime.regular} pour Premium à vie et ${AUTO_PRICES.lifetime.regular} pour l'Auto à vie.`;
-  const subject = `🎁 ${name ? `${name}, ` : ""}48 h rien que pour toi : Premium à vie à ${premium}`;
+  const subject = `⏳ ${name ? `${name}, ` : ""}Stageio à vie à ${premium}, réservé à cet email`;
+  const preheader = `Ton prix est bloqué ${minutes} minutes dès que tu cliques. Bientôt, l'accès à vie passe à 50 €.`;
+  const intro = `${name ? `${name}, l` : "L"}'accès à vie de Stageio va bientôt passer à 50 €. Avant ça, cet email te le donne à ${premium}, rien qu'à toi.`;
+  const timer = `Dès que tu cliques, ton prix est bloqué ${minutes} minutes. Le lien marche jusqu'au ${linkEnd}.`;
+  const after = `Après tes ${minutes} minutes : ${PLAN_PRICES.lifetime.regular} pour Premium à vie, ${AUTO_PRICES.lifetime.regular} pour l'Auto à vie.`;
+  const autoLine = `Tout Premium, et en plus chaque like envoie ta candidature tout seul, depuis une adresse à ton nom, jusqu'à ${AUTO_DAILY_LIMIT} par jour.`;
 
-  const box = (label: string, price: string, lines: string, href: string, cta: string) => `<table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:16px 0"><tr><td bgcolor="#f1f8f4" style="background-color:#f1f8f4;border:1px solid #bfe3cd;border-radius:12px;padding-top:16px;padding-bottom:16px;padding-left:20px;padding-right:20px">
-<p style="margin:0;font-size:14px;color:#2f6b49">${escapeHtml(label)}</p>
-<p style="margin:2px 0 6px;font-size:34px;line-height:1.1;font-weight:bold;color:#0f7a43">${nbsp(price)}</p>
-${lines}
-<table cellpadding="0" cellspacing="0" border="0" style="margin:14px 0 0"><tr><td bgcolor="#0f9b57" style="background-color:#0f9b57;border-radius:999px"><a href="${href}" style="display:inline-block;padding-top:12px;padding-bottom:12px;padding-left:24px;padding-right:24px;font-size:16px;font-weight:bold;color:#ffffff;text-decoration:none">${escapeHtml(cta)}</a></td></tr></table>
+  const button = (href: string, label: string, light = false) => `<table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:16px 0 0"><tr><td align="center" bgcolor="${light ? "#ffffff" : "#0f9b57"}" style="background-color:${light ? "#ffffff" : "#0f9b57"};border-radius:999px;${light ? "border:2px solid #0f9b57;" : ""}"><a href="${href}" style="display:block;padding-top:15px;padding-bottom:15px;padding-left:18px;padding-right:18px;font-size:17px;font-weight:bold;color:${light ? "#0f7a43" : "#ffffff"};text-decoration:none">${label}</a></td></tr></table>`;
+
+  const html = `<div style="display:none;max-height:0;overflow:hidden;opacity:0">${escapeHtml(preheader)}</div>
+<table cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#eef6f1" style="background-color:#eef6f1"><tr><td align="center" style="padding:20px 10px">
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:520px;font-family:Arial,Helvetica,sans-serif;color:#1a1a1a">
+<tr><td bgcolor="#0b5a36" style="background-color:#0b5a36;background-image:linear-gradient(135deg,#0b5a36,#12a05c);border-radius:20px 20px 0 0;padding:26px 22px 24px;text-align:center">
+<p style="margin:0;display:inline-block;font-size:12px;font-weight:bold;letter-spacing:1.5px;color:#0b5a36;background-color:#c9f2d9;border-radius:999px;padding:6px 14px">🔒 RÉSERVÉ À CET EMAIL</p>
+<p style="margin:16px 0 0;font-size:15px;color:#c9f2d9;font-weight:bold">Stageio Premium à vie</p>
+<p style="margin:2px 0 0;font-size:56px;line-height:1.05;font-weight:bold;color:#ffffff">${keep(premium)}</p>
+<p style="margin:6px 0 0;font-size:15px;color:#e6f7ed">Un seul paiement. Premium pour toujours.</p>
+<table cellpadding="0" cellspacing="0" border="0" align="center" style="margin:16px auto 0"><tr><td bgcolor="#ffffff" style="background-color:#ffffff;border-radius:12px;padding:10px 16px;font-size:15px;font-weight:bold;color:#0b5a36">⏱️ ${minutes} minutes dès que tu cliques</td></tr></table>
+</td></tr>
+<tr><td bgcolor="#ffffff" style="background-color:#ffffff;border-radius:0 0 20px 20px;padding:22px 22px 26px">
+<p style="margin:0;font-size:16px;line-height:1.55">${keep(intro)}</p>
+${button(goPremium, `Débloquer Stageio à vie · ${keep(premium)}`)}
+<p style="margin:10px 0 0;font-size:13px;line-height:1.5;color:#555;text-align:center">${keep(timer)}</p>
+
+<p style="margin:26px 0 10px;font-size:13px;font-weight:bold;letter-spacing:1.2px;color:#0f7a43">✨ NOUVEAU SUR STAGEIO</p>
+<table cellpadding="0" cellspacing="0" border="0" width="100%">
+${OFFER48_NEWS.map((n) => `<tr><td width="34" valign="top" style="font-size:20px;padding:6px 0">${n.icon}</td><td style="font-size:15px;line-height:1.45;padding:6px 0"><strong>${escapeHtml(n.title)}</strong> : ${escapeHtml(n.text)}</td></tr>`).join("\n")}
+</table>
+
+<p style="margin:26px 0 10px;font-size:13px;font-weight:bold;letter-spacing:1.2px;color:#0f7a43">CHOISIS TA FORMULE</p>
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 12px"><tr><td bgcolor="#f1f8f4" style="background-color:#f1f8f4;border:2px solid #0f9b57;border-radius:16px;padding:16px 18px">
+<p style="margin:0;font-size:12px;font-weight:bold;letter-spacing:1px;color:#0f7a43">PREMIUM À VIE</p>
+<p style="margin:4px 0 6px;font-size:34px;line-height:1.1;font-weight:bold;color:#0f7a43">${keep(premium)}</p>
+${PREMIUM_BENEFITS.map((b) => `<p style="margin:0 0 4px;font-size:15px">✅ ${escapeHtml(b)}</p>`).join("\n")}
+${button(goPremium, `Prendre Premium à vie · ${keep(premium)}`)}
+</td></tr></table>
+<table cellpadding="0" cellspacing="0" border="0" width="100%"><tr><td bgcolor="#ffffff" style="background-color:#ffffff;border:1.5px solid #bfe3cd;border-radius:16px;padding:16px 18px">
+<p style="margin:0;font-size:12px;font-weight:bold;letter-spacing:1px;color:#0f7a43">STAGEIO AUTO À VIE</p>
+<p style="margin:4px 0 6px;font-size:34px;line-height:1.1;font-weight:bold;color:#0f7a43">${keep(auto)}</p>
+<p style="margin:0;font-size:15px;line-height:1.5">🤖 ${escapeHtml(autoLine)}</p>
+${button(goAuto, `Prendre l'Auto à vie · ${keep(auto)}`, true)}
+</td></tr></table>
+
+<p style="margin:18px 0 0;font-size:13px;line-height:1.6;color:#555;text-align:center">🔒 Paiement sécurisé par Stripe · ⚡ Accès immédiat · ♾️ Jamais de renouvellement</p>
+<p style="margin:14px 0 0;font-size:14px;line-height:1.55;color:#555">${keep(after)} Tu préfères au mois ? <a href="${goMonthly}" style="color:#0f7a43;font-weight:bold">${keep(monthly)} par mois</a>, sans engagement.</p>
+<p style="margin:20px 0 0;font-size:16px">Nathan<br>Stageio</p>
+<p style="margin:14px 0 0;font-size:14px;color:#555">P.S. Ce prix est réservé à cet email : tu ne le trouveras pas sur le site.</p>
+</td></tr>
+<tr><td style="padding:16px 10px 0;text-align:center;font-size:12px;line-height:1.5;color:#888">Tu reçois cet email parce que tu as un compte sur stageio.fr. Un seul email de ce type. <a href="${unsubscribe}" style="color:#888">Ne plus recevoir d'emails de Stageio</a>.</td></tr>
+</table>
 </td></tr></table>`;
 
-  const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.55;color:#1a1a1a;max-width:520px">
-<p>${escapeHtml(greeting)}</p>
-<p>Pendant 48 h, jusqu'au <strong>${escapeHtml(deadline).replace(/ (h|à) /g, "&nbsp;$1&nbsp;")}</strong>, tu as deux prix rien que pour toi, en un seul paiement :</p>
-${box(
-  "Premium à vie",
-  premium,
-  `<ul style="padding-left:20px;margin:0;font-size:15px">${PREMIUM_BENEFITS.map((b) => `<li style="margin-bottom:4px">${escapeHtml(b)}</li>`).join("")}</ul>`,
-  goPremium,
-  `Prendre Premium à vie à ${premium}`,
-)}
-${box(
-  "Stageio Auto à vie",
-  auto,
-  `<p style="margin:0;font-size:15px">${escapeHtml(autoLine)}</p>`,
-  goAuto,
-  `Prendre l'Auto à vie à ${auto}`,
-)}
-<p style="font-size:14px;color:#555">${escapeHtml(after)} Tu préfères au mois ? <a href="${goMonthly}" style="color:#0f7a43">${nbsp(monthly)} par mois</a>, sans engagement.</p>
-<p>Nathan<br>Stageio</p>
-<p style="font-size:12px;color:#888;margin-top:28px">Tu reçois cet email parce que tu as un compte sur stageio.fr. Un seul email de ce type. <a href="${unsubscribe}" style="color:#888">Ne plus recevoir d'emails de Stageio</a>.</p>
-</div>`;
-
   const text = [
-    greeting,
+    `RÉSERVÉ À CET EMAIL : Stageio Premium à vie à ${premium}`,
     "",
-    `Pendant 48 h, jusqu'au ${deadline}, tu as deux prix rien que pour toi, en un seul paiement :`,
+    intro,
+    timer,
+    "",
+    `Débloquer Stageio à vie à ${premium} : ${goPremium}`,
+    "",
+    "Nouveau sur Stageio :",
+    ...OFFER48_NEWS.map((n) => `- ${n.title} : ${n.text}`),
     "",
     `Premium à vie : ${premium}`,
     ...PREMIUM_BENEFITS.map((b) => `- ${b}`),
-    `Prendre Premium à vie à ${premium} : ${goPremium}`,
+    `→ ${goPremium}`,
     "",
     `Stageio Auto à vie : ${auto}`,
     autoLine,
-    `Prendre l'Auto à vie à ${auto} : ${goAuto}`,
+    `→ ${goAuto}`,
     "",
+    "Paiement sécurisé par Stripe. Accès immédiat. Jamais de renouvellement.",
     after,
     `Ou ${monthly} par mois, sans engagement : ${goMonthly}`,
     "",
     "Nathan, Stageio",
+    "",
+    "P.S. Ce prix est réservé à cet email : tu ne le trouveras pas sur le site.",
     "",
     "Tu reçois cet email parce que tu as un compte sur stageio.fr. Un seul email de ce type.",
     `Ne plus recevoir d'emails de Stageio : ${unsubscribe}`,
