@@ -19,12 +19,14 @@ import type { CampaignProfile, RenderedEmail } from "@/lib/campaigns/relanceOffr
 // nouveautés sont celles en ligne (série Premium, 29/10 ; modèles de CV, 30/10).
 //
 // Envoi : 400 emails en tout, en une fois, par le cron /api/cron/offre-48h
-// (toutes les 5 minutes le 5/11 de 18 h à 21 h 55 à Paris : le premier
-// passage après la mise en ligne envoie tout), garde-fous de /admin/relance.
+// (toutes les 5 minutes le 5/11 de 17 h 50 à 21 h 55 à Paris, jamais à
+// l'heure pile où partent les salves horaires : le premier passage après la
+// mise en ligne envoie tout), garde-fous de /admin/relance.
 
 export const OFFER48_SALVE_TOTAL = 400;
-// 17 h UTC = 18 h à Paris (heure d'hiver) ; dernier passage à 20 h 55 UTC.
-export const OFFER48_SALVE_START = Date.parse("2026-11-05T17:00:00Z");
+// « Fais-le pour maintenant » : dès la mise en ligne (16 h 50 UTC = 17 h 50
+// à Paris) ; dernier passage à 20 h 55 UTC.
+export const OFFER48_SALVE_START = Date.parse("2026-11-05T16:50:00Z");
 export const OFFER48_SALVE_END = Date.parse("2026-11-05T21:00:00Z");
 
 export type Offer48Plan = { kind: "skipped"; reason: "hors_fenetre" | "deja_parti" } | { kind: "run"; size: number };

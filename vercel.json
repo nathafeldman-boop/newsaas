@@ -154,7 +154,7 @@
     },
     {
       "path": "/api/cron/offre-48h",
-      "schedule": "*/5 17-20 * * *"
+      "schedule": "5-55/5 16-20 * * *"
     },
     {
       "path": "/api/cron/refund-guarantee-reminder",

@@ -67,7 +67,7 @@ assert.equal(CAMPAIGNS.offre48.batch, 400);
 assert.equal(campaignFrom("offre48"), CAMPAIGNS.offre48);
 assert.equal(renderForCampaign(CAMPAIGNS.offre48, profile, { offers: [] }).subject, renderOffer48Email(profile).subject);
 
-// Fenêtre d'envoi : 400 en tout, le 5/11 de 18 h à 21 h 55 à Paris.
+// Fenêtre d'envoi : 400 en tout, le 5/11 de 17 h 50 à 21 h 55 à Paris.
 assert.equal(OFFER48_SALVE_TOTAL, 400);
 assert.deepEqual(planOffer48Salve(OFFER48_SALVE_START - 1, 0), { kind: "skipped", reason: "hors_fenetre" });
 assert.deepEqual(planOffer48Salve(sentAt, 0), { kind: "run", size: 400 });
@@ -77,8 +77,10 @@ assert.deepEqual(planOffer48Salve(OFFER48_SALVE_END, 0), { kind: "skipped", reas
 const crons: { path: string; schedule: string }[] = JSON.parse(readFileSync("vercel.json", "utf8")).crons;
 const salve = crons.filter((c) => c.path === "/api/cron/offre-48h");
 assert.equal(salve.length, 1);
-assert.equal(salve[0].schedule, "*/5 17-20 * * *");
-const runs = [17, 18, 19, 20].flatMap((h) => Array.from({ length: 12 }, (_, i) => Date.parse(`2026-11-05T${h}:${String(i * 5).padStart(2, "0")}:00Z`)));
+assert.equal(salve[0].schedule, "5-55/5 16-20 * * *", "jamais à l'heure pile, quand partent les salves horaires");
+const runs = [16, 17, 18, 19, 20]
+  .flatMap((h) => Array.from({ length: 11 }, (_, i) => Date.parse(`2026-11-05T${h}:${String((i + 1) * 5).padStart(2, "0")}:00Z`)))
+  .filter((t) => t >= Date.parse("2026-11-05T16:50:00Z"));
 assert.ok(runs.every((t) => planOffer48Salve(t, 0).kind === "run"), "chaque passage du 5/11 est dans la fenêtre");
 assert.equal(planOffer48Salve(Date.parse("2026-11-06T17:05:00Z"), 0).kind, "skipped", "le lendemain, plus rien");
 

@@ -10,9 +10,9 @@ import { HOURLY_SERIES_GUARD_MS } from "@/lib/campaigns/salvesHoraires";
 // Salve « offre de l'email » du 5/11 (Nathan : « une autre salve de 400
 // emails avec l'accès à vie à 30 € et l'Auto à 63,23 € […] fais-le pour
 // maintenant »), voir lib/campaigns/offre48.ts. vercel.json appelle la route
-// toutes les 5 minutes de 17 h à 20 h 55 UTC (18 h à 21 h 55 à Paris) : le
-// premier passage après la mise en ligne envoie les 400 d'un coup, les
-// suivants n'ont plus rien à envoyer.
+// toutes les 5 minutes de 16 h 50 à 20 h 55 UTC, jamais à l'heure pile (les
+// salves horaires partent à ce moment-là) : le premier passage après la mise
+// en ligne envoie les 400 d'un coup, les suivants n'ont plus rien à envoyer.
 export const maxDuration = 300;
 
 const DAY_MS = 86_400_000;
