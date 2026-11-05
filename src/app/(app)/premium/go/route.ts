@@ -14,7 +14,8 @@ import { startCheckout } from "@/lib/stripe/startCheckout";
 // paiement ni délai de bienvenue.
 export async function GET(request: NextRequest) {
   const plan = request.nextUrl.searchParams.get("plan");
-  if (plan !== "monthly" && plan !== "lifetime") {
+  // auto_lifetime : Stageio Auto à vie (salve du 5/11, offre 48 h).
+  if (plan !== "monthly" && plan !== "lifetime" && plan !== "auto_lifetime") {
     return NextResponse.redirect(new URL("/premium", request.url), 303);
   }
 

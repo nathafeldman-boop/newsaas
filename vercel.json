@@ -153,6 +153,10 @@
       "schedule": "0 13-20 * * *"
     },
     {
+      "path": "/api/cron/offre-48h",
+      "schedule": "5 17-20 * * *"
+    },
+    {
       "path": "/api/cron/refund-guarantee-reminder",
       "schedule": "41 7 * * *"
     },

@@ -4,6 +4,7 @@ import Stripe from "stripe";
 import { recordCheckoutOpened } from "@/lib/stripe/checkoutReminder";
 import {
   AUTO_PRICE_IDS,
+  FLASH_OFFER,
   AUTO_REGULAR_PRICE_IDS,
   isLegacyOffer,
   LIFETIME_PROMO,
@@ -270,9 +271,11 @@ async function startAutoCheckout(
   if (isAutoTier(profile as Profile)) return { error: "already_subscribed" };
 
   const lifetime = plan === "auto_lifetime";
-  const welcome = !isPremium(profile as Profile) && (await welcomeAt(user.id)).welcome;
+  const offer = isPremium(profile as Profile) ? { welcome: false, flash: false } : await welcomeAt(user.id);
+  const welcome = offer.welcome;
   const prices = welcome ? AUTO_PRICE_IDS : AUTO_REGULAR_PRICE_IDS;
-  const priceId = lifetime ? prices.lifetime : prices.monthly;
+  // Offre 48 h (salve du 5/11) : l'Auto à vie à 63,23 €, même minute de marge.
+  const priceId = lifetime ? (offer.flash ? FLASH_OFFER.autoLifetimePriceId : prices.lifetime) : prices.monthly;
   const activeSubscription =
     profile.stripe_subscription_id && (profile.subscription_status === "active" || profile.subscription_status === "trialing")
       ? profile.stripe_subscription_id
@@ -322,7 +325,7 @@ async function startAutoCheckout(
   after(async () => {
     await createAdminClient()
       .from("user_events")
-      .insert({ user_id: user.id, event_type: "checkout_opened", metadata: { plan: plan, welcome, promo: false, priceId, reminderEmailId: null } });
+      .insert({ user_id: user.id, event_type: "checkout_opened", metadata: { plan: plan, welcome, promo: lifetime && offer.flash, priceId, reminderEmailId: null } });
   });
   return { url: session.url };
 }

@@ -11,6 +11,7 @@ import { GUARANTEE_MONTHS } from "@/lib/premium/guaranteeTerms";
 import type { ContractType, Database } from "@/types/database";
 import { knownProfileSectors } from "@/lib/offers/sectors";
 import { renderLastCallEmail } from "@/lib/campaigns/dernierAppel";
+import { OFFER48_SALVE_TOTAL, renderOffer48Email } from "@/lib/campaigns/offre48";
 
 // Relances ponctuelles des inscrits qui n'ont jamais payé : UN email par
 // campagne, envoyé par lots depuis /admin/relance, jamais automatiquement.
@@ -32,6 +33,9 @@ export const NEWS_CAMPAIGN_TAG = "relance_nouveautes_2026_10";
 // « Dernier appel » (31/10) : un email, l'accès à vie. Voir dernierAppel.ts.
 export const LASTCALL_CAMPAIGN_EVENT = "email_dernier_appel_2026_10";
 export const LASTCALL_CAMPAIGN_TAG = "dernier_appel_2026_10";
+// Offre 48 h (5/11) : Premium à vie à 30 €, Auto à vie à 63,23 €. Voir offre48.ts.
+export const OFFER48_CAMPAIGN_EVENT = "email_offre_48h_2026_11";
+export const OFFER48_CAMPAIGN_TAG = "offre_48h_2026_11";
 // Envoi plus gros par clic pour cette campagne : 1 000 emails (10 lots de 100).
 export const LASTCALL_BATCH_SIZE = 1000;
 const NEWS_INACTIVE_DAYS = 7;
@@ -131,7 +135,7 @@ function newsExclusion(
   return null;
 }
 
-export type CampaignId = "offres" | "nouveautes" | "dernierappel";
+export type CampaignId = "offres" | "nouveautes" | "dernierappel" | "offre48";
 
 export type CampaignDef = {
   id: CampaignId;
@@ -166,6 +170,14 @@ export const CAMPAIGNS: Record<CampaignId, CampaignDef> = {
     title: "Relance « nouvelles offres » (10/10)",
     description: "Inscrits jamais payants : les offres qui les attendent.",
   },
+  offre48: {
+    id: "offre48",
+    event: OFFER48_CAMPAIGN_EVENT,
+    tag: OFFER48_CAMPAIGN_TAG,
+    title: "« Offre 48 h » : à vie à 30 €, Auto à 63,23 € (5/11)",
+    description: "Inscrits jamais payants, les plus récemment venus d'abord : un email qui ouvre pour eux 48 h de prix rien qu'à eux (Premium à vie 30 €, Auto à vie 63,23 €, mensuel au prix de bienvenue).",
+    batch: OFFER48_SALVE_TOTAL,
+  },
 };
 
 // Moment auquel on calcule qui est éligible : pour la relance « nouveautés »,
@@ -176,6 +188,7 @@ export function audienceTime(campaign: CampaignDef, now: number = Date.now()): n
 }
 
 export function campaignFrom(value: unknown): CampaignDef {
+  if (value === "offre48") return CAMPAIGNS.offre48;
   return value === "offres" ? CAMPAIGNS.offres : value === "dernierappel" ? CAMPAIGNS.dernierappel : CAMPAIGNS.nouveautes;
 }
 
@@ -234,6 +247,11 @@ export async function loadAudience(
     else eligible.push(p);
   }
   eligible.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+  // Offre 48 h : les plus récemment venus d'abord (les plus près de payer),
+  // puis les inscrits récents.
+  if (campaign.id === "offre48") {
+    eligible.sort((a, b) => (a.last_active_at ?? "").localeCompare(b.last_active_at ?? "") * -1 || (a.created_at < b.created_at ? 1 : -1));
+  }
 
   return {
     totalAccounts: profiles.length,
@@ -695,6 +713,7 @@ export function renderForCampaign(
   variant: NewsVariant = "a",
 ): RenderedEmail {
   if (campaign.id === "dernierappel") return renderLastCallEmail(p);
+  if (campaign.id === "offre48") return renderOffer48Email(p);
   return campaign.id === "nouveautes"
     ? renderNewsEmail(p, catalog, variant)
     : renderCampaignEmail(p, countForProfile(catalog, p), catalog.offers.length);

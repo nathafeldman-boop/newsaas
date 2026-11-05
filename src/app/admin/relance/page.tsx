@@ -106,7 +106,7 @@ export default async function AdminRelancePage({
         <p style={{ fontSize: 13, margin: "0 0 6px", ...muted }}>{campaign.description}</p>
         <p style={{ fontSize: 13, margin: 0, ...muted }}>
           Un seul email par compte, jamais renvoyé. Envoi par lots de {campaign.batch ?? BATCH_SIZE}, {MAX_SENT_PER_24H} maximum par 24 h
-          (toutes les campagnes ensemble).{campaign.id === "dernierappel" ? " Même message pour tous." : " Les chiffres de chaque email sont calculés sur son profil (type, secteurs, ville)."}
+          (toutes les campagnes ensemble).{campaign.id === "dernierappel" || campaign.id === "offre48" ? " Même message pour tous." : " Les chiffres de chaque email sont calculés sur son profil (type, secteurs, ville)."}
         </p>
       </div>
 

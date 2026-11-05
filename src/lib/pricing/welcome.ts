@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { FLASH_OFFER, isLegacyOffer, offerWindowStart, WELCOME_WINDOW_MS } from "@/lib/pricing/plans";
-import { LASTCALL_CAMPAIGN_EVENT, NEWS_CAMPAIGN_EVENT } from "@/lib/campaigns/relanceOffres";
+import { flashEndFrom, isLegacyOffer, offerWindowStart, WELCOME_WINDOW_MS } from "@/lib/pricing/plans";
+import { LASTCALL_CAMPAIGN_EVENT, NEWS_CAMPAIGN_EVENT, OFFER48_CAMPAIGN_EVENT } from "@/lib/campaigns/relanceOffres";
 import { SALES_SERIES_EVENT } from "@/lib/campaigns/serieEvents";
 
 // Mise en place des nouveaux tarifs : seuls les affichages de la page
@@ -22,7 +22,7 @@ export async function getWelcomeEndsAt(userId: string): Promise<number> {
     .from("user_events")
     .select("created_at")
     .eq("user_id", userId)
-    .in("event_type", [NEWS_CAMPAIGN_EVENT, LASTCALL_CAMPAIGN_EVENT, SALES_SERIES_EVENT])
+    .in("event_type", [NEWS_CAMPAIGN_EVENT, LASTCALL_CAMPAIGN_EVENT, SALES_SERIES_EVENT, OFFER48_CAMPAIGN_EVENT])
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -41,18 +41,35 @@ export async function getWelcomeEndsAt(userId: string): Promise<number> {
 }
 
 // Offre 48 h par email (voir FLASH_OFFER) : fin de l'offre du compte, 48 h
-// après le premier email de la série qui l'a ouverte, ou null.
+// après le premier email qui l'a ouverte (série Premium du 28/10-1/11, ou
+// salve du 5/11), ou null. Les deux ouvertures possibles : la plus récente.
 export async function getFlashEndsAt(userId: string): Promise<number | null> {
-  const { data } = await createAdminClient()
-    .from("user_events")
-    .select("created_at")
-    .eq("user_id", userId)
-    .eq("event_type", SALES_SERIES_EVENT)
-    .eq("metadata->>flash", "true")
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  return data ? Date.parse(data.created_at) + FLASH_OFFER.windowMs : null;
+  const admin = createAdminClient();
+  const first = (q: PromiseLike<{ data: { created_at: string } | null }>) => Promise.resolve(q).then(({ data }) => data?.created_at ?? null);
+  const opened = await Promise.all([
+    first(
+      admin
+        .from("user_events")
+        .select("created_at")
+        .eq("user_id", userId)
+        .eq("event_type", SALES_SERIES_EVENT)
+        .eq("metadata->>flash", "true")
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle(),
+    ),
+    first(
+      admin
+        .from("user_events")
+        .select("created_at")
+        .eq("user_id", userId)
+        .eq("event_type", OFFER48_CAMPAIGN_EVENT)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle(),
+    ),
+  ]);
+  return flashEndFrom(opened);
 }
 
 // État au moment de l'affichage (hors du corps du composant : rendu pur).

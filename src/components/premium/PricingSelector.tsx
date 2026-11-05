@@ -217,7 +217,8 @@ function OfferTabs({
   const monthlyPrice = prices.monthly[tier];
   // Stageio Auto : prix de bienvenue pendant le même chrono (test de prix du 29/10).
   const autoMonthly = prices.auto.monthly[tier];
-  const autoLifetime = prices.auto.lifetime[tier];
+  // Offre 48 h (salve du 5/11) : l'Auto à vie à 63,23 €.
+  const autoLifetime = promo?.autoPrice ?? prices.auto.lifetime[tier];
   // Mensuel affiché d'abord (Nathan, 24/10) ; « À vie » s'il n'y a que ça.
   const hasLifetime = lifetimeAvailable || autoAvailable;
   const [plan, setPlan] = useState<Plan>("monthly");
@@ -232,6 +233,7 @@ function OfferTabs({
       source="paywall"
       ctaLabel={plan === "lifetime" ? `Choisir Stageio Auto à vie · ${autoLifetime}` : `Choisir Stageio Auto · ${autoMonthly}/mois`}
       tier={tier}
+      lifetimePrice={promo?.autoPrice ?? undefined}
       onChoose={() => setOffer("auto")}
     />
   );

@@ -56,7 +56,7 @@ export async function sendNextCampaignBatch(
   const isNews = campaign.id === "nouveautes";
   // « Dernier appel » : un message identique pour tous, pas de catalogue à charger.
   const [catalog, variantCounts] = await Promise.all([
-    campaign.id === "dernierappel" ? Promise.resolve({ offers: [] }) : loadCatalog(db),
+    campaign.id === "dernierappel" || campaign.id === "offre48" ? Promise.resolve({ offers: [] }) : loadCatalog(db),
     isNews ? loadVariantCounts(db) : null,
   ]);
   const variantOf = new Map<string, NewsVariant>();

@@ -18,6 +18,7 @@ import {
   CAMPAIGN_EVENT,
   LASTCALL_CAMPAIGN_EVENT,
   MIN_COUNT_TO_SHOW,
+  OFFER48_CAMPAIGN_EVENT,
   catalogSize,
   NEWS_CAMPAIGN_EVENT,
   countForProfile,
@@ -146,7 +147,7 @@ type Due = { profile: SeriesProfile; step: number; flashEndsAt: number | null; o
 const SENDABLE_EMAIL = /^(?!\.)(?!.*\.\.)[^\s@]+(?<!\.)@[^\s@]+\.[^\s@]+$/;
 
 async function loadDue(db: Db, now: number, midnight: number): Promise<{ due: Due[]; sentToday: number }> {
-  const [profiles, seriesEvents, otherEvents] = await Promise.all([
+  const [profiles, seriesEvents, otherEvents, offer48Events] = await Promise.all([
     fetchAllRowsByIdCursor<SeriesProfile>((afterId, limit) => {
       // Filtres de base faits par la base (moins de lignes lues à chaque passage) ;
       // les mêmes sont revérifiés plus bas.
@@ -164,8 +165,18 @@ async function loadDue(db: Db, now: number, midnight: number): Promise<{ due: Du
       db
         .from("user_events")
         .select("user_id")
-        .in("event_type", [NEWS_CAMPAIGN_EVENT, CAMPAIGN_EVENT, LASTCALL_CAMPAIGN_EVENT, CHECKOUT_RELANCE_EVENT, CHECKOUT_DAILY_EVENT])
+        .in("event_type", [NEWS_CAMPAIGN_EVENT, CAMPAIGN_EVENT, LASTCALL_CAMPAIGN_EVENT, OFFER48_CAMPAIGN_EVENT, CHECKOUT_RELANCE_EVENT, CHECKOUT_DAILY_EVENT])
         .gte("created_at", new Date(midnight).toISOString())
+        .order("created_at")
+        .range(from, to),
+    ),
+    // Offre 48 h ouverte par la salve du 5/11 : les emails de la série la rappellent.
+    fetchAllRows<{ user_id: string; created_at: string }>((from, to) =>
+      db
+        .from("user_events")
+        .select("user_id, created_at")
+        .eq("event_type", OFFER48_CAMPAIGN_EVENT)
+        .gte("created_at", new Date(now - FLASH_OFFER.windowMs).toISOString())
         .order("created_at")
         .range(from, to),
     ),
@@ -184,6 +195,11 @@ async function loadDue(db: Db, now: number, midnight: number): Promise<{ due: Du
     const h = history.get(e.user_id) ?? { count: 0, last: 0 };
     history.set(e.user_id, { count: h.count + 1, last: Math.max(h.last, at) });
     if (e.metadata?.flash === true && !flashOpened.has(e.user_id)) flashOpened.set(e.user_id, at);
+  }
+  // Ouverture par la salve du 5/11 (la plus récente des deux compte, comme au paiement).
+  for (const e of offer48Events) {
+    const at = Date.parse(e.created_at);
+    if (at > (flashOpened.get(e.user_id) ?? 0)) flashOpened.set(e.user_id, at);
   }
   const campaignOpen = isFlashCampaignOpen(now);
   const flashFor = (userId: string): Pick<Due, "flashEndsAt" | "opensFlash"> => {

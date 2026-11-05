@@ -218,6 +218,7 @@ export function AutoHelpButton({
   source,
   ctaLabel,
   tier = "regular",
+  lifetimePrice,
   onChoose,
 }: {
   userId?: string;
@@ -226,6 +227,8 @@ export function AutoHelpButton({
   ctaLabel: string;
   // Prix de bienvenue (chrono du paywall) ou prix normal (compte déjà Premium).
   tier?: PriceTier;
+  // Prix de l'Auto à vie pendant l'offre 48 h du compte (sinon celui du moment).
+  lifetimePrice?: string;
   // Sur le paywall : coche Stageio Auto. Sinon le bouton ferme la fenêtre.
   onChoose?: () => void;
 }) {
@@ -326,7 +329,7 @@ export function AutoHelpButton({
                         Stageio Auto en 20 secondes
                       </p>
                       <p style={{ fontSize: 12.5, margin: "2px 0 0", color: muted }}>
-                        {autoPricesFor(tier).monthly}/mois ou {autoPricesFor(tier).lifetime} à vie
+                        {autoPricesFor(tier).monthly}/mois ou {lifetimePrice ?? autoPricesFor(tier).lifetime} à vie
                       </p>
                     </div>
                     <button
@@ -354,7 +357,7 @@ export function AutoHelpButton({
                       Questions fréquentes
                     </p>
                     <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
-                      {faqFor(autoPricesFor(tier)).map((item, i) => (
+                      {faqFor({ ...autoPricesFor(tier), ...(lifetimePrice ? { lifetime: lifetimePrice } : {}) }).map((item, i) => (
                         <FaqItem key={item.q} q={item.q} a={item.a} index={i} open={openItem === i} onToggle={() => setOpenItem(openItem === i ? null : i)} />
                       ))}
                     </ul>
