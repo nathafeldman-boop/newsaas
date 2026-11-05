@@ -32,7 +32,13 @@ export type BatchResult =
   | { kind: "done" }
   | { kind: "sent"; sent: number; left: number; failures: string[] };
 
-export async function sendNextCampaignBatch(campaign: CampaignDef, batchSize = campaign.batch ?? BATCH_SIZE): Promise<BatchResult> {
+// options.skip : comptes à laisser pour un prochain passage (salves
+// horaires : série Premium reçue il y a moins de 3 h). Ils restent éligibles.
+export async function sendNextCampaignBatch(
+  campaign: CampaignDef,
+  batchSize = campaign.batch ?? BATCH_SIZE,
+  options: { skip?: ReadonlySet<string> } = {},
+): Promise<BatchResult> {
   const from = campaignSender();
   if (!from) return { kind: "no_sender" };
 
@@ -40,8 +46,10 @@ export async function sendNextCampaignBatch(campaign: CampaignDef, batchSize = c
   const audience = await loadAudience(db, campaign, audienceTime(campaign));
   const room = MAX_SENT_PER_24H - audience.sentLast24h;
   if (room <= 0) return { kind: "limit" };
-  const batch = audience.eligible.slice(0, Math.min(batchSize, room));
-  if (batch.length === 0) return { kind: "done" };
+  const skip = options.skip;
+  const ready = skip && skip.size > 0 ? audience.eligible.filter((p) => !skip.has(p.id)) : audience.eligible;
+  const batch = ready.slice(0, Math.min(batchSize, room));
+  if (batch.length === 0) return audience.eligible.length > 0 ? { kind: "sent", sent: 0, left: audience.eligible.length, failures: [] } : { kind: "done" };
 
   // Relance « nouveautés » : chaque compte reçoit une des versions testées
   // (newsTest.ts), notée avec l'envoi pour compter les résultats par version.

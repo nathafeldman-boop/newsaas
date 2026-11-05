@@ -149,6 +149,10 @@
       "schedule": "0 9-18 * * *"
     },
     {
+      "path": "/api/cron/salves-horaires",
+      "schedule": "0 13-20 * * *"
+    },
+    {
       "path": "/api/cron/refund-guarantee-reminder",
       "schedule": "41 7 * * *"
     },
