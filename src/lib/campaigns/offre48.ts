@@ -67,6 +67,7 @@ export function offer48Deadline(endsAt: number): string {
 }
 
 export const OFFER48_UTM = "utm_source=email&utm_medium=campagne&utm_campaign=offre_48h_2026_11";
+export const OFFER48_REMINDER_UTM = "utm_source=email&utm_medium=campagne&utm_campaign=offre_48h_rappel_2026_11";
 
 // Nouveautés réellement en ligne.
 export const OFFER48_NEWS: { icon: string; title: string; text: string }[] = [
@@ -83,20 +84,31 @@ const PREMIUM_BENEFITS = ["Likes et candidatures illimités", "Une lettre de mot
 const minutes = Math.round(EMAIL_OFFER.windowMs / 60_000);
 
 // now : moment de l'envoi (le lien marche 48 h, le prix tient 20 minutes après le clic).
-export function renderOffer48Email(p: CampaignProfile, now: number = Date.now()): RenderedEmail {
+// reminder (6/11, voir offre48Rappel.ts) : le rappel « lien direct », avec la
+// fin du lien de l'email d'origine (sentAt), jamais une nouvelle échéance.
+export function renderOffer48Email(p: CampaignProfile, now: number = Date.now(), reminder: { sentAt: number } | null = null): RenderedEmail {
   const name = firstName(p.full_name);
-  const linkEnd = offer48Deadline(now + EMAIL_OFFER.linkMs);
+  const linkEnd = offer48Deadline((reminder ? reminder.sentAt : now) + EMAIL_OFFER.linkMs);
+  const utm = reminder ? OFFER48_REMINDER_UTM : OFFER48_UTM;
   const premium = FLASH_OFFER.lifetimePrice;
   const auto = FLASH_OFFER.autoLifetimePrice;
   const monthly = PLAN_PRICES.monthly.welcome;
   // Liens signés : le paiement s'ouvre sans se connecter (voir lib/premium/goLink.ts).
-  const goPremium = goLink(p.id, "lifetime", OFFER48_UTM, now);
-  const goAuto = goLink(p.id, "auto_lifetime", OFFER48_UTM, now);
-  const goMonthly = goLink(p.id, "monthly", OFFER48_UTM, now);
+  const goPremium = goLink(p.id, "lifetime", utm, now);
+  const goAuto = goLink(p.id, "auto_lifetime", utm, now);
+  const goMonthly = goLink(p.id, "monthly", utm, now);
   const unsubscribe = unsubscribeUrlFor(p.id);
-  const subject = `⏳ ${name ? `${name}, ` : ""}Stageio à vie à ${premium}, réservé à cet email`;
-  const preheader = `Ton prix est bloqué ${minutes} minutes dès que tu cliques. Bientôt, l'accès à vie passe à 50 €.`;
-  const intro = `${name ? `${name}, l` : "L"}'accès à vie de Stageio va bientôt passer à 50 €. Avant ça, cet email te le donne à ${premium}, rien qu'à toi.`;
+  const subject = reminder
+    ? `🔑 ${name ? `${name}, ` : ""}ton lien direct : Stageio à vie à ${premium}`
+    : `⏳ ${name ? `${name}, ` : ""}Stageio à vie à ${premium}, réservé à cet email`;
+  const preheader = reminder
+    ? `Hier, le lien te demandait de te connecter. Celui-ci t'emmène direct au paiement, ton prix n'a pas bougé.`
+    : `Ton prix est bloqué ${minutes} minutes dès que tu cliques. Bientôt, l'accès à vie passe à 50 €.`;
+  const intro = reminder
+    ? `${name ? `${name}, h` : "H"}ier, le lien de mon email te demandait de te connecter. Désolé ! Celui-ci t'emmène directement au paiement, sans mot de passe. Ton prix n'a pas bougé : Stageio à vie à ${premium}, avant le passage à 50 €.`
+    : `${name ? `${name}, l` : "L"}'accès à vie de Stageio va bientôt passer à 50 €. Avant ça, cet email te le donne à ${premium}, rien qu'à toi.`;
+  const badge = reminder ? "🔑 TON LIEN DIRECT, SANS CONNEXION" : "🔒 RÉSERVÉ À CET EMAIL";
+  const footerNote = reminder ? "C'est le dernier email de cette offre." : "Un seul email de ce type.";
   const timer = `Dès que tu cliques, ton prix est bloqué ${minutes} minutes. Le lien marche jusqu'au ${linkEnd}.`;
   const after = `Après tes ${minutes} minutes : ${PLAN_PRICES.lifetime.regular} pour Premium à vie, ${AUTO_PRICES.lifetime.regular} pour l'Auto à vie.`;
   const autoLine = `Tout Premium, et en plus chaque like envoie ta candidature tout seul, depuis une adresse à ton nom, jusqu'à ${AUTO_DAILY_LIMIT} par jour.`;
@@ -107,7 +119,7 @@ export function renderOffer48Email(p: CampaignProfile, now: number = Date.now())
 <table cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#eef6f1" style="background-color:#eef6f1"><tr><td align="center" style="padding:20px 10px">
 <table cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:520px;font-family:Arial,Helvetica,sans-serif;color:#1a1a1a">
 <tr><td bgcolor="#0b5a36" style="background-color:#0b5a36;background-image:linear-gradient(135deg,#0b5a36,#12a05c);border-radius:20px 20px 0 0;padding:26px 22px 24px;text-align:center">
-<p style="margin:0;display:inline-block;font-size:12px;font-weight:bold;letter-spacing:1.5px;color:#0b5a36;background-color:#c9f2d9;border-radius:999px;padding:6px 14px">🔒 RÉSERVÉ À CET EMAIL</p>
+<p style="margin:0;display:inline-block;font-size:12px;font-weight:bold;letter-spacing:1.5px;color:#0b5a36;background-color:#c9f2d9;border-radius:999px;padding:6px 14px">${badge}</p>
 <p style="margin:16px 0 0;font-size:15px;color:#c9f2d9;font-weight:bold">Stageio Premium à vie</p>
 <p style="margin:2px 0 0;font-size:56px;line-height:1.05;font-weight:bold;color:#ffffff">${keep(premium)}</p>
 <p style="margin:6px 0 0;font-size:15px;color:#e6f7ed">Un seul paiement. Premium pour toujours.</p>
@@ -142,12 +154,12 @@ ${button(goAuto, `Prendre l'Auto à vie · ${keep(auto)}`, true)}
 <p style="margin:20px 0 0;font-size:16px">Nathan<br>Stageio</p>
 <p style="margin:14px 0 0;font-size:14px;color:#555">P.S. Ce prix est réservé à cet email : tu ne le trouveras pas sur le site.</p>
 </td></tr>
-<tr><td style="padding:16px 10px 0;text-align:center;font-size:12px;line-height:1.5;color:#888">Tu reçois cet email parce que tu as un compte sur stageio.fr. Un seul email de ce type. <a href="${unsubscribe}" style="color:#888">Ne plus recevoir d'emails de Stageio</a>.</td></tr>
+<tr><td style="padding:16px 10px 0;text-align:center;font-size:12px;line-height:1.5;color:#888">Tu reçois cet email parce que tu as un compte sur stageio.fr. ${footerNote} <a href="${unsubscribe}" style="color:#888">Ne plus recevoir d'emails de Stageio</a>.</td></tr>
 </table>
 </td></tr></table>`;
 
   const text = [
-    `RÉSERVÉ À CET EMAIL : Stageio Premium à vie à ${premium}`,
+    reminder ? `TON LIEN DIRECT, SANS CONNEXION : Stageio Premium à vie à ${premium}` : `RÉSERVÉ À CET EMAIL : Stageio Premium à vie à ${premium}`,
     "",
     intro,
     timer,
@@ -173,7 +185,7 @@ ${button(goAuto, `Prendre l'Auto à vie · ${keep(auto)}`, true)}
     "",
     "P.S. Ce prix est réservé à cet email : tu ne le trouveras pas sur le site.",
     "",
-    "Tu reçois cet email parce que tu as un compte sur stageio.fr. Un seul email de ce type.",
+    `Tu reçois cet email parce que tu as un compte sur stageio.fr. ${footerNote}`,
     `Ne plus recevoir d'emails de Stageio : ${unsubscribe}`,
   ].join("\n");
   return { subject, html, text };

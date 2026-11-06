@@ -157,6 +157,10 @@
       "schedule": "5-55/5 16-20 * * *"
     },
     {
+      "path": "/api/cron/offre-48h-rappel",
+      "schedule": "3-53/10 7-21 * * *"
+    },
+    {
       "path": "/api/cron/refund-guarantee-reminder",
       "schedule": "41 7 * * *"
     },

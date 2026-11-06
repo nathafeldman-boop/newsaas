@@ -77,7 +77,7 @@ export type CampaignProfile = {
   last_active_at: string | null;
 };
 
-const PROFILE_COLUMNS =
+export const PROFILE_COLUMNS =
   "id, email, full_name, city, sectors, looking_for, subscription_status, total_paid_cents, notify_new_offers, search_completed_at, inactive_campaign_emails_sent, created_at, last_active_at";
 
 export type ExclusionReason =
@@ -105,7 +105,7 @@ export const EXCLUSION_LABELS: Record<ExclusionReason, string> = {
   admin: "Comptes admin",
 };
 
-function baseExclusion(p: CampaignProfile, alreadySent: Set<string>, now: number): ExclusionReason | null {
+export function baseExclusion(p: CampaignProfile, alreadySent: Set<string>, now: number): ExclusionReason | null {
   if (!p.email) return "sans_email";
   if (isAdminEmail(p.email)) return "admin";
   if (alreadySent.has(p.id)) return "deja_recu";
