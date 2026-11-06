@@ -1,0 +1,134 @@
+import type Stripe from "stripe";
+import { getStripeClient } from "@/lib/stripe/client";
+import { syncSubscriptionToProfile } from "@/lib/stripe/syncSubscription";
+import { creditCheckoutPayment, creditInvoicePayment } from "@/lib/stripe/creditInvoicePayment";
+import { creditAffiliateCommission } from "@/lib/affiliates/creditAffiliateCommission";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { applyAutoCheckout } from "@/lib/stripe/autoPlan";
+
+// Filet de secours : le webhook Stripe (/api/stripe/webhook) est la voie
+// normale d'activation du Premium, mais plusieurs paiements réels se sont
+// retrouvés sans aucun effet côté profil (statut, date d'activation, ET
+// revenu suivi -- total_paid_cents restait à 0 malgré 3+ paiements réels
+// confirmés) -- webhook jamais arrivé ou signature refusée, aucun moyen de
+// le confirmer depuis ce fichier. Plutôt que de dépendre uniquement d'un
+// event asynchrone qu'on ne peut pas garantir, on resynchronise ici, à la
+// volée, dès que l'utilisateur revient sur cette page après un paiement
+// réussi -- Stripe garantit que la session de checkout est déjà "complete"
+// et l'abonnement (+ sa première facture) déjà créés à ce moment-là.
+// Idempotent (voir syncSubscriptionToProfile et creditInvoicePayment) :
+// sans risque si le webhook a entre-temps déjà fait le travail, dans un
+// sens comme dans l'autre.
+// Lu par /premium/success (compte connecté) et /paiement-recu (paiement
+// depuis un lien d'email signé, sans session : userId vaut alors null et le
+// compte est celui que Stripe a gardé dans client_reference_id, posé par le
+// serveur à la création de la session). Renvoie le compte et si la session
+// est payée, ou null (session illisible ou d'un autre compte).
+// Rien n'est posé tant que Stripe ne dit pas la session payée (6/11) : sans
+// ce contrôle, l'identifiant d'une page de paiement ouverte puis abandonnée
+// (il est dans son adresse) suffisait à obtenir l'accès à vie.
+export async function reconcileFromSession(sessionId: string, expectedUserId: string | null): Promise<{ userId: string; paid: boolean } | null> {
+  try {
+    const stripe = getStripeClient();
+    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ["subscription", "invoice"],
+    });
+
+    const userId = expectedUserId ?? session.client_reference_id;
+    if (!userId || session.client_reference_id !== userId) {
+      // session_id d'un autre utilisateur (lien partagé, onglet resté
+      // ouvert...) : jamais appliquer un abonnement à la mauvaise personne.
+      console.error("premium/success: session_id ne correspond pas à l'utilisateur connecté", {
+        userId,
+        sessionUserId: session.client_reference_id,
+      });
+      return null;
+    }
+
+    const customerId =
+      typeof session.customer === "string" ? session.customer : session.customer?.id;
+    // mode "payment" = achat à vie (voir premium/actions.ts) : pas de
+    // subscription Stripe à synchroniser plus bas, on pose directement le
+    // statut ici -- même distinction que dans le webhook
+    // (checkout.session.completed).
+    const isLifetimePurchase = session.mode === "payment";
+    const paid = session.status === "complete" && (session.payment_status === "paid" || session.payment_status === "no_payment_required");
+    if (!paid) return { userId, paid: false };
+    if (customerId) {
+      const admin = createAdminClient();
+      const { data: profile } = await admin
+        .from("profiles")
+        .select("premium_activated_at")
+        .eq("id", userId)
+        .maybeSingle();
+
+      const { error } = await admin
+        .from("profiles")
+        .update({
+          stripe_customer_id: customerId,
+          // Ne jamais écraser une date d'activation déjà posée (ex: revisite
+          // de cette page après un refresh) -- seulement la première fois.
+          ...(profile && !profile.premium_activated_at
+            ? { premium_activated_at: new Date().toISOString() }
+            : {}),
+          ...(isLifetimePurchase ? { subscription_status: "lifetime" } : {}),
+        })
+        .eq("id", userId);
+      if (error) {
+        console.error("premium/success: profile update failed", error, { userId, customerId });
+      }
+    }
+
+    const subscription = session.subscription as Stripe.Subscription | null;
+    if (subscription) {
+      const { matched, error } = await syncSubscriptionToProfile(subscription);
+      if (error) {
+        console.error("premium/success: syncSubscriptionToProfile failed", error, { userId });
+      } else if (!matched) {
+        console.error("premium/success: syncSubscriptionToProfile matched no profile", { userId });
+      }
+    }
+
+    await applyAutoCheckout(session, userId);
+
+    if (isLifetimePurchase && customerId) {
+      const { error } = await creditCheckoutPayment(session, customerId);
+      if (error) console.error("premium/success: lifetime payment credit failed", error, { userId });
+    }
+
+    const invoice = session.invoice as Stripe.Invoice | null;
+    if (invoice && customerId && invoice.amount_paid > 0) {
+      const { credited, error } = await creditInvoicePayment(invoice.id, customerId, invoice.amount_paid);
+      if (error) {
+        console.error("premium/success: creditInvoicePayment failed", error, {
+          userId,
+          invoiceId: invoice.id,
+        });
+      } else if (!credited) {
+        // Ne devrait normalement jamais arriver ici : stripe_customer_id
+        // vient d'être posé plus haut dans cette même fonction, avant cet
+        // appel. Si ça arrive quand même, ça mérite d'être visible plutôt
+        // que traité comme un succès silencieux (voir migration
+        // 20260913000000).
+        console.error("premium/success: creditInvoicePayment found no matching profile", {
+          userId,
+          invoiceId: invoice.id,
+        });
+      } else {
+        const { error: commissionError } = await creditAffiliateCommission(invoice, customerId);
+        if (commissionError) {
+          console.error("premium/success: creditAffiliateCommission failed", commissionError, {
+            userId,
+            invoiceId: invoice.id,
+          });
+        }
+      }
+    }
+    return { userId, paid: true };
+  } catch (err) {
+    // Ne jamais faire planter cette page pour cette resynchro best-effort :
+    // le webhook reste la voie normale, ceci n'est qu'un filet de secours.
+    console.error("premium/success: reconciliation threw", err);
+    return null;
+  }
+}

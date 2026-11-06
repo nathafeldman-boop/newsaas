@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SwipeDeck } from "@/components/swipe/SwipeDeck";
@@ -28,6 +29,7 @@ import { normalizeTitle } from "@/lib/seo/metiers";
 import { normalizePhone, splitFullName } from "@/lib/laBonneAlternance/applicant";
 import { isAutoOfferAvailable } from "@/lib/subscription/autoAvailability";
 import { REGION_BONUS, regionDepartementLabels, regionName, sameRegionElsewhere, SPARSE_LOCAL_POOL } from "@/lib/matching/region";
+import { pinFirst, pinnedOfferId, PINNED_OFFER_COOKIE } from "@/lib/offers/pinnedOffer";
 import type { Offer } from "@/types/database";
 
 export default async function SwipePage() {
@@ -354,6 +356,24 @@ export default async function SwipePage() {
     offers = await fetchActiveOffers(supabase, { excludeIds, employersOnly, limit: CANDIDATE_POOL_SIZE });
   }
 
+  // Offre ouverte avant l'inscription (fiche publique : post LinkedIn,
+  // Google…, voir lib/offers/pinnedOffer.ts) : première carte du paquet,
+  // si elle est en ligne et ni likée, ni passée récemment, ni envoyée.
+  // Hors des filtres du paquet : c'est celle que la personne a choisie.
+  const pinnedId = pinnedOfferId((await cookies()).get(PINNED_OFFER_COOKIE)?.value);
+  const pinned: Offer | null =
+    pinnedId && !excludeIds.includes(pinnedId) && !appliedOfferIds.has(pinnedId)
+      ? (offers.find((o) => o.id === pinnedId) ??
+        (await supabase
+          .from("offers")
+          .select("*")
+          .eq("id", pinnedId)
+          .eq("is_active", true)
+          .maybeSingle()
+          .then(({ data }) => data, () => null)))
+      : null;
+  const scoredOffers = pinned && !offers.some((o) => o.id === pinned.id) ? [...offers, pinned] : offers;
+
   // Score de base (réponses onboarding) + bonus appris de l'historique réel
   // de swipes/candidatures (voir src/lib/matching/learning.ts) -- ce dernier
   // reste à 0 pour un profil qui n'a encore rien swipé, donc n'affecte
@@ -363,7 +383,7 @@ export default async function SwipePage() {
   // (proche ou non, métier, diplôme, contrat) : mêmes règles qu'ici.
   const tags: Record<string, OfferTags> = {};
   if (profile) {
-    for (const offer of offers) {
+    for (const offer of scoredOffers) {
       const geoPoints = geoMatch(geoProfile!, offer).points;
       tags[offer.id] = {
         near: offer.remote_policy === "remote" || geoPoints >= 8,
@@ -382,7 +402,7 @@ export default async function SwipePage() {
     // des champs figés de l'onboarding. Reste à 0 pour un compte gratuit ou
     // sans CV exploitable, donc sans effet sur le deck des non-abonnés.
     const cvText = premium ? (profile.cv_text ?? null) : null;
-    for (const offer of offers) {
+    for (const offer of scoredOffers) {
       const base = computeMatchScore(matchProfile!, offer);
       const learnedBonus =
         affinity.sectorBonus(offer.sector) +
@@ -511,13 +531,14 @@ export default async function SwipePage() {
   // Nouveautés en tête : pour un abonné, seulement celles qui sont proches
   // (voir isNearForUser), jamais une offre neuve à l'autre bout de la France.
   // Abonné avec un métier visé : seules les nouveautés de son métier passent devant.
-  const { deck: sortedOffers, freshPicks } = orderFreshFirst(
+  const { deck: rankedDeck, freshPicks } = orderFreshFirst(
     composed,
     scores,
     DECK_SIZE,
     undefined,
     premium ? (o) => isNearForUser(o) && (!profile?.target_jobs.length || fitTags(o).targetJob) : undefined,
   );
+  const sortedOffers = pinFirst(rankedDeck, pinned, DECK_SIZE);
   // Notification « Nouveautés » à l'arrivée sur le deck : les plus récentes.
   const freshInbox = [...freshPicks]
     .sort((a, b) => b.published_at.localeCompare(a.published_at))
@@ -541,6 +562,7 @@ export default async function SwipePage() {
       const region = sparseRegion.length > 0 ? sameRegionElsewhere(profileDep, offer.location) : null;
       // En tête : c'est ce qui explique qu'elle soit là (hors du département).
       reasons[offer.id] = region ? [`Dans ta région (${region})`, ...offerReasons].slice(0, 3) : offerReasons;
+      if (offer.id === pinned?.id) reasons[offer.id] = ["L'offre que tu as ouverte", ...reasons[offer.id]].slice(0, 3);
     }
   }
 

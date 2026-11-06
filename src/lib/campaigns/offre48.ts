@@ -1,6 +1,6 @@
-import { SITE_URL } from "@/lib/site";
 import { AUTO_DAILY_LIMIT, AUTO_PRICES, EMAIL_OFFER, FLASH_OFFER, PLAN_PRICES } from "@/lib/pricing/plans";
 import { unsubscribeUrlFor } from "@/lib/resend/unsubscribe";
+import { goLink } from "@/lib/premium/goLink";
 import type { CampaignProfile, RenderedEmail } from "@/lib/campaigns/relanceOffres";
 
 // Salve « offre de l'email » (Nathan, 5/11 : « une autre salve de 400 emails
@@ -89,9 +89,10 @@ export function renderOffer48Email(p: CampaignProfile, now: number = Date.now())
   const premium = FLASH_OFFER.lifetimePrice;
   const auto = FLASH_OFFER.autoLifetimePrice;
   const monthly = PLAN_PRICES.monthly.welcome;
-  const goPremium = `${SITE_URL}/premium/go?plan=lifetime&${OFFER48_UTM}`;
-  const goAuto = `${SITE_URL}/premium/go?plan=auto_lifetime&${OFFER48_UTM}`;
-  const goMonthly = `${SITE_URL}/premium/go?plan=monthly&${OFFER48_UTM}`;
+  // Liens signés : le paiement s'ouvre sans se connecter (voir lib/premium/goLink.ts).
+  const goPremium = goLink(p.id, "lifetime", OFFER48_UTM, now);
+  const goAuto = goLink(p.id, "auto_lifetime", OFFER48_UTM, now);
+  const goMonthly = goLink(p.id, "monthly", OFFER48_UTM, now);
   const unsubscribe = unsubscribeUrlFor(p.id);
   const subject = `⏳ ${name ? `${name}, ` : ""}Stageio à vie à ${premium}, réservé à cet email`;
   const preheader = `Ton prix est bloqué ${minutes} minutes dès que tu cliques. Bientôt, l'accès à vie passe à 50 €.`;

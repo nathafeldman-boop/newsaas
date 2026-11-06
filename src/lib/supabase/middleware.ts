@@ -77,7 +77,10 @@ export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (!user) {
-    if (!matchesPath(pathname, PROTECTED_PATHS)) {
+    // Lien de paiement signé d'un email (6/11, lib/premium/goLink.ts) : la
+    // route vérifie la signature et renvoie elle-même vers /login sinon.
+    const signedPaymentLink = pathname === "/premium/go" && request.nextUrl.searchParams.has("s");
+    if (!matchesPath(pathname, PROTECTED_PATHS) || signedPaymentLink) {
       return supabaseResponse;
     }
     const redirectUrl = request.nextUrl.clone();

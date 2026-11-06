@@ -1,7 +1,9 @@
 // Publications LinkedIn (1/11) : ce qui peut être publié, exactitude des textes, choix des offres.
 // Lancer : npx tsx --tsconfig tsconfig.json tests/linkedin.test.ts
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { METIERS } from "../src/lib/seo/metiers";
+import { linkedinCampaign } from "../src/lib/analytics/referrerSource";
 import { LINKEDIN_SOURCES, MANUAL_MAX_AGE_MS, MAX_UNSEEN_MS, skipReason, sourceLine, type LinkedinOffer } from "../src/lib/linkedin/rules";
 import {
   LINKEDIN_CITIES,
@@ -156,10 +158,11 @@ assert.ok(daily.text.includes("2. Community manager\n🏢 Natures et Découverte
 for (const p of picks) {
   assert.ok(daily.text.includes(`https://www.stageio.fr/offres/`) && daily.text.includes(p.id), "lien direct vers la fiche");
 }
-assert.ok(daily.text.includes("utm_source=linkedin&utm_campaign=daily-20261106"), "lien suivi dans /admin/trafic");
+assert.ok(daily.text.includes("?li=daily-20261106"), "lien suivi dans /admin/trafic");
+assert.ok(!daily.text.includes("_"), "aucun « _ » : LinkedIn les met en italique et casse les liens");
 assert.ok(daily.text.includes("Sources des offres : France Travail, La bonne alternance, sites carrières des entreprises."));
 assert.ok(daily.text.includes("en ligne au 6 novembre"), "date de mise à jour citée");
-assert.ok(daily.text.includes("https://www.stageio.fr/alternance?utm_source=linkedin"), "lien vers la page alternance");
+assert.ok(daily.text.includes("https://www.stageio.fr/alternance?li="), "lien vers la page alternance");
 assert.equal(daily.comment, null);
 assert.ok(!/undefined|null|NaN|\{\{/.test(daily.text), "aucun reste de gabarit");
 assert.ok(daily.text.length < 3000);
@@ -183,7 +186,7 @@ const secPost = buildPost({
   target: { label: "marketing et communication", landingPath: "/alternance/marketing", count: 412, hashtags: ["#marketing"], key: "marketing-communication" },
 });
 assert.ok(secPost.text.includes("412 offres d'alternance en marketing et communication"));
-assert.ok(secPost.text.includes("https://www.stageio.fr/alternance/marketing?utm_source=linkedin"));
+assert.ok(secPost.text.includes("https://www.stageio.fr/alternance/marketing?li="));
 assert.ok(secPost.text.includes("#marketing"));
 assert.equal(secPost.label, "Marketing et communication");
 const noCount = buildPost({ kind: "sector", offers: picks, now: NOW, target: { label: "rh", landingPath: "/alternance/rh", count: null, key: "rh" } });
@@ -216,5 +219,18 @@ assert.deepEqual(idsFrom(["00000000-0000-4000-8000-000000000001,pas-un-id", "000
 assert.equal(LINKEDIN_POSTS_SQL.split("\n").length, 2);
 assert.ok(!LINKEDIN_POSTS_SQL.includes("'") && !LINKEDIN_POSTS_SQL.includes('"'));
 assert.match(LINKEDIN_POSTS_SQL, /^create table if not exists public\.linkedin_posts \(.*\);\nalter table public\.linkedin_posts enable row level security;$/);
+
+// ?li= (6/11) : suivi des clics LinkedIn sans « _ ».
+assert.equal(linkedinCampaign("auto-matin-20261107"), "auto-matin-20261107");
+assert.equal(linkedinCampaign(" Auto-Soir-RH-20261107 "), "auto-soir-rh-20261107");
+assert.equal(linkedinCampaign("x_y<script>"), "xyscript", "rien d'autre que lettres, chiffres, tirets");
+assert.equal(linkedinCampaign("a".repeat(80))?.length, 60);
+assert.equal(linkedinCampaign(""), null);
+assert.equal(linkedinCampaign("___"), null);
+assert.equal(linkedinCampaign(null), null);
+const proxySource = readFileSync("src/proxy.ts", "utf8");
+assert.ok(proxySource.includes('(liCampaign ? "linkedin" : null)'), "source linkedin");
+assert.ok(proxySource.includes('(liCampaign ? "social" : null)'), "medium social");
+assert.ok(proxySource.includes('get("utm_campaign") ?? liCampaign'), "la campagne : le clic est noté");
 
 console.log("linkedin : OK");

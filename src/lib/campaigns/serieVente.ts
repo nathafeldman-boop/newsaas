@@ -10,6 +10,7 @@ import { GUARANTEE_MONTHS } from "@/lib/premium/guaranteeTerms";
 import { AUTO_DAILY_LIMIT, EMAIL_OFFER, FLASH_OFFER, isFlashCampaignOpen, isLegacyOffer, LIFETIME_PROMO, PLAN_PRICES, priceSheet } from "@/lib/pricing/plans";
 import { SITE_URL } from "@/lib/site";
 import { getTrustCount } from "@/lib/premium/trustCount";
+import { goLink } from "@/lib/premium/goLink";
 import { campaignSender } from "@/lib/campaigns/sendBatch";
 import { CHECKOUT_DAILY_EVENT, SALES_SERIES_EVENT } from "@/lib/campaigns/serieEvents";
 import { CHECKOUT_RELANCE_EVENT } from "@/lib/campaigns/relanceCheckout";
@@ -342,7 +343,8 @@ export function renderSeriesEmail(
   // Au moins 30 min pour en profiter avant la fin de la vraie promo.
   const promo = !flash && shown === 1 && now < LIFETIME_PROMO.endsAt - 30 * 60_000;
   const utm = `utm_source=email&utm_medium=serie&utm_campaign=${seriesUtmCampaign(step)}`;
-  const go = (plan: "monthly" | "lifetime") => `${SITE_URL}/premium/go?plan=${plan}&${utm}`;
+  // Liens signés : le paiement s'ouvre sans se connecter (voir lib/premium/goLink.ts).
+  const go = (plan: "monthly" | "lifetime") => goLink(p.id, plan, utm, now);
   const termsUrl = `${SITE_URL}/legal/cgv`;
   const offersLineHtml = showCounts
     ? `<strong>${fmt(counts.matching)} offres ${kind}</strong>${whereHtml}`

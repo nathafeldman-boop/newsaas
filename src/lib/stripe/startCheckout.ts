@@ -25,8 +25,7 @@ import { getStripeClient } from "@/lib/stripe/client";
 import { SITE_URL } from "@/lib/site";
 import { GUARANTEE_COOKIE, GUARANTEE_MONTHS } from "@/lib/premium/guaranteeTerms";
 
-async function getOrCreateStripeCustomer(userId: string, email: string | null) {
-  const supabase = await createClient();
+async function getOrCreateStripeCustomer(userId: string, email: string | null, supabase: DbClient) {
   const { data: profile } = await supabase
     .from("profiles")
     .select("stripe_customer_id")
@@ -51,7 +50,19 @@ async function getOrCreateStripeCustomer(userId: string, email: string | null) {
   return customer.id;
 }
 
-export type CheckoutError = "already_subscribed" | "not_configured" | "checkout_failed" | "upgrade_failed";
+export type CheckoutError = "already_subscribed" | "not_configured" | "checkout_failed" | "upgrade_failed" | "login_required";
+
+type DbClient = Awaited<ReturnType<typeof createClient>> | ReturnType<typeof createAdminClient>;
+
+// Paiement depuis un lien d'email signé, sans session (lib/premium/goLink.ts,
+// 6/11) : le profil est lu avec le client admin (sans session, la lecture
+// normale ne voit rien : ni abonnement en cours, ni client Stripe), le retour
+// de Stripe se fait sur des pages publiques (/paiement-recu, ou cancelUrl si
+// la personne revient sans payer), et rien n'est jamais prélevé sans passer
+// par la page de paiement Stripe.
+export type CheckoutOptions = { guest?: { cancelUrl: string } };
+
+const GUEST_SUCCESS_URL = `${SITE_URL}/paiement-recu?session_id={CHECKOUT_SESSION_ID}`;
 
 // Page de paiement Stripe aux couleurs de Stageio (28/10, Nathan : « les
 // gens arrivent sur la page de paiement mais ne paient pas » ; 1 paiement
@@ -102,10 +113,11 @@ async function createCheckoutSession(params: Stripe.Checkout.SessionCreateParams
 export async function startCheckout(
   user: { id: string; email: string | null },
   plan: unknown,
+  options: CheckoutOptions = {},
 ): Promise<{ url: string } | { error: CheckoutError }> {
-  const supabase = await createClient();
+  const supabase: DbClient = options.guest ? createAdminClient() : await createClient();
 
-  if (plan === "auto_monthly" || plan === "auto_lifetime") return startAutoCheckout(user, plan);
+  if (plan === "auto_monthly" || plan === "auto_lifetime") return startAutoCheckout(user, plan, supabase, options);
 
   // Garde-fou serveur : /premium masque déjà le bouton "Débloquer Premium"
   // pour un profil Premium (voir isPremium() côté page), mais c'est
@@ -184,7 +196,7 @@ export async function startCheckout(
     return { error: "not_configured" };
   }
 
-  const customerId = await getOrCreateStripeCustomer(user.id, user.email);
+  const customerId = await getOrCreateStripeCustomer(user.id, user.email, supabase);
 
   const session = await createCheckoutSession({
     mode: isLifetime ? "payment" : "subscription",
@@ -205,9 +217,9 @@ export async function startCheckout(
     // resynchronise l'abonnement (ou l'achat à vie) à la volée si le
     // webhook Stripe n'est jamais arrivé ou a échoué (voir ce fichier pour
     // le contexte -- un paiement réel resté sans effet, découvert en prod).
-    success_url: `${SITE_URL}/premium/success?session_id={CHECKOUT_SESSION_ID}`,
+    success_url: options.guest ? GUEST_SUCCESS_URL : `${SITE_URL}/premium/success?session_id={CHECKOUT_SESSION_ID}`,
     // Retour sans payer : droit au paywall, sans repasser par l'engagement.
-    cancel_url: `${SITE_URL}/premium?retour=paiement`,
+    cancel_url: options.guest ? options.guest.cancelUrl : `${SITE_URL}/premium?retour=paiement`,
     client_reference_id: user.id,
     ...(isLifetime
       ? {
@@ -261,8 +273,9 @@ async function welcomeAt(userId: string): Promise<{ welcome: boolean; flash: boo
 async function startAutoCheckout(
   user: { id: string; email: string | null },
   plan: "auto_monthly" | "auto_lifetime",
+  supabase: DbClient,
+  options: CheckoutOptions,
 ): Promise<{ url: string } | { error: CheckoutError }> {
-  const supabase = await createClient();
   const { data: profile, error } = await supabase.from("profiles").select("*").eq("id", user.id).single();
   if (error || !profile || !isAutoOfferAvailable(profile)) {
     if (error) console.error("startAutoCheckout: profil illisible", error.message);
@@ -283,6 +296,9 @@ async function startAutoCheckout(
   const stripe = getStripeClient();
 
   if (!lifetime && activeSubscription) {
+    // Prélevé tout de suite sur la carte enregistrée, sans page Stripe :
+    // jamais depuis un lien d'email sans session.
+    if (options.guest) return { error: "login_required" };
     try {
       const subscription = await stripe.subscriptions.retrieve(activeSubscription);
       const item = subscription.items.data[0];
@@ -303,7 +319,7 @@ async function startAutoCheckout(
     }
   }
 
-  const customerId = await getOrCreateStripeCustomer(user.id, user.email);
+  const customerId = await getOrCreateStripeCustomer(user.id, user.email, supabase);
   const metadata: Record<string, string> = { tier: "auto", supabase_user_id: user.id };
   if (lifetime && activeSubscription) metadata.replace_subscription = activeSubscription;
   const session = await createCheckoutSession({
@@ -311,8 +327,8 @@ async function startAutoCheckout(
     customer: customerId,
     line_items: [{ price: priceId, quantity: 1 }],
     payment_method_types: ["card"],
-    success_url: `${SITE_URL}/premium/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${SITE_URL}/premium?retour=paiement`,
+    success_url: options.guest ? GUEST_SUCCESS_URL : `${SITE_URL}/premium/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: options.guest ? options.guest.cancelUrl : `${SITE_URL}/premium?retour=paiement`,
     client_reference_id: user.id,
     metadata,
     ...(lifetime

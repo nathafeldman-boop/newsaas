@@ -50,6 +50,16 @@ export function sourceFromReferrer(referer: string | null): { source: string; me
 // déduite du referer, sinon le dashboard compte « chatgpt.com » et
 // « chatgpt » sur deux lignes. Les autres valeurs (pubs, liens partagés)
 // restent telles quelles.
+// ?li=matin-20261107 (6/11) : liens des posts LinkedIn. LinkedIn met en
+// italique le texte entre deux « _ » d'un post, ce qui casse un lien en
+// ?utm_source=…&utm_campaign=… : ce paramètre court, sans « _ », en tient
+// lieu (source linkedin, medium social, campagne = la valeur). Lettres
+// minuscules, chiffres et tirets seulement, 60 caractères au plus.
+export function linkedinCampaign(raw: string | null | undefined): string | null {
+  const value = (raw ?? "").trim().toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 60);
+  return value || null;
+}
+
 export function normalizeUtmSource(value: string): { source: string; medium: string | null } {
   const host = value.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
   const rule = RULES.find((r) => r.medium === "ai" && r.pattern.test(host));

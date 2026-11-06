@@ -111,8 +111,11 @@ export function utmCampaign(kind: PostKind, key: string, now: number): string {
   return `${[kind, key].filter(Boolean).join("-")}-${day}`;
 }
 
+// ?li= plutôt que ?utm_source=…&utm_campaign=… (6/11) : LinkedIn met en
+// italique le texte entre deux « _ », ce qui cassait le lien dans le post.
+// Même suivi (voir linkedinCampaign et proxy.ts).
 export function linkedinUrl(path: string, campaign: string): string {
-  return `${SITE_URL}${path}?utm_source=linkedin&utm_campaign=${encodeURIComponent(campaign)}`;
+  return `${SITE_URL}${path}?li=${encodeURIComponent(campaign)}`;
 }
 
 export function offerLink(offer: Pick<LinkedinOffer, "id" | "title" | "company" | "location">, campaign: string): string {

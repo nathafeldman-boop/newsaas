@@ -1,6 +1,6 @@
-import { SITE_URL } from "@/lib/site";
 import { PLAN_PRICES, WELCOME_WINDOW_MS } from "@/lib/pricing/plans";
 import { unsubscribeUrlFor } from "@/lib/resend/unsubscribe";
+import { goLink } from "@/lib/premium/goLink";
 import type { CampaignProfile, RenderedEmail } from "@/lib/campaigns/relanceOffres";
 
 // « Dernier appel » (31/10, Nathan : « une campagne d'email […] à tout le
@@ -30,8 +30,9 @@ export function renderLastCallEmail(p: CampaignProfile): RenderedEmail {
   const lifetime = PLAN_PRICES.lifetime.welcome;
   const regular = PLAN_PRICES.lifetime.regular;
   const minutes = Math.round(WELCOME_WINDOW_MS / 60_000);
-  const go = `${SITE_URL}/premium/go?plan=lifetime&${LAST_CALL_UTM}`;
-  const monthly = `${SITE_URL}/premium/go?plan=monthly&${LAST_CALL_UTM}`;
+  // Liens signés : le paiement s'ouvre sans se connecter (voir lib/premium/goLink.ts).
+  const go = goLink(p.id, "lifetime", LAST_CALL_UTM);
+  const monthly = goLink(p.id, "monthly", LAST_CALL_UTM);
   const unsubscribe = unsubscribeUrlFor(p.id);
   const subject = `Dernier appel : l'accès à vie à ${lifetime}, avant la hausse des prix`;
   const benefits = [

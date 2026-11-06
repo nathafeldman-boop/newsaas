@@ -1,8 +1,9 @@
 import { type NextFetchEvent, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 import { logVisit } from "@/lib/analytics/logVisit";
-import { normalizeUtmSource, sourceFromReferrer } from "@/lib/analytics/referrerSource";
+import { linkedinCampaign, normalizeUtmSource, sourceFromReferrer } from "@/lib/analytics/referrerSource";
 import { logAffiliateClick } from "@/lib/affiliates/logAffiliateClick";
+import { offerIdFromPath, PINNED_OFFER_COOKIE, PINNED_OFFER_MAX_AGE } from "@/lib/offers/pinnedOffer";
 
 const VISITOR_COOKIE = "sid";
 const VISITOR_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 an
@@ -53,8 +54,13 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
   // ?a=compte (SOP 17, 17/10) : un lien court par compte de diffusion
   // (stageio.fr/?a=ines), même effet qu'un utm_source. Pilotage seulement,
   // jamais rémunération -- les affiliés rémunérés gardent ?aff=.
+  // ?li=campagne (6/11) : liens des posts LinkedIn, voir linkedinCampaign.
+  const liCampaign = request.nextUrl.searchParams.get("utm_source") ? null : linkedinCampaign(request.nextUrl.searchParams.get("li"));
   const rawUtmSource =
-    request.nextUrl.searchParams.get("utm_source") ?? request.nextUrl.searchParams.get("a")?.trim().toLowerCase().slice(0, 60) ?? null;
+    request.nextUrl.searchParams.get("utm_source") ??
+    (liCampaign ? "linkedin" : null) ??
+    request.nextUrl.searchParams.get("a")?.trim().toLowerCase().slice(0, 60) ??
+    null;
   const utmParam = rawUtmSource ? normalizeUtmSource(rawUtmSource) : null;
   const utmSourceParam = utmParam?.source ?? null;
   // Pas d'utm_source : on déduit la source du site d'origine (Google, Bing,
@@ -62,8 +68,9 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
   // dans le tableau "par source" du dashboard (voir referrerSource.ts).
   const organic = utmSourceParam ? null : sourceFromReferrer(request.headers.get("referer"));
   const utmSource = utmSourceParam ?? organic?.source ?? null;
-  const utmMedium = request.nextUrl.searchParams.get("utm_medium") ?? utmParam?.medium ?? organic?.medium ?? null;
-  const utmCampaign = request.nextUrl.searchParams.get("utm_campaign");
+  const utmMedium =
+    request.nextUrl.searchParams.get("utm_medium") ?? (liCampaign ? "social" : null) ?? utmParam?.medium ?? organic?.medium ?? null;
+  const utmCampaign = request.nextUrl.searchParams.get("utm_campaign") ?? liCampaign;
   // Un vrai paramètre utm (pub, lien partagé) écrase toujours le cookie ;
   // une source déduite du referer ne le pose que s'il n'y en a pas déjà un
   // (ne jamais effacer l'attribution d'une pub par une visite Google suivante).
@@ -86,6 +93,20 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
   // ouverture de page) ; sans en-tête (vieux navigateur), on compte.
   const fetchDest = request.headers.get("sec-fetch-dest");
   const isPageLoad = fetchDest === null || fetchDest === "document";
+
+  // Fiche d'offre ouverte (lien LinkedIn, Google, email…) : notée pour la
+  // remettre en première carte du paquet après l'inscription (voir
+  // lib/offers/pinnedOffer.ts). Ouvertures de page seulement : les
+  // préchargements des listes d'offres ne doivent rien noter.
+  const viewedOfferId = isPageLoad ? offerIdFromPath(request.nextUrl.pathname) : null;
+  if (viewedOfferId) {
+    response.cookies.set(PINNED_OFFER_COOKIE, viewedOfferId, {
+      maxAge: PINNED_OFFER_MAX_AGE,
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+    });
+  }
   // Depuis le 25/10, seuls les clics venus d'un e-mail ou d'une campagne
   // (utm_campaign, utm_source=email) sont notés : l'admin ne compte plus que
   // les inscrits, et ces clics sont les seules visites encore lues (stats
