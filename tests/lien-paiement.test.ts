@@ -6,7 +6,8 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { GO_LINK_TTL_MS, goLink, goSignature, verifyGoParams } from "../src/lib/premium/goLink";
-import { goPlanOffer, isGoCheckoutPlan, maskEmail } from "../src/lib/premium/goOffer";
+import { GO_CHOICE_PLANS, goPlanOffer, isGoCheckoutPlan, maskEmail } from "../src/lib/premium/goOffer";
+import { renderCampaignEmail } from "../src/lib/campaigns/relanceOffres";
 import { AUTO_PRICES, FLASH_OFFER, PLAN_PRICES } from "../src/lib/pricing/plans";
 
 const USER = "11111111-1111-4111-8111-111111111111";
@@ -115,6 +116,28 @@ assert.ok(checkout.includes("options.guest ? createAdminClient() : await createC
 assert.ok(checkout.includes("/paiement-recu?session_id={CHECKOUT_SESSION_ID}"));
 const reconcile = readFileSync("src/lib/stripe/reconcileCheckout.ts", "utf8");
 assert.ok(reconcile.includes('session.status === "complete"') && reconcile.includes("if (!paid) return { userId, paid: false };"), "accès posé seulement si payé");
+
+// Lien « choix » (6/11) : bouton Premium des emails « nouvelles offres », sans formule imposée.
+process.env.PAYMENT_LINK_SECRET = "cle-de-test";
+const choiceLink = goLink(USER, "choix", "utm_source=email&utm_medium=relance&utm_campaign=offres-octobre", now);
+assert.ok(choiceLink.includes("/premium/go?plan=choix&utm_source=email&utm_medium=relance&utm_campaign=offres-octobre&u="), choiceLink);
+assert.equal(verifyGoParams(parse(choiceLink), now), USER);
+assert.ok(!isGoCheckoutPlan("choix"), "« choix » n'ouvre jamais un paiement à lui seul");
+assert.deepEqual([...GO_CHOICE_PLANS], ["lifetime", "monthly"]);
+assert.ok(route.includes('for (const key of choice ? ["u", "e", "s"]'), "choix : la page /paiement sans formule");
+assert.ok(route.includes('if (choice) return NextResponse.redirect(new URL("/premium", request.url), 303);'), "connecté : le paywall");
+assert.ok(page.includes("GO_CHOICE_PLANS") && page.includes("<OfferCard"), "deux formules, chacune avec son bouton");
+const offersMail = renderCampaignEmail(
+  { id: USER, email: "lea@example.com", full_name: "Léa Martin", city: "Lyon", sectors: [], looking_for: [], subscription_status: null, total_paid_cents: 0, notify_new_offers: true, search_completed_at: null, inactive_campaign_emails_sent: 0, created_at: "2026-10-01T10:00:00Z", last_active_at: null },
+  { matching: 40, newSinceSignup: 12, newOverall: 900, hasCriteria: true, zone: { kind: "france" } },
+  6000,
+);
+for (const body of [offersMail.html, offersMail.text]) {
+  assert.ok(/premium\/go\?plan=choix&utm_source=email&utm_medium=relance&utm_campaign=offres-octobre&u=11111111-1111-4111-8111-111111111111&e=\d+&s=[\w-]{32}/.test(body), "bouton Premium signé");
+  assert.ok(body.includes("sans te reconnecter"));
+  assert.ok(!body.includes("/premium?utm_source"), "plus de lien qui demande de se connecter");
+}
+assert.ok(offersMail.html.includes(">Voir les prix Premium</a>"));
 
 process.env.PAYMENT_LINK_SECRET = savedKeys.link;
 process.env.SUPABASE_SERVICE_ROLE_KEY = savedKeys.service;

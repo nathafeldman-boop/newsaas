@@ -7,6 +7,7 @@ import { localCitiesFor } from "@/lib/matching/score";
 import { SITE_URL } from "@/lib/site";
 import { unsubscribeUrlFor } from "@/lib/resend/unsubscribe";
 import { offerPath } from "@/lib/offers/publicUrl";
+import { goLink } from "@/lib/premium/goLink";
 import { GUARANTEE_MONTHS } from "@/lib/premium/guaranteeTerms";
 import type { ContractType, Database } from "@/types/database";
 import { knownProfileSectors } from "@/lib/offers/sectors";
@@ -393,7 +394,10 @@ export function zonePhrase(zone: Zone): string {
 }
 
 const CTA_URL = `${SITE_URL}/swipe?utm_source=email&utm_medium=relance&utm_campaign=offres-octobre`;
-const PREMIUM_URL = `${SITE_URL}/premium?utm_source=email&utm_medium=relance&utm_campaign=offres-octobre`;
+// Bouton Premium (6/11, la vente du jour est venue de cet email, après une
+// connexion) : lien signé du compte, qui ouvre la page de paiement sans
+// connexion avec le mensuel et l'accès à vie (lib/premium/goLink.ts).
+export const OFFERS_PREMIUM_UTM = "utm_source=email&utm_medium=relance&utm_campaign=offres-octobre";
 // En dessous, un chiffre « pour toi » fait plus de mal que de bien : on
 // parle alors du catalogue entier.
 export const MIN_COUNT_TO_SHOW = 10;
@@ -444,6 +448,7 @@ export function renderCampaignEmail(
   const premium =
     "Si tu veux aller plus vite : Premium débloque les likes, les candidatures illimitées, la lettre de motivation générée par IA et l'audit de ton CV.";
 
+  const premiumUrl = goLink(p.id, "choix", OFFERS_PREMIUM_UTM);
   const unsubscribeUrl = unsubscribeUrlFor(p.id);
   const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#1a1a1a;max-width:520px">
 <p>${escapeHtml(greeting)}</p>
@@ -451,7 +456,8 @@ export function renderCampaignEmail(
 ${forYou ? `<p>${forYou}</p>` : ""}
 ${cityFirst ? `<p>${cityFirst}</p>` : ""}
 <p style="margin:24px 0"><a href="${CTA_URL}" style="background:#0c7a44;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:10px;font-weight:bold;display:inline-block">Voir mes offres</a></p>
-<p>${premium.replace("Premium", `<a href="${PREMIUM_URL}">Premium</a>`)}</p>
+<p>${premium.replace("Premium", `<a href="${premiumUrl}">Premium</a>`)}</p>
+<p style="margin:16px 0 24px"><a href="${premiumUrl}" style="background:#ffffff;color:#0c7a44;border:2px solid #0c7a44;text-decoration:none;padding:10px 18px;border-radius:10px;font-weight:bold;display:inline-block">Voir les prix Premium</a> <span style="font-size:13px;color:#555">sans te reconnecter</span></p>
 <p>Bonne recherche,<br>Nathan, de Stageio</p>
 <p style="font-size:12px;color:#888;margin-top:28px">Tu reçois cet email parce que tu as un compte sur stageio.fr. Un seul email de ce type, pas de série derrière. <a href="${unsubscribeUrl}" style="color:#888">Ne plus recevoir d'emails de Stageio</a>.</p>
 </div>`;
@@ -466,7 +472,7 @@ ${cityFirst ? `<p>${cityFirst}</p>` : ""}
     `Voir mes offres : ${CTA_URL}`,
     "",
     premium,
-    PREMIUM_URL,
+    `Voir les prix Premium, sans te reconnecter : ${premiumUrl}`,
     "",
     "Bonne recherche,",
     "Nathan, de Stageio",

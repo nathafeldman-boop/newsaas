@@ -2,11 +2,14 @@
 // heures, on veut 100 par heure à partir de 15h »). Fichier sans dépendance :
 // lu par la route cron /api/cron/salves-horaires et par les tests.
 //
-// - Un passage par heure, de 15 h à 21 h (heure de Paris), tous les jours à
-//   partir du 5/11, jusqu'à ce qu'il n'y ait plus personne à qui écrire.
-// - Chaque passage envoie 100 emails au plus : d'abord le « Dernier appel »
-//   (comptes qui ne l'ont pas encore reçu), puis, quand il n'y a plus
-//   personne, la relance « nouvelles offres » (jamais envoyée). Mêmes
+// - Un passage par heure, de 12 h à 21 h (heure de Paris) depuis le 6/11
+//   (Nathan : « tous les jours, je veux 1000 emails envoyés, des emails qui
+//   convertissent ») : 10 passages de 100, 1 000 emails par jour au plus,
+//   jusqu'à ce qu'il n'y ait plus personne à qui écrire.
+// - D'abord la relance « nouvelles offres » (l'email qui a vendu le 6/11,
+//   bouton Premium sans connexion), puis le « Dernier appel » quand il n'y a
+//   plus personne pour la première. Les emails qui ne parlent que de prix ne
+//   faisaient presque plus cliquer (0,4 % pour le Dernier appel). Mêmes
 //   garde-fous que /admin/relance : jamais deux fois le même email au même
 //   compte, désabonnés, payants et plafond par 24 h exclus.
 // - Garde contre un double appel (Vercel peut rappeler une route, un clic
@@ -21,13 +24,13 @@ import type { CampaignId } from "@/lib/campaigns/relanceOffres";
 export const HOURLY_SALVE_SIZE = 100;
 // 14 h UTC = 15 h à Paris (heure d'hiver).
 export const HOURLY_SALVES_START = Date.parse("2026-11-05T14:00:00Z");
-export const HOURLY_FIRST_PARIS_HOUR = 15;
+export const HOURLY_FIRST_PARIS_HOUR = 12;
 export const HOURLY_LAST_PARIS_HOUR = 21;
 export const HOURLY_SALVE_GAP_MS = 50 * 60_000;
 export const HOURLY_SERIES_GUARD_MS = 3 * 3_600_000;
 // Ordre de passage : la campagne suivante complète le passage seulement
 // quand la précédente n'a plus personne de disponible.
-export const HOURLY_SALVE_QUEUE: readonly CampaignId[] = ["dernierappel", "offres"];
+export const HOURLY_SALVE_QUEUE: readonly CampaignId[] = ["offres", "dernierappel"];
 
 const parisHourFormat = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Paris", hour: "2-digit", hourCycle: "h23" });
 

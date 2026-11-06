@@ -5,7 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { startCheckout } from "@/lib/stripe/startCheckout";
 import { verifyGoParams } from "@/lib/premium/goLink";
-import { isGoCheckoutPlan } from "@/lib/premium/goOffer";
+import { GO_CHOICE, isGoCheckoutPlan } from "@/lib/premium/goOffer";
 
 // Lien des emails de la série Premium (24/10, Nathan : « direct au paiement,
 // mais l'email doit être un deuxième paywall ») : /premium/go?plan=lifetime
@@ -22,7 +22,10 @@ export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
   const plan = params.get("plan");
   // auto_lifetime : Stageio Auto à vie (salve du 5/11, offre 48 h).
-  if (!isGoCheckoutPlan(plan)) {
+  // choix (6/11) : pas de formule, le compte choisit (paywall, ou /paiement
+  // avec le mensuel et l'accès à vie sans connexion).
+  const choice = plan === GO_CHOICE;
+  if (!choice && !isGoCheckoutPlan(plan)) {
     return NextResponse.redirect(new URL("/premium", request.url), 303);
   }
 
@@ -34,12 +37,15 @@ export async function GET(request: NextRequest) {
     if (verifyGoParams({ u: params.get("u"), e: params.get("e"), s: params.get("s") })) {
       // Sans les utm : le clic est déjà compté sur ce lien.
       const page = new URL("/paiement", request.url);
-      for (const key of ["plan", "u", "e", "s"]) page.searchParams.set(key, params.get(key)!);
+      for (const key of choice ? ["u", "e", "s"] : ["plan", "u", "e", "s"]) page.searchParams.set(key, params.get(key)!);
       return NextResponse.redirect(page, 303);
     }
     const back = `${request.nextUrl.pathname}${request.nextUrl.search}`;
     return NextResponse.redirect(new URL(`/login?next=${encodeURIComponent(back)}`, request.url), 303);
   }
+
+  if (choice) return NextResponse.redirect(new URL("/premium", request.url), 303);
+  if (!isGoCheckoutPlan(plan)) return NextResponse.redirect(new URL("/premium", request.url), 303);
 
   // Le prix est calculé avant d'enregistrer ce passage, comme sur /premium :
   // le premier passage après l'email ouvre les 10 minutes du prix de bienvenue.

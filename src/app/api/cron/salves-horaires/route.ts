@@ -12,10 +12,10 @@ import {
   planHourlySalve,
 } from "@/lib/campaigns/salvesHoraires";
 
-// Salves horaires (Nathan, 5/11 : « 100 par heure à partir de 15h »), voir
-// lib/campaigns/salvesHoraires.ts. vercel.json appelle la route toutes les
-// heures de 13 h à 20 h UTC ; seuls les passages de 15 h à 21 h à Paris
-// envoient (13 h UTC ne sert qu'à l'heure d'été).
+// Salves horaires (Nathan, 5/11 : « 100 par heure à partir de 15h » ; 6/11 :
+// « 1000 emails par jour »), voir lib/campaigns/salvesHoraires.ts. vercel.json
+// appelle la route toutes les heures de 10 h à 20 h UTC ; seuls les passages
+// de 12 h à 21 h à Paris envoient (10 h UTC ne sert qu'à l'heure d'été).
 export const maxDuration = 300;
 
 const SALVE_EVENTS = HOURLY_SALVE_QUEUE.map((id) => CAMPAIGNS[id].event);

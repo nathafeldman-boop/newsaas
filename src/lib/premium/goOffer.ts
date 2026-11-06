@@ -10,6 +10,10 @@ export function isGoCheckoutPlan(plan: unknown): plan is GoCheckoutPlan {
   return plan === "monthly" || plan === "lifetime" || plan === "auto_lifetime";
 }
 
+/** Lien sans formule (?plan=choix) : la page montre le mensuel et l'accès à vie. */
+export const GO_CHOICE = "choix";
+export const GO_CHOICE_PLANS: readonly GoCheckoutPlan[] = ["lifetime", "monthly"];
+
 export type GoWelcome = { active: boolean; endsAt: number; flashEndsAt: number | null; legacy: boolean };
 
 export type GoPlanOffer = {

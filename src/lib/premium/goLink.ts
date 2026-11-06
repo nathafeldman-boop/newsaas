@@ -13,7 +13,9 @@ import { SITE_URL } from "@/lib/site";
 // compte. Signé avec une clé du serveur (PAYMENT_LINK_SECRET, sinon la clé
 // service de Supabase) ; sans clé, le lien reste celui d'avant (connexion).
 
-export type GoPlan = "monthly" | "lifetime" | "auto_monthly" | "auto_lifetime";
+// "choix" (6/11) : pas de formule imposée, la page /paiement montre le
+// mensuel et l'accès à vie (liens Premium des emails « nouvelles offres »).
+export type GoPlan = "monthly" | "lifetime" | "auto_monthly" | "auto_lifetime" | "choix";
 
 /** Durée de validité d'un lien de paiement d'email. */
 export const GO_LINK_TTL_MS = 14 * 86_400_000;

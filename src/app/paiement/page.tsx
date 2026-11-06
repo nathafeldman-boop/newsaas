@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { verifyGoParams } from "@/lib/premium/goLink";
-import { goPlanOffer, isGoCheckoutPlan, maskEmail, type GoCheckoutPlan } from "@/lib/premium/goOffer";
+import { GO_CHOICE, GO_CHOICE_PLANS, goPlanOffer, isGoCheckoutPlan, maskEmail, type GoCheckoutPlan, type GoPlanOffer } from "@/lib/premium/goOffer";
 import { getWelcomeState } from "@/lib/pricing/welcome";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isAutoTier, isPremium } from "@/lib/subscription/isPremium";
@@ -65,10 +65,73 @@ async function loadAccount(userId: string) {
   return { profile, email: auth?.user?.email ?? null };
 }
 
+type Signed = { u?: string; e?: string; s?: string };
+
+// Une formule : prix, délai de l'offre, avantages et bouton « Payer ».
+function OfferCard({ plan, offer, signed, highlight }: { plan: GoCheckoutPlan; offer: GoPlanOffer; signed: Signed; highlight: boolean }) {
+  const { minutesLeft } = offer;
+  return (
+    <div
+      style={{
+        padding: "22px 20px",
+        background: highlight ? "linear-gradient(180deg,#f7fbfa 0%,var(--color-bg) 45%,#e2f0ee 100%)" : "var(--color-bg)",
+        border: highlight ? "2px solid var(--color-accent)" : "1px solid color-mix(in srgb, var(--color-text) 14%, transparent)",
+        borderRadius: "var(--radius-lg)",
+        boxShadow: highlight ? "var(--shadow-lg)" : "none",
+      }}
+    >
+      {offer.badge && (
+        <p className="tag tag-accent" style={{ margin: "0 auto", display: "table", padding: "5px 12px", fontSize: 12.5, fontWeight: 700 }}>
+          {offer.badge}
+        </p>
+      )}
+      <h2 style={{ fontSize: 22, margin: "10px 0 0", textAlign: "center" }}>{offer.title}</h2>
+      <p style={{ margin: "8px 0 0", textAlign: "center" }}>
+        <span style={{ fontSize: 38, fontWeight: 800 }}>{offer.price}</span>
+        {offer.perMonth && <span style={{ fontSize: 15, color: muted }}> / mois</span>}
+      </p>
+      {minutesLeft !== null && (
+        <p style={{ fontSize: 13.5, margin: "6px 0 0", textAlign: "center", fontWeight: 600, color: "var(--color-accent-700)" }}>
+          ⏳ Ce prix tient encore {minutesLeft} minute{minutesLeft > 1 ? "s" : ""}
+          {offer.regular && (
+            <span style={{ fontWeight: 400, color: muted }}>
+              {" "}
+              · ensuite {offer.regular}
+              {offer.perMonth ? " / mois" : ""}
+            </span>
+          )}
+        </p>
+      )}
+      <ul style={{ listStyle: "none", padding: 0, margin: "16px 0 0", display: "flex", flexDirection: "column", gap: 7 }}>
+        {offer.benefits.map((b) => (
+          <li key={b} style={{ fontSize: 14.5, display: "flex", gap: 8 }}>
+            <span aria-hidden style={{ color: "var(--color-accent)", fontWeight: 800 }}>
+              ✓
+            </span>
+            {b}
+          </li>
+        ))}
+      </ul>
+      <form action={payFromEmailLinkAction} style={{ marginTop: 18 }}>
+        <input type="hidden" name="plan" value={plan} />
+        <input type="hidden" name="u" value={signed.u} />
+        <input type="hidden" name="e" value={signed.e} />
+        <input type="hidden" name="s" value={signed.s} />
+        <button type="submit" className={highlight ? "btn btn-primary" : "btn btn-secondary"} style={{ width: "100%", fontSize: 16, padding: "14px 18px" }}>
+          Payer {offer.price} avec Stripe
+        </button>
+      </form>
+      <p style={{ fontSize: 12.5, lineHeight: 1.5, margin: "10px 0 0", textAlign: "center", color: muted }}>{offer.note}</p>
+    </div>
+  );
+}
+
 export default async function PaiementPage({ searchParams }: { searchParams: Promise<Search> }) {
   const { plan, u, e, s, error, retour } = await searchParams;
   const userId = verifyGoParams({ u, e, s });
-  if (!userId || !isGoCheckoutPlan(plan)) {
+  // Sans formule (lien « choix » des emails nouvelles offres) : le mensuel et l'accès à vie.
+  const plans: readonly GoCheckoutPlan[] | null = isGoCheckoutPlan(plan) ? [plan] : !plan || plan === GO_CHOICE ? GO_CHOICE_PLANS : null;
+  if (!userId || !plans) {
     return <LoginInstead title="Ce lien de paiement a expiré" text="Connecte-toi pour voir les offres Premium de ton compte." next="/premium" />;
   }
 
@@ -76,7 +139,7 @@ export default async function PaiementPage({ searchParams }: { searchParams: Pro
   if (!profile) {
     return <LoginInstead title="Compte introuvable" text="Connecte-toi pour voir les offres Premium." next="/premium" />;
   }
-  const auto = plan === "auto_lifetime";
+  const auto = plans.includes("auto_lifetime");
   if (auto ? isAutoTier(profile) : isPremium(profile)) {
     return <LoginInstead title={auto ? "Tu as déjà Stageio Auto" : "Tu as déjà Premium"} text="Connecte-toi pour en profiter." next="/swipe" />;
   }
@@ -86,79 +149,36 @@ export default async function PaiementPage({ searchParams }: { searchParams: Pro
 
   // Compte déjà Premium qui prend l'Auto : prix normal, comme au paywall.
   const welcome = isPremium(profile) ? null : await getWelcomeState(userId);
-  const offer = goPlanOffer(plan as GoCheckoutPlan, welcome);
-  const { minutesLeft } = offer;
+  const offers = plans.map((p) => ({ plan: p, offer: goPlanOffer(p, welcome) }));
   const account = maskEmail(email);
+  const signed = { u, e, s };
 
   return (
     <Shell>
-      <div
-        style={{
-          padding: "26px 22px",
-          background: "linear-gradient(180deg,#f7fbfa 0%,var(--color-bg) 45%,#e2f0ee 100%)",
-          borderRadius: "var(--radius-lg)",
-          boxShadow: "var(--shadow-lg)",
-        }}
-      >
-        {retour && !error && (
-          <p style={{ fontSize: 13.5, margin: "0 0 14px", color: muted, textAlign: "center" }}>Ton offre t&apos;attend encore ici.</p>
-        )}
-        {offer.badge && (
-          <p className="tag tag-accent" style={{ margin: "0 auto", display: "table", padding: "5px 12px", fontSize: 12.5, fontWeight: 700 }}>
-            {offer.badge}
-          </p>
-        )}
-        <h1 style={{ fontSize: 24, margin: "12px 0 0", textAlign: "center" }}>{offer.title}</h1>
-        <p style={{ margin: "10px 0 0", textAlign: "center" }}>
-          <span style={{ fontSize: 40, fontWeight: 800 }}>{offer.price}</span>
-          {offer.perMonth && <span style={{ fontSize: 15, color: muted }}> / mois</span>}
+      {retour && !error && (
+        <p style={{ fontSize: 13.5, margin: "0 0 14px", color: muted, textAlign: "center" }}>Ton offre t&apos;attend encore ici.</p>
+      )}
+      {offers.length > 1 && (
+        <h1 style={{ fontSize: 24, margin: "0 0 16px", textAlign: "center" }}>Débloque Stageio Premium</h1>
+      )}
+      {error && (
+        <p className="tag tag-accent-2" style={{ margin: "0 0 14px", padding: "10px 14px", fontSize: 13, display: "block", lineHeight: 1.5 }}>
+          {ERRORS[error] ?? ERRORS.checkout_failed}
         </p>
-        {minutesLeft !== null && (
-          <p style={{ fontSize: 13.5, margin: "6px 0 0", textAlign: "center", fontWeight: 600, color: "var(--color-accent-700)" }}>
-            ⏳ Ce prix tient encore {minutesLeft} minute{minutesLeft > 1 ? "s" : ""}
-            {offer.regular && (
-              <span style={{ fontWeight: 400, color: muted }}>
-                {" "}
-                · ensuite {offer.regular}
-                {offer.perMonth ? " / mois" : ""}
-              </span>
-            )}
-          </p>
-        )}
-        <ul style={{ listStyle: "none", padding: 0, margin: "20px 0 0", display: "flex", flexDirection: "column", gap: 8 }}>
-          {offer.benefits.map((b) => (
-            <li key={b} style={{ fontSize: 14.5, display: "flex", gap: 8 }}>
-              <span aria-hidden style={{ color: "var(--color-accent)", fontWeight: 800 }}>
-                ✓
-              </span>
-              {b}
-            </li>
-          ))}
-        </ul>
-        {error && (
-          <p className="tag tag-accent-2" style={{ marginTop: 16, padding: "10px 14px", fontSize: 13, display: "block", lineHeight: 1.5 }}>
-            {ERRORS[error] ?? ERRORS.checkout_failed}
-          </p>
-        )}
-        <form action={payFromEmailLinkAction} style={{ marginTop: 20 }}>
-          <input type="hidden" name="plan" value={plan} />
-          <input type="hidden" name="u" value={u} />
-          <input type="hidden" name="e" value={e} />
-          <input type="hidden" name="s" value={s} />
-          <button type="submit" className="btn btn-primary" style={{ width: "100%", fontSize: 16, padding: "14px 18px" }}>
-            Payer {offer.price} avec Stripe
-          </button>
-        </form>
-        <p style={{ fontSize: 12.5, lineHeight: 1.5, margin: "12px 0 0", textAlign: "center", color: muted }}>
-          🔒 Paiement sécurisé. {offer.note}
-          {account ? ` Pour le compte ${account}.` : ""}
-        </p>
-        <p style={{ fontSize: 12.5, margin: "10px 0 0", textAlign: "center" }}>
-          <Link href="/login?next=/premium" style={{ color: muted }}>
-            Pas ton compte ? Connecte-toi
-          </Link>
-        </p>
+      )}
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        {offers.map(({ plan: p, offer }, i) => (
+          <OfferCard key={p} plan={p} offer={offer} signed={signed} highlight={i === 0} />
+        ))}
       </div>
+      <p style={{ fontSize: 12.5, lineHeight: 1.5, margin: "14px 0 0", textAlign: "center", color: muted }}>
+        🔒 Paiement sécurisé par Stripe.{account ? ` Pour le compte ${account}.` : ""}
+      </p>
+      <p style={{ fontSize: 12.5, margin: "8px 0 0", textAlign: "center" }}>
+        <Link href="/login?next=/premium" style={{ color: muted }}>
+          Pas ton compte ? Connecte-toi
+        </Link>
+      </p>
     </Shell>
   );
 }
