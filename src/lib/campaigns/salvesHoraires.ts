@@ -4,8 +4,10 @@
 //
 // - Un passage par heure, de 12 h à 21 h (heure de Paris) depuis le 6/11
 //   (Nathan : « tous les jours, je veux 1000 emails envoyés, des emails qui
-//   convertissent ») : 10 passages de 100, 1 000 emails par jour au plus,
-//   jusqu'à ce qu'il n'y ait plus personne à qui écrire.
+//   convertissent ») ; 400 par passage depuis le 7/11 (Nathan, 12 h 50 :
+//   « ramène des gens ») : 4 000 emails par jour au plus, sous le plafond de
+//   5 000 par 24 h des relances, jusqu'à ce qu'il n'y ait plus personne à
+//   qui écrire (environ 4 000 comptes restants le 7/11).
 // - D'abord la relance « nouvelles offres » (l'email qui a vendu le 6/11,
 //   bouton Premium sans connexion), puis le « Dernier appel » quand il n'y a
 //   plus personne pour la première. Les emails qui ne parlent que de prix ne
@@ -13,15 +15,15 @@
 //   garde-fous que /admin/relance : jamais deux fois le même email au même
 //   compte, désabonnés, payants et plafond par 24 h exclus.
 // - Garde contre un double appel (Vercel peut rappeler une route, un clic
-//   dans l'admin peut tomber dans l'heure) : 100 emails au plus par tranche
-//   de 50 minutes, tous déclencheurs confondus.
+//   dans l'admin peut tomber dans l'heure) : HOURLY_SALVE_SIZE emails au plus
+//   par tranche de 50 minutes, tous déclencheurs confondus.
 // - Personne ne reçoit une salve dans les 3 h qui suivent un email de la
 //   série Premium (elle passe à la demie) ou une relance de paiement, ni dans
 //   les 24 h qui suivent un autre email de salve : il sera pris plus tard.
 
 import type { CampaignId } from "@/lib/campaigns/relanceOffres";
 
-export const HOURLY_SALVE_SIZE = 100;
+export const HOURLY_SALVE_SIZE = 400;
 // 14 h UTC = 15 h à Paris (heure d'hiver).
 export const HOURLY_SALVES_START = Date.parse("2026-11-05T14:00:00Z");
 export const HOURLY_FIRST_PARIS_HOUR = 12;
