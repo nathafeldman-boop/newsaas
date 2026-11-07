@@ -136,7 +136,7 @@ async function coverSlide(s) {
   <div class="slide cover">
     <div class="photo" style="background-image:url('${photo}'); background-position:${s.photoPosition || "center"}"></div>
     <div class="shade"></div>
-    <div class="brand cover-brand"><span class="dot"></span>stageio.fr</div>
+    <div class="brand cover-brand"><span class="dot"></span>${esc(BRAND)}</div>
     <div class="cover-text">
       ${lines}
       ${s.highlight ? `<div class="chip green cover-hl">${esc(s.highlight)}</div>` : ""}
@@ -172,7 +172,7 @@ async function tipSlide(s) {
     ${s.objectif ? `<div class="obj"><span>${esc(s.objectif)}</span></div>` : ""}
     ${items.length ? `<div class="items n${items.length}">${items.join("")}</div>` : ""}
     ${s.note ? `<p class="note">${rich(s.note)}</p>` : ""}
-    <div class="brand foot"><span class="dot"></span>stageio.fr</div>
+    <div class="brand foot"><span class="dot"></span>${esc(BRAND)}</div>
     <div class="tab">${arrow}</div>
   </div>
   <style>
@@ -209,7 +209,7 @@ async function ctaSlide(s) {
     <p class="lead">${rich(s.lead || "Tape-le directement sur Google :")}</p>
     <div class="searchbar"><span class="mag">${search}</span><span class="url">stageio.fr</span></div>
     <ul>${bullets}</ul>
-    <div class="brand foot"><span class="dot"></span>stageio.fr</div>
+    <div class="brand foot"><span class="dot"></span>${esc(BRAND)}</div>
     <div class="tab">${arrow}</div>
   </div>
   <style>
@@ -231,10 +231,16 @@ async function ctaSlide(s) {
 
 const BUILDERS = { cover: coverSlide, tip: tipSlide, cta: ctaSlide };
 
+// Marque en bas des slides : « stageio.fr » par défaut ; « brand » dans le
+// JSON la remplace (7/11 : TikTok, pas d'adresse de site tant que le compte
+// est sous restriction, on écrit « Stageio »).
+let BRAND = "stageio.fr";
+
 async function main() {
   const [specPath, outArg] = process.argv.slice(2);
   if (!specPath) throw new Error("Usage : node tools/carrousel/render.mjs <spec.json> [dossier-de-sortie]");
   const spec = JSON.parse(await readFile(specPath, "utf8"));
+  if (typeof spec.brand === "string" && spec.brand.trim()) BRAND = spec.brand.trim();
   const outDir = outArg || path.join(here, "out", spec.slug);
   await mkdir(outDir, { recursive: true });
   const chromium = await loadChromium();

@@ -1,0 +1,56 @@
+{
+  "slug": "offres-plus-d-un-mois",
+  "theme": "1 offre d'alternance sur 4 est en ligne depuis plus d'un mois : par où commencer (TikTok, 7/11)",
+  "brand": "Stageio",
+  "sources": [
+    "Chiffres : offres d'alternance en ligne sur Stageio le 7 novembre 2026 au matin (5 846 en ligne, 1 421 publiées depuis plus de 30 jours, 169 dans les dernières 24 h)"
+  ],
+  "slides": [
+    {
+      "type": "cover",
+      "photo": "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=1600&q=85",
+      "photoPosition": "center 40%",
+      "title": ["1 offre sur 4", "a plus d'1 mois"],
+      "highlight": "commence ici",
+      "titleSize": 84
+    },
+    {
+      "type": "tip",
+      "title": ["Commence par", "les fraîches"],
+      "text": "Ce matin, ==1 421 alternances sur 5 846== étaient en ligne depuis plus de 30 jours. Les plus récentes d'abord",
+      "objectif": "Objectif",
+      "items": [
+        { "icon": "clock", "label": "arriver parmi les premiers" }
+      ]
+    },
+    {
+      "type": "tip",
+      "title": ["Relance", "après 7 jours"],
+      "text": "Pas de réponse ? ==Un mail de 4 lignes==, poli, qui rappelle le poste et la date de ta candidature",
+      "objectif": "Réflexe",
+      "items": [
+        { "icon": "calendar", "label": "7 jours, pas avant" },
+        { "icon": "mail", "label": "une seule relance" }
+      ]
+    },
+    {
+      "type": "tip",
+      "title": ["Une phrase", "sur la boîte"],
+      "text": "Ajoute ==une chose précise== sur l'entreprise : ça prouve que ce n'est pas un copier-coller",
+      "objectif": "Objectif",
+      "items": [
+        { "icon": "target", "label": "sortir du lot" }
+      ]
+    },
+    {
+      "type": "tip",
+      "title": ["Suis", "le compte"],
+      "text": "Chaque jour, ==les alternances sorties la veille==, domaine par domaine",
+      "objectif": "Chaque jour",
+      "items": [
+        { "icon": "bell", "label": "les offres du jour" },
+        { "icon": "message-circle", "label": "dis ton domaine en commentaire" }
+      ]
+    }
+  ]
+}
