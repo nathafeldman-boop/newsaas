@@ -7,6 +7,18 @@ description: Règles de Stageio pour les vidéos et carrousels TikTok, YouTube S
 
 Règles tirées de la méthode de l'incubateur de Nathan (formats, lancement, pivot), adaptées à Stageio.
 
+## Sujet du moment : CDI et CDD (du 7/11 à fin avril-mai)
+
+Nathan, le 7/11 : « plus personne ne cherche d'alternance en ce moment » ; tous les posts passent sur les CDI et CDD, jusqu'à avril-mai.
+
+- **Tous les posts** (TikTok, YouTube, Facebook, Pinterest) parlent du **premier emploi en CDI ou en CDD** : jeunes diplômés, débutants, reconversion, « moins d'un an d'expérience ».
+- **L'alternance, une fois par semaine** : le **mercredi**, un seul créneau par réseau (rentrée décalée de janvier-février). Les autres jours, rien sur l'alternance.
+- **Avant chaque post, vérifier que la fonction est en ligne** (Supabase rjakikheeyhyepzgsvlj) : `select count(*) from offers where is_active and contract_type in ('cdi','cdd')`, et la page https://www.stageio.fr/offres/cdi en 200. Tant que ce n'est pas le cas (Nathan n'a pas encore dit « lance »), garder l'ancienne ligne alternance et ne rien promettre sur les CDI.
+- **Elliot et Yanis** sont maintenant diplômés et cherchent leur premier poste. Mêmes voix, même méthode (accroche, problème, résolution, CTA « Commente OFFRES »). Idées : Elliot envoie 50 CV pour un CDI, Yanis vise les offres « débutant accepté » ; « 3 ans d'expérience exigés » pour un poste junior ; CDD de 6 mois qui devient CDI ; l'entretien d'embauche raté contre préparé ; négocier son premier salaire ; postuler le jour où l'offre sort.
+- **Chiffres** : uniquement ceux de la base du jour, sur `contract_type in ('cdi','cdd')` (nombre d'offres débutants, villes, métiers, arrivées en 24 h). Jamais inventés.
+- **Liens** : https://www.stageio.fr/offres/cdi ou /offres/cdd (avec les utm habituels) ; /offres/alternance seulement le mercredi.
+- **Hashtags** : #premieremploi #cdi #jeunediplome #recherchedemploi #emploi (et #alternance le mercredi).
+
 ## Ce qu'on montre
 - LE mécanisme cœur, jamais un gadget : les offres du jour près de chez toi → tu swipes → la lettre s'écrit toute seule → candidature envoyée.
 - Contenu PROCESS plutôt que démo : on vend le BUT (décrocher son alternance), et Stageio est une étape du chemin.
