@@ -112,9 +112,9 @@ const FAQ = [
       `L'inscription et la création de profil sont gratuites, et tu peux parcourir tout le catalogue d'offres sans limite. Liker une offre, candidater et générer une lettre de motivation par IA sont réservés aux membres Premium : ${PLAN_PRICES.monthly.regular}/mois sans engagement, ou ${PLAN_PRICES.lifetime.regular} en paiement unique pour un accès à vie. Prix de bienvenue de ${PLAN_PRICES.monthly.welcome}/mois ou ${PLAN_PRICES.lifetime.welcome} à vie pendant 10 minutes, à compter de la première fois où tu vois la page Premium.`,
   },
   {
-    question: "Stageio propose des stages ou des alternances ?",
+    question: "Stageio propose des stages, des alternances ou des CDI ?",
     answer:
-      "Les deux. Tu choisis à l'inscription si tu cherches une alternance, un stage, ou les deux, et tu peux basculer entre les deux à tout moment depuis l'écran de swipe.",
+      "Les quatre : alternance, stage, et depuis novembre 2026 des CDI et des CDD ouverts aux débutants (moins d'un an d'expérience demandé). Tu choisis à l'inscription ce que tu cherches, plusieurs types si tu veux, et tu peux filtrer à tout moment depuis l'écran de swipe.",
   },
   {
     question: "Comment Stageio choisit les offres qu'il me montre ?",
@@ -509,6 +509,11 @@ export default async function LandingPage() {
             >
               Fini les quarante candidatures identiques sur dix sites différents. On te propose
               les offres qui matchent ton profil ; tu likes, tu postules, c&apos;est tout.
+            </p>
+            <p style={{ margin: "10px 0 0", fontSize: 15, lineHeight: 1.5, maxWidth: "46ch" }}>
+              <strong>Nouveau :</strong> des{" "}
+              <Link href="/offres/cdi">CDI</Link> et des <Link href="/offres/cdd">CDD</Link> ouverts aux
+              débutants, en plus des alternances et des stages.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Link href="/inscription" className="btn btn-gradient" style={{ whiteSpace: "nowrap" }}>

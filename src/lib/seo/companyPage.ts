@@ -2,7 +2,8 @@ import { getCompanyIndex, type CompanyEntry } from "@/lib/seo/companyIndex";
 import { getProgrammaticIndex, INDEXABLE_MIN_OFFERS, cityPhrase } from "@/lib/seo/programmaticIndex";
 import { formatEuros } from "@/lib/salary/legalRates";
 import type { SegmentLink } from "@/lib/seo/programmaticPage";
-import type { ContractType } from "@/types/database";
+// Pages SEO programmatiques : alternance et stage seulement (pas CDD/CDI).
+import type { PlacementType as ContractType } from "@/types/database";
 
 export type CompanyModel = {
   company: CompanyEntry;

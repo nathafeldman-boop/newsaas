@@ -25,6 +25,7 @@ import { widenSearchToFranceAction } from "@/app/(app)/swipe/actions";
 import { cardsToDrop, type OfferTags, type PassReason } from "@/lib/matching/passReasons";
 import { cn } from "@/lib/utils";
 import type { ContractType, Offer, SwipeDirection } from "@/types/database";
+import { ALL_CONTRACT_TYPES, CONTRACT_LABEL } from "@/lib/offers/contractLabels";
 
 const SWIPE_THRESHOLD = 120;
 const EXIT_DISTANCE = 600;
@@ -825,10 +826,10 @@ export function SwipeDeck({
         </p>
       )}
       {/* Un seul type de contrat dans le paquet (alternance seulement, 25/10) :
-          le choix Stage / Alternance ne servirait à rien. */}
+          le choix du type ne servirait à rien. */}
       {new Set(offers.map((o) => o.contract_type)).size > 1 && (
       <div className="seg mt-4 mb-5">
-        {(["all", "stage", "alternance"] as const).map((type) => (
+        {(["all", ...ALL_CONTRACT_TYPES.filter((t) => offers.some((o) => o.contract_type === t))] as const).map((type) => (
           <label
             key={type}
             className={cn("seg-opt", contractFilter === type && "is-active")}
@@ -840,7 +841,7 @@ export function SwipeDeck({
               onChange={() => setContractFilter(type)}
               style={{ position: "absolute", opacity: 0, width: 0, height: 0 }}
             />
-            {type === "alternance" ? "Alternance" : type === "stage" ? "Stage" : "Les deux"}
+            {type === "all" ? (new Set(offers.map((o) => o.contract_type)).size > 2 ? "Tout" : "Les deux") : CONTRACT_LABEL[type]}
           </label>
         ))}
       </div>

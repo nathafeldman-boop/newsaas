@@ -12,7 +12,8 @@ import { capitalize, monthYear, plural, segmentPath } from "@/lib/seo/programmat
 import { INDEXABLE_ROBOTS } from "@/lib/seo/robots";
 import { signupHref } from "@/lib/signup/intent";
 import { SITE_URL } from "@/lib/site";
-import type { ContractType } from "@/types/database";
+// Pages SEO programmatiques : alternance et stage seulement (pas CDD/CDI).
+import type { PlacementType as ContractType } from "@/types/database";
 
 // Pages « alternance urgente » et « stage urgent » : à l'automne, les
 // étudiants sans contrat ou sans stage cherchent les offres du moment. Offres

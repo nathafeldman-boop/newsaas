@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { PRO_RATES, SMIC_MONTHLY_GROSS, STAGE_HOURLY_MIN, STAGE_MANDATORY_AFTER, formatEuros, formatPercent, internshipGratification, round2 } from "@/lib/salary/legalRates";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
-import type { ContractType } from "@/types/database";
+// Pages SEO programmatiques : alternance et stage seulement (pas CDD/CDI).
+import type { PlacementType as ContractType } from "@/types/database";
 
 // Texte de fond des hubs /alternance et /stage (requêtes « alternance » :
 // 33 100 recherches/mois, « stage » : 18 100) : jusqu'ici une phrase et des

@@ -8,7 +8,10 @@
 // jamais cette contrainte en TypeScript, même à forme identique, ce qui fait
 // silencieusement retomber tous les retours de requêtes sur `never`.
 
-export type ContractType = "alternance" | "stage";
+export type ContractType = "alternance" | "stage" | "cdd" | "cdi";
+// Alternance et stage : les seuls types qui ont des pages SEO programmatiques
+// (métier × ville, entreprises, guides). CDD et CDI : ajoutés le 7/11.
+export type PlacementType = "alternance" | "stage";
 export type GenderType = "homme" | "femme" | "autre" | "non_precise";
 export type SwipeDirection = "like" | "pass";
 // "a_preparer" et "cloturee" : ajoutés le 24/10 (suivi des candidatures),

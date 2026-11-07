@@ -1,5 +1,6 @@
 import { classifyFormations, classifyMetier } from "@/lib/seo/metiers";
-import type { ContractType } from "@/types/database";
+// Pages SEO programmatiques : alternance et stage seulement (pas CDD/CDI).
+import type { PlacementType as ContractType } from "@/types/database";
 
 export type GuideLink = { slug: string; label: string };
 

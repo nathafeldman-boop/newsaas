@@ -9,6 +9,7 @@ import { ChipMultiSelect } from "@/components/ui/ChipMultiSelect";
 import { SECTORS } from "@/lib/onboarding/options";
 import { cn } from "@/lib/utils";
 import { normalizePhone } from "@/lib/laBonneAlternance/applicant";
+import { ALL_CONTRACT_TYPES, CONTRACT_LABEL } from "@/lib/offers/contractLabels";
 import type { ContractType, Profile } from "@/types/database";
 
 const EDUCATION_LEVELS = ["Bac", "Bac+2", "Bac+3", "Bac+4", "Bac+5", "Bac+6 et plus"];
@@ -187,7 +188,7 @@ export function ProfileForm({
       <div>
         <p style={{ fontFamily: "var(--font-heading)", fontSize: 15, margin: "0 0 9px" }}>Tu cherches...</p>
         <div className="seg" style={{ width: "100%" }}>
-          {(["alternance", "stage"] as ContractType[]).map((type) => (
+          {ALL_CONTRACT_TYPES.map((type) => (
             <label
               key={type}
               className={cn("seg-opt", lookingFor.includes(type) && "is-active")}
@@ -199,7 +200,7 @@ export function ProfileForm({
                 onChange={() => toggleLookingFor(type)}
                 style={{ position: "absolute", opacity: 0, width: 0, height: 0 }}
               />
-              {type === "alternance" ? "Alternance" : "Stage"}
+              {CONTRACT_LABEL[type]}
             </label>
           ))}
         </div>

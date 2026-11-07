@@ -8,6 +8,7 @@ import { ChipMultiSelectWithCustom } from "@/components/ui/ChipMultiSelectWithCu
 import { LocationSearchSelect } from "@/components/ui/LocationSearchSelect";
 import { Highlight } from "@/components/ui/Highlight";
 import type { ContractType, Profile } from "@/types/database";
+import { ALL_CONTRACT_TYPES, CONTRACT_ICON, CONTRACT_LABEL, CONTRACT_SUB, contractNouns } from "@/lib/offers/contractLabels";
 import {
   SECTORS,
   SKILLS,
@@ -46,20 +47,12 @@ const SKIPPABLE: StepId[] = ["cv"];
 // deux -- traité comme "intro"/"outro" (pas de chrome, pas de progression
 // dans la barre) puisqu'il ne demande aucune donnée, juste une transition.
 function trustContractLabel(lookingFor: ContractType[]): string {
-  const hasAlternance = lookingFor.includes("alternance");
-  const hasStage = lookingFor.includes("stage");
-  if (hasAlternance && !hasStage) return "leur alternance";
-  if (hasStage && !hasAlternance) return "leur stage";
-  return "leur alternance ou leur stage";
+  return contractNouns(lookingFor, "leur");
 }
 
-// « ton alternance », « ton stage », « ton alternance ou ton stage » (contrat).
+// « ton alternance », « ton CDI », « ton alternance ou ton stage » (contrat).
 function myContractLabel(lookingFor: ContractType[]): string {
-  const hasAlternance = lookingFor.includes("alternance");
-  const hasStage = lookingFor.includes("stage");
-  if (hasAlternance && !hasStage) return "ton alternance";
-  if (hasStage && !hasAlternance) return "ton stage";
-  return "ton alternance ou ton stage";
+  return contractNouns(lookingFor, "ton");
 }
 
 function AnimatedCount({ target, durationMs }: { target: number; durationMs: number }) {
@@ -353,7 +346,7 @@ export function OnboardingWizard({
 
   function validateCurrentStep(): string | null {
     if (stepId === "looking_for" && lookingFor.length === 0) {
-      return "Sélectionne alternance et/ou stage.";
+      return "Sélectionne au moins un type de contrat.";
     }
     if (stepId === "city" && !city.trim()) {
       return "Indique au moins ta ville.";
@@ -867,19 +860,15 @@ export function OnboardingWizard({
 
             {stepId === "looking_for" && (
               <div className="flex flex-col gap-5">
-                <StepHeader title="Tu cherches quoi ?" subtitle="Tu peux sélectionner les deux." />
+                <StepHeader title="Tu cherches quoi ?" subtitle="Tu peux en sélectionner plusieurs." />
                 <div className="flex flex-col gap-3.5">
-                  {(["alternance", "stage"] as ContractType[]).map((type) => (
+                  {ALL_CONTRACT_TYPES.map((type) => (
                     <TileOption
                       key={type}
                       size="lg"
-                      label={type === "alternance" ? "Alternance" : "Stage"}
-                      icon={type === "alternance" ? "🎯" : "🌱"}
-                      sub={
-                        type === "alternance"
-                          ? "Tu alternes école et entreprise, avec un salaire."
-                          : "Une expérience de quelques mois pendant tes études."
-                      }
+                      label={CONTRACT_LABEL[type]}
+                      icon={CONTRACT_ICON[type]}
+                      sub={CONTRACT_SUB[type]}
                       active={lookingFor.includes(type)}
                       onClick={() => toggleLookingFor(type)}
                     />
@@ -1457,7 +1446,7 @@ export function OnboardingWizard({
                       icon: "🎯",
                       label: "Type de contrat",
                       value: lookingFor.length
-                        ? lookingFor.map((t) => (t === "alternance" ? "Alternance" : "Stage")).join(" + ")
+                        ? lookingFor.map((t) => CONTRACT_LABEL[t]).join(" + ")
                         : "—",
                       onEdit: () => goToStep("looking_for"),
                     },

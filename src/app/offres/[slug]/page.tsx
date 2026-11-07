@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { isPlacementType } from "@/lib/offers/contractLabels";
 import { notFound, permanentRedirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -75,6 +76,8 @@ const getExpiredOffer = cache(async (slug: string): Promise<Offer | null> => {
 const CONTRACT_LABEL: Record<Offer["contract_type"], string> = {
   alternance: "Alternance",
   stage: "Stage",
+  cdd: "CDD",
+  cdi: "CDI",
 };
 
 function offerTitle(offer: Offer): string {
@@ -346,6 +349,8 @@ function MarketBlock({ market, contractType }: { market: OfferMarket; contractTy
 const LISTING_LABEL: Record<Offer["contract_type"], string> = {
   alternance: "Offres d'alternance",
   stage: "Offres de stage",
+  cdd: "Offres en CDD",
+  cdi: "Offres en CDI",
 };
 
 // Fil d'Ariane identique en JSON-LD et à l'écran, calqué sur les pages
@@ -541,7 +546,7 @@ export default async function PublicOfferPage({
       </div>
       <p style={{ fontSize: 13.5, margin: "14px 0 0" }}>
         Guides utiles :{" "}
-        {offerGuides(offer.contract_type, offer.title).map((guide, i) => (
+        {(isPlacementType(offer.contract_type) ? offerGuides(offer.contract_type, offer.title) : []).map((guide, i) => (
           <span key={guide.slug}>
             {i > 0 && " · "}
             <Link href={`/guides/${guide.slug}`}>{guide.label}</Link>

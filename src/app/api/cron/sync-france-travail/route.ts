@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runFranceTravailStream } from "@/lib/franceTravail/sync";
 import { deactivateNonPlacementOffers } from "@/lib/offers/deactivateNonPlacements";
+import type { ContractType } from "@/types/database";
 
 // Sync périodique (voir vercel.json) : ramène des offres alternance/stage
 // depuis l'API officielle France Travail (gratuite, volume très supérieur à
@@ -39,9 +40,17 @@ const STALE_AFTER_HOURS = 20;
 const STALE_AFTER_HOURS_SAFE = 44;
 const MIN_SEEN_SHARE = 0.85;
 const MAX_DEACTIVATE_SHARE = 0.3;
+// Les CDI/CDD ne sont pas revus par la synchro de nuit : leur propre règle
+// est dans sync-france-travail-emplois.
+const PLACEMENT_TYPES: ContractType[] = ["alternance", "stage"];
 
 async function countFranceTravail(admin: ReturnType<typeof createAdminClient>, filter: { seenAfter?: string; seenBefore?: string }) {
-  let q = admin.from("offers").select("id", { count: "exact", head: true }).eq("source", "france_travail").eq("is_active", true);
+  let q = admin
+    .from("offers")
+    .select("id", { count: "exact", head: true })
+    .eq("source", "france_travail")
+    .eq("is_active", true)
+    .in("contract_type", PLACEMENT_TYPES);
   if (filter.seenAfter) q = q.gte("last_seen_at", filter.seenAfter);
   if (filter.seenBefore) q = q.lt("last_seen_at", filter.seenBefore);
   const { count, error } = await q;
@@ -69,6 +78,7 @@ async function deactivateStaleFranceTravail(admin: ReturnType<typeof createAdmin
     .update({ is_active: false })
     .eq("source", "france_travail")
     .eq("is_active", true)
+    .in("contract_type", PLACEMENT_TYPES)
     .lt("last_seen_at", iso(staleHours))
     .select("id");
   if (error) throw new Error(error.message);

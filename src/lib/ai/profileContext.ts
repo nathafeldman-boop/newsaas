@@ -38,7 +38,7 @@ export function buildProfileContextLines(profile: ProfileForAI): string[] {
 
   if (profile.looking_for?.length) {
     lines.push(
-      `Recherche : ${profile.looking_for.map((t) => (t === "alternance" ? "une alternance" : "un stage")).join(" et ")}.`,
+      `Recherche : ${profile.looking_for.map((t) => ({ alternance: "une alternance", stage: "un stage", cdd: "un CDD", cdi: "un CDI" })[t]).join(" ou ")}.`,
     );
   }
   if (profile.sectors?.length) lines.push(`Secteur(s) visé(s) : ${profile.sectors.join(", ")}.`);

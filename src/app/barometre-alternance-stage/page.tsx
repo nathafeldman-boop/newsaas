@@ -7,7 +7,8 @@ import { getMetier, isFormation, isSpecialite, METIERS } from "@/lib/seo/metiers
 import { SMIC_EFFECTIVE_DATE, SMIC_MONTHLY_GROSS, STAGE_HOURLY_MIN, formatEuros, internshipGratification, round2 } from "@/lib/salary/legalRates";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { SITE_URL } from "@/lib/site";
-import type { ContractType } from "@/types/database";
+// Pages SEO programmatiques : alternance et stage seulement (pas CDD/CDI).
+import type { PlacementType as ContractType } from "@/types/database";
 
 // Baromètre "salaires et offres" (Phase 4) : page de données propres à
 // Stageio, recalculée chaque heure à partir du catalogue actif -- le genre

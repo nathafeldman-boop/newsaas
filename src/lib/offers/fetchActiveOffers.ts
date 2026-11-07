@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database, Offer } from "@/types/database";
+import type { ContractType, Database, Offer } from "@/types/database";
 import { MIN_QUALITY_FOR_FEED } from "@/lib/offers/quality";
 import { isSchoolAd } from "@/lib/seo/schools";
 
@@ -20,7 +20,16 @@ type Filters = {
    * après lecture.
    */
   employersOnly?: boolean;
+  /** Types de contrat montrés (voir deckContractTypes). */
+  contractTypes?: ContractType[];
   limit?: number;
+}
+
+// CDI/CDD (07/11) : seulement pour qui les a choisis. Les profils d'avant
+// (alternance, stage, ou rien coché) ne voient jamais de CDI/CDD, qui
+// noieraient leurs offres (des dizaines de milliers).
+export function deckContractTypes(lookingFor: ContractType[] | null | undefined): ContractType[] {
+  return lookingFor && lookingFor.length > 0 ? lookingFor : ["alternance", "stage"];
 };
 
 // Colonne offers.is_school_ad (SCHOOL_AD_COLUMN_SQL) pas encore créée en
@@ -55,7 +64,7 @@ export async function fetchActiveOffers(
   supabase: SupabaseClient<Database>,
   filters: Filters,
 ): Promise<Offer[]> {
-  const { excludeIds = [], sectors = [], publishedAfter, createdAfter, locations, titles, employersOnly = false, limit = 600 } = filters;
+  const { excludeIds = [], sectors = [], contractTypes, publishedAfter, createdAfter, locations, titles, employersOnly = false, limit = 600 } = filters;
   const schoolFilter = employersOnly && Date.now() - schoolColumnMissingAt > SCHOOL_COLUMN_RETRY_MS;
   const keep = (rows: Offer[]) => (employersOnly ? rows.filter((o) => !isSchoolAd(o)) : rows);
   const locationOr = locations ? locationsFilter(locations) : null;
@@ -68,6 +77,7 @@ export async function fetchActiveOffers(
     let q = supabase.from("offers").select("*").eq("is_active", true).limit(limit);
     if (excludeIds.length > 0) q = q.not("id", "in", `(${excludeIds.join(",")})`);
     if (sectors.length > 0) q = q.in("sector", sectors);
+    if (contractTypes && contractTypes.length > 0) q = q.in("contract_type", contractTypes);
     if (publishedAfter) q = q.gt("published_at", publishedAfter);
     if (createdAfter) q = q.gt("created_at", createdAfter);
     if (locationOr) q = q.or(locationOr);

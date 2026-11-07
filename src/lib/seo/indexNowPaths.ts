@@ -4,7 +4,8 @@ import { getCompanyIndex } from "@/lib/seo/companyIndex";
 import { GUIDES } from "@/lib/guides/guidesData";
 import { departementPath } from "@/lib/seo/programmaticPage";
 import { regionPath } from "@/lib/seo/regionPage";
-import type { ContractType } from "@/types/database";
+// Pages SEO programmatiques : alternance et stage seulement (pas CDD/CDI).
+import type { PlacementType as ContractType } from "@/types/database";
 
 // Pages dont le contenu bouge chaque jour (compteurs, dernières offres).
 const STATIC_PATHS = [

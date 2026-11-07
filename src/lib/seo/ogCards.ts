@@ -8,13 +8,13 @@ import { getCompanyIndex } from "@/lib/seo/companyIndex";
 import { getProgrammaticIndex } from "@/lib/seo/programmaticIndex";
 import { formatCount, type OgCard } from "@/lib/seo/ogImage";
 import { GUIDES } from "@/lib/guides/guidesData";
-import type { ContractType } from "@/types/database";
+import type { ContractType, PlacementType } from "@/types/database";
 
 // Contenu des aperçus de partage (voir ogImage.tsx), page par page. En cas de
 // page inconnue ou d'erreur de base, carte générique plutôt qu'une erreur :
 // un aperçu cassé ferait plus de tort qu'un aperçu générique.
 
-const TYPE_LABEL: Record<ContractType, string> = { alternance: "Alternance", stage: "Stage" };
+const TYPE_LABEL: Record<ContractType, string> = { alternance: "Alternance", stage: "Stage", cdd: "CDD", cdi: "CDI" };
 
 const GENERIC: OgCard = {
   kicker: "Alternance et stage",
@@ -25,7 +25,7 @@ function euros(value: number): string {
   return `${value.toLocaleString("fr-FR")} €`;
 }
 
-export async function programmaticOgCard(type: ContractType, slug: string, ville?: string): Promise<OgCard> {
+export async function programmaticOgCard(type: PlacementType, slug: string, ville?: string): Promise<OgCard> {
   try {
     const model = await resolveProgrammaticPage(type, slug, ville);
     if (!model) return GENERIC;
@@ -47,7 +47,7 @@ export async function programmaticOgCard(type: ContractType, slug: string, ville
   }
 }
 
-export async function regionOgCard(type: ContractType, region: string, metier?: string): Promise<OgCard> {
+export async function regionOgCard(type: PlacementType, region: string, metier?: string): Promise<OgCard> {
   try {
     const model = await resolveRegionPage(type, region, metier);
     if (!model) return GENERIC;
@@ -67,7 +67,7 @@ export async function regionOgCard(type: ContractType, region: string, metier?: 
   }
 }
 
-export async function departementOgCard(type: ContractType, dep: string, metier?: string): Promise<OgCard> {
+export async function departementOgCard(type: PlacementType, dep: string, metier?: string): Promise<OgCard> {
   try {
     const model = await resolveDepartementPage(type, dep, metier);
     if (!model) return GENERIC;

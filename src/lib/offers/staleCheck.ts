@@ -25,6 +25,7 @@ export async function verifyUnseenFranceTravailOffers(admin: Admin, deadline: nu
     .select("id, external_id")
     .eq("source", "france_travail")
     .eq("is_active", true)
+    .in("contract_type", ["alternance", "stage"])
     .not("external_id", "is", null)
     .lt("last_seen_at", new Date(now - UNSEEN_CHECK_HOURS * 3_600_000).toISOString())
     .order("published_at", { ascending: false })

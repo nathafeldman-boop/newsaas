@@ -9,7 +9,8 @@ import {
 import { DEPARTEMENTS, getDepartementBySlug, regionOfDepartement, type Departement } from "@/lib/seo/departements";
 import { findCompanies, getCompanyIndex } from "@/lib/seo/companyIndex";
 import { OFFERS_OF, OTHER_TYPE, TYPE_LABEL, capitalize, departementPath, freshAndSalary, listCompanies, lowerFirst, plural, salaryAnswer, segmentPath, type ProgrammaticModel, type SegmentLink, monthYear } from "@/lib/seo/programmaticPage";
-import type { ContractType } from "@/types/database";
+// Pages SEO programmatiques : alternance et stage seulement (pas CDD/CDI).
+import type { PlacementType as ContractType } from "@/types/database";
 
 // Pages /alternance/departement/[dep] et /alternance/departement/[dep]/[metier].
 // Même modèle que les pages métier / ville (ProgrammaticModel), avec ce qui

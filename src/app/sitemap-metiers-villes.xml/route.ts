@@ -1,6 +1,7 @@
 import { getProgrammaticIndex, INDEXABLE_MIN_OFFERS } from "@/lib/seo/programmaticIndex";
 import { urlsetXml, xmlResponse, type SitemapEntry } from "@/lib/seo/sitemapXml";
-import type { ContractType } from "@/types/database";
+// Pages SEO programmatiques : alternance et stage seulement (pas CDD/CDI).
+import type { PlacementType as ContractType } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 

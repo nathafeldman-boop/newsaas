@@ -1,4 +1,5 @@
 import type { createAdminClient } from "@/lib/supabase/admin";
+import { contractNouns } from "@/lib/offers/contractLabels";
 import { getResendClient } from "@/lib/resend/client";
 import { campaignSender } from "@/lib/campaigns/sendBatch";
 import { escapeHtml } from "@/lib/alerts/offerAlert";
@@ -30,7 +31,7 @@ type WelcomeProfile = Pick<Profile, "id" | "full_name" | "looking_for" | "notify
 export function renderWelcomeEmail(profile: WelcomeProfile, tier: WelcomeTier) {
   const first = profile.full_name?.trim().split(/\s+/)[0] ?? null;
   const hello = first ? `Salut ${escapeHtml(first)},` : "Salut,";
-  const goal = profile.looking_for.length === 0 || profile.looking_for.includes("alternance") ? "ton alternance" : "ton stage";
+  const goal = contractNouns(profile.looking_for, "ton");
   const utm = "utm_source=email&utm_medium=abonnes&utm_campaign=bienvenue";
   const link = (path: string) => `${SITE_URL}${path}${path.includes("?") ? "&" : "?"}${utm}`;
   const product = tier === "auto" ? "Stageio Auto" : "Premium";

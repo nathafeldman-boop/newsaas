@@ -384,7 +384,10 @@ export function typePhrase(lookingFor: ContractType[]): string {
   const types = new Set(lookingFor);
   if (types.size === 1 && types.has("alternance")) return "d'alternance";
   if (types.size === 1 && types.has("stage")) return "de stage";
-  return "d'alternance et de stage";
+  if (types.size === 0 || [...types].every((t) => t === "alternance" || t === "stage")) return "d'alternance et de stage";
+  if (types.size === 1 && types.has("cdi")) return "en CDI";
+  if (types.size === 1 && types.has("cdd")) return "en CDD";
+  return "d'emploi";
 }
 
 export function zonePhrase(zone: Zone): string {

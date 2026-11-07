@@ -26,7 +26,7 @@ export function signupHref(intent: { type?: ContractType | null; metier?: string
 }
 
 export function resolveSignupIntent(params: { type?: string; metier?: string; ville?: string }): SignupIntent {
-  const type = params.type === "alternance" || params.type === "stage" ? params.type : null;
+  const type = (["alternance", "stage", "cdd", "cdi"] as const).find((t) => t === params.type) ?? null;
   const metier = params.metier ? (getMetier(params.metier) ?? null) : null;
   const ville = params.ville?.trim() ?? "";
   // Majuscule initiale et longueur bornée en plus de la liste : « lYoN » ou
@@ -35,7 +35,7 @@ export function resolveSignupIntent(params: { type?: string; metier?: string; vi
   return { type, metier, city };
 }
 
-const OFFERS: Record<ContractType, string> = { alternance: "offres d'alternance", stage: "offres de stage" };
+const OFFERS: Record<ContractType, string> = { alternance: "offres d'alternance", stage: "offres de stage", cdd: "offres en CDD", cdi: "offres en CDI" };
 
 // Barre d'inscription des pages publiques (voir StickySignupBar) : toujours
 // un texte, générique sans contexte.

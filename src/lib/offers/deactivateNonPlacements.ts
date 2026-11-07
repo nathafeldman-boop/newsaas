@@ -17,6 +17,7 @@ export async function deactivateNonPlacementOffers(admin: ReturnType<typeof crea
         .select("id, title")
         .eq("is_active", true)
         .in("source", ["france_travail", "adzuna"])
+        .in("contract_type", ["alternance", "stage"])
         .order("id")
         .range(from, to),
     );

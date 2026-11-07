@@ -43,9 +43,9 @@ function withoutContactEmail<T extends { contact_email?: string | null }>(row: T
 
 // Offres France Travail prêtes pour l'upsert dans "offers" (aussi utilisé
 // par la synchro des offres fraîches, offresFraiches.ts).
-export function toOfferRows(jobs: FranceTravailJob[], syncStartedAt: string) {
+export function toOfferRows(jobs: FranceTravailJob[], syncStartedAt: string, options: { emploi?: boolean } = {}) {
   return jobs
-    .map(mapFranceTravailJob)
+    .map((job) => mapFranceTravailJob(job, options))
     .filter((o): o is NonNullable<typeof o> => o !== null)
     .map((o) => ({
       ...o,
@@ -63,7 +63,7 @@ export async function runFranceTravailStream(
   admin: ReturnType<typeof createAdminClient>,
   syncStartedAt: string,
   what: string | FranceTravailQuery,
-  options: { departement?: string; deadline?: number; expectAlternance?: boolean } = {},
+  options: { departement?: string; deadline?: number; expectAlternance?: boolean; emploi?: boolean } = {},
 ): Promise<StreamResult> {
   let fetched = 0;
   let mapped = 0;
@@ -99,7 +99,7 @@ export async function runFranceTravailStream(
     }
     fetched += jobs.length;
 
-    const rows = toOfferRows(jobs, syncStartedAt);
+    const rows = toOfferRows(jobs, syncStartedAt, { emploi: options.emploi });
     mapped += rows.length;
     const withEmail = rows.filter((r) => r.contact_email).length;
     if (withEmail > 0) console.log(`France Travail ${label} : ${withEmail}/${rows.length} offres avec email recruteur`);

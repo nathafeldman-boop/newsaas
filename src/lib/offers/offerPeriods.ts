@@ -3,7 +3,7 @@ import { PUBLIC_OFFER_COLUMNS, type PublicOfferRow } from "@/lib/offers/fetchPub
 import { normalizeTitle } from "@/lib/seo/metiers";
 import { createCatalogClient } from "@/lib/supabase/catalog";
 import { fetchAllRowsByIdCursor } from "@/lib/supabase/public";
-import type { ContractType } from "@/types/database";
+import type { PlacementType as ContractType } from "@/types/database";
 
 // Offres par période, repérées dans l'intitulé (aucune date de début
 // structurée dans les offres ; la recherche dans les descriptions, trop
@@ -70,9 +70,10 @@ function periodsOf(type: ContractType): PeriodKey[] {
 }
 
 // Pages par période dont relève une offre (lien depuis sa fiche).
-export function periodsOfOffer(offer: { title: string; contract_type: ContractType }): PeriodKey[] {
+export function periodsOfOffer(offer: { title: string; contract_type: string }): PeriodKey[] {
+  if (offer.contract_type !== "alternance" && offer.contract_type !== "stage") return [];
   const title = normalizeTitle(offer.title);
-  return periodsOf(offer.contract_type).filter((key) => OFFER_PERIODS[key].pattern.test(title));
+  return periodsOf(offer.contract_type as ContractType).filter((key) => OFFER_PERIODS[key].pattern.test(title));
 }
 
 // Stages (~3 000 offres) : lignes complètes. Alternance (~15 000) : d'abord

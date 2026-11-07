@@ -119,6 +119,10 @@ export interface FranceTravailJob {
   // présence (voir isStructuredAlternance).
   alternance?: boolean;
   natureContrat?: string;
+  // Code du type de contrat (« CDI », « CDD », « MIS », « SAI »…) et
+  // expérience exigée (« D » débutant accepté, « S » souhaitée, « E » exigée).
+  typeContrat?: string;
+  experienceExige?: string;
   origineOffre?: { urlOrigine?: string };
   // courriel : souvent un texte « Pour postuler, utiliser le lien suivant :
   // … » plutôt qu'une adresse -- filtré par extractRecruiterEmail.
@@ -138,16 +142,32 @@ export function isStructuredAlternance(job: Pick<FranceTravailJob, "alternance" 
 // minCreationDate/maxCreationDate (toujours ensemble, format
 // "2026-10-24T09:00:00Z") : offres créées dans cette fenêtre, pour la
 // synchro des offres fraîches (offresFraiches.ts).
+// typeContrat ("CDI", "CDD", "CDI,CDD"), experience ("1" : moins d'un an),
+// publieeDepuis (1, 3, 7, 14 ou 31 jours) et region (code INSEE "11") :
+// import des CDI/CDD ouverts aux débutants (emploisSync.ts).
 export type FranceTravailQuery = {
   motsCles?: string;
   natureContrat?: string;
   minCreationDate?: string;
   maxCreationDate?: string;
+  typeContrat?: string;
+  experience?: string;
+  publieeDepuis?: number;
+  region?: string;
+  // 1 : plus récentes d'abord (les ~1 150 premières sont les plus fraîches).
+  sort?: number;
 };
 
 export function queryLabel(query: string | FranceTravailQuery): string {
   if (typeof query === "string") return query;
-  return [query.motsCles, query.natureContrat ? `natureContrat=${query.natureContrat}` : null].filter(Boolean).join(" ");
+  return [
+    query.motsCles,
+    query.natureContrat ? `natureContrat=${query.natureContrat}` : null,
+    query.typeContrat ? `typeContrat=${query.typeContrat}` : null,
+    query.region ? `region=${query.region}` : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
 interface SearchResult {
@@ -178,6 +198,11 @@ export async function searchFranceTravailPage(
     url.searchParams.set("minCreationDate", query.minCreationDate);
     url.searchParams.set("maxCreationDate", query.maxCreationDate);
   }
+  if (query.typeContrat) url.searchParams.set("typeContrat", query.typeContrat);
+  if (query.experience) url.searchParams.set("experience", query.experience);
+  if (query.publieeDepuis) url.searchParams.set("publieeDepuis", String(query.publieeDepuis));
+  if (query.region) url.searchParams.set("region", query.region);
+  if (query.sort !== undefined) url.searchParams.set("sort", String(query.sort));
   if (departement) url.searchParams.set("departement", departement);
 
   let res: Response;

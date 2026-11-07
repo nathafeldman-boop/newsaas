@@ -1,4 +1,5 @@
 import { unstable_cache } from "next/cache";
+import { contractNouns } from "@/lib/offers/contractLabels";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchAllRows, fetchAllRowsByIdCursor } from "@/lib/supabase/public";
@@ -331,7 +332,7 @@ export function renderSeriesEmail(
   const wantsAlternance = p.looking_for.length === 0 || p.looking_for.includes("alternance");
   // Campagne nouveautés (voir NEWS_LAUNCH).
   const news = now >= NEWS_LAUNCH;
-  const goal = wantsAlternance ? "ton alternance" : "ton stage";
+  const goal = p.looking_for.some((t) => t === "cdi" || t === "cdd") ? contractNouns(p.looking_for, "ton") : wantsAlternance ? "ton alternance" : "ton stage";
   // Offre 48 h : au moins 1 h pour en profiter, sinon l'email habituel.
   const flash = flashEndsAt !== null && now < flashEndsAt - 60 * 60_000 ? parisDeadline(flashEndsAt, now) : null;
   // Envoi qui ouvre l'offre (fin dans 48 h) ; les suivants, au plus tôt le lendemain, la rappellent.

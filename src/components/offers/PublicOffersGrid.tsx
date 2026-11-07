@@ -7,6 +7,8 @@ import type { ContractType } from "@/types/database";
 const CONTRACT_LABEL: Record<ContractType, string> = {
   alternance: "Alternance",
   stage: "Stage",
+  cdd: "CDD",
+  cdi: "CDI",
 };
 
 export function PublicOffersGrid({

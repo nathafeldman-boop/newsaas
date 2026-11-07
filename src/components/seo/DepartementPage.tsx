@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 import { ProgrammaticPageView, modelMetadata } from "@/components/seo/ProgrammaticPage";
 import { resolveDepartementPage } from "@/lib/seo/departementPage";
 import { resolveRegionPage } from "@/lib/seo/regionPage";
-import type { ContractType } from "@/types/database";
+// Pages SEO programmatiques : alternance et stage seulement (pas CDD/CDI).
+import type { PlacementType as ContractType } from "@/types/database";
 
 type Props = { type: ContractType; dep: string; metier?: string; pageParam?: string };
 

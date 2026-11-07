@@ -19,7 +19,8 @@ import {
 } from "@/lib/salary/legalRates";
 import { findCompanies, getCompanyIndex } from "@/lib/seo/companyIndex";
 import { getDepartement } from "@/lib/seo/departements";
-import type { ContractType } from "@/types/database";
+// Pages SEO programmatiques : alternance et stage seulement (pas CDD/CDI).
+import type { PlacementType as ContractType } from "@/types/database";
 
 export type SegmentLink = { href: string; label: string; count: number };
 

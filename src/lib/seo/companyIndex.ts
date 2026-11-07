@@ -7,7 +7,8 @@ import { PUBLIC_OFFERS_PAGE_SIZE } from "@/lib/offers/fetchPublicOffers";
 import { classifyMetier } from "@/lib/seo/metiers";
 import { isSchool } from "@/lib/seo/schools";
 import { PAGE_MIN_OFFERS, MAX_LISTED_PAGES, parseMonthlySalary } from "@/lib/seo/programmaticIndex";
-import type { ContractType, OfferSource } from "@/types/database";
+// Pages SEO programmatiques : alternance et stage seulement (pas CDD/CDI).
+import type { PlacementType as ContractType, OfferSource } from "@/types/database";
 
 // Pages /entreprises/[entreprise] : "alternance decathlon", "stage edf"...
 // Une entreprise = un nom normalisé (slug), alternance et stage confondus.
@@ -184,9 +185,10 @@ async function computeCompanyIndex(): Promise<CompanyIndex> {
     let query = supabase
       .from("offers")
       .select("id, title, company, location, contract_type, salary, published_at, source")
-      .eq("is_active", true);
+      .eq("is_active", true)
+      .in("contract_type", ["alternance", "stage"]);
     if (afterId) query = query.gt("id", afterId);
-    return query.order("id").limit(limit);
+    return query.order("id").limit(limit) as unknown as PromiseLike<{ data: Row[] | null; error: { message: string } | null }>;
   });
   return buildCompanyIndex(rows.sort(byPublishedDescThenId));
 }

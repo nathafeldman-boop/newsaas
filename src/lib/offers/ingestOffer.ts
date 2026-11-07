@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { isPlacementType } from "@/lib/offers/contractLabels";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { extractOfferFromText } from "@/lib/offers/extractOfferWithAnthropic";
 import { computeOfferFingerprint } from "@/lib/offers/fingerprint";
@@ -52,7 +53,7 @@ export async function ingestOffer(
 
   const extracted = await extractOfferFromText(rawText, {
     sourceUrl,
-    contractTypeHint,
+    contractTypeHint: contractTypeHint && isPlacementType(contractTypeHint) ? contractTypeHint : undefined,
   });
 
   const dedupKey = sourceUrl ?? rawText.slice(0, 500);

@@ -1,6 +1,7 @@
 import { getProgrammaticIndex, type ProgrammaticIndex, type SegmentStats } from "@/lib/seo/programmaticIndex";
 import { getMetier, isFormation, isSpecialite } from "@/lib/seo/metiers";
-import type { ContractType } from "@/types/database";
+// Pages SEO programmatiques : alternance et stage seulement (pas CDD/CDI).
+import type { PlacementType as ContractType } from "@/types/database";
 
 // Données du baromètre en CSV (une ligne par type de contrat x métier /
 // ville / région) : à réutiliser librement avec un lien vers

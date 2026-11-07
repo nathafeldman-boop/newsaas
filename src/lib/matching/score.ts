@@ -1,4 +1,4 @@
-import type { Offer, Profile } from "@/types/database";
+import type { ContractType, Offer, Profile } from "@/types/database";
 import { isDepartmentLocation } from "@/lib/onboarding/options";
 import { METIERS, SPECIALITES, classifyFormations, normalizeTitle, type Metier } from "@/lib/seo/metiers";
 import { departementFromLocation, getDepartement, regionOfDepartement } from "@/lib/seo/departements";
@@ -73,6 +73,13 @@ function findMetroCluster(cityLower: string): string[] | null {
  * l'appel). Utilisé pour un bonus de score intermédiaire et pour affiner le
  * bandeau "X offres vers [ville]" côté /swipe.
  */
+const CONTRACT_REASON: Record<ContractType, string> = {
+  alternance: "C'est une alternance",
+  stage: "C'est un stage",
+  cdd: "C'est un CDD",
+  cdi: "C'est un CDI",
+};
+
 export function isNearbyCity(profileCityLower: string, offerLocationLower: string): boolean {
   const cluster = findMetroCluster(profileCityLower);
   if (!cluster) return false;
@@ -331,7 +338,7 @@ export function computeMatchReasons(profile: Profile, offer: Offer): string[] {
   }
 
   if (profile.looking_for.includes(offer.contract_type)) {
-    reasons.push(offer.contract_type === "alternance" ? "C'est une alternance" : "C'est un stage");
+    reasons.push(CONTRACT_REASON[offer.contract_type]);
   }
 
   return reasons.slice(0, 3);

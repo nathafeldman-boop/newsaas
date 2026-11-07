@@ -2,12 +2,14 @@
 // l'offre et le nom de l'étudiant, sans IA (aucun coût, aucune invention).
 // Même ton que le guide /guides/relancer-candidature.
 
-const CONTRACT_LABEL = { alternance: "en alternance", stage: "de stage" } as const;
+import type { ContractType } from "@/types/database";
+
+const CONTRACT_LABEL: Record<ContractType, string> = { alternance: "en alternance", stage: "de stage", cdd: "en CDD", cdi: "en CDI" };
 
 export function followUpMessage(params: {
   title: string;
   company: string;
-  contractType: "alternance" | "stage";
+  contractType: ContractType;
   sentAt: string | null;
   fullName: string | null;
 }): { subject: string; body: string } {

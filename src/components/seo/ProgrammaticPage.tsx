@@ -19,7 +19,8 @@ import { regionLinks } from "@/lib/seo/regionPage";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 import { SITE_URL } from "@/lib/site";
 import { SMIC_MONTHLY_GROSS, formatEuros, internshipGratification, round2 } from "@/lib/salary/legalRates";
-import type { ContractType } from "@/types/database";
+// Pages SEO programmatiques : alternance et stage seulement (pas CDD/CDI).
+import type { PlacementType as ContractType } from "@/types/database";
 import { METIER_GUIDES } from "@/lib/guides/contextGuides";
 import { HubEditorial } from "@/components/seo/HubEditorial";
 import { signupHref } from "@/lib/signup/intent";

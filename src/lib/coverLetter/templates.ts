@@ -1,4 +1,5 @@
 import { normalizeForSector } from "@/lib/offers/sectors";
+import type { ContractType } from "@/types/database";
 import { letterJobTitle } from "@/lib/coverLetter/jobTitle";
 
 // Bibliothèque de modèles de lettres (24/10, mission churn) : 13 domaines ×
@@ -217,7 +218,7 @@ export function guessTemplateDomain(sector: string | null | undefined, title: st
 }
 
 export type TemplateInput = {
-  offer: { title: string; company: string; contractType: "alternance" | "stage" };
+  offer: { title: string; company: string; contractType: ContractType };
   profile: {
     fullName: string | null;
     city: string | null;

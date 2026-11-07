@@ -4,7 +4,7 @@ import { getResendClient } from "@/lib/resend/client";
 import { unsubscribeHeaders } from "@/lib/resend/unsubscribe";
 import { campaignSender } from "@/lib/campaigns/sendBatch";
 import { computeMatchScore } from "@/lib/matching/score";
-import { fetchActiveOffers } from "@/lib/offers/fetchActiveOffers";
+import { deckContractTypes, fetchActiveOffers } from "@/lib/offers/fetchActiveOffers";
 import { knownProfileSectors } from "@/lib/offers/sectors";
 import {
   ALERT_SENT_EVENT,
@@ -123,6 +123,7 @@ export async function GET(request: NextRequest) {
       sectors: knownProfileSectors(profile.sectors ?? []),
       // Abonnés : sans annonces d'écoles (31/10, voir isSchoolAd).
       employersOnly: isPremium(profile),
+      contractTypes: deckContractTypes(profile.looking_for),
       limit: 150,
     });
     if (offers.length === 0) return { profile, frequency, matches: [] };

@@ -21,7 +21,7 @@ import { buildLearnedAffinity, type SwipeHistoryEntry } from "@/lib/matching/lea
 import { isPremium, isAutoTier } from "@/lib/subscription/isPremium";
 import { refreshStaleSubscription } from "@/lib/stripe/refreshStaleSubscription";
 import { computeApplicationStreak } from "@/lib/engagement/applicationStreak";
-import { fetchActiveOffers } from "@/lib/offers/fetchActiveOffers";
+import { deckContractTypes, fetchActiveOffers } from "@/lib/offers/fetchActiveOffers";
 import { hotSinceIso, orderFreshFirst } from "@/lib/offers/freshness";
 import { knownProfileSectors } from "@/lib/offers/sectors";
 import { isSchoolAd, isSchoolOrJobBoard } from "@/lib/seo/schools";
@@ -193,6 +193,8 @@ export default async function SwipePage() {
   // Secteurs saisis à la main (« + Autre ») ramenés à la liste connue, voir
   // knownProfileSectors : sinon le filtre ne trouvait aucune offre.
   const hardSectors = profile ? knownProfileSectors(profile.sectors) : [];
+  // Types de contrat du paquet : CDI/CDD seulement pour qui les a cochés.
+  const contractTypes = deckContractTypes(profile?.looking_for);
 
   // Abonné (31/10, avis « trop loin ») : département lu aussi dans
   // « Toul 54200 », « Ain 01 », « Île-de-France », ou retrouvé d'après les
@@ -251,9 +253,9 @@ export default async function SwipePage() {
   // prenaient jusqu'à 95 % des meilleures places du bassin national.
   const employersOnly = premium;
   const [nationalPool, localPool, freshPool, jobPool, jobPoolFar] = await Promise.all([
-    fetchActiveOffers(supabase, { excludeIds, sectors: hardSectors, employersOnly, limit: CANDIDATE_POOL_SIZE }),
+    fetchActiveOffers(supabase, { contractTypes, excludeIds, sectors: hardSectors, employersOnly, limit: CANDIDATE_POOL_SIZE }),
     localCities.length > 0
-      ? fetchActiveOffers(supabase, {
+      ? fetchActiveOffers(supabase, { contractTypes,
           excludeIds,
           sectors: hardSectors,
           locations: localCities,
@@ -265,7 +267,7 @@ export default async function SwipePage() {
           return [];
         })
       : Promise.resolve([]),
-    fetchActiveOffers(supabase, {
+    fetchActiveOffers(supabase, { contractTypes,
       excludeIds,
       sectors: hardSectors,
       publishedAfter: hotSinceIso(),
@@ -276,7 +278,7 @@ export default async function SwipePage() {
       return [];
     }),
     jobPatterns.length > 0
-      ? fetchActiveOffers(supabase, {
+      ? fetchActiveOffers(supabase, { contractTypes,
           excludeIds,
           titles: jobPatterns,
           locations: localCities.length > 0 ? localCities : undefined,
@@ -291,7 +293,7 @@ export default async function SwipePage() {
     // de son métier près de chez lui, mieux vaut le bon métier plus loin
     // qu'un autre métier (voir subscriberOrder).
     premium && jobPatterns.length > 0 && localCities.length > 0
-      ? fetchActiveOffers(supabase, { excludeIds, titles: jobPatterns, employersOnly, limit: 150 }).catch((error) => {
+      ? fetchActiveOffers(supabase, { contractTypes, excludeIds, titles: jobPatterns, employersOnly, limit: 150 }).catch((error) => {
           console.error("SwipePage: offres du métier visé (France) en échec", error);
           return [];
         })
@@ -305,7 +307,7 @@ export default async function SwipePage() {
     premium && (localPool.length < SPARSE_LOCAL_POOL || subscriberLocation?.regionWide) ? regionDepartementLabels(profileDep) : [];
   const regionPool =
     sparseRegion.length > 0
-      ? await fetchActiveOffers(supabase, { excludeIds, sectors: hardSectors, locations: sparseRegion, employersOnly, limit: 300 }).catch((error) => {
+      ? await fetchActiveOffers(supabase, { contractTypes, excludeIds, sectors: hardSectors, locations: sparseRegion, employersOnly, limit: 300 }).catch((error) => {
           console.error("SwipePage: offres de la région en échec", error);
           return [];
         })
@@ -353,7 +355,7 @@ export default async function SwipePage() {
   // parcourir une seule carte. On retente sans le filtre secteur plutôt que
   // de bloquer sur un filtre qu'on a nous-même ajouté.
   if (offers.length === 0 && hardSectors.length > 0) {
-    offers = await fetchActiveOffers(supabase, { excludeIds, employersOnly, limit: CANDIDATE_POOL_SIZE });
+    offers = await fetchActiveOffers(supabase, { contractTypes, excludeIds, employersOnly, limit: CANDIDATE_POOL_SIZE });
   }
 
   // Offre ouverte avant l'inscription (fiche publique : post LinkedIn,

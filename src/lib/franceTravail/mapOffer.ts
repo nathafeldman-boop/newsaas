@@ -33,17 +33,36 @@ export interface MappedOffer {
   contact_email: string | null;
 }
 
-export function mapFranceTravailJob(job: FranceTravailJob): MappedOffer | null {
+// CDI/CDD : seulement pour les flux d'emploi (emploisSync.ts), et seulement
+// quand l'offre n'est ni une alternance ni un stage. Les autres synchros
+// gardent leur comportement : une offre sans alternance ni stage est écartée.
+function employmentType(job: FranceTravailJob): "cdi" | "cdd" | null {
+  const code = (job.typeContrat ?? "").toUpperCase();
+  if (code === "CDI") return "cdi";
+  if (code === "CDD") return "cdd";
+  return null;
+}
+
+export function mapFranceTravailJob(job: FranceTravailJob, options: { emploi?: boolean } = {}): MappedOffer | null {
   if (!job.id || !job.intitule || !job.description) return null;
 
   // Contrat d'apprentissage ou de professionnalisation d'après les champs
   // structurés de l'offre quand ils sont là (08/10 : beaucoup d'offres
   // d'apprentissage ne disent ni « alternance » ni « apprentissage » dans
   // leur texte et étaient écartées) ; sinon, le texte comme avant.
-  const contractType =
-    isStructuredAlternance(job) && !isNotAPlacementTitle(job.intitule)
+  // Flux CDI/CDD : une offre dont le texte évoque une alternance ou un stage
+  // garde ce classement (ou est laissée aux autres synchros si seule la
+  // description en parle) : jamais une alternance déjà en base réécrite en CDI.
+  const structured = isStructuredAlternance(job);
+  const textType = classifyOfferContract(job.intitule, job.description);
+  const contractType: ContractType | null =
+    structured && !isNotAPlacementTitle(job.intitule)
       ? "alternance"
-      : classifyOfferContract(job.intitule, job.description);
+      : !options.emploi
+        ? textType
+        : structured
+          ? null
+          : (classifyOfferContract(job.intitule, "") ?? (textType ? null : employmentType(job)));
   if (!contractType) return null;
 
   const company = job.entreprise?.nom?.trim();

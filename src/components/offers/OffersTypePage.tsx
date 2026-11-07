@@ -10,6 +10,7 @@ import { getHubModel } from "@/lib/seo/programmaticPage";
 import { SITE_URL } from "@/lib/site";
 import { pagedPath, pagedTitle } from "@/lib/seo/pagination";
 import type { ContractType } from "@/types/database";
+import { CONTRACT_OF, isPlacementType } from "@/lib/offers/contractLabels";
 import { StickySignupBar } from "@/components/signup/StickySignupBar";
 
 // /offres/alternance et /offres/stage : la liste complète d'un type, la page
@@ -18,13 +19,13 @@ import { StickySignupBar } from "@/components/signup/StickySignupBar";
 // exact en cache 10 min ; nouveautés de la semaine et top métiers / villes
 // depuis l'index programmatique (en cache lui aussi).
 
-const OF: Record<ContractType, string> = { alternance: "d'alternance", stage: "de stage" };
+const OF: Record<ContractType, string> = CONTRACT_OF;
 
 const fr = (n: number) => n.toLocaleString("fr-FR");
 
 // L'index n'apporte que du complément : s'il est indisponible, la liste
 // s'affiche quand même (sans nouveautés ni liens métiers / villes).
-const hubModel = (type: ContractType) => getHubModel(type).catch(() => null);
+const hubModel = (type: ContractType) => (isPlacementType(type) ? getHubModel(type).catch(() => null) : Promise.resolve(null));
 
 export async function offersTypeMetadata(type: ContractType, page: number): Promise<Metadata> {
   const path = `/offres/${type}`;
@@ -68,9 +69,11 @@ export async function OffersTypePage({ type, page }: { type: ContractType; page:
         </p>
       )}
 
-      <p style={{ fontSize: 14, margin: "8px 0 0" }}>
-        <Link href={`/${type}`}>Offres {OF[type]} par métier et par ville</Link>
-      </p>
+      {isPlacementType(type) && (
+        <p style={{ fontSize: 14, margin: "8px 0 0" }}>
+          <Link href={`/${type}`}>Offres {OF[type]} par métier et par ville</Link>
+        </p>
+      )}
       <OffersSegmentNav active={type} />
       <PublicOffersGrid offers={offers} page={page} totalPages={totalPages} basePath={path} />
       {page === 1 && hub && (

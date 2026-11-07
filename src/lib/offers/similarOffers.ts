@@ -1,4 +1,5 @@
 import { createPublicClient } from "@/lib/supabase/public";
+import { isPlacementType } from "@/lib/offers/contractLabels";
 import { PUBLIC_OFFER_COLUMNS, type PublicOfferRow } from "@/lib/offers/fetchPublicOffers";
 import { getCitySegments, getSectorSegments, normalizeCityKey, slugify, type CitySegment, type Segment } from "@/lib/offers/segments";
 import { classifyFormations, classifyMetier, classifySpecialites } from "@/lib/seo/metiers";
@@ -63,11 +64,16 @@ type MarketSegment = { label: string; href: string; stats: SegmentStats };
 async function getProgrammaticLinks(
   offer: Offer,
 ): Promise<{ links: OfferContextLinks["programmatic"]; similarIds: string[]; market: MarketSegment | null }> {
-  const index = await getProgrammaticIndex(offer.contract_type);
+  // Pas de pages programmatiques pour les CDD/CDI.
+  if (!isPlacementType(offer.contract_type)) {
+    return { links: { metier: null, city: null, metierCity: null, departement: null, formations: [] }, similarIds: [], market: null };
+  }
+  const contractType = offer.contract_type;
+  const index = await getProgrammaticIndex(contractType);
   const metier = classifyMetier(offer.title);
   const citySlug = slugify(normalizeCityKey(offer.location));
   const city = index.cities[citySlug];
-  const typeLabel = TYPE_LABEL[offer.contract_type];
+  const typeLabel = TYPE_LABEL[contractType];
   const metierStats = metier ? index.metiers[metier.slug] : undefined;
   const comboStats = metier && city ? index.combos[`${metier.slug}/${city.slug}`] : undefined;
   const departement = getDepartement(city?.dep ?? departementFromLocation(offer.location) ?? "");
@@ -92,27 +98,27 @@ async function getProgrammaticLinks(
     .map((formation) => {
       const combo = city ? index.combos[`${formation.slug}/${city.slug}`] : undefined;
       if (combo && city) {
-        return { href: `/${offer.contract_type}/${formation.slug}/${city.slug}`, label: `${typeLabel} ${formation.label} ${cityPhrase(city.label)}`, count: combo.count };
+        return { href: `/${contractType}/${formation.slug}/${city.slug}`, label: `${typeLabel} ${formation.label} ${cityPhrase(city.label)}`, count: combo.count };
       }
       const national = index.metiers[formation.slug];
-      return national ? { href: `/${offer.contract_type}/${formation.slug}`, label: `${typeLabel} ${formation.label}`, count: national.count } : null;
+      return national ? { href: `/${contractType}/${formation.slug}`, label: `${typeLabel} ${formation.label}`, count: national.count } : null;
     })
     .filter((link): link is ProgrammaticLink => link !== null)
     .slice(0, 2);
   const links: OfferContextLinks["programmatic"] = {
     metier: metier && metierStats
-      ? { href: `/${offer.contract_type}/${metier.slug}`, label: `${typeLabel} ${metier.label}`, count: metierStats.count }
+      ? { href: `/${contractType}/${metier.slug}`, label: `${typeLabel} ${metier.label}`, count: metierStats.count }
       : null,
-    city: city ? { href: `/${offer.contract_type}/${city.slug}`, label: `${typeLabel} ${cityPhrase(city.label)}`, count: city.count } : null,
+    city: city ? { href: `/${contractType}/${city.slug}`, label: `${typeLabel} ${cityPhrase(city.label)}`, count: city.count } : null,
     metierCity: metier && city && comboStats
-      ? { href: `/${offer.contract_type}/${metier.slug}/${city.slug}`, label: `${typeLabel} ${metier.label} ${cityPhrase(city.label)}`, count: comboStats.count }
+      ? { href: `/${contractType}/${metier.slug}/${city.slug}`, label: `${typeLabel} ${metier.label} ${cityPhrase(city.label)}`, count: comboStats.count }
       : null,
     departement: !departement
       ? null
       : depMetierStats
-        ? { href: departementPath(offer.contract_type, departement.slug, metier!.slug), label: `${typeLabel} ${metier!.label}${where}`, count: depMetierStats.count }
+        ? { href: departementPath(contractType, departement.slug, metier!.slug), label: `${typeLabel} ${metier!.label}${where}`, count: depMetierStats.count }
         : depStats
-          ? { href: departementPath(offer.contract_type, departement.slug, null), label: `${typeLabel}${where}`, count: depStats.count }
+          ? { href: departementPath(contractType, departement.slug, null), label: `${typeLabel}${where}`, count: depStats.count }
           : null,
     formations,
   };

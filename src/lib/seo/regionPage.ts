@@ -3,7 +3,8 @@ import { INDEXABLE_MIN_OFFERS, getProgrammaticIndex, type ProgrammaticIndex, typ
 import { REGIONS, getDepartement, getRegionBySlug, regionOfDepartement, type Region } from "@/lib/seo/departements";
 import { findCompanies, getCompanyIndex } from "@/lib/seo/companyIndex";
 import { OFFERS_OF, OTHER_TYPE, TYPE_LABEL, capitalize, departementPath, freshAndSalary, listCompanies, lowerFirst, plural, regionPath, salaryAnswer, segmentPath, type ProgrammaticModel, type SegmentLink, monthYear } from "@/lib/seo/programmaticPage";
-import type { ContractType } from "@/types/database";
+// Pages SEO programmatiques : alternance et stage seulement (pas CDD/CDI).
+import type { PlacementType as ContractType } from "@/types/database";
 
 // Pages /alternance/region/[region] et /alternance/region/[region]/[metier] :
 // même modèle que les pages département, un étage au-dessus.

@@ -7,7 +7,8 @@ import { PUBLIC_OFFERS_PAGE_SIZE } from "@/lib/offers/fetchPublicOffers";
 import { classifyFormations, classifyMetier, classifySpecialites } from "@/lib/seo/metiers";
 import { isSchool } from "@/lib/seo/schools";
 import { departementFromLocation, getDepartement, getRegionBySlug, learnCityDepartements, regionOfDepartement } from "@/lib/seo/departements";
-import type { ContractType, OfferSource } from "@/types/database";
+// Pages SEO programmatiques : alternance et stage seulement (pas CDD/CDI).
+import type { PlacementType as ContractType, OfferSource } from "@/types/database";
 
 // Seuils des pages programmatiques (décision D de SEO_ROADMAP.md) :
 // >= 10 offres : page indexable et dans le sitemap ; 3 à 9 : page
