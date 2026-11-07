@@ -42,10 +42,10 @@ Nathan, le 7/11 : « plus personne ne cherche d'alternance en ce moment » ; tou
 - POV (mise en scène signalée comme telle).
 
 ## Le nom Stageio
-- JAMAIS le nom en clair dans la vidéo ni sur le carrousel, et pas de « tape Stageio » en fin de vidéo : ça tue la conversion.
-- Fin de vidéo : « Commente OFFRES » (un mot-clé). Nathan répond à 2 ou 3 commentaires « Stageio, tape-le sur Google » et épingle cette réponse. Les gens tapent le nom sur Google.
-- Mention possible au MILIEU de la vidéo seulement, façon « technique secrète », sans écrire le nom.
-- La légende TikTok ne contient pas le nom. Pour YouTube, Facebook et Pinterest, le lien tracé reste dans la description.
+- **Nathan, 7/11 : mettre « stageio.fr » dans le CTA final, à l'écran ou à la voix, en gardant le même CTA.** Fin de vidéo : « Commente OFFRES » + « stageio.fr » (gros texte sur la dernière carte, ou la voix : « Commente OFFRES, ou va sur stageio.fr »). Les vidéos du 8 et du 9/11, déjà montées, n'ont pas encore ce CTA.
+- Ailleurs dans la vidéo (accroche, histoire), toujours pas de nom ni de logo : les écrans du moteur restent masqués (« Mes offres », « ✓ »).
+- Nathan répond toujours à 2 ou 3 commentaires « Stageio, tape-le sur Google » et épingle cette réponse.
+- La légende TikTok peut finir par « stageio.fr ». Pour YouTube, Facebook et Pinterest, le lien tracé reste dans la description.
 
 ## Honnêteté (non négociable)
 - Pas de faux témoignage, pas de faux avis, pas de faux commentaire « grâce à Stageio ».
