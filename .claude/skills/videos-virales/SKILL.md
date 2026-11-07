@@ -17,6 +17,7 @@ Nathan, le 7/11 : « plus personne ne cherche d'alternance en ce moment » ; tou
 - **Elliot et Yanis** sont maintenant diplômés et cherchent leur premier poste. Mêmes voix, même méthode (accroche, problème, résolution, CTA « Commente OFFRES »). Idées : Elliot envoie 50 CV pour un CDI, Yanis vise les offres « débutant accepté » ; « 3 ans d'expérience exigés » pour un poste junior ; CDD de 6 mois qui devient CDI ; l'entretien d'embauche raté contre préparé ; négocier son premier salaire ; postuler le jour où l'offre sort.
 - **Chiffres** : uniquement ceux de la base du jour, sur `contract_type in ('cdi','cdd')` (nombre d'offres débutants, villes, métiers, arrivées en 24 h). Jamais inventés.
 - **Liens** : https://www.stageio.fr/offres/cdi ou /offres/cdd (avec les utm habituels) ; /offres/alternance seulement le mercredi.
+- **Pinterest (Zapier create_pin)** : le lien de l'épingle va dans le paramètre `source_url` (pas `link`, ignoré : épingle sans lien le 7/11).
 - **Hashtags** : #premieremploi #cdi #jeunediplome #recherchedemploi #emploi (et #alternance le mercredi).
 
 ## Ce qu'on montre

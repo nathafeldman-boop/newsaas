@@ -40,12 +40,15 @@ assert.equal(
 );
 
 // Requêtes : débutants, plus récentes d'abord, 13 régions × CDI/CDD la nuit.
-const full = emploisQueries("full");
-assert.equal(full.length, 26);
-assert.ok(full.every((q) => q.experience === "1" && q.sort === 1 && q.publieeDepuis === 14 && q.region));
-const fresh = emploisQueries("fresh");
+const now = Date.parse("2026-11-07T20:00:00Z");
+const full = emploisQueries("full", now);
+assert.equal(full.length, 13 * 2 * 7);
+assert.ok(full.every((q) => q.experience === "1" && q.region && q.minCreationDate && q.maxCreationDate && !q.sort && !q.publieeDepuis));
+assert.equal(full[0].maxCreationDate, "2026-11-07T20:00:00Z");
+assert.equal(full[6].minCreationDate, "2026-10-24T20:00:00Z");
+const fresh = emploisQueries("fresh", now);
 assert.deepEqual(fresh.map((q) => q.typeContrat), ["CDI", "CDD"]);
-assert.ok(fresh.every((q) => q.publieeDepuis === 1 && !q.region));
+assert.ok(fresh.every((q) => q.minCreationDate === "2026-11-07T17:00:00Z" && !q.region));
 
 // Paramètres envoyés à l'API.
 process.env.FRANCE_TRAVAIL_CLIENT_ID = "id";
@@ -61,9 +64,9 @@ void searchFranceTravailPage(full[0], 0, 149).then(() => {
   const params = new URL(searched).searchParams;
   assert.equal(params.get("typeContrat"), "CDI");
   assert.equal(params.get("experience"), "1");
-  assert.equal(params.get("publieeDepuis"), "14");
+  assert.equal(params.get("minCreationDate"), "2026-11-05T20:00:00Z");
   assert.equal(params.get("region"), "11");
-  assert.equal(params.get("sort"), "1");
+  assert.equal(params.get("sort"), null);
   console.log("cdi-cdd (API) : OK");
 });
 
@@ -84,3 +87,23 @@ assert.equal(resolveSignupIntent({ type: "cdi" }).type, "cdi");
 assert.equal(resolveSignupIntent({ type: "freelance" }).type, null);
 
 console.log("cdi-cdd : OK");
+
+// Garde-fou : l'API renvoie toujours la même page (7/11) -> arrêt après la
+// 2e page, une erreur notée, pas 8 pages relues.
+import { runFranceTravailStream } from "../src/lib/franceTravail/sync";
+setTimeout(() => {
+  let calls = 0;
+  const samePage = Array.from({ length: 150 }, (_, i) => ({ ...base, id: `X${i}` }));
+  globalThis.fetch = (async (input: string | URL | Request) => {
+    if (String(input).includes("access_token")) return new Response(JSON.stringify({ access_token: "t", expires_in: 3600 }), { status: 200 });
+    calls++;
+    return new Response(JSON.stringify({ resultats: samePage }), { status: 206, headers: { "Content-Range": "offres 0-149/5000" } });
+  }) as typeof fetch;
+  const admin = { from: () => ({ upsert: async () => ({ error: null }) }) } as never;
+  void runFranceTravailStream(admin, "2026-11-07T20:00:00Z", { typeContrat: "CDI", experience: "1" }, { emploi: true }).then((r) => {
+    assert.equal(calls, 2);
+    assert.equal(r.fetched, 150);
+    assert.match(r.errors[0], /identique/);
+    console.log("cdi-cdd (page identique) : OK");
+  });
+}, 1500);

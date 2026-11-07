@@ -70,6 +70,7 @@ export async function runFranceTravailStream(
   let upserted = 0;
   const errors: string[] = [];
   const label = options.departement ? `${queryLabel(what)} (${options.departement})` : queryLabel(what);
+  let previousFirstId: string | null = null;
 
   for (let page = 0; page < MAX_PAGES; page++) {
     if (options.deadline && Date.now() > options.deadline) return { fetched, mapped, upserted, errors, truncated: true };
@@ -90,6 +91,13 @@ export async function runFranceTravailStream(
     }
 
     if (jobs.length === 0) return { fetched, mapped, upserted, errors, truncated: false }; // plus de résultats
+    // Même page que la précédente : l'API ignore la fenêtre Range pour cette
+    // recherche (7/11, import CDI/CDD). Inutile de relire 8 fois les mêmes.
+    if (page > 0 && jobs[0]?.id && jobs[0].id === previousFirstId) {
+      errors.push(`${label}: page ${page} identique à la précédente, pagination ignorée par l'API`);
+      return { fetched, mapped, upserted, errors, truncated: false };
+    }
+    previousFirstId = jobs[0]?.id ?? null;
     if (options.expectAlternance && page === 0) {
       const share = jobs.filter(isStructuredAlternance).length / jobs.length;
       if (share < MIN_ALTERNANCE_SHARE) {

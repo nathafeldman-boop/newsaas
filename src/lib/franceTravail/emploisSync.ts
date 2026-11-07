@@ -21,14 +21,36 @@ export type EmploisMode = "full" | "fresh";
 
 const REGIONS = ["11", "24", "27", "28", "32", "44", "52", "53", "75", "76", "84", "93", "94"];
 const TYPES = ["CDI", "CDD"];
-const BASE: FranceTravailQuery = { experience: "1", sort: 1 };
+// Pas de tri ni de publieeDepuis : le 7/11 (premier passage), avec sort=1 et
+// publieeDepuis=1, France Travail a renvoyé la même page de 150 offres pour
+// chaque fenêtre Range (2 400 lues, 299 distinctes). Fenêtres de dates de
+// création, comme la synchro des offres fraîches (offresFraiches.ts), dont
+// la pagination marche.
+const BASE: FranceTravailQuery = { experience: "1" };
 const CONCURRENCY = 4;
 const TIME_BUDGET_MS = 240_000;
 export const STALE_AFTER_DAYS = 3;
+const FRESH_WINDOW_HOURS = 3;
+const FULL_DAYS = 14;
+const FULL_WINDOW_DAYS = 2;
 
-export function emploisQueries(mode: EmploisMode): FranceTravailQuery[] {
-  if (mode === "fresh") return TYPES.map((typeContrat) => ({ ...BASE, typeContrat, publieeDepuis: 1 }));
-  return REGIONS.flatMap((region) => TYPES.map((typeContrat) => ({ ...BASE, typeContrat, region, publieeDepuis: 14 })));
+// Format attendu par l'API : sans millisecondes.
+function ftDate(ms: number): string {
+  return new Date(ms).toISOString().replace(/\.\d{3}Z$/, "Z");
+}
+
+export function emploisQueries(mode: EmploisMode, now: number = Date.now()): FranceTravailQuery[] {
+  if (mode === "fresh") {
+    const window = { minCreationDate: ftDate(now - FRESH_WINDOW_HOURS * 3_600_000), maxCreationDate: ftDate(now) };
+    return TYPES.map((typeContrat) => ({ ...BASE, typeContrat, ...window }));
+  }
+  const windows = Array.from({ length: FULL_DAYS / FULL_WINDOW_DAYS }, (_, i) => ({
+    minCreationDate: ftDate(now - (i + 1) * FULL_WINDOW_DAYS * 86_400_000),
+    maxCreationDate: ftDate(now - i * FULL_WINDOW_DAYS * 86_400_000),
+  }));
+  return REGIONS.flatMap((region) =>
+    TYPES.flatMap((typeContrat) => windows.map((window) => ({ ...BASE, typeContrat, region, ...window }))),
+  );
 }
 
 async function runPool<T, R>(items: T[], concurrency: number, worker: (item: T) => Promise<R>): Promise<R[]> {
