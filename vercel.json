@@ -171,6 +171,10 @@
     {
       "path": "/api/cron/abonnes",
       "schedule": "15 7-18 * * *"
+    },
+    {
+      "path": "/api/cron/prix-vus",
+      "schedule": "3-53/10 8-10 * * *"
     }
   ]
 }

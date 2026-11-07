@@ -12,7 +12,7 @@ import { SITE_URL } from "@/lib/site";
 import { getTrustCount } from "@/lib/premium/trustCount";
 import { goLink } from "@/lib/premium/goLink";
 import { campaignSender } from "@/lib/campaigns/sendBatch";
-import { CHECKOUT_DAILY_EVENT, SALES_SERIES_EVENT } from "@/lib/campaigns/serieEvents";
+import { CHECKOUT_DAILY_EVENT, PRICES_SEEN_EVENT, SALES_SERIES_EVENT } from "@/lib/campaigns/serieEvents";
 import { CHECKOUT_RELANCE_EVENT } from "@/lib/campaigns/relanceCheckout";
 import { inLastCallSalves } from "@/lib/campaigns/dernierAppelSalves";
 import {
@@ -166,7 +166,7 @@ async function loadDue(db: Db, now: number, midnight: number): Promise<{ due: Du
       db
         .from("user_events")
         .select("user_id")
-        .in("event_type", [NEWS_CAMPAIGN_EVENT, CAMPAIGN_EVENT, LASTCALL_CAMPAIGN_EVENT, OFFER48_CAMPAIGN_EVENT, CHECKOUT_RELANCE_EVENT, CHECKOUT_DAILY_EVENT])
+        .in("event_type", [NEWS_CAMPAIGN_EVENT, CAMPAIGN_EVENT, LASTCALL_CAMPAIGN_EVENT, OFFER48_CAMPAIGN_EVENT, CHECKOUT_RELANCE_EVENT, CHECKOUT_DAILY_EVENT, PRICES_SEEN_EVENT])
         .gte("created_at", new Date(midnight).toISOString())
         .order("created_at")
         .range(from, to),
