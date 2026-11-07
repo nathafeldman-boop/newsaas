@@ -1,0 +1,68 @@
+{
+  "slug": "video-20261107-offres",
+  "theme": "Vidéo TikTok du 7/11 : 169 alternances sorties en 24 h, 4 à saisir",
+  "sources": [
+    "Chiffres : offres d'alternance en ligne sur Stageio le 7 novembre 2026 à 8 h (169 publiées dans les 24 h)",
+    "Offres : France Travail, vérifiées en ligne le 7 novembre 2026"
+  ],
+  "slides": [
+    {
+      "type": "cover",
+      "photo": "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1600&q=85",
+      "photoPosition": "center 30%",
+      "title": ["169 alternances", "en 24 heures"],
+      "highlight": "en voilà 4",
+      "titleSize": 84
+    },
+    {
+      "type": "tip",
+      "title": ["Gestionnaire", "de paie"],
+      "text": "==BPCE Service== recrute en alternance à Charenton-le-Pont",
+      "objectif": "Domaine",
+      "items": [
+        { "icon": "users", "label": "RH et paie" },
+        { "icon": "map-pin", "label": "Charenton-le-Pont" }
+      ]
+    },
+    {
+      "type": "tip",
+      "title": ["Assistant·e", "comptable"],
+      "text": "==Citemétrie== cherche quelqu'un en facturation et recouvrement",
+      "objectif": "Domaine",
+      "items": [
+        { "icon": "calculator", "label": "comptabilité" },
+        { "icon": "map-pin", "label": "Paris 14e" }
+      ]
+    },
+    {
+      "type": "tip",
+      "title": ["Assistant·e", "communication"],
+      "text": "==Levasseur Réceptions== : communication et web digital",
+      "objectif": "Domaine",
+      "items": [
+        { "icon": "megaphone", "label": "com et digital" },
+        { "icon": "map-pin", "label": "Forges-les-Eaux" }
+      ]
+    },
+    {
+      "type": "tip",
+      "title": ["Responsable", "projets"],
+      "text": "Le ==Groupe VINCI== ouvre une alternance en gestion de projets",
+      "objectif": "Domaine",
+      "items": [
+        { "icon": "clipboard-list", "label": "gestion de projet" },
+        { "icon": "map-pin", "label": "Virandeville" }
+      ]
+    },
+    {
+      "type": "cta",
+      "title": ["Trouve ton", "alternance"],
+      "lead": "Tape ==Stageio== sur Google",
+      "bullets": [
+        "Toutes les alternances du jour",
+        "Tu swipes, tu gardes, tu postules",
+        "Gratuit pour commencer"
+      ]
+    }
+  ]
+}
