@@ -8,6 +8,7 @@ import { withTimeout } from "@/lib/admin/dashboardStats";
 import { emailOfferAmong, loadArmEvents } from "@/lib/admin/priceTestData";
 import { armStats, PLAN_LABELS, probabilityTestBetter, purchasesIn, verdictFor, type ArmStats, type BuyerPlan, type Verdict } from "@/lib/admin/priceTestStats";
 import { PRICE_TESTS, type PriceTest } from "@/lib/pricing/tests";
+import { PAYWALL_TEST, paywallVariant, type PaywallVariant } from "@/lib/premium/paywallTest";
 
 // Tests de prix (29/10, Nathan : « un onglet test, et à chaque test [...]
 // tu mettras les stats, si c'est concluant ou pas »). Chaque test est
@@ -60,7 +61,10 @@ export default async function TestsPage() {
       </Card>
     );
   }
-  const results = await Promise.all(PRICE_TESTS.map((t) => testResult(snap, t, now)));
+  const [results, paywallAb] = await Promise.all([
+    Promise.all(PRICE_TESTS.map((t) => testResult(snap, t, now))),
+    paywallAbResult(snap, now),
+  ]);
 
   return (
     <div>
@@ -69,10 +73,88 @@ export default async function TestsPage() {
         Chaque test est comparé aux mêmes heures juste avant son début. Le chiffre qui tranche : l&apos;argent encaissé par personne qui voit le
         paywall. Un prix plus haut peut faire moins de payants mais plus d&apos;argent ; seul ce chiffre dit lequel l&apos;emporte.
       </p>
+      <PaywallAbBlock rows={paywallAb} />
       {results.map((r) => (
         <TestBlock key={r.test.id} {...r} />
       ))}
     </div>
+  );
+}
+
+// Test A/B du paywall (8/11) : les deux versions tournent en même temps, la
+// moitié des comptes chacune (tirage fixe par compte, voir paywallTest.ts).
+type AbRow = { variant: PaywallVariant; viewers: number; checkouts: number; buyers: number; cents: number };
+
+async function paywallAbResult(snap: StripeSnapshot, now: number): Promise<AbRow[] | null> {
+  const range = { start: Date.parse(PAYWALL_TEST.startIso), end: now };
+  const events = await withTimeout(
+    loadArmEvents(PAYWALL_TEST.startIso, new Date(now).toISOString()).catch(() => null),
+    20_000,
+    null,
+  ).then((r) => r.value);
+  if (!events) return null;
+  const viewers = new Set(events.viewers);
+  const rows: Record<PaywallVariant, AbRow> = {
+    mensuel: { variant: "mensuel", viewers: 0, checkouts: 0, buyers: 0, cents: 0 },
+    a_vie: { variant: "a_vie", viewers: 0, checkouts: 0, buyers: 0, cents: 0 },
+  };
+  for (const u of viewers) rows[paywallVariant(u)].viewers++;
+  for (const u of new Set(events.checkouts)) if (viewers.has(u)) rows[paywallVariant(u)].checkouts++;
+  for (const p of purchasesIn(snap, range)) {
+    if (!p.first || !p.userId || !viewers.has(p.userId)) continue;
+    const row = rows[paywallVariant(p.userId)];
+    row.buyers++;
+    row.cents += p.cents;
+  }
+  return [rows.mensuel, rows.a_vie];
+}
+
+const VARIANT_LABEL: Record<PaywallVariant, string> = { mensuel: "A · onglet Mensuel (comme avant)", a_vie: "B · onglet À vie ouvert" };
+
+function PaywallAbBlock({ rows }: { rows: AbRow[] | null }) {
+  return (
+    <Section title="Test A/B du paywall : onglet À vie ouvert par défaut" subtitle={`Depuis le ${dateTime(Date.parse(PAYWALL_TEST.startIso))} · la moitié des comptes chacun`}>
+      {!rows ? (
+        <p style={{ fontSize: 13, margin: 0, ...muted }}>Lecture des événements impossible pour l&apos;instant : recharge dans quelques minutes.</p>
+      ) : (
+        <Card>
+          <div style={{ overflowX: "auto" }}>
+            <table className="cockpit-table" style={{ width: "100%", fontSize: 13 }}>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: "left" }}>Version</th>
+                  <th>Ont vu le paywall</th>
+                  <th>Ont ouvert le paiement</th>
+                  <th>Ont payé</th>
+                  <th>Encaissé</th>
+                  <th>Par personne</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.variant}>
+                    <td style={{ textAlign: "left", fontWeight: 600 }}>{VARIANT_LABEL[r.variant]}</td>
+                    <td>{int(r.viewers)}</td>
+                    <td>
+                      {int(r.checkouts)} ({pct(r.viewers ? r.checkouts / r.viewers : null)})
+                    </td>
+                    <td>
+                      {int(r.buyers)} ({pct(r.viewers ? r.buyers / r.viewers : null)})
+                    </td>
+                    <td>{euros(r.cents)}</td>
+                    <td>{r.viewers ? euros(Math.round(r.cents / r.viewers), { decimals: true }) : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p style={{ fontSize: 12, lineHeight: 1.55, margin: "10px 0 0", ...muted }}>
+            Le chiffre qui tranche : l&apos;encaissé par personne. Pas de verdict avant environ 300 personnes par version : en dessous, l&apos;écart
+            peut venir du hasard.
+          </p>
+        </Card>
+      )}
+    </Section>
   );
 }
 

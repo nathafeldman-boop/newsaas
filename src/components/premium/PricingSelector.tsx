@@ -189,7 +189,10 @@ function OfferTabs({
   welcomeActive = false,
   lifetimeOffer = null,
   prices = priceSheet(),
+  initialPlan = "monthly",
 }: {
+  // Onglet ouvert à l'arrivée (test du paywall du 8/11, voir lib/premium/paywallTest.ts).
+  initialPlan?: Plan;
   userId?: string;
   // Avantages Premium, affichés sous les prix (Nathan, 28/10).
   benefits?: ReactNode;
@@ -221,7 +224,7 @@ function OfferTabs({
   const autoLifetime = promo?.autoPrice ?? prices.auto.lifetime[tier];
   // Mensuel affiché d'abord (Nathan, 24/10) ; « À vie » s'il n'y a que ça.
   const hasLifetime = lifetimeAvailable || autoAvailable;
-  const [plan, setPlan] = useState<Plan>("monthly");
+  const [plan, setPlan] = useState<Plan>(hasLifetime ? initialPlan : "monthly");
   const [offer, setOffer] = useState<Offer>(autoAvailable ? initialOffer : "premium");
   // Premium à vie absent (prix Stripe non configuré) : seule Auto reste.
   const chosen: Offer = plan === "lifetime" && !lifetimeAvailable ? "auto" : !autoAvailable ? "premium" : offer;
@@ -552,6 +555,7 @@ type SelectorProps = {
   autoAvailable?: boolean;
   // Arrivée depuis « Découvrir Stageio Auto » (?offre=auto) : Auto cochée.
   initialOffer?: "premium" | "auto";
+  initialPlan?: Plan;
   errorMessage: string | null;
   welcomeEndsAt?: number | null;
   welcomeActive?: boolean;
@@ -562,6 +566,10 @@ type SelectorProps = {
 // Paywall : onglets Mensuel / À vie avec Stageio Auto quand elle est en
 // vente ; sinon le sélecteur d'avant, inchangé (Nathan, 25/10 : « s'il n'y
 // a pas l'offre à 17,99 € et celle à 80 €, remets le paywall comme avant »).
-export function PricingSelector({ autoAvailable = false, initialOffer, ...props }: SelectorProps) {
-  return autoAvailable ? <OfferTabs {...props} autoAvailable initialOffer={initialOffer} /> : <ClassicPricing {...props} />;
+export function PricingSelector({ autoAvailable = false, initialOffer, initialPlan, ...props }: SelectorProps) {
+  return autoAvailable ? (
+    <OfferTabs {...props} autoAvailable initialOffer={initialOffer} initialPlan={initialPlan} />
+  ) : (
+    <ClassicPricing {...props} />
+  );
 }

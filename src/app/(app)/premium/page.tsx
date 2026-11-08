@@ -21,6 +21,7 @@ import { GuaranteeCard, type GuaranteePhase } from "@/components/premium/Guarant
 import { getGuaranteeStatus, type GuaranteeStatus } from "@/lib/premium/refundGuarantee";
 import { GUARANTEE_COOKIE } from "@/lib/premium/guaranteeTerms";
 import { getTrustCount } from "@/lib/premium/trustCount";
+import { paywallHeadline, paywallVariant, PAYWALL_TEST } from "@/lib/premium/paywallTest";
 
 const ERROR_MESSAGES: Record<string, string> = {
   not_configured: "Le paiement n'est pas encore configuré, réessaie plus tard.",
@@ -193,9 +194,12 @@ export default async function PremiumPage({
   const trustCount = showPledge ? await getTrustCount().catch(() => 0) : 0;
 
   // Mesure seulement (tableau « Chemin de Léo » de l'admin), rien de visible.
+  const variant = paywallVariant(user.id);
   if (!premium && !paymentIssue) {
     const viewerId = user.id;
-    after(() => logServerEvent(createAdminClient(), viewerId, "paywall_viewed", { source: source ?? null }));
+    after(() =>
+      logServerEvent(createAdminClient(), viewerId, "paywall_viewed", { source: source ?? null, test: PAYWALL_TEST.name, variant }),
+    );
   }
 
   return (
@@ -427,7 +431,7 @@ export default async function PremiumPage({
               className="animate-in"
               style={{ fontSize: 25, fontWeight: 800, lineHeight: 1.22, letterSpacing: "-0.01em", margin: "14px 0 0" }}
             >
-              Trouve ton alternance plus efficacement.
+              {paywallHeadline(profile?.looking_for)}
             </h1>
             <p
               className="animate-in"
@@ -454,6 +458,7 @@ export default async function PremiumPage({
               lifetimeAvailable
               autoAvailable={isAutoOfferAvailable(profile)}
               initialOffer={offre === "auto" ? "auto" : "premium"}
+              initialPlan={variant === "a_vie" ? "lifetime" : "monthly"}
               errorMessage={error ? (ERROR_MESSAGES[error] ?? "Une erreur est survenue.") : null}
             />
           </div>
