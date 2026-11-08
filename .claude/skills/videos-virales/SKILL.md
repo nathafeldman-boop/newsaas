@@ -7,6 +7,11 @@ description: Règles de Stageio pour les vidéos et carrousels TikTok, YouTube S
 
 Règles tirées de la méthode de l'incubateur de Nathan (formats, lancement, pivot), adaptées à Stageio.
 
+## Publication TikTok (8/11)
+- **Buffer d'abord** : Nathan a branché Buffer (gratuit). Si la connexion Zapier BufferCLIAPI répond (inspect_zapier_actions, organizationId résolu), publier la vidéo sur le canal TikTok de Buffer (action « update ») à l'heure du créneau, sans rien demander. Légende = titre + description, et finir par « #pub Stageio » si l'option contenu promotionnel n'existe pas dans Buffer.
+- **Sinon** : tiktok_prepare_publish (connecteur fc28a66c… uniquement) ET envoyer à Nathan le fichier MP4 (SendUserFile) + la légende prête à coller : il publie depuis l'appli TikTok.
+- **Crédits ElevenLabs épuisés jusqu'au mercredi 11/11** : d'ici là, aucune nouvelle voix. On publie les vidéos déjà montées (B, C, D, 50vs12, dossier sorties/cta, versions avec stageio.fr).
+
 ## Sujet du moment : CDI et CDD (du 7/11 à fin avril-mai)
 
 Nathan, le 7/11 : « plus personne ne cherche d'alternance en ce moment » ; tous les posts passent sur les CDI et CDD, jusqu'à avril-mai.
