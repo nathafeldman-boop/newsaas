@@ -8,7 +8,7 @@ description: Règles de Stageio pour les vidéos et carrousels TikTok, YouTube S
 Règles tirées de la méthode de l'incubateur de Nathan (formats, lancement, pivot), adaptées à Stageio.
 
 ## Publication TikTok (8/11)
-- **Buffer d'abord** : Nathan a branché Buffer (gratuit). Si la connexion Zapier BufferCLIAPI répond (inspect_zapier_actions, organizationId résolu), publier la vidéo sur le canal TikTok de Buffer (action « update ») à l'heure du créneau, sans rien demander. Légende = titre + description, et finir par « #pub Stageio » si l'option contenu promotionnel n'existe pas dans Buffer.
+- **Buffer d'abord** (connecté le 8/11) : Zapier BufferCLIAPI, connection_id 0254fb4f-255e-826f-866f-2811324cae74, organizationId 6af07471b8f3b935b799782e, canal TikTok lalternant0 = channelId 6af075e662b70b94b0be3b5b. Action buffer_add_to_queue, method « schedule » (ou « share_now »), dynamic_properties {attachment: video, video: URL Higgsfield, text, scheduling_type: direct, scheduled_at ISO UTC}. Nathan a branché Buffer (gratuit). Si la connexion Zapier BufferCLIAPI répond (inspect_zapier_actions, organizationId résolu), publier la vidéo sur le canal TikTok de Buffer (action « update ») à l'heure du créneau, sans rien demander. Légende = titre + description, et finir par « #pub Stageio » si l'option contenu promotionnel n'existe pas dans Buffer.
 - **Sinon** : tiktok_prepare_publish (connecteur fc28a66c… uniquement) ET envoyer à Nathan le fichier MP4 (SendUserFile) + la légende prête à coller : il publie depuis l'appli TikTok.
 - **Crédits ElevenLabs épuisés jusqu'au mercredi 11/11** : d'ici là, aucune nouvelle voix. On publie les vidéos déjà montées (B, C, D, 50vs12, dossier sorties/cta, versions avec stageio.fr).
 
