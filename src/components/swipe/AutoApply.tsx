@@ -8,6 +8,9 @@ import { Icon } from "@/components/ui/Icon";
 import { AUTO_PACE_LIMIT, FIXABLE_REASONS, resumeLabel, type AutoSendChannel, type AutoSendManualReason, type AutoSendResult } from "@/lib/applications/autoSend";
 import type { OfferSource } from "@/types/database";
 
+// Upsell du 11/11 : candidatures en plus et levée de la pause (2 €).
+const UPSELL_HREF = "/premium/candidatures";
+
 export type ApplyTarget = { id: string; company: string; source?: OfferSource };
 
 // Like avec la formule Auto (24/10) : la candidature part sans quitter le
@@ -73,7 +76,7 @@ export function useAutoApply() {
         const reason = check.status === "manual" ? check.reason : "error";
         const limit = check.status === "manual" ? (check.limit ?? 100) : 100;
         if (check.status === "manual" && check.reason === "pace_pause" && check.resumeAt) {
-          put({ id: offer.id, ...paceNotice(check.resumeAt, `/candidature/${offer.id}`, "Postuler à la main", "Ce like reste en favori : postule à la main.") });
+          put({ id: offer.id, ...paceNotice(check.resumeAt, UPSELL_HREF, "Lever la pause pour 2 €", "Ce like reste en favori : postule à la main, ou lève la pause.") });
           setTimeout(() => dismiss(offer.id), 14000);
           return;
         }
@@ -83,12 +86,12 @@ export function useAutoApply() {
           title: reason === "daily_limit" ? `${limit} candidatures envoyées aujourd'hui` : `${offer.company} : dans tes favoris`,
           text:
             reason === "daily_limit"
-              ? "C'est le maximum par jour : ce like reste en favori, l'envoi automatique reprend demain."
+              ? "C'est le maximum par jour : ce like reste en favori. Ajoute des candidatures pour continuer tout de suite, sinon l'envoi automatique reprend demain."
               : MANUAL_TEXT[reason as AutoSendManualReason] ?? "L'envoi automatique n'a pas pu partir : l'offre reste dans tes favoris.",
-          href: `/candidature/${offer.id}`,
-          hrefLabel: "Postuler à la main",
+          href: reason === "daily_limit" ? UPSELL_HREF : `/candidature/${offer.id}`,
+          hrefLabel: reason === "daily_limit" ? "Ajouter des candidatures" : "Postuler à la main",
         });
-        setTimeout(() => dismiss(offer.id), 7000);
+        setTimeout(() => dismiss(offer.id), reason === "daily_limit" ? 12000 : 7000);
         return;
       }
       put({ id: offer.id, kind: "sending", company: offer.company, to: check.to, channel: check.channel });
@@ -112,7 +115,7 @@ export function useAutoApply() {
         // 25e envoi en moins de 4 h : le stop arrive tout de suite, pas au like suivant.
         if (result.pausedUntil) {
           const pauseId = `${offer.id}-pause`;
-          put({ id: pauseId, ...paceNotice(result.pausedUntil, "/favoris", "Voir mes favoris", "Les prochains likes restent en favoris : postule à la main.") });
+          put({ id: pauseId, ...paceNotice(result.pausedUntil, UPSELL_HREF, "Lever la pause pour 2 €", "Les prochains likes restent en favoris : postule à la main, ou lève la pause.") });
           setTimeout(() => dismiss(pauseId), 20000);
         }
       } else {

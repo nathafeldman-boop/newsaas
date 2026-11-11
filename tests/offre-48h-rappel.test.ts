@@ -89,7 +89,8 @@ assert.equal(typeof getWelcomeEndsAt, "function");
 // Branchements : cron toutes les 10 minutes, jamais à l'heure pile.
 const vercel = JSON.parse(readFileSync("vercel.json", "utf8")) as { crons: { path: string; schedule: string }[] };
 const cron = vercel.crons.find((x) => x.path === "/api/cron/offre-48h-rappel");
-assert.equal(cron?.schedule, "3-53/10 7-21 * * *");
+// Emails arrêtés le 11/11 (Nathan) : cron retiré de vercel.json. L'ancien horaire reste vérifié ci-dessous.
+assert.equal(cron, undefined);
 const source = readFileSync("src/lib/campaigns/offre48Rappel.ts", "utf8");
 assert.ok(source.includes("event_type: OFFER48_REMINDER_EVENT") && source.includes("await release("), "noté avant l'envoi, dé-noté si refusé");
 assert.ok(source.includes("idempotencyKey"));

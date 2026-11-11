@@ -56,6 +56,10 @@ export type Profile = {
   // Formule « Stageio Auto » (24/10) : "auto" tant que l'abonnement Auto est
   // actif, "auto_lifetime" pour l'accès à vie Auto. Optionnelle : SQL du 24/10.
   premium_tier?: string | null;
+  // Upsell du 11/11 (SQL 20261111000000_auto_credits) : candidatures
+  // automatiques achetées en pack, et pause de 4 h levée jusqu'à cette date.
+  auto_credits?: number;
+  auto_pace_free_until?: string | null;
   cv_uploaded_at: string | null;
   cv_text: string | null;
   onboarding_completed: boolean;
@@ -504,6 +508,18 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      add_auto_credits: {
+        Args: { p_user: string; p_credits: number };
+        Returns: number | null;
+      };
+      use_auto_credit: {
+        Args: { p_user: string };
+        Returns: number | null;
+      };
+      refund_auto_credit: {
+        Args: { p_user: string };
+        Returns: number | null;
+      };
       increment_total_paid: {
         Args: { p_stripe_customer_id: string; p_amount_cents: number };
         Returns: undefined;

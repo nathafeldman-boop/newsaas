@@ -76,8 +76,8 @@ assert.deepEqual(planOffer48Salve(sentAt, 400), { kind: "skipped", reason: "deja
 assert.deepEqual(planOffer48Salve(OFFER48_SALVE_END, 0), { kind: "skipped", reason: "hors_fenetre" });
 const crons: { path: string; schedule: string }[] = JSON.parse(readFileSync("vercel.json", "utf8")).crons;
 const salve = crons.filter((c) => c.path === "/api/cron/offre-48h");
-assert.equal(salve.length, 1);
-assert.equal(salve[0].schedule, "5-55/5 16-20 * * *", "jamais à l'heure pile, quand partent les salves horaires");
+// Emails arrêtés le 11/11 (Nathan) : cron retiré de vercel.json. L'ancien horaire reste vérifié ci-dessous.
+assert.equal(salve.length, 0);
 const runs = [16, 17, 18, 19, 20]
   .flatMap((h) => Array.from({ length: 11 }, (_, i) => Date.parse(`2026-11-05T${h}:${String((i + 1) * 5).padStart(2, "0")}:00Z`)))
   .filter((t) => t >= Date.parse("2026-11-05T16:50:00Z"));

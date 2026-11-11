@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { SIDEBAR_COOKIE } from "@/lib/nav/sidebar";
 import { cn } from "@/lib/utils";
+import { ApplicationsCounter, type ApplicationsCounterData } from "@/components/nav/ApplicationsCounter";
 
 // Modules de l'appli dans une barre à gauche, sur PC uniquement (16/10,
 // demande de Nathan : « comme Stripe ou Claude », sobre et stylé, qui ne gêne
@@ -188,11 +189,13 @@ function Sidebar({ open, onClose, favoritesBadge, inboxBadge }: { open: boolean;
 export function AppShell({
   favoritesBadge,
   inboxBadge = null,
+  counter = null,
   initialOpen,
   children,
 }: {
   favoritesBadge: number;
   inboxBadge?: number | null;
+  counter?: ApplicationsCounterData | null;
   initialOpen: boolean;
   children: React.ReactNode;
 }) {
@@ -241,6 +244,7 @@ export function AppShell({
           </motion.button>
         )}
       </AnimatePresence>
+      {counter && <ApplicationsCounter data={counter} />}
       <div className={cn("app-shell-content flex min-h-full flex-1 flex-col transition-[padding] duration-300 ease-out", open && "sm:pl-[248px]")}>
         {children}
       </div>

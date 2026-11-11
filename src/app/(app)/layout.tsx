@@ -4,7 +4,30 @@ import { BottomNav } from "@/components/nav/BottomNav";
 import { PageTransition } from "@/components/nav/PageTransition";
 import { createClient } from "@/lib/supabase/server";
 import { SIDEBAR_COOKIE } from "@/lib/nav/sidebar";
-import { isAutoTier } from "@/lib/subscription/isPremium";
+import { isAutoTier, isPremium } from "@/lib/subscription/isPremium";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { parisMidnightIso } from "@/lib/applications/autoSend";
+import { AUTO_DAILY_LIMIT } from "@/lib/pricing/plans";
+import type { ApplicationsCounterData } from "@/components/nav/ApplicationsCounter";
+
+// Compteur du haut à droite : reste du jour (formule Auto) + candidatures achetées.
+async function loadCounter(supabase: Awaited<ReturnType<typeof createClient>>, userId: string, auto: boolean): Promise<ApplicationsCounterData> {
+  // À part : colonne du SQL du 11/11, absente avant la migration.
+  const [{ data: creditRow }, sent] = await Promise.all([
+    supabase.from("profiles").select("auto_credits").eq("id", userId).maybeSingle(),
+    auto
+      ? createAdminClient()
+          .from("user_events")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", userId)
+          .eq("event_type", "application_emailed")
+          .gte("created_at", parisMidnightIso(Date.now()))
+      : Promise.resolve({ count: 0 }),
+  ]);
+  const credits = Math.max(0, creditRow?.auto_credits ?? 0);
+  const today = auto ? Math.max(0, AUTO_DAILY_LIMIT - (sent.count ?? 0)) : 0;
+  return { remaining: today + credits, credits, auto };
+}
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const sidebarOpen = (await cookies()).get(SIDEBAR_COOKIE)?.value !== "closed";
@@ -19,6 +42,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   let favoritesBadge = 0;
   // Formule Auto (24/10) : onglet « Boîte » et ses messages non lus.
   let inboxBadge: number | null = null;
+  // Compteur de candidatures automatiques en haut à droite (11/11), Premium seulement.
+  let counter: ApplicationsCounterData | null = null;
 
   try {
     const supabase = await createClient();
@@ -36,7 +61,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         // À part : colonne du SQL du 24/10, une erreur ici ne doit rien casser.
         supabase.from("profiles").select("premium_tier").eq("id", user.id).maybeSingle(),
       ]);
-      if (plan && isAutoTier({ ...plan, premium_tier: tier?.premium_tier ?? null })) {
+      const auto = !!plan && isAutoTier({ ...plan, premium_tier: tier?.premium_tier ?? null });
+      if (plan && isPremium(plan)) {
+        counter = await loadCounter(supabase, user.id, auto);
+      }
+      // Boîte : formule Auto, ou candidatures achetées (les réponses y arrivent).
+      if (auto || (counter?.credits ?? 0) > 0) {
         const { count } = await supabase
           .from("inbox_messages")
           .select("id", { count: "exact", head: true })
@@ -61,7 +91,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
-      <AppShell favoritesBadge={favoritesBadge} inboxBadge={inboxBadge} initialOpen={sidebarOpen}>
+      <AppShell favoritesBadge={favoritesBadge} inboxBadge={inboxBadge} counter={counter} initialOpen={sidebarOpen}>
         <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 pb-24 sm:px-8 sm:pb-8">
           <PageTransition>{children}</PageTransition>
         </main>

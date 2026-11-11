@@ -25,7 +25,7 @@ import { getStripeClient } from "@/lib/stripe/client";
 import { SITE_URL } from "@/lib/site";
 import { GUARANTEE_COOKIE, GUARANTEE_MONTHS } from "@/lib/premium/guaranteeTerms";
 
-async function getOrCreateStripeCustomer(userId: string, email: string | null, supabase: DbClient) {
+export async function getOrCreateStripeCustomer(userId: string, email: string | null, supabase: DbClient) {
   const { data: profile } = await supabase
     .from("profiles")
     .select("stripe_customer_id")

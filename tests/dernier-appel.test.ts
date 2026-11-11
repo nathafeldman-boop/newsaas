@@ -76,8 +76,9 @@ assert.deepEqual(planLastCallSalve(Date.parse("2026-11-01T10:00:30Z"), 120), { k
 // vercel.json : un passage par heure, tous dans la fenêtre, 10 salves de 300 au plus.
 const crons = (JSON.parse(readFileSync("vercel.json", "utf8")) as { crons: { path: string; schedule: string }[] }).crons;
 const salve = crons.filter((c) => c.path === "/api/cron/dernier-appel");
-assert.equal(salve.length, 1);
-const hours = /^0 (\d+)-(\d+) \* \* \*$/.exec(salve[0].schedule);
+// Emails arrêtés le 11/11 (Nathan) : cron retiré de vercel.json. L'ancien horaire reste vérifié ci-dessous.
+assert.equal(salve.length, 0);
+const hours = /^0 (\d+)-(\d+) \* \* \*$/.exec("0 9-18 * * *");
 assert.ok(hours, "un passage à l'heure pile, sur une plage d'heures UTC");
 const runs: number[] = [];
 for (let h = Number(hours[1]); h <= Number(hours[2]); h++) runs.push(Date.parse(`2026-11-01T${String(h).padStart(2, "0")}:00:30Z`));

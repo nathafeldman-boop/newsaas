@@ -10,6 +10,7 @@ import { notifyIncompletePaymentByCustomerId } from "@/lib/stripe/notifyIncomple
 import { creditAffiliateCommission } from "@/lib/affiliates/creditAffiliateCommission";
 import { cancelRemindersAfterPayment } from "@/lib/stripe/checkoutReminder";
 import { applyAutoCheckout } from "@/lib/stripe/autoPlan";
+import { applyUpsell, upsellKind } from "@/lib/stripe/applyUpsell";
 import { onCancellationScheduled } from "@/lib/churn/outreach";
 import { onRefundComment } from "@/lib/refunds/process";
 import { sendWelcomeOnce } from "@/lib/subscribers/welcome";
@@ -122,6 +123,14 @@ export async function POST(request: NextRequest) {
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
+      // Upsell « candidatures en plus » (11/11) : paiement unique qui n'est
+      // PAS un achat à vie (mode "payment" aussi) ; traité à part, avant tout.
+      const upsell = upsellKind(session);
+      if (upsell) {
+        const { ok } = await applyUpsell(session, upsell);
+        if (!ok) return NextResponse.json({ error: "Crédit de l'upsell en échec, réessaie." }, { status: 500 });
+        break;
+      }
       const userId = session.client_reference_id;
       const customerId =
         typeof session.customer === "string" ? session.customer : session.customer?.id;

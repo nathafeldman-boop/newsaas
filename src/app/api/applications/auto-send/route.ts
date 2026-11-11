@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { isAutoTier } from "@/lib/subscription/isPremium";
+import { isAutoTier, isPremium } from "@/lib/subscription/isPremium";
+import { isPaceFree } from "@/lib/pricing/creditPacks";
 import { recipientForOffer } from "@/lib/offers/recruiterEmail";
 import { getOrCreateInboxAddress, inboxDomain } from "@/lib/inbox/address";
 import { studentSender } from "@/lib/inbox/sender";
@@ -144,20 +145,39 @@ export async function POST(request: NextRequest) {
 
   if (!offer) return json({ status: "manual", reason: "not_found" });
   const company = offer.company;
-  if (!profile || !isAutoTier(profile)) return json({ status: "manual", reason: "auto_required", company });
+  // Upsell du 11/11 : candidatures achetées en pack (auto_credits). Elles
+  // servent au-delà des 100 par jour de la formule Auto, ou pour un compte
+  // Premium sans la formule Auto.
+  const autoTier = !!profile && isAutoTier(profile);
+  const credits = profile && isPremium(profile) ? Math.max(0, profile.auto_credits ?? 0) : 0;
+  if (!profile || (!autoTier && credits === 0)) return json({ status: "manual", reason: "auto_required", company });
   if ((alreadySent ?? []).length > 0 || (application && application.status !== "a_preparer" && application.status !== "envoyee")) {
     return json({ status: "manual", reason: "already_sent", company });
   }
-  if (count >= AUTO_DAILY_LIMIT) return json({ status: "manual", reason: "daily_limit", company, sentToday: count, limit: AUTO_DAILY_LIMIT });
-  // 25 envois en moins de 4 h : pause de sécurité (autoPace). Le like reste un favori.
-  const resumeAt = autoPace(recent, now);
+  const needsCredit = !autoTier || count >= AUTO_DAILY_LIMIT;
+  if (needsCredit && credits === 0) return json({ status: "manual", reason: "daily_limit", company, sentToday: count, limit: AUTO_DAILY_LIMIT });
+  // 25 envois en moins de 4 h : pause de sécurité (autoPace), sauf si elle a
+  // été levée (2 €, 24 h). Le like reste un favori.
+  const paceFree = isPaceFree(profile.auto_pace_free_until, now);
+  const resumeAt = paceFree ? null : autoPace(recent, now);
   if (resumeAt !== null) {
     return json({ status: "manual", reason: "pace_pause", company, sentToday: count, limit: AUTO_DAILY_LIMIT, resumeAt: new Date(resumeAt).toISOString() });
   }
 
-  const context: Context = { request: body, user: { id: user.id, email: user.email ?? null }, offer, profile, application: application ?? null, count, recent };
-  if (offer.source === "la_bonne_alternance" && offer.external_id) return applyViaLba(admin, supabase, context);
-  return applyByEmail(admin, supabase, context);
+  const context: Context = { request: body, user: { id: user.id, email: user.email ?? null }, offer, profile, application: application ?? null, count, recent: paceFree ? [] : recent };
+  const send = () => (offer.source === "la_bonne_alternance" && offer.external_id ? applyViaLba(admin, supabase, context) : applyByEmail(admin, supabase, context));
+  if (!needsCredit || body.check) return send();
+
+  // Envoi payé par un crédit : retiré avant, rendu si l'envoi n'est pas parti.
+  const { data: left, error: creditError } = await admin.rpc("use_auto_credit", { p_user: user.id });
+  if (creditError || left === null) return json({ status: "manual", reason: "daily_limit", company, sentToday: count, limit: AUTO_DAILY_LIMIT });
+  const response = await send();
+  const result = (await response.clone().json().catch(() => null)) as AutoSendResult | null;
+  if (result?.status !== "sent") {
+    const { error } = await admin.rpc("refund_auto_credit", { p_user: user.id });
+    if (error) console.error("auto-send: crédit non rendu après échec", error.message, { userId: user.id });
+  }
+  return response;
 }
 
 // Le 25e envoi en moins de 4 h prévient tout de suite (sans attendre le like

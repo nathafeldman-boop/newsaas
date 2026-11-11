@@ -51,8 +51,8 @@ assert.equal(new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", dateSt
 // Le cron tombe dans la fenêtre (8 h 03 à 10 h 53 UTC).
 const vercel = JSON.parse(readFileSync("vercel.json", "utf8")) as { crons: { path: string; schedule: string }[] };
 const cron = vercel.crons.find((c) => c.path === "/api/cron/prix-vus");
-assert.ok(cron, "cron prix-vus présent");
-assert.equal(cron!.schedule, "3-53/10 8-10 * * *");
+// Emails arrêtés le 11/11 (Nathan) : cron retiré de vercel.json. L'ancien horaire reste vérifié ci-dessous.
+assert.equal(cron, undefined);
 assert.equal(inPricesSeenWindow(Date.parse("2026-11-07T10:53:00Z")), true);
 
 // Exclusions.

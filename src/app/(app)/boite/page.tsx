@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getOrCreateInboxAddress } from "@/lib/inbox/address";
-import { isAutoTier } from "@/lib/subscription/isPremium";
+import { isAutoTier, isPremium } from "@/lib/subscription/isPremium";
 import { AUTO_DAILY_LIMIT, AUTO_PRICES } from "@/lib/pricing/plans";
 
 export const metadata: Metadata = { title: "Ma boîte Stageio", robots: { index: false } };
@@ -32,8 +32,9 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
 
   const admin = createAdminClient();
   const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
-  // Boîte réservée à la formule Auto (24/10) : pas d'adresse créée pour les autres.
-  if (!isAutoTier(profile)) {
+  // Boîte réservée à la formule Auto (24/10) : pas d'adresse créée pour les
+  // autres. Ouverte aussi aux candidatures achetées (upsell du 11/11).
+  if (!isAutoTier(profile) && !(isPremium(profile) && (profile?.auto_credits ?? 0) > 0) && !profile?.inbox_address) {
     return (
       <div className="mx-auto max-w-2xl">
         <h1 style={{ fontSize: 26, margin: 0 }}>Ma boîte Stageio</h1>

@@ -606,7 +606,7 @@ export default async function SwipePage() {
         sectorLabel={sectorLabel}
         applicationStreak={applicationStreak}
         freshInbox={freshInbox}
-        isAuto={isAutoTier(profile)}
+        isAuto={isAutoTier(profile) || (premium && (profile?.auto_credits ?? 0) > 0)}
         autoOfferAvailable={isAutoOfferAvailable(profile)}
         autoApplySetup={{
           hasCv: !!profile?.cv_path,

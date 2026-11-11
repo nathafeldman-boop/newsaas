@@ -40,8 +40,8 @@ assert.ok(HOURLY_SALVE_QUEUE.every((id) => CAMPAIGNS[id]));
 // vercel.json : un passage par heure, de 12 h à 21 h à Paris (hiver) : 4 000 emails par jour au plus.
 const crons: { path: string; schedule: string }[] = JSON.parse(readFileSync("vercel.json", "utf8")).crons;
 const salve = crons.filter((c) => c.path === "/api/cron/salves-horaires");
-assert.equal(salve.length, 1);
-assert.equal(salve[0].schedule, "0 10-20 * * *");
+// Emails arrêtés le 11/11 (Nathan) : cron retiré de vercel.json. L'ancien horaire reste vérifié ci-dessous.
+assert.equal(salve.length, 0);
 const winterRuns = Array.from({ length: 11 }, (_, i) => Date.parse(`2026-11-07T${String(10 + i).padStart(2, "0")}:00:00Z`));
 assert.deepEqual(winterRuns.filter(inHourlySalves).map(parisHour), [12, 13, 14, 15, 16, 17, 18, 19, 20, 21], "10 passages par jour");
 assert.equal(winterRuns.filter(inHourlySalves).length * HOURLY_SALVE_SIZE, 4000, "4 000 emails par jour au plus");
