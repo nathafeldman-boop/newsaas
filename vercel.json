@@ -21,22 +21,6 @@
       "schedule": "5 5 * * *"
     },
     {
-      "path": "/api/cron/notify-new-offers",
-      "schedule": "0 7 * * *"
-    },
-    {
-      "path": "/api/cron/notify-no-swipe",
-      "schedule": "0 8 * * *"
-    },
-    {
-      "path": "/api/cron/send-swipe-relance",
-      "schedule": "0 9 * * *"
-    },
-    {
-      "path": "/api/cron/inactive-winback",
-      "schedule": "0 10 * * *"
-    },
-    {
       "path": "/api/cron/sync-france-travail-departements/4",
       "schedule": "40 0 * * *"
     },
@@ -81,86 +65,6 @@
       "schedule": "50 5 * * *"
     },
     {
-      "path": "/api/cron/relance-checkout",
-      "schedule": "10 6 * * *"
-    },
-    {
-      "path": "/api/cron/serie-premium/h05",
-      "schedule": "30 5 * * *"
-    },
-    {
-      "path": "/api/cron/serie-premium/h06",
-      "schedule": "30 6 * * *"
-    },
-    {
-      "path": "/api/cron/serie-premium/h07",
-      "schedule": "30 7 * * *"
-    },
-    {
-      "path": "/api/cron/serie-premium/h08",
-      "schedule": "30 8 * * *"
-    },
-    {
-      "path": "/api/cron/serie-premium/h09",
-      "schedule": "30 9 * * *"
-    },
-    {
-      "path": "/api/cron/serie-premium/h10",
-      "schedule": "30 10 * * *"
-    },
-    {
-      "path": "/api/cron/serie-premium/h11",
-      "schedule": "30 11 * * *"
-    },
-    {
-      "path": "/api/cron/serie-premium/h12",
-      "schedule": "30 12 * * *"
-    },
-    {
-      "path": "/api/cron/serie-premium/h13",
-      "schedule": "30 13 * * *"
-    },
-    {
-      "path": "/api/cron/serie-premium/h14",
-      "schedule": "30 14 * * *"
-    },
-    {
-      "path": "/api/cron/serie-premium/h15",
-      "schedule": "30 15 * * *"
-    },
-    {
-      "path": "/api/cron/serie-premium/h16",
-      "schedule": "30 16 * * *"
-    },
-    {
-      "path": "/api/cron/serie-premium/h17",
-      "schedule": "30 17 * * *"
-    },
-    {
-      "path": "/api/cron/serie-premium/h18",
-      "schedule": "30 18 * * *"
-    },
-    {
-      "path": "/api/cron/serie-premium/h19",
-      "schedule": "30 19 * * *"
-    },
-    {
-      "path": "/api/cron/dernier-appel",
-      "schedule": "0 9-18 * * *"
-    },
-    {
-      "path": "/api/cron/salves-horaires",
-      "schedule": "0 10-20 * * *"
-    },
-    {
-      "path": "/api/cron/offre-48h",
-      "schedule": "5-55/5 16-20 * * *"
-    },
-    {
-      "path": "/api/cron/offre-48h-rappel",
-      "schedule": "3-53/10 7-21 * * *"
-    },
-    {
       "path": "/api/cron/refund-guarantee-reminder",
       "schedule": "41 7 * * *"
     },
@@ -171,10 +75,6 @@
     {
       "path": "/api/cron/abonnes",
       "schedule": "15 7-18 * * *"
-    },
-    {
-      "path": "/api/cron/prix-vus",
-      "schedule": "3-53/10 8-10 * * *"
     },
     {
       "path": "/api/cron/sync-france-travail-emplois",
