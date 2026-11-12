@@ -25,6 +25,7 @@ import {
 import { NO_CHROME_STEPS, STEP_IDS, STEP_LABELS, type StepId } from "@/lib/onboarding/steps";
 import { PledgeDone, ProofCompare, ProofDemo, ProofReviews, type ProofData } from "@/components/onboarding/ProofScreens";
 import { PledgeSign } from "@/components/pledge/PledgeSign";
+import { UrgencyScreen } from "@/components/onboarding/UrgencyScreen";
 import { forgetSignupCity, readSignupCity } from "@/lib/signup/intentStorage";
 
 // Onboarding "sans clavier" : tout se fait au tap (tuiles/chips), avec un
@@ -992,6 +993,7 @@ export function OnboardingWizard({
             {stepId === "proof_compare" && <ProofCompare onNext={goNext} />}
             {stepId === "proof_reviews" && <ProofReviews data={proof} onNext={goNext} />}
             {stepId === "proof_demo" && <ProofDemo data={proof} onNext={goNext} />}
+            {stepId === "urgency" && <UrgencyScreen lookingFor={lookingFor} onNext={goNext} />}
             {stepId === "pledge" && (
               <div className="flex flex-1 flex-col px-1">
                 <PledgeSign userId={userId} contractLabel={myContractLabel(lookingFor)} onSigned={goNext} />

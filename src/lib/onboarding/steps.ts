@@ -21,6 +21,7 @@ export const STEP_IDS = [
   "mobility",
   "level",
   "dispo",
+  "urgency",
   "source",
   "proof_demo",
   "cv",
@@ -30,7 +31,7 @@ export const STEP_IDS = [
 ] as const;
 
 /** Écrans sans question (pas de barre de progression, pas de « Continuer » commun). */
-export const NO_CHROME_STEPS: readonly StepId[] = ["intro", "trust", "proof_compare", "proof_reviews", "proof_demo", "outro", "pledge", "pledge_done"];
+export const NO_CHROME_STEPS: readonly StepId[] = ["intro", "trust", "proof_compare", "proof_reviews", "proof_demo", "urgency", "outro", "pledge", "pledge_done"];
 export type StepId = (typeof STEP_IDS)[number];
 
 export const STEP_LABELS: Record<StepId, string> = {
@@ -44,6 +45,7 @@ export const STEP_LABELS: Record<StepId, string> = {
   mobility: "Mobilité",
   level: "Ton niveau",
   dispo: "Disponibilité",
+  urgency: "Le temps presse",
   source: "Tu nous as connus comment",
   cv: "Ton CV",
   outro: "Récap",

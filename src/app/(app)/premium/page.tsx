@@ -21,6 +21,7 @@ import { GuaranteeCard, type GuaranteePhase } from "@/components/premium/Guarant
 import { getGuaranteeStatus, type GuaranteeStatus } from "@/lib/premium/refundGuarantee";
 import { GUARANTEE_COOKIE } from "@/lib/premium/guaranteeTerms";
 import { getTrustCount } from "@/lib/premium/trustCount";
+import { PaywallPain } from "@/components/premium/PaywallPain";
 import { paywallHeadline } from "@/lib/premium/paywallTest";
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -445,6 +446,10 @@ export default async function PremiumPage({
             >
               Débloque toutes les opportunités et les outils pour maximiser tes chances.
             </p>
+
+            {/* Douleur et investissement (Nathan, 12/11) : le délai qui file,
+                puis le salaire légal minimum face au prix. lib/premium/painCopy.ts. */}
+            <PaywallPain lookingFor={profile?.looking_for} />
 
             <GuaranteeBadge initialVisible={guaranteeShown} />
 
