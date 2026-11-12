@@ -14,3 +14,13 @@ for (const type of ["cdi", "cdd"]) {
   assert.match(readFileSync("src/app/sitemap.xml/route.ts", "utf8"), new RegExp(`"${path.replace(/\./g, "\\.")}": ${type}`), `lastmod ${type}`);
 }
 console.log("sitemap-cdi-cdd : ok");
+
+// Pages « CDI/CDD débutant à <ville> » : route, sitemap, liens cassés des fiches.
+for (const type of ["cdi", "cdd"]) {
+  const page = readFileSync(`src/app/offres/${type}/[ville]/page.tsx`, "utf8");
+  assert.match(page, new RegExp(`ContractCityPage type="${type}"`));
+  assert.match(readFileSync(`src/app/sitemap-offres-${type}.xml/route.ts`, "utf8"), /INDEXABLE_CONTRACT_CITY_MIN/);
+}
+const offerPage = readFileSync("src/app/offres/[slug]/page.tsx", "utf8");
+assert.doesNotMatch(offerPage, /href=\{`\/outils\/cv-\$\{offer\.contract_type\}`\}/, "plus de lien /outils/cv-cdi en 404");
+console.log("pages CDI/CDD par ville : ok");

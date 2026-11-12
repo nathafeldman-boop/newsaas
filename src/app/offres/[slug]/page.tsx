@@ -469,8 +469,9 @@ export default async function PublicOfferPage({
         )}
         <p style={{ fontSize: 13, margin: "10px 0 0", textAlign: "center" }}>
           Besoin d&apos;une lettre de motivation ou d&apos;un CV ? Nos générateurs gratuits :{" "}
-          <Link href={`/outils/lettre-de-motivation-${offer.contract_type}`}>lettre</Link> ·{" "}
-          <Link href={`/outils/cv-${offer.contract_type}`}>CV en PDF</Link>
+          {/* Générateurs par type pour l'alternance et le stage seulement : pour un CDI/CDD, la page des outils. */}
+          <Link href={isPlacementType(offer.contract_type) ? `/outils/lettre-de-motivation-${offer.contract_type}` : "/outils"}>lettre</Link> ·{" "}
+          <Link href={isPlacementType(offer.contract_type) ? `/outils/cv-${offer.contract_type}` : "/outils"}>CV en PDF</Link>
         </p>
         <ShareButtons
           title="Cette offre peut intéresser un pote ?"

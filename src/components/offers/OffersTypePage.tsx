@@ -12,6 +12,8 @@ import { pagedPath, pagedTitle } from "@/lib/seo/pagination";
 import type { ContractType } from "@/types/database";
 import { CONTRACT_OF, isPlacementType } from "@/lib/offers/contractLabels";
 import { StickySignupBar } from "@/components/signup/StickySignupBar";
+import { getContractCitySegments, isJobContract } from "@/lib/offers/contractCitySegments";
+import { cityPhrase } from "@/lib/seo/programmaticIndex";
 
 // /offres/alternance et /offres/stage : la liste complète d'un type, la page
 // qui répond à « offre alternance » / « offre d'alternance » (5 500
@@ -49,7 +51,11 @@ export async function offersTypeMetadata(type: ContractType, page: number): Prom
 
 export async function OffersTypePage({ type, page }: { type: ContractType; page: number }) {
   const path = `/offres/${type}`;
-  const [{ offers, count, totalPages }, hub] = await Promise.all([fetchPublicOffers(type, page), hubModel(type)]);
+  const [{ offers, count, totalPages }, hub, jobCities] = await Promise.all([
+    fetchPublicOffers(type, page),
+    hubModel(type),
+    isJobContract(type) && page === 1 ? getContractCitySegments(type) : Promise.resolve([]),
+  ]);
   const recent = hub?.index.recent7d ?? 0;
   if (page > totalPages) notFound();
 
@@ -81,6 +87,12 @@ export async function OffersTypePage({ type, page }: { type: ContractType; page:
           <LinkChips title={`Offres ${OF[type]} par métier`} links={hub.metiers.slice(0, 16)} />
           <LinkChips title={`Offres ${OF[type]} par ville`} links={hub.cities.slice(0, 16)} />
         </>
+      )}
+      {jobCities.length > 0 && (
+        <LinkChips
+          title={`Offres ${OF[type]} par ville`}
+          links={jobCities.slice(0, 24).map((c) => ({ href: `/offres/${type}/${c.slug}`, label: `${type.toUpperCase()} débutant ${cityPhrase(c.label)}`, count: c.count }))}
+        />
       )}
       <StickySignupBar href={signupHref({ type })} />
     </div>
