@@ -86,9 +86,10 @@ export default async function TestsPage() {
 type AbRow = { variant: PaywallVariant; viewers: number; checkouts: number; buyers: number; cents: number };
 
 async function paywallAbResult(snap: StripeSnapshot, now: number): Promise<AbRow[] | null> {
-  const range = { start: Date.parse(PAYWALL_TEST.startIso), end: now };
+  const end = Math.min(now, Date.parse(PAYWALL_TEST.endIso));
+  const range = { start: Date.parse(PAYWALL_TEST.startIso), end };
   const events = await withTimeout(
-    loadArmEvents(PAYWALL_TEST.startIso, new Date(now).toISOString()).catch(() => null),
+    loadArmEvents(PAYWALL_TEST.startIso, new Date(end).toISOString()).catch(() => null),
     20_000,
     null,
   ).then((r) => r.value);

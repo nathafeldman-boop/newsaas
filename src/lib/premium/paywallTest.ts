@@ -8,7 +8,15 @@ import { contractNouns } from "@/lib/offers/contractLabels";
 // « Mensuel ». Tirage fixe par compte : la même personne voit toujours la
 // même version. Résultats dans l'admin, onglet Tests.
 
-export const PAYWALL_TEST = { name: "paywall-a-vie-1", startIso: "2026-11-08T00:00:00Z" } as const;
+// Fin du test le 12/11 (« 30 personnes 0 paiements ») : 156 comptes, « À vie »
+// ouvert par défaut 2/68 payés (2,9 %), « Mensuel » 4/88 (4,5 %). Tout le
+// monde revient sur « Mensuel ». Les résultats restent lisibles dans l'admin
+// jusqu'à endIso.
+export const PAYWALL_TEST = {
+  name: "paywall-a-vie-1",
+  startIso: "2026-11-08T00:00:00Z",
+  endIso: "2026-11-12T15:00:00Z",
+} as const;
 
 export type PaywallVariant = "mensuel" | "a_vie";
 

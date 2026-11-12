@@ -21,7 +21,7 @@ import { GuaranteeCard, type GuaranteePhase } from "@/components/premium/Guarant
 import { getGuaranteeStatus, type GuaranteeStatus } from "@/lib/premium/refundGuarantee";
 import { GUARANTEE_COOKIE } from "@/lib/premium/guaranteeTerms";
 import { getTrustCount } from "@/lib/premium/trustCount";
-import { paywallHeadline, paywallVariant, PAYWALL_TEST } from "@/lib/premium/paywallTest";
+import { paywallHeadline } from "@/lib/premium/paywallTest";
 
 const ERROR_MESSAGES: Record<string, string> = {
   not_configured: "Le paiement n'est pas encore configuré, réessaie plus tard.",
@@ -194,11 +194,11 @@ export default async function PremiumPage({
   const trustCount = showPledge ? await getTrustCount().catch(() => 0) : 0;
 
   // Mesure seulement (tableau « Chemin de Léo » de l'admin), rien de visible.
-  const variant = paywallVariant(user.id);
+  const variant = "mensuel" as const; // test paywall-a-vie-1 terminé le 12/11
   if (!premium && !paymentIssue) {
     const viewerId = user.id;
     after(() =>
-      logServerEvent(createAdminClient(), viewerId, "paywall_viewed", { source: source ?? null, test: PAYWALL_TEST.name, variant }),
+      logServerEvent(createAdminClient(), viewerId, "paywall_viewed", { source: source ?? null, variant }),
     );
   }
 
@@ -458,7 +458,7 @@ export default async function PremiumPage({
               lifetimeAvailable
               autoAvailable={isAutoOfferAvailable(profile)}
               initialOffer={offre === "auto" ? "auto" : "premium"}
-              initialPlan={variant === "a_vie" ? "lifetime" : "monthly"}
+              initialPlan="monthly"
               errorMessage={error ? (ERROR_MESSAGES[error] ?? "Une erreur est survenue.") : null}
             />
           </div>
