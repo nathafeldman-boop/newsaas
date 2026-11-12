@@ -37,6 +37,14 @@ function primary(lookingFor: ContractType[] | null | undefined): ContractType {
   return "alternance";
 }
 
+/** Bornes de la jauge du paywall : minimum légal du contrat cherché et point de départ. */
+export function salaryGaugeRange(lookingFor: ContractType[] | null | undefined): { min: number; legalMin: number; start: number } {
+  const type = primary(lookingFor);
+  const legalMin = type === "alternance" ? APPRENTICE_MONTHLY_MIN : type === "stage" ? STAGE_MONTHLY_MIN : SMIC_MONTHLY_GROSS;
+  const start = type === "alternance" ? 900 : type === "stage" ? 700 : 2000;
+  return { min: Math.ceil(legalMin / 50) * 50, legalMin: Math.floor(legalMin), start };
+}
+
 export function painCopy(lookingFor: ContractType[] | null | undefined): PainCopy {
   const type = primary(lookingFor);
   if (type === "alternance") {

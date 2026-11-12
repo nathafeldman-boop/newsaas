@@ -22,6 +22,9 @@ import { getGuaranteeStatus, type GuaranteeStatus } from "@/lib/premium/refundGu
 import { GUARANTEE_COOKIE } from "@/lib/premium/guaranteeTerms";
 import { getTrustCount } from "@/lib/premium/trustCount";
 import { PaywallPain } from "@/components/premium/PaywallPain";
+
+// « 9,99 € » → 9.99
+const euros = (price: string) => Number(price.replace(/[^\d,]/g, "").replace(",", "."));
 import { paywallHeadline } from "@/lib/premium/paywallTest";
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -449,7 +452,11 @@ export default async function PremiumPage({
 
             {/* Douleur et investissement (Nathan, 12/11) : le délai qui file,
                 puis le salaire légal minimum face au prix. lib/premium/painCopy.ts. */}
-            <PaywallPain lookingFor={profile?.looking_for} />
+            <PaywallPain
+              lookingFor={profile?.looking_for}
+              premiumMonthly={euros(welcome?.active ? prices.monthly.welcome : prices.monthly.regular)}
+              autoMonthly={isAutoOfferAvailable(profile) ? euros(welcome?.active ? prices.auto.monthly.welcome : prices.auto.monthly.regular) : null}
+            />
 
             <GuaranteeBadge initialVisible={guaranteeShown} />
 
