@@ -4,6 +4,7 @@ import { getCompanyIndex } from "@/lib/seo/companyIndex";
 import { GUIDES } from "@/lib/guides/guidesData";
 import { departementPath } from "@/lib/seo/programmaticPage";
 import { regionPath } from "@/lib/seo/regionPage";
+import { getContractCitySegments, INDEXABLE_CONTRACT_CITY_MIN, JOB_CONTRACTS } from "@/lib/offers/contractCitySegments";
 // Pages SEO programmatiques : alternance et stage seulement (pas CDD/CDI).
 import type { PlacementType as ContractType } from "@/types/database";
 
@@ -14,6 +15,8 @@ const STATIC_PATHS = [
   "/offres",
   "/offres/alternance",
   "/offres/stage",
+  "/offres/cdi",
+  "/offres/cdd",
   "/alternance",
   "/alternance/urgent",
   "/alternance/janvier-2027",
@@ -60,18 +63,27 @@ async function programmaticPaths(type: ContractType, isNew: IsNew): Promise<stri
   ];
 }
 
+// Pages « CDI/CDD débutant à <ville> » (12/11) : indexables à partir de
+// INDEXABLE_CONTRACT_CITY_MIN offres. Leur liste change chaque jour (offres
+// du jour en tête), elles sont donc toujours renvoyées.
+async function contractCityPaths(): Promise<string[]> {
+  const lists = await Promise.all(JOB_CONTRACTS.map(async (type) => (await getContractCitySegments(type)).filter((c) => c.count >= INDEXABLE_CONTRACT_CITY_MIN).map((c) => `/offres/${type}/${c.slug}`)));
+  return lists.flat();
+}
+
 // Toutes les URLs indexables du site, ou seulement ce qui a changé depuis
 // `since` : les hubs sont toujours renvoyés ; les pages métier / ville /
 // territoire / entreprise seulement si une offre y a été publiée depuis
 // `since` ; les offres arrivées depuis `since`, les guides nouveaux ou mis à jour.
 export async function collectIndexNowPaths(since?: Date): Promise<string[]> {
   const isNew: IsNew = (date) => !since || (Boolean(date) && new Date(date!).getTime() >= since.getTime());
-  const [alternance, stage, companies, offersAlternance, offersStage] = await Promise.all([
+  const [alternance, stage, companies, offersAlternance, offersStage, contractCities] = await Promise.all([
     programmaticPaths("alternance", isNew),
     programmaticPaths("stage", isNew),
     companyPaths(isNew),
     fetchOfferSitemapEntries("alternance"),
     fetchOfferSitemapEntries("stage"),
+    contractCityPaths(),
   ]);
   return [
     ...STATIC_PATHS,
@@ -79,6 +91,7 @@ export async function collectIndexNowPaths(since?: Date): Promise<string[]> {
     ...alternance,
     ...stage,
     ...companies,
+    ...contractCities,
     // Arrivée sur Stageio, pas date de publication : une offre publiée il y
     // a une semaine mais importée cette nuit est une URL nouvelle.
     ...[...offersAlternance, ...offersStage].filter((entry) => isNew(entry.createdAt)).map((entry) => entry.path),
