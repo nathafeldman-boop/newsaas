@@ -71,5 +71,7 @@ export const SITEMAP_FILES = [
   "/sitemap-entreprises.xml",
   "/sitemap-offres-alternance.xml",
   "/sitemap-offres-stage.xml",
+  "/sitemap-offres-cdi.xml",
+  "/sitemap-offres-cdd.xml",
   "/sitemap-offres-recentes.xml",
 ];
