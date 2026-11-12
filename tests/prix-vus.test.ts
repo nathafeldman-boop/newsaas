@@ -35,25 +35,27 @@ const profile: CampaignProfile = {
   created_at: "2026-10-20T10:00:00Z",
   last_active_at: "2026-11-05T18:00:00Z",
 };
-const now = Date.parse("2026-11-07T08:03:00Z");
+const now = Date.parse("2026-11-13T08:03:00Z");
 const lastViewAt = Date.parse("2026-11-05T18:02:00Z");
+// 2e vague du 13/11 : comptes venus sur Premium dans les 14 derniers jours.
 const candidate: PricesSeenCandidate = { profile, lastViewAt };
 
-// Fenêtre : 9 h à midi à Paris, le 7/11 seulement.
+// Fenêtre : 9 h à midi à Paris, le 13/11 seulement.
 assert.equal(inPricesSeenWindow(PRICES_SEEN_START), true);
 assert.equal(inPricesSeenWindow(now), true);
 assert.equal(inPricesSeenWindow(PRICES_SEEN_START - 1), false);
 assert.equal(inPricesSeenWindow(PRICES_SEEN_END), false);
-assert.equal(new Date(PRICES_SEEN_START).toISOString(), "2026-11-07T08:00:00.000Z");
+assert.equal(new Date(PRICES_SEEN_START).toISOString(), "2026-11-13T08:00:00.000Z");
 // « Aujourd'hui » = depuis minuit à Paris.
-assert.equal(new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", dateStyle: "short", timeStyle: "short" }).format(PRICES_SEEN_DAY_START), "07/11/2026 00:00");
+assert.equal(new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", dateStyle: "short", timeStyle: "short" }).format(PRICES_SEEN_DAY_START), "13/11/2026 00:00");
 
 // Le cron tombe dans la fenêtre (8 h 03 à 10 h 53 UTC).
 const vercel = JSON.parse(readFileSync("vercel.json", "utf8")) as { crons: { path: string; schedule: string }[] };
 const cron = vercel.crons.find((c) => c.path === "/api/cron/prix-vus");
-// Emails arrêtés le 11/11 (Nathan) : cron retiré de vercel.json. L'ancien horaire reste vérifié ci-dessous.
-assert.equal(cron, undefined);
-assert.equal(inPricesSeenWindow(Date.parse("2026-11-07T10:53:00Z")), true);
+assert.equal(cron?.schedule, "3-53/10 8-10 * * *");
+assert.equal(inPricesSeenWindow(Date.parse("2026-11-13T08:03:00Z")), true);
+assert.equal(inPricesSeenWindow(Date.parse("2026-11-13T10:53:00Z")), true);
+assert.equal(inPricesSeenWindow(Date.parse("2026-11-14T08:03:00Z")), false);
 
 // Exclusions.
 const none = new Set<string>();
@@ -95,7 +97,10 @@ const premiumHref = mail.html.match(/href="([^"]*premium\/go[^"]*)"/)?.[1];
 assert.ok(premiumHref, "bouton Premium présent");
 const url = new URL(premiumHref!.replace(/&amp;/g, "&"));
 assert.equal(url.searchParams.get("plan"), "choix");
-assert.equal(url.searchParams.get("utm_campaign"), "prix-vus");
+assert.equal(url.searchParams.get("utm_campaign"), "prix-vus-1311");
+// Le délai qui file et le salaire légal minimum (lib/premium/painCopy.ts).
+assert.match(mail.html, /ton école ne peut te garder que 3 mois/);
+assert.match(mail.html, /Ton premier salaire paie déjà/);
 assert.equal(verifyGoParams({ u: url.searchParams.get("u"), e: url.searchParams.get("e"), s: url.searchParams.get("s") }, now), profile.id);
 
 // Les prix écrits sont ceux de la page de paiement pendant les 10 minutes (prix de bienvenue).

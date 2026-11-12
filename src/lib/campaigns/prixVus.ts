@@ -5,6 +5,7 @@ import { unsubscribeHeaders, unsubscribeUrlFor } from "@/lib/resend/unsubscribe"
 import { goLink } from "@/lib/premium/goLink";
 import { SITE_URL } from "@/lib/site";
 import { PLAN_PRICES } from "@/lib/pricing/plans";
+import { painCopy } from "@/lib/premium/painCopy";
 import {
   CAMPAIGNS,
   PROFILE_COLUMNS,
@@ -44,17 +45,22 @@ import { CHECKOUT_DAILY_EVENT, PRICES_SEEN_EVENT, SALES_SERIES_EVENT } from "@/l
 //   cet email remplace celui du jour au lieu de s'y ajouter (ces comptes ont
 //   presque tous reçu un email de vente la veille).
 
-export const PRICES_SEEN_TAG = "prix_vus_2026_11";
+// 2e vague le 13/11 (Nathan, 12/11 : « demain c'est minimum 100 € », email
+// accepté pour les 814 comptes qui ont vu Premium en 14 jours sans payer).
+// Une fois par compte et par vague : « déjà reçu » ne compte que les envois
+// depuis PRICES_SEEN_DAY_START (même événement, le prix de bienvenue repart
+// toujours au clic).
+export const PRICES_SEEN_TAG = "prix_vus_2026_11_13";
 // 9 h à midi, heure de Paris (heure d'hiver : UTC+1).
-export const PRICES_SEEN_START = Date.parse("2026-11-07T08:00:00Z");
-export const PRICES_SEEN_END = Date.parse("2026-11-07T11:00:00Z");
-export const PRICES_SEEN_LOOKBACK_MS = 7 * 86_400_000;
-// Minuit à Paris le 7/11 (heure d'hiver).
-export const PRICES_SEEN_DAY_START = Date.parse("2026-11-06T23:00:00Z");
+export const PRICES_SEEN_START = Date.parse("2026-11-13T08:00:00Z");
+export const PRICES_SEEN_END = Date.parse("2026-11-13T11:00:00Z");
+export const PRICES_SEEN_LOOKBACK_MS = 14 * 86_400_000;
+// Minuit à Paris le 13/11 (heure d'hiver).
+export const PRICES_SEEN_DAY_START = Date.parse("2026-11-12T23:00:00Z");
 // Plafond par passage (réputation du domaine) : l'audience attendue est de
 // quelques centaines de comptes.
-export const PRICES_SEEN_MAX_PER_RUN = 700;
-export const PRICES_SEEN_UTM = "utm_source=email&utm_medium=relance&utm_campaign=prix-vus";
+export const PRICES_SEEN_MAX_PER_RUN = 900;
+export const PRICES_SEEN_UTM = "utm_source=email&utm_medium=relance&utm_campaign=prix-vus-1311";
 const OFFERS_SHOWN = 3;
 
 export type PricesSeenCandidate = { profile: CampaignProfile; lastViewAt: number };
@@ -103,8 +109,10 @@ export function renderPricesSeenEmail(p: CampaignProfile, catalog: Catalog, last
     ? "Voilà les offres les plus récentes qui collent à ta recherche :"
     : `Voilà les offres ${kind} les plus récentes sur Stageio :`;
   const lines = offers.map((o) => ({ title: cleanTitle(o.title), meta: `${o.company} · ${cityOf(o.location)}` }));
-  const premiumLine = `Tu as regardé Premium cette semaine. Pour postuler sans limite, avec une lettre de motivation pour chaque offre et l'audit de ton CV : ${monthly}/mois sans engagement, ou ${lifetime} une fois pour toujours.`;
+  const premiumLine = `Tu as regardé Premium ces derniers jours. Pour postuler sans limite, avec une lettre de motivation pour chaque offre et l'audit de ton CV : ${monthly}/mois sans engagement, ou ${lifetime} une fois pour toujours.`;
   const timing = "Ces prix tiennent 10 minutes à partir de ton clic.";
+  const pain = painCopy(p.looking_for);
+  const urgency = `${pain.deadline} ${pain.investment}`;
 
   const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#1a1a1a;max-width:520px">
 <p>${escapeHtml(greeting)}</p>
@@ -113,11 +121,12 @@ export function renderPricesSeenEmail(p: CampaignProfile, catalog: Catalog, last
 ${lines.map((l) => `<li style="margin:0 0 8px"><strong>${escapeHtml(l.title)}</strong><br><span style="color:#555">${escapeHtml(l.meta)}</span></li>`).join("\n")}
 </ul>
 <p style="margin:20px 0"><a href="${swipeUrl}" style="background:#ffffff;color:#0c7a44;border:2px solid #0c7a44;text-decoration:none;padding:10px 18px;border-radius:10px;font-weight:bold;display:inline-block">Voir mes offres</a></p>
+<p style="background:#fdeee6;border-radius:10px;padding:10px 14px">${escapeHtml(urgency)}</p>
 <p>${escapeHtml(premiumLine)}</p>
 <p style="margin:20px 0 6px"><a href="${premiumUrl}" style="background:#0c7a44;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:10px;font-weight:bold;display:inline-block">Débloquer Premium</a></p>
 <p style="font-size:13px;color:#555;margin:0 0 20px">${escapeHtml(timing)} Paiement sécurisé par Stripe, sans te reconnecter.</p>
 <p>Bonne recherche,<br>Nathan, de Stageio</p>
-<p style="font-size:12px;color:#888;margin-top:28px">Tu reçois cet email parce que tu as un compte sur stageio.fr. Un seul email de ce type, pas de série derrière. <a href="${unsubscribeUrl}" style="color:#888">Ne plus recevoir d'emails de Stageio</a>.</p>
+<p style="font-size:12px;color:#888;margin-top:28px">Tu reçois cet email parce que tu as un compte sur stageio.fr. Pas de série derrière. <a href="${unsubscribeUrl}" style="color:#888">Ne plus recevoir d'emails de Stageio</a>.</p>
 </div>`;
 
   const text = [
@@ -128,6 +137,8 @@ ${lines.map((l) => `<li style="margin:0 0 8px"><strong>${escapeHtml(l.title)}</s
     "",
     `Voir mes offres : ${swipeUrl}`,
     "",
+    urgency,
+    "",
     premiumLine,
     `Débloquer Premium, sans te reconnecter : ${premiumUrl}`,
     `${timing} Paiement sécurisé par Stripe.`,
@@ -135,7 +146,7 @@ ${lines.map((l) => `<li style="margin:0 0 8px"><strong>${escapeHtml(l.title)}</s
     "Bonne recherche,",
     "Nathan, de Stageio",
     "",
-    "Tu reçois cet email parce que tu as un compte sur stageio.fr. Un seul email de ce type, pas de série derrière.",
+    "Tu reçois cet email parce que tu as un compte sur stageio.fr. Pas de série derrière.",
     `Ne plus recevoir d'emails de Stageio : ${unsubscribeUrl}`,
   ].join("\n");
 
@@ -177,7 +188,7 @@ export async function sendPricesSeenEmails(now: number = Date.now()): Promise<Pr
   try {
     const [views, already, offerRows, recent] = await Promise.all([
       events(["paywall_viewed"], now - PRICES_SEEN_LOOKBACK_MS),
-      events([PRICES_SEEN_EVENT]),
+      events([PRICES_SEEN_EVENT], PRICES_SEEN_DAY_START),
       events([CAMPAIGNS.offre48.event]),
       events(RECENT_EMAIL_EVENTS, PRICES_SEEN_DAY_START),
     ]);
