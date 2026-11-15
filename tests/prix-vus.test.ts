@@ -49,10 +49,10 @@ assert.equal(new Date(PRICES_SEEN_START).toISOString(), "2026-11-13T08:00:00.000
 // « Aujourd'hui » = depuis minuit à Paris.
 assert.equal(new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", dateStyle: "short", timeStyle: "short" }).format(PRICES_SEEN_DAY_START), "13/11/2026 00:00");
 
-// Le cron tombe dans la fenêtre (8 h 03 à 10 h 53 UTC).
+// Campagne finie (fenêtre du 13/11) : le cron est retiré le 15/11 (coût Vercel).
 const vercel = JSON.parse(readFileSync("vercel.json", "utf8")) as { crons: { path: string; schedule: string }[] };
 const cron = vercel.crons.find((c) => c.path === "/api/cron/prix-vus");
-assert.equal(cron?.schedule, "3-53/10 8-10 * * *");
+assert.equal(cron, undefined, "cron prix-vus retiré");
 assert.equal(inPricesSeenWindow(Date.parse("2026-11-13T08:03:00Z")), true);
 assert.equal(inPricesSeenWindow(Date.parse("2026-11-13T10:53:00Z")), true);
 assert.equal(inPricesSeenWindow(Date.parse("2026-11-14T08:03:00Z")), false);

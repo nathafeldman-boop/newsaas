@@ -2,9 +2,10 @@ import { NextResponse, type NextRequest } from "next/server";
 import { syncFreshFranceTravailOffers } from "@/lib/franceTravail/offresFraiches";
 
 // Offres fraîches France Travail, voir lib/franceTravail/offresFraiches.ts.
-// vercel.json : /api/cron/offres-fraiches/live, chaque minute (Vercel Pro).
+// vercel.json : /api/cron/offres-fraiches/live, toutes les 10 minutes (15/11 :
+// chaque minute coûtait trop cher sur Vercel).
 // Log quand il se passe quelque chose, plus une ligne par heure : 1 440
-// passages par jour.
+// passages par jour à l'origine, 144 désormais.
 export const maxDuration = 60;
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ run: string }> }) {

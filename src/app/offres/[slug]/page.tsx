@@ -175,10 +175,11 @@ export async function generateMetadata({
   const title = offerTitle(offer);
   const description = offerMetaDescription(offer);
   const url = `${SITE_URL}${offerPath(offer)}`;
-  // Image par offre quand elle existe (Adzuna/France Travail/manuel) --
-  // sinon on n'écrit pas la clé, les metadata héritent de l'og-image par
-  // défaut du layout racine plutôt que de n'avoir aucune image du tout.
-  const ogImages = offer.image_url ? [offer.image_url] : undefined;
+  // Image par offre quand elle existe (Adzuna/France Travail/manuel), sinon
+  // l'image fixe du site : un openGraph de page remplace celui du layout en
+  // entier, et l'image générée à la volée par offre a été retirée (15/11,
+  // coût Vercel : les robots la recalculaient sans cesse).
+  const ogImages = offer.image_url ? [offer.image_url] : ["/og-image.jpg"];
 
   return {
     title,
@@ -194,9 +195,9 @@ export async function generateMetadata({
       description,
       url,
       type: "website",
-      ...(ogImages ? { images: ogImages } : {}),
+      images: ogImages,
     },
-    ...(ogImages ? { twitter: { card: "summary_large_image", images: ogImages } } : {}),
+    twitter: { card: "summary_large_image", images: ogImages },
   };
 }
 
