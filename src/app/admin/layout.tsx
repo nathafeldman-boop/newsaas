@@ -16,6 +16,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (pathname === "/admin/login") {
     return <>{children}</>;
   }
+  // Parcours de démo (tournage TikTok) : plein écran, sans l'en-tête admin.
+  if (pathname === "/admin/demo") {
+    if (!(await hasAdminSession())) redirect("/admin/login");
+    return <>{children}</>;
+  }
 
   const authorized = await hasAdminSession();
   if (!authorized) redirect("/admin/login");
