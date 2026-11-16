@@ -27,6 +27,7 @@ import { PledgeDone, ProofCompare, ProofDemo, ProofReviews, type ProofData } fro
 import { PledgeSign } from "@/components/pledge/PledgeSign";
 import { UrgencyScreen } from "@/components/onboarding/UrgencyScreen";
 import { forgetSignupCity, readSignupCity } from "@/lib/signup/intentStorage";
+import { useDemo } from "@/lib/demo/demoMode";
 
 // Onboarding "sans clavier" : tout se fait au tap (tuiles/chips), avec un
 // échappatoire texte optionnel là où une liste ne peut pas tout couvrir
@@ -269,6 +270,7 @@ export function OnboardingWizard({
   trustCount: number;
   proof: ProofData;
 }) {
+  const demo = useDemo();
   const [stepIndex, setStepIndex] = useState(0);
   const [direction, setDirection] = useState(1);
   const [error, setError] = useState<string | null>(null);
@@ -1004,6 +1006,10 @@ export function OnboardingWizard({
                 contractLabel={myContractLabel(lookingFor)}
                 onNext={() => {
                   void logOnboardingEvent(userId, "onboarding_step_completed", "pledge_done");
+                  if (demo) {
+                    demo.onFinishOnboarding();
+                    return;
+                  }
                   // eslint-disable-next-line @next/next/no-location-assign-relative-destination
                   window.location.href = "/swipe";
                 }}

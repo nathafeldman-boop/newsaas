@@ -24,6 +24,7 @@ import { PassReasonBar } from "@/components/swipe/PassReasonBar";
 import { widenSearchToFranceAction } from "@/app/(app)/swipe/actions";
 import { cardsToDrop, type OfferTags, type PassReason } from "@/lib/matching/passReasons";
 import { cn } from "@/lib/utils";
+import { useDemo } from "@/lib/demo/demoMode";
 import type { ContractType, Offer, SwipeDirection } from "@/types/database";
 import { ALL_CONTRACT_TYPES, CONTRACT_LABEL } from "@/lib/offers/contractLabels";
 
@@ -328,6 +329,7 @@ function SwipeDeckInner({
   onSiteOnly?: boolean;
   onSiteCity?: string | null;
 }) {
+  const demo = useDemo();
   const router = useRouter();
   const [widening, setWidening] = useState(false);
   // Formule Auto (24/10) : au premier like, on demande si un like envoie la
@@ -443,6 +445,16 @@ function SwipeDeckInner({
     const offer = stack[0];
     if (!offer) return false;
 
+    // Mode démo (admin, tournage TikTok) : la carte part, et un like ouvre
+    // l'écran de candidature de démo. Rien n'est enregistré ni envoyé.
+    if (demo) {
+      topCardRef.current?.swipeOut(direction);
+      setPassAck(null);
+      setPassPrompt(null);
+      if (direction === "like") window.setTimeout(() => demo.onApply(offer), 450);
+      return true;
+    }
+
     if (!isPremium) {
       if (direction === "like") {
         void logButtonClick(userId, "premium_cta", { source: "swipe_like", offerId: offer.id });
@@ -507,6 +519,10 @@ function SwipeDeckInner({
   // paywall). Pour un compte gratuit, renvoie directement vers /premium sans
   // toucher à la carte ni enregistrer quoi que ce soit.
   function handleApplyIntent() {
+    if (demo && stack[0]) {
+      demo.onApply(stack[0]);
+      return;
+    }
     if (!isPremium) {
       void logButtonClick(userId, "premium_cta", { source: "swipe_apply", offerId: stack[0]?.id });
       router.push("/premium?source=swipe_apply");
