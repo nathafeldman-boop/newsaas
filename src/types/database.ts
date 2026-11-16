@@ -254,6 +254,22 @@ export type RevenueGoal = {
   updated_at: string;
 };
 
+export type CreatorVideo = {
+  id: string;
+  url: string;
+  creator: string | null;
+  added_at: string;
+  views: number | null;
+  checked_at: string | null;
+  last_error: string | null;
+};
+
+export type CreatorVideoViews = {
+  video_id: string;
+  checked_at: string;
+  views: number;
+};
+
 export type ContentView = {
   recorded_on: string;
   source: string;
@@ -457,6 +473,18 @@ export type Database = {
         Row: RevenueGoal;
         Insert: Partial<RevenueGoal> & { month: string; target_cents: number };
         Update: Partial<RevenueGoal>;
+        Relationships: [];
+      };
+      creator_videos: {
+        Row: CreatorVideo;
+        Insert: Partial<CreatorVideo> & { url: string };
+        Update: Partial<CreatorVideo>;
+        Relationships: [];
+      };
+      creator_video_views: {
+        Row: CreatorVideoViews;
+        Insert: Partial<CreatorVideoViews> & { video_id: string; views: number };
+        Update: Partial<CreatorVideoViews>;
         Relationships: [];
       };
       content_views: {

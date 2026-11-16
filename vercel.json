@@ -83,6 +83,10 @@
     {
       "path": "/api/cron/sync-france-travail-emplois?mode=fresh",
       "schedule": "17 * * * *"
+    },
+    {
+      "path": "/api/cron/tiktok-views",
+      "schedule": "25 */3 * * *"
     }
   ]
 }

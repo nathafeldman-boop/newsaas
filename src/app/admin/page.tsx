@@ -23,6 +23,9 @@ import {
 } from "@/lib/admin/cockpit/metrics";
 import { requireAdminPage } from "@/lib/admin/accessCode";
 import { TodayLive } from "@/components/admin/cockpit/TodayLive";
+import { CreatorsPanel } from "@/components/admin/cockpit/CreatorsPanel";
+import { loadCreatorData, type CreatorData } from "@/lib/creators/store";
+import { rpmEuros, viewsGainedIn } from "@/lib/creators/tiktokViews";
 import { autoOfferBlockers } from "@/lib/admin/autoStatus";
 import { DailyGoalGauge } from "@/components/admin/goals/DailyGoalGauge";
 import { dailyGoalFrom } from "@/lib/admin/dailyGoal";
@@ -35,21 +38,29 @@ import { goalFor } from "@/lib/admin/goals";
 // et activité dans Supabase. Chaque tuile a sa définition et sa source.
 export const maxDuration = 60;
 
-export default async function CockpitOverviewPage({ searchParams }: { searchParams: Promise<{ p?: string }> }) {
+export default async function CockpitOverviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ p?: string; createurs?: string; n?: string; ko?: string }>;
+}) {
   await requireAdminPage();
-  const { p } = await searchParams;
+  const { p, createurs, n, ko } = await searchParams;
   const period = parsePeriod(p);
   const now = nowMs();
   const { current, previous } = periodRanges(period, now);
   const { snap, error } = await loadSnapshot();
 
-  const [signupsCur, signupsPrev, active7, active30, autoBlockers, savedGoals] = await Promise.all([
+  const [signupsCur, signupsPrev, active7, active30, autoBlockers, savedGoals, creatorData] = await Promise.all([
     signupsIn(current).catch(() => null),
     signupsIn(previous).catch(() => null),
     activeSince(now - 7 * DAY_MS).catch(() => null),
     activeSince(now - 30 * DAY_MS).catch(() => null),
     autoOfferBlockers().catch(() => [] as string[]),
     loadSavedGoals().catch(() => null),
+    loadCreatorData().catch((err): CreatorData | null => {
+      console.error("cockpit: vidéos créateurs illisibles", err);
+      return null;
+    }),
   ]);
   const autoAlert =
     autoBlockers.length > 0
@@ -92,6 +103,33 @@ export default async function CockpitOverviewPage({ searchParams }: { searchPara
   const chPrev = churnIn(paid, previous);
   const series = mrrSeries(paid, current);
   const daily = dailyRevenue(snap, current);
+
+  // Créateurs TikTok (16/11) : vues gagnées sur la période par les vidéos
+  // suivies, et RPM = encaissé ÷ milliers de vues. Le RPM brut compte tout
+  // l'encaissé (Facebook, emails…) ; le RPM « en plus » retire le rythme
+  // d'encaissement des 14 jours qui ont précédé la première vidéo suivie.
+  const creatorViewsCur = creatorData ? viewsGainedIn(creatorData.snapshots, current) : 0;
+  const creatorViewsPrev = creatorData ? viewsGainedIn(creatorData.snapshots, previous) : 0;
+  const grossCur = revCur.recurringCents + revCur.oneTimeCents;
+  const grossPrev = revPrev.recurringCents + revPrev.oneTimeCents;
+  const firstVideoAt = creatorData?.videos.length ? Math.min(...creatorData.videos.map((v) => Date.parse(v.added_at))) : null;
+  let extraCur: number | null = null;
+  if (firstVideoAt !== null) {
+    const base = revenueIn(snap, { start: firstVideoAt - 14 * DAY_MS, end: firstVideoAt });
+    const basePerDay = (base.recurringCents + base.oneTimeCents) / 14;
+    const tracked = { start: Math.max(current.start, firstVideoAt), end: current.end };
+    if (tracked.end > tracked.start) {
+      const rev = revenueIn(snap, tracked);
+      extraCur = rev.recurringCents + rev.oneTimeCents - basePerDay * ((tracked.end - tracked.start) / DAY_MS);
+    }
+  }
+  const rpmCur = rpmEuros(grossCur, creatorViewsCur);
+  const rpmPrev = rpmEuros(grossPrev, creatorViewsPrev);
+  const rpmExtra = extraCur !== null ? rpmEuros(Math.max(0, extraCur), creatorViewsCur) : null;
+  const gainedByVideo = new Map(
+    (creatorData?.videos ?? []).map((v) => [v.id, viewsGainedIn(creatorData!.snapshots.filter((s) => s.video_id === v.id), current)]),
+  );
+  const rpmFmt = (x: number | null) => (x === null ? "—" : `${x.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`);
 
   // Conversion : inscrits de la période qui ont payé (abonnement ou accès à vie), à n'importe quelle date depuis.
   const payerIds = new Set<string>([
@@ -196,6 +234,33 @@ export default async function CockpitOverviewPage({ searchParams }: { searchPara
         </KpiGrid>
       </Section>
 
+      <Section title="Créateurs TikTok" subtitle="Vues des vidéos collées en bas de page, relevées toutes les 3 h.">
+        <KpiGrid>
+          <Kpi
+            accent="green"
+            href="#createurs"
+            cta="Voir les vidéos"
+            label="Vues sur la période"
+            value={int(creatorViewsCur)}
+            delta={delta(creatorViewsCur, creatorViewsPrev, (x) => int(x))}
+            sub={`${creatorData?.videos.length ?? 0} vidéo${(creatorData?.videos.length ?? 0) > 1 ? "s" : ""} suivie${(creatorData?.videos.length ?? 0) > 1 ? "s" : ""}`}
+            definition="Vues gagnées pendant la période par toutes les vidéos suivies : vues au dernier relevé de la période moins vues au dernier relevé d'avant. Une vidéo relevée pour la première fois pendant la période compte toutes ses vues."
+            source="Pages publiques TikTok, relevé toutes les 3 h"
+          />
+          <Kpi
+            accent="green"
+            href="#createurs"
+            cta="Voir les vidéos"
+            label="RPM"
+            value={rpmFmt(rpmCur)}
+            delta={rpmCur !== null && rpmPrev !== null ? delta(rpmCur, rpmPrev, (x) => rpmFmt(x)) : undefined}
+            sub={`En plus du rythme d'avant : ${rpmFmt(rpmExtra)} · repères : 2 € minimum, 4 €+ parfait`}
+            definition="Encaissé sur la période (abonnements + accès à vie, brut) ÷ (vues créateurs ÷ 1000). Il compte aussi ce qu'apportent Facebook, les emails et Google. « En plus du rythme d'avant » retire l'encaissement quotidien moyen des 14 jours avant la première vidéo suivie : c'est l'estimation du revenu dû aux créateurs."
+            source="Stripe + relevés TikTok"
+          />
+        </KpiGrid>
+      </Section>
+
       <Section title="Abonnements">
         <KpiGrid>
           <Kpi
@@ -296,6 +361,16 @@ export default async function CockpitOverviewPage({ searchParams }: { searchPara
           </Card>
         </div>
       </Section>
+
+      <CreatorsPanel
+        videos={creatorData?.videos ?? []}
+        gained={gainedByVideo}
+        now={now}
+        notice={createurs}
+        added={n ? Number(n) : undefined}
+        rejected={ko ? Number(ko) : undefined}
+        missingTable={creatorData?.missingTable ?? false}
+      />
 
       <p style={{ marginTop: 24, fontSize: 12, color: "var(--color-neutral-500)" }}>
         Détail : <Link href={`/admin/revenus?p=${period}`}>revenus</Link> · <Link href={`/admin/abonnements?p=${period}`}>abonnements et churn</Link> ·{" "}
