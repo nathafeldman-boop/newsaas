@@ -503,3 +503,54 @@ body:has([data-paywall-fullscreen]) .app-shell-content { padding-left: 0 !import
 .cancel-heart { animation: cancel-heart-beat 1.8s ease-in-out infinite; filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.25)); }
 @keyframes cancel-heart-beat { 0%, 100% { transform: scale(1); } 15% { transform: scale(1.12); } 30% { transform: scale(0.98); } 45% { transform: scale(1.06); } }
 @media (prefers-reduced-motion: reduce) { .cancel-heart { animation: none; } }
+
+/* ── Admin sombre (17/11, maquettes A et B validées par Nathan) ──────────
+   Deux accents au choix, un clic dans l'en-tête : violet (façon Stripe) ou
+   vert Stageio. Tout passe par les variables : les pages admin existantes
+   suivent sans être réécrites. */
+.admin-dark {
+  --color-bg: #0a0b0d; --color-surface: #0d0f12; --color-text: #e8eaed; --color-divider: #22262c;
+  --color-neutral-100: #111316; --color-neutral-200: #22262c; --color-neutral-300: #2c3138; --color-neutral-400: #4a515b;
+  --color-neutral-500: #6b727c; --color-neutral-600: #8a9099; --color-neutral-700: #a9aeb6; --color-neutral-800: #c9cdd3; --color-neutral-900: #e8eaed;
+  --good: #2ecc71; --bad: #ff5c5c; --warn: #f5a524; --tip-bg: #15181c; --card-hover: #15181c;
+  --glow: rgba(99, 91, 255, 0.16);
+  --color-accent: #635bff; --color-accent-100: rgba(99, 91, 255, 0.14); --color-accent-200: rgba(99, 91, 255, 0.24);
+  --color-accent-500: #7a73ff; --color-accent-600: #7a73ff; --color-accent-700: #a29dff; --color-accent-800: #c9c6ff;
+  --chart-1: #7a73ff; --chart-2: #2ecc71; --chart-3: #f472b6; --chart-grid: #22262c;
+  background: var(--color-bg); color: var(--color-text); color-scheme: dark; min-height: 100vh;
+}
+.admin-dark[data-accent="vert"] {
+  --color-bg: #050807; --color-neutral-100: rgba(18, 26, 22, 0.78); --color-neutral-200: rgba(74, 222, 128, 0.13); --color-divider: rgba(74, 222, 128, 0.13);
+  --tip-bg: #121a16; --card-hover: #16211b; --glow: rgba(34, 197, 94, 0.16);
+  --color-accent: #22c55e; --color-accent-100: rgba(34, 197, 94, 0.14); --color-accent-200: rgba(34, 197, 94, 0.24);
+  --color-accent-500: #4ade80; --color-accent-600: #4ade80; --color-accent-700: #86efac; --color-accent-800: #bbf7d0;
+  --chart-1: #4ade80; --chart-2: #38bdf8; --chart-3: #f472b6; --chart-grid: rgba(74, 222, 128, 0.12);
+  background: radial-gradient(1200px 600px at 70% -10%, rgba(34, 197, 94, 0.14), transparent), radial-gradient(800px 500px at 0% 100%, rgba(56, 189, 248, 0.08), transparent), #050807;
+  background-attachment: fixed;
+}
+.admin-dark .admin-side, .admin-dark .admin-topbar { background: transparent; }
+.admin-dark .admin-topbar { border-bottom: 1px solid var(--color-divider); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 10; }
+.admin-dark .admin-nav-link { color: var(--color-neutral-600); transition: background-color .15s ease, color .15s ease; }
+.admin-dark .admin-nav-link:hover { background: var(--card-hover); color: var(--color-text); }
+.admin-dark .admin-nav-link.is-active { background: var(--color-accent-100); color: var(--color-accent-800); }
+.admin-dark .cockpit-card, .admin-dark .card { background: var(--color-neutral-100); border: 1px solid var(--color-neutral-200); border-radius: 14px; position: relative; overflow: hidden; }
+.admin-dark .cockpit-card.has-accent { border-top: 1px solid var(--color-neutral-200); }
+.admin-dark .cockpit-card.has-accent::after { content: ""; position: absolute; inset: 0 0 auto 0; height: 2px; background: linear-gradient(90deg, var(--kpi-accent), transparent); }
+.admin-dark .cockpit-hero::before { content: ""; position: absolute; width: 320px; height: 320px; border-radius: 50%; top: -140px; right: -90px; background: radial-gradient(circle, var(--glow), transparent 70%); pointer-events: none; }
+.admin-dark .cockpit-card.is-link:hover { box-shadow: 0 0 0 1px var(--color-accent-200), 0 16px 40px rgba(0, 0, 0, 0.45); }
+.admin-dark .cockpit-table th { background: var(--color-neutral-100); }
+.admin-dark .cockpit-table tbody tr:hover td, .admin-dark .cockpit-hbar-link:hover { background: var(--card-hover); }
+.admin-dark .cockpit-tip { background: var(--tip-bg); border-color: var(--color-neutral-200); box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5); }
+.admin-dark .cockpit-pill { background: var(--color-neutral-200); color: var(--color-neutral-800); }
+.admin-dark .cockpit-pill.is-good { background: rgba(46, 204, 113, 0.12); color: var(--good); }
+.admin-dark .cockpit-pill.is-warn { background: rgba(245, 165, 36, 0.12); color: var(--warn); }
+.admin-dark .cockpit-pill.is-bad { background: rgba(255, 92, 92, 0.12); color: var(--bad); }
+.admin-dark .cockpit-person:hover { box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45); }
+.admin-dark .input { background: var(--color-surface); }
+.admin-dark .btn-primary { color: #fff; }
+.admin-dark section { animation: fade-in-up 0.45s ease both; }
+.admin-dark .chart-line { stroke-dasharray: 2400; stroke-dashoffset: 2400; animation: admin-draw 1.4s 0.2s ease forwards; }
+.admin-dark .chart-bar { transform-box: fill-box; transform-origin: bottom; animation: admin-grow 0.8s ease both; }
+@keyframes admin-draw { to { stroke-dashoffset: 0; } }
+@keyframes admin-grow { from { transform: scaleY(0); } }
+@media (prefers-reduced-motion: reduce) { .admin-dark section, .admin-dark .chart-line, .admin-dark .chart-bar { animation: none; stroke-dasharray: none; stroke-dashoffset: 0; } }

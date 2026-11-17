@@ -2,8 +2,10 @@
 // méthode dataviz sur la surface des cartes (#f2f8f9) : vert Stageio et
 // bleu passent toutes les vérifications (daltonisme compris) ; le rose
 // (3e série) demande des libellés visibles ou le tableau, toujours fourni.
-export const SERIES_COLORS = ["#0f9c56", "#2a78d6", "#e87ba4"] as const;
-export const GRID_COLOR = "#dbe7ea";
+// Thème sombre de l'admin (17/11) : couleurs portées par des variables CSS
+// (accent violet ou vert, voir .admin-dark dans globals.css), repli sur la palette claire.
+export const SERIES_COLORS = ["var(--chart-1, #0f9c56)", "var(--chart-2, #2a78d6)", "var(--chart-3, #e87ba4)"] as const;
+export const GRID_COLOR = "var(--chart-grid, #dbe7ea)";
 export const AXIS_TEXT = "var(--color-neutral-600)";
 
 export type ChartUnit = "eur" | "count";

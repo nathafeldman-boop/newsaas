@@ -111,7 +111,7 @@ export function BarChart({
                     return si === lastVisible ? (
                       <path key={s.name} d={topRounded(gx, top, barW, h - gap)} fill={s.color} />
                     ) : (
-                      <rect key={s.name} x={gx} y={top} width={barW} height={Math.max(0, h - gap)} fill={s.color} />
+                      <rect className="chart-bar" key={s.name} x={gx} y={top} width={barW} height={Math.max(0, h - gap)} fill={s.color} />
                     );
                   }
                   return <path key={s.name} d={topRounded(gx + si * (barW + 2), baseline - h, barW, h)} fill={s.color} />;
@@ -144,7 +144,7 @@ export function BarChart({
               top: 4,
               left: tipLeft,
               minWidth: 150,
-              background: "#fff",
+              background: "var(--tip-bg, #fff)",
               border: "1px solid var(--color-neutral-200)",
               borderRadius: 10,
               boxShadow: "var(--shadow-sm)",

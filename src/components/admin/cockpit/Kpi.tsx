@@ -50,8 +50,8 @@ export function Kpi({
     !delta || delta.direction === "flat" || goodWhen === "neutral"
       ? "var(--color-neutral-600)"
       : (delta.direction === "up") === (goodWhen === "up")
-        ? "#0c6b3c"
-        : "#b42318";
+        ? "var(--good, #0c6b3c)"
+        : "var(--bad, #b42318)";
   const body = (
     <>
       <div style={{ fontSize: 12.5, color: "var(--color-neutral-700)", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>

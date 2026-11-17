@@ -1,4 +1,6 @@
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
+import { AccentToggle } from "@/components/admin/AccentToggle";
+import { ADMIN_ACCENT_COOKIE, type AdminAccent } from "@/lib/admin/accent";
 import { redirect } from "next/navigation";
 import { hasAdminSession } from "@/lib/admin/accessCode";
 import { adminLogoutAction } from "@/app/admin/login/actions";
@@ -25,18 +27,23 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const authorized = await hasAdminSession();
   if (!authorized) redirect("/admin/login");
 
+  const accent: AdminAccent = (await cookies()).get(ADMIN_ACCENT_COOKIE)?.value === "vert" ? "vert" : "violet";
+
   return (
-    <div className="flex min-h-full flex-1 flex-col">
-      <header
-        className="flex items-center justify-between px-5 py-3"
-        style={{ borderBottom: "1px solid var(--color-divider)", background: "var(--color-surface)" }}
-      >
-        <span style={{ fontFamily: "var(--font-heading)", fontSize: 15 }}>Stageio — Admin</span>
-        <form action={adminLogoutAction}>
-          <button type="submit" className="btn btn-secondary" style={{ padding: "6px 14px", fontSize: 12 }}>
-            Déconnexion
-          </button>
-        </form>
+    <div className="admin-dark flex min-h-full flex-1 flex-col" data-accent={accent}>
+      <header className="admin-topbar flex items-center justify-between px-5 py-3">
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 9, fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700 }}>
+          <span aria-hidden style={{ width: 20, height: 20, borderRadius: 6, background: "linear-gradient(135deg, #2ecc71, #0f8a4a)" }} />
+          Stageio Admin
+        </span>
+        <span style={{ display: "inline-flex", gap: 8 }}>
+          <AccentToggle initial={accent} />
+          <form action={adminLogoutAction}>
+            <button type="submit" className="btn btn-secondary" style={{ padding: "6px 14px", fontSize: 12 }}>
+              Déconnexion
+            </button>
+          </form>
+        </span>
       </header>
       <div className="admin-shell">
         <aside className="admin-side">

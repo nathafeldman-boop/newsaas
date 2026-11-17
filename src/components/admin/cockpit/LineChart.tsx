@@ -92,9 +92,9 @@ export function LineChart({
             const area = `${line} L ${x(n - 1)} ${y(0)} L ${x(0)} ${y(0)} Z`;
             return (
               <g key={s.name}>
-                <path d={area} fill={s.color} opacity={0.1} />
-                <path d={line} fill="none" stroke={s.color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
-                <circle cx={x(n - 1)} cy={y(s.values[n - 1])} r={4} fill={s.color} stroke="#f2f8f9" strokeWidth={2} />
+                <path d={area} fill={s.color} opacity={0.14} />
+                <path className="chart-line" d={line} fill="none" stroke={s.color} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
+                <circle cx={x(n - 1)} cy={y(s.values[n - 1])} r={4} fill={s.color} stroke="var(--color-neutral-100, #f2f8f9)" strokeWidth={2} />
               </g>
             );
           })}
@@ -102,7 +102,7 @@ export function LineChart({
             <g pointerEvents="none">
               <line x1={x(hover)} x2={x(hover)} y1={padTop} y2={padTop + plotH} stroke="var(--color-neutral-500)" strokeWidth={1} />
               {series.map((s) => (
-                <circle key={s.name} cx={x(hover)} cy={y(s.values[hover])} r={4} fill={s.color} stroke="#f2f8f9" strokeWidth={2} />
+                <circle key={s.name} cx={x(hover)} cy={y(s.values[hover])} r={4} fill={s.color} stroke="var(--color-neutral-100, #f2f8f9)" strokeWidth={2} />
               ))}
             </g>
           )}
@@ -115,7 +115,7 @@ export function LineChart({
               top: 4,
               left: tipLeft,
               minWidth: 150,
-              background: "#fff",
+              background: "var(--tip-bg, #fff)",
               border: "1px solid var(--color-neutral-200)",
               borderRadius: 10,
               boxShadow: "var(--shadow-sm)",
