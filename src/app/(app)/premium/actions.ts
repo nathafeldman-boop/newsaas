@@ -1,6 +1,8 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { CONSENT_AGE, ageOn } from "@/lib/schoolStage/levels";
 import { createClient } from "@/lib/supabase/server";
 import { getStripeClient } from "@/lib/stripe/client";
 import { startCheckout } from "@/lib/stripe/startCheckout";
@@ -16,6 +18,9 @@ export async function createCheckoutSessionAction(formData: FormData) {
 
   // "plan" est posé par un input hidden dans chaque carte de prix (voir
   // /premium) ; tout le reste dans startCheckout (garde-fous, prix, session).
+  // Moins de 15 ans (18/11) : la case « c'est un parent qui paie » doit être cochée.
+  const { data: p } = await supabase.from("profiles").select("birth_date").eq("id", user.id).maybeSingle();
+  if ((ageOn(p?.birth_date) ?? 99) < CONSENT_AGE && (await cookies()).get("parent_pays")?.value !== "1") redirect("/premium?error=parent");
   const result = await startCheckout({ id: user.id, email: user.email ?? null }, formData.get("plan"));
   if ("error" in result) redirect(`/premium?error=${result.error}`);
   redirect(result.url);

@@ -99,8 +99,7 @@ export function SchoolStageGuide({ level }: { level: SchoolStageLevel }) {
         <p style={{ margin: 0, fontWeight: 800, fontSize: 17 }}>Les offres de stage et les entreprises près de chez toi, avec ta lettre</p>
         <p style={{ margin: "6px 0 0", fontSize: 14, lineHeight: 1.5, ...muted }}>
           Tu swipes les offres de stage de ta classe près de chez toi (offres de la plateforme 1élève1stage pour la 3e et la seconde) et des
-          entreprises à contacter ({SCHOOL_SECTORS.slice(0, 4).map((s) => s.label.toLowerCase()).join(", ")}…), et Stageio prépare ta lettre. Moins
-          de 15 ans : c&apos;est un parent qui donne son accord. À l&apos;inscription, choisis « Stage de 3e, de seconde, de 1re ou de bac pro ».
+          entreprises à contacter ({SCHOOL_SECTORS.slice(0, 4).map((s) => s.label.toLowerCase()).join(", ")}…), et Stageio prépare ta lettre. À l&apos;inscription, choisis « Stage de 3e, de seconde, de 1re ou de bac pro ».
         </p>
         <Link href="/inscription" className="btn btn-primary" style={{ marginTop: 14, display: "inline-flex" }}>
           Trouver mon stage

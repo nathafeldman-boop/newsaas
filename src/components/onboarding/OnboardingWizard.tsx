@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { markReferralGrantedAction, saveSchoolStageOnboardingAction } from "@/app/onboarding/actions";
-import { CONSENT_AGE, SCHOOL_STAGES, SCHOOL_STAGE_IDS, ageOn } from "@/lib/schoolStage/levels";
+import { SCHOOL_STAGES, SCHOOL_STAGE_IDS, ageOn } from "@/lib/schoolStage/levels";
 import { ChipMultiSelectWithCustom } from "@/components/ui/ChipMultiSelectWithCustom";
 import { LocationSearchSelect } from "@/components/ui/LocationSearchSelect";
 import { Highlight } from "@/components/ui/Highlight";
@@ -318,11 +318,11 @@ export function OnboardingWizard({
     initialProfile?.looking_for ?? [],
   );
 
-  // Stages scolaires (18/11) : classe, date de naissance, e-mail d'un parent
-  // sous 15 ans. Le reste de l'onboarding est le même pour tout le monde.
+  // Stages scolaires (18/11) : classe et date de naissance. Le reste de
+  // l'onboarding est le même pour tout le monde ; sous 15 ans, une case
+  // « c'est un parent qui paie » au paywall, rien d'autre.
   const [schoolLevel, setSchoolLevel] = useState<string>(initialProfile?.school_stage ?? "");
   const [birthDate, setBirthDate] = useState<string>(initialProfile?.birth_date ?? "");
-  const [parentEmail, setParentEmail] = useState<string>(initialProfile?.parent_email ?? "");
   const schoolMode = lookingFor.includes("stage_scolaire");
   const schoolAge = ageOn(birthDate);
   const [targetJobs, setTargetJobs] = useState<string[]>(initialProfile?.target_jobs ?? []);
@@ -367,9 +367,6 @@ export function OnboardingWizard({
     if (stepId === "looking_for" && schoolMode) {
       if (!schoolLevel) return "Choisis ta classe.";
       if (schoolAge === null || schoolAge < 10 || schoolAge > 25) return "Indique ta date de naissance.";
-      if (schoolAge < CONSENT_AGE && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(parentEmail.trim())) {
-        return "Tu as moins de 15 ans : indique l'e-mail d'un de tes parents.";
-      }
     }
     if (stepId === "city" && !city.trim()) {
       return "Indique au moins ta ville.";
@@ -479,7 +476,7 @@ export function OnboardingWizard({
     const supabase = createClient();
 
     if (schoolMode) {
-      const school = await saveSchoolStageOnboardingAction({ level: schoolLevel, birthDate, parentEmail });
+      const school = await saveSchoolStageOnboardingAction({ level: schoolLevel, birthDate });
       if (!school.ok) return { ok: false, error: school.error };
     }
 
@@ -944,22 +941,6 @@ export function OnboardingWizard({
                           style={{ width: "100%", marginTop: 6, fontWeight: 400 }}
                         />
                       </label>
-                      {schoolAge !== null && schoolAge < CONSENT_AGE && (
-                        <label style={{ fontSize: 14, fontWeight: 700 }}>
-                          E-mail d&apos;un de tes parents
-                          <input
-                            type="email"
-                            value={parentEmail}
-                            onChange={(e) => setParentEmail(e.target.value)}
-                            className="input"
-                            autoComplete="off"
-                            style={{ width: "100%", marginTop: 6, fontWeight: 400 }}
-                          />
-                          <span style={{ display: "block", fontWeight: 400, fontSize: 12.5, marginTop: 4, opacity: 0.7 }}>
-                            Moins de 15 ans : la loi demande l&apos;accord d&apos;un parent. On lui envoie un lien.
-                          </span>
-                        </label>
-                      )}
                     </div>
                   )}
                 </div>
