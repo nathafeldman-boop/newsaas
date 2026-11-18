@@ -19,6 +19,11 @@ const STATIC_PATHS = [
   "/stage/urgent",
   "/stage/fin-d-etudes",
   "/stage/janvier-2027",
+  // Stages scolaires (18/11).
+  "/stage-de-3e",
+  "/stage-de-seconde",
+  "/stage-de-premiere",
+  "/stage-bac-pro",
   "/inscription",
   "/legal",
   "/legal/mentions-legales",

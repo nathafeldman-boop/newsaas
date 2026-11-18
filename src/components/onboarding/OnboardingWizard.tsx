@@ -876,6 +876,17 @@ export function OnboardingWizard({
                       onClick={() => toggleLookingFor(type)}
                     />
                   ))}
+                  {/* Stages scolaires (18/11) : parcours à part, sans paquet d'offres. */}
+                  <TileOption
+                    size="lg"
+                    label="Stage de 3e, de seconde, de 1re ou de bac pro"
+                    icon="🎒"
+                    sub="Collège ou lycée : les entreprises près de chez toi + ta lettre"
+                    active={false}
+                    onClick={() => {
+                      window.location.href = "/stages-scolaires";
+                    }}
+                  />
                 </div>
               </div>
             )}

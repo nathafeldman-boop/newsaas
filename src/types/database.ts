@@ -12,6 +12,8 @@ export type ContractType = "alternance" | "stage" | "cdd" | "cdi";
 // Alternance et stage : les seuls types qui ont des pages SEO programmatiques
 // (métier × ville, entreprises, guides). CDD et CDI : ajoutés le 7/11.
 export type PlacementType = "alternance" | "stage";
+// Stages scolaires (18/11) : 3e, seconde, 1re, bac pro (PFMP).
+export type SchoolStageLevel = "3e" | "seconde" | "premiere" | "bac_pro";
 export type GenderType = "homme" | "femme" | "autre" | "non_precise";
 export type SwipeDirection = "like" | "pass";
 // "a_preparer" et "cloturee" : ajoutés le 24/10 (suivi des candidatures),
@@ -60,6 +62,13 @@ export type Profile = {
   // automatiques achetées en pack, et pause de 4 h levée jusqu'à cette date.
   auto_credits?: number;
   auto_pace_free_until?: string | null;
+  // Stages scolaires (SQL 20261118000000_school_stage) : niveau de l'élève,
+  // e-mail du parent et son accord (obligatoire sous 15 ans). Optionnelles
+  // tant que le SQL n'a pas été lancé. Écrites seulement par le serveur.
+  school_stage?: SchoolStageLevel | null;
+  parent_email?: string | null;
+  parent_consent_at?: string | null;
+  parent_consent_sent_at?: string | null;
   cv_uploaded_at: string | null;
   cv_text: string | null;
   onboarding_completed: boolean;

@@ -41,6 +41,11 @@ export default async function OnboardingPage() {
     .eq("id", user.id)
     .single();
 
+  // Stages scolaires (18/11) : un élève de 3e, seconde, 1re ou bac pro a sa
+  // propre page, pas le paquet d'offres.
+  if (profile?.school_stage) {
+    redirect("/stages-scolaires");
+  }
   if (profile?.onboarding_completed) {
     redirect("/swipe");
   }
