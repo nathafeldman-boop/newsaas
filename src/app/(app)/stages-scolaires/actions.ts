@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { CONSENT_AGE, ageOn, isSchoolStageLevel } from "@/lib/schoolStage/levels";
 import { CONSENT_RESEND_MS, EMAIL_RE, sendParentConsentEmail } from "@/lib/schoolStage/parentConsent";
+import { schoolSector } from "@/lib/schoolStage/companies";
 
 // Formulaire de /stages-scolaires (18/11). Écrit par le serveur (clé
 // service) : ces colonnes sont verrouillées pour l'appli (trigger
@@ -25,6 +26,7 @@ export async function saveSchoolStageAction(formData: FormData) {
   const birthDate = String(formData.get("birth_date") ?? "").trim();
   const fullName = String(formData.get("full_name") ?? "").trim().replace(/\s+/g, " ").slice(0, 80);
   const city = String(formData.get("city") ?? "").trim().slice(0, 80);
+  const sectorId = String(formData.get("sector") ?? "");
   const parentEmail = String(formData.get("parent_email") ?? "").trim().toLowerCase().slice(0, 160);
 
   if (!isSchoolStageLevel(level)) back("erreur=niveau");
@@ -71,7 +73,7 @@ export async function saveSchoolStageAction(formData: FormData) {
     }
   }
   revalidatePath("/stages-scolaires");
-  back("ok=1");
+  back(schoolSector(sectorId) ? `secteur=${sectorId}` : "ok=1");
 }
 
 export async function resendParentConsentAction() {

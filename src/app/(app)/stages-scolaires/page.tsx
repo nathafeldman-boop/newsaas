@@ -85,6 +85,17 @@ export default async function StagesScolairesPage({ searchParams }: { searchPara
             <input name="city" required defaultValue={profile?.city ?? ""} placeholder="Par exemple Orléans" style={{ ...input, marginTop: 6, fontWeight: 400 }} />
           </label>
           <label style={{ fontSize: 14, fontWeight: 700 }}>
+            Le secteur qui t&apos;intéresse
+            <select name="sector" defaultValue="" style={{ ...input, marginTop: 6, fontWeight: 400 }}>
+              <option value="">Je choisirai après</option>
+              {SCHOOL_SECTORS.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.emoji} {s.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label style={{ fontSize: 14, fontWeight: 700 }}>
             E-mail d&apos;un parent <span style={{ fontWeight: 400, ...muted }}>(obligatoire si tu as moins de 15 ans)</span>
             <input name="parent_email" type="email" defaultValue={profile?.parent_email ?? ""} autoComplete="off" style={{ ...input, marginTop: 6, fontWeight: 400 }} />
           </label>
@@ -154,15 +165,26 @@ export default async function StagesScolairesPage({ searchParams }: { searchPara
           <Link
             key={s.id}
             href={`/stages-scolaires?secteur=${s.id}`}
-            className={`tag ${sector?.id === s.id ? "tag-accent" : ""}`}
-            style={{ fontSize: 13.5, padding: "7px 12px", textDecoration: "none" }}
+            className="card"
+            aria-current={sector?.id === s.id ? "true" : undefined}
+            style={{
+              fontSize: 14,
+              padding: "9px 14px",
+              borderRadius: 999,
+              textDecoration: "none",
+              color: "inherit",
+              cursor: "pointer",
+              border: `1.5px solid ${sector?.id === s.id ? "var(--color-accent)" : "var(--color-divider)"}`,
+              background: sector?.id === s.id ? "color-mix(in srgb, var(--color-accent) 14%, var(--color-surface))" : "var(--color-surface)",
+              fontWeight: sector?.id === s.id ? 700 : 500,
+            }}
           >
             {s.emoji} {s.label}
           </Link>
         ))}
       </div>
 
-      {!sector && <p style={{ fontSize: 14, margin: "18px 0 0", ...muted }}>👆 Choisis un secteur pour voir les entreprises.</p>}
+      {!sector && <p style={{ fontSize: 14, margin: "18px 0 0", ...muted }}>👆 Clique sur un secteur pour voir les entreprises près de chez toi.</p>}
       {result?.status === "no_city" && (
         <p style={{ fontSize: 14, margin: "18px 0 0" }}>
           On ne reconnaît pas ta ville. <Link href="/stages-scolaires?modifier=1">Corrige-la</Link> (une ville ou un numéro de département).
