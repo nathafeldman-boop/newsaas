@@ -50,9 +50,12 @@ export default async function OnboardingPage() {
 
   // Page d'arrivée (18/11) : recopiée une fois, sur un compte créé dans les 24 h.
   const landing = (await cookies()).get("landing")?.value;
+  // Groupe du test A/B d'entrée (lib/ab/entry.ts), noté avec la page d'arrivée.
+  const abRaw = (await cookies()).get("ab_entry")?.value;
+  const abEntry = abRaw === "lp" || abRaw === "inscription" ? abRaw : null;
   if (profile && !profile.landing_path && landing && requestNow() - Date.parse(profile.created_at) < 86_400_000) {
     after(async () => {
-      const { error } = await createAdminClient().from("profiles").update({ landing_path: landing.slice(0, 200) }).eq("id", user.id).is("landing_path", null);
+      const { error } = await createAdminClient().from("profiles").update({ landing_path: landing.slice(0, 200), ab_entry: abEntry }).eq("id", user.id).is("landing_path", null);
       if (error && !/landing_path/.test(error.message)) console.error("onboarding: page d'arrivée non notée", error.message);
     });
   }

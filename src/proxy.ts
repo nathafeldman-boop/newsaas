@@ -4,6 +4,7 @@ import { logVisit } from "@/lib/analytics/logVisit";
 import { linkedinCampaign, normalizeUtmSource, sourceFromReferrer } from "@/lib/analytics/referrerSource";
 import { logAffiliateClick } from "@/lib/affiliates/logAffiliateClick";
 import { offerIdFromPath, PINNED_OFFER_COOKIE, PINNED_OFFER_MAX_AGE } from "@/lib/offers/pinnedOffer";
+import { AB_ENTRY_COOKIE, abEntryApplies, isAbEntryVariant } from "@/lib/ab/entry";
 
 const VISITOR_COOKIE = "sid";
 const VISITOR_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 an
@@ -94,6 +95,19 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
   // ouverture de page) ; sans en-tête (vieux navigateur), on compte.
   const fetchDest = request.headers.get("sec-fetch-dest");
   const isPageLoad = fetchDest === null || fetchDest === "document";
+
+  // Test A/B d'entrée (18/11, voir lib/ab/entry.ts) : groupe tiré une fois,
+  // lisible par le navigateur (le clic redirige côté client). Chaque tirage
+  // est noté dans site_visits (campagne ab-entry-<groupe>) : c'est le
+  // dénominateur du test (visiteurs par groupe).
+  if (isPageLoad && !request.cookies.get(AB_ENTRY_COOKIE) && abEntryApplies(request.nextUrl.pathname)) {
+    const forced = process.env.AB_ENTRY_WINNER;
+    const variant = isAbEntryVariant(forced) ? forced : Math.random() < 0.5 ? "lp" : "inscription";
+    response.cookies.set(AB_ENTRY_COOKIE, variant, { maxAge: 30 * 86_400, sameSite: "lax", path: "/" });
+    if (!isAbEntryVariant(forced)) {
+      event.waitUntil(logVisit(visitorId, request.nextUrl.pathname, request.headers.get("user-agent"), { source: utmSource, medium: utmMedium, campaign: `ab-entry-${variant}` }));
+    }
+  }
 
   // Première page ouverte sur le site (18/11) : recopiée sur le profil à
   // l'inscription (voir onboarding/page.tsx) pour savoir quelles pages font

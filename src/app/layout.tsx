@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { EntryRedirect } from "@/components/ab/EntryRedirect";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
@@ -61,6 +62,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col bg-bg text-text">
         {children}
         <PresencePing />
+        <EntryRedirect />
       </body>
     </html>
   );

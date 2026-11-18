@@ -34,6 +34,7 @@ export function ApplyButton({
         href={href}
         target="_blank"
         rel="noopener nofollow"
+        data-ab-keep
         style={{ fontSize: 12.5, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", textDecoration: "underline", textAlign: compact ? "left" : "center" }}
       >
         ou postuler directement sur le site de l&apos;annonce

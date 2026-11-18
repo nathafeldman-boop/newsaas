@@ -103,6 +103,8 @@ export type Profile = {
   utm_source: string | null;
   // Première page ouverte avant l'inscription (SQL 20261119000002, 18/11).
   landing_path?: string | null;
+  // Groupe du test A/B d'entrée (SQL 20261119000003, 18/11).
+  ab_entry?: string | null;
   search_completed_at: string | null;
   search_completed_reason: string | null;
   created_at: string;
