@@ -12,6 +12,7 @@ const AFFILIATE_COOKIE = "aff_code";
 const AFFILIATE_COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 jours -- fenêtre d'attribution
 
 const UTM_SOURCE_COOKIE = "utm_source";
+const LANDING_COOKIE = "landing";
 const UTM_COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // même fenêtre d'attribution que aff_code
 
 export async function proxy(request: NextRequest, event: NextFetchEvent) {
@@ -93,6 +94,13 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
   // ouverture de page) ; sans en-tête (vieux navigateur), on compte.
   const fetchDest = request.headers.get("sec-fetch-dest");
   const isPageLoad = fetchDest === null || fetchDest === "document";
+
+  // Première page ouverte sur le site (18/11) : recopiée sur le profil à
+  // l'inscription (voir onboarding/page.tsx) pour savoir quelles pages font
+  // s'inscrire. Posée une seule fois, jamais écrasée.
+  if (isPageLoad && !request.cookies.get(LANDING_COOKIE) && !/^\/(admin|api|auth|onboarding|createurs)/.test(request.nextUrl.pathname)) {
+    response.cookies.set(LANDING_COOKIE, request.nextUrl.pathname.slice(0, 200), { maxAge: UTM_COOKIE_MAX_AGE, httpOnly: true, sameSite: "lax", path: "/" });
+  }
 
   // Fiche d'offre ouverte (lien LinkedIn, Google, email…) : notée pour la
   // remettre en première carte du paquet après l'inscription (voir

@@ -1,53 +1,43 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 
-// La candidature s'ouvre dans un nouvel onglet (site de l'employeur ou
-// France Travail) : rien ne s'interpose avant. Quand la personne revient
-// sur l'onglet Stageio, un encart lui propose de créer son profil pour les
-// offres suivantes.
+// Fiche offre (18/11, Nathan : « convertir un maximum ») : 57 % des clics
+// Google arrivent sur une fiche, et le gros bouton envoyait directement chez
+// France Travail : on perdait le visiteur. Le bouton principal passe
+// maintenant par l'inscription (l'offre vue est gardée et sort en premier
+// dans le swipe, cookie offre_vue posé par proxy.ts). Le lien vers l'annonce
+// d'origine reste juste dessous, en petit : Google Emploi le demande, et
+// celui qui veut postuler tout de suite n'est pas bloqué.
 // `compact` : version en haut de fiche, sous le titre (les descriptions
 // France Travail font jusqu'à 4 000 caractères : sur téléphone, le bouton du
 // bas est loin).
 export function ApplyButton({
   href,
-  followUp,
   signupHref,
   compact = false,
 }: {
   href: string;
-  followUp: string;
+  followUp?: string;
   signupHref: string;
   compact?: boolean;
 }) {
-  const [clicked, setClicked] = useState(false);
   return (
-    <>
+    <div style={{ marginTop: compact ? 16 : 24, display: "flex", flexDirection: "column", alignItems: compact ? "flex-start" : "stretch", gap: 6 }}>
+      <Link href={signupHref} className={compact ? "btn btn-primary" : "btn btn-primary btn-block"} style={{ fontSize: 16, padding: "12px 20px" }}>
+        Postuler avec Stageio →
+      </Link>
+      <span style={{ fontSize: 12.5, color: "color-mix(in srgb, var(--color-text) 62%, transparent)", textAlign: compact ? "left" : "center" }}>
+        Gratuit · on garde cette offre et on te montre celles qui lui ressemblent
+      </span>
       <a
         href={href}
         target="_blank"
         rel="noopener nofollow"
-        className={compact ? "btn btn-primary" : "btn btn-primary btn-block"}
-        style={{ marginTop: compact ? 16 : 24, ...(compact ? { alignSelf: "flex-start" } : {}) }}
-        onClick={() => setClicked(true)}
+        style={{ fontSize: 12.5, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", textDecoration: "underline", textAlign: compact ? "left" : "center" }}
       >
-        Postuler à cette offre
+        ou postuler directement sur le site de l&apos;annonce
       </a>
-      {clicked && (
-        <div
-          className="card mt-3"
-          role="status"
-          style={{ padding: "var(--space-4)", background: "var(--color-accent-100)", color: "var(--color-accent-800)" }}
-        >
-          <p style={{ fontSize: 14, margin: 0 }}>
-            <strong>Candidature ouverte dans un nouvel onglet.</strong> {followUp}
-          </p>
-          <Link href={signupHref} className="btn btn-primary" style={{ alignSelf: "flex-start", marginTop: 8 }}>
-            Créer mon profil gratuit
-          </Link>
-        </div>
-      )}
-    </>
+    </div>
   );
 }

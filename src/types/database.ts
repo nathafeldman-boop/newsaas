@@ -101,6 +101,8 @@ export type Profile = {
   inactive_campaign_emails_sent: number;
   affiliate_id: string | null;
   utm_source: string | null;
+  // Première page ouverte avant l'inscription (SQL 20261119000002, 18/11).
+  landing_path?: string | null;
   search_completed_at: string | null;
   search_completed_reason: string | null;
   created_at: string;
