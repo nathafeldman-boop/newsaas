@@ -78,6 +78,7 @@ const CONTRACT_REASON: Record<ContractType, string> = {
   stage: "C'est un stage",
   cdd: "C'est un CDD",
   cdi: "C'est un CDI",
+  stage_scolaire: "Pour ta classe",
 };
 
 export function isNearbyCity(profileCityLower: string, offerLocationLower: string): boolean {

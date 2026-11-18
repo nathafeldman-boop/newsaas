@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { CONSENT_AGE, ageOn } from "@/lib/schoolStage/levels";
+import { askParentToPayAction } from "./parent-actions";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
@@ -135,12 +137,38 @@ async function loadGuarantee(
   }
 }
 
+function ParentPayCard({ parentEmail, status }: { parentEmail: string; status: string | null }) {
+  const muted = { color: "color-mix(in srgb, var(--color-text) 66%, transparent)" } as const;
+  return (
+    <div className="mx-auto flex max-w-md flex-1 items-center py-6">
+      <div className="card elev-sm w-full" style={{ padding: "var(--space-6)" }}>
+        <p className="text-3xl" style={{ margin: 0 }}>
+          🔓
+        </p>
+        <h1 style={{ fontSize: 22, margin: "10px 0 0" }}>Demande à ton parent de débloquer Stageio</h1>
+        <p style={{ fontSize: 14, lineHeight: 1.5, margin: "8px 0 0", ...muted }}>
+          Pour garder des offres et préparer tes candidatures, il faut l&apos;accès Premium. Tu as moins de 15 ans : c&apos;est ton parent qui paie.
+          On lui envoie le lien à <b>{parentEmail}</b>.
+        </p>
+        {status === "envoye" && <p style={{ fontSize: 13.5, margin: "10px 0 0" }}>✅ E-mail envoyé. Dès que ton parent a payé, ton accès s&apos;ouvre.</p>}
+        {status === "attends" && <p style={{ fontSize: 13.5, margin: "10px 0 0" }}>Un e-mail vient de partir : attends quelques minutes avant d&apos;en renvoyer un.</p>}
+        {status === "erreur" && <p style={{ fontSize: 13.5, color: "#b42318", margin: "10px 0 0" }}>L&apos;e-mail n&apos;est pas parti, réessaie plus tard.</p>}
+        <form action={askParentToPayAction} className="mt-5">
+          <button type="submit" className="btn btn-primary btn-block">
+            Envoyer le lien à mon parent
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export default async function PremiumPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; source?: string; refund?: string; retour?: string; offre?: string }>;
+  searchParams: Promise<{ error?: string; source?: string; refund?: string; retour?: string; offre?: string; parent?: string }>;
 }) {
-  const { error, source, refund, retour, offre } = await searchParams;
+  const { error, source, refund, retour, offre, parent } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -172,6 +200,11 @@ export default async function PremiumPage({
   // abonnement actif si l'ancien finit par se rétablir tout seul (retries
   // automatiques Stripe). Trouvé le 2026-09-25 suite à un pic de
   // renouvellements en échec signalé par Nathan.
+  // Élève de moins de 15 ans (18/11) : il ne paie pas lui-même, le lien de
+  // paiement part à son parent (payer vaut accord parental).
+  if (!premium && profile?.school_stage && profile.parent_email && (ageOn(profile.birth_date) ?? 0) < CONSENT_AGE) {
+    return <ParentPayCard parentEmail={profile.parent_email} status={parent ?? null} />;
+  }
   const paymentIssue =
     !premium &&
     (profile?.subscription_status === "past_due" || profile?.subscription_status === "incomplete");

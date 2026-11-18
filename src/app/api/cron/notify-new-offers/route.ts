@@ -92,6 +92,7 @@ export async function GET(request: NextRequest) {
     const { data: profiles, error: profilesError } = await admin
       .from("profiles")
       .select("*")
+      .is("school_stage", null) // élèves (18/11) : pas ces e-mails
       .eq("notify_new_offers", true)
       .eq("onboarding_completed", true)
       .is("search_completed_at", null)

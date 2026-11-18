@@ -4,7 +4,7 @@
 
 import type { ContractType } from "@/types/database";
 
-const CONTRACT_LABEL: Record<ContractType, string> = { alternance: "en alternance", stage: "de stage", cdd: "en CDD", cdi: "en CDI" };
+const CONTRACT_LABEL: Record<ContractType, string> = { alternance: "en alternance", stage: "de stage", cdd: "en CDD", cdi: "en CDI", stage_scolaire: "de stage" };
 
 export function followUpMessage(params: {
   title: string;

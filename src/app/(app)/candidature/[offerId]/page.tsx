@@ -8,6 +8,7 @@ import { CoverLetterPanel } from "@/components/candidature/CoverLetterPanel";
 import { CvOfferMatchPanel } from "@/components/candidature/CvOfferMatchPanel";
 import { ReportOfferButton } from "@/components/candidature/ReportOfferButton";
 import { isPremium } from "@/lib/subscription/isPremium";
+import { SchoolApplyPanel } from "@/components/schoolStage/SchoolApplyPanel";
 import { STATUS_LABELS } from "@/lib/applications/status";
 import type { Application } from "@/types/database";
 
@@ -69,11 +70,14 @@ export default async function CandidaturePage({ params }: { params: Promise<{ of
       .maybeSingle(),
     supabase
       .from("profiles")
-      .select("subscription_status, current_period_end, cv_text, full_name, city, formation, skills, availability_date")
+      .select("*")
       .eq("id", user.id)
       .single(),
   ]);
   const canAnalyzeOfferFit = isPremium(profile) && !!profile?.cv_text;
+  // Stage scolaire (18/11) : candidature payante, comme les autres.
+  const school = offer.contract_type === "stage_scolaire" && !!profile?.school_stage;
+  if (school && !isPremium(profile)) redirect("/premium?source=swipe_apply");
 
   return (
     <div className="mx-auto max-w-xl">
@@ -84,7 +88,7 @@ export default async function CandidaturePage({ params }: { params: Promise<{ of
       <div className="card elev-sm mt-4" style={{ padding: "var(--space-6)" }}>
         <div className="flex items-center justify-between">
           <span className="tag tag-accent">
-            {offer.contract_type === "alternance" ? "Alternance" : "Stage"}
+            {offer.contract_type === "alternance" ? "Alternance" : offer.contract_type === "stage_scolaire" ? "🎒 Stage scolaire" : "Stage"}
           </span>
           {offer.source === "demo" && (
             <span style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 40%, transparent)" }}>
@@ -141,6 +145,16 @@ export default async function CandidaturePage({ params }: { params: Promise<{ of
               Voir les offres publiées aujourd&apos;hui
             </Link>
           </div>
+        ) : school ? (
+          <SchoolApplyPanel
+            level={profile!.school_stage!}
+            fullName={profile?.full_name ?? null}
+            company={offer.company}
+            activity={offer.source === "annuaire_entreprises" ? offer.title.replace(/^Candidature spontanée · /, "") : null}
+            applyUrl={offer.apply_url}
+            official={offer.source === "1eleve1stage"}
+            duration={offer.duration}
+          />
         ) : (
           <>
             <CoverLetterPanel

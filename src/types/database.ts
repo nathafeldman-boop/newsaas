@@ -8,7 +8,9 @@
 // jamais cette contrainte en TypeScript, même à forme identique, ce qui fait
 // silencieusement retomber tous les retours de requêtes sur `never`.
 
-export type ContractType = "alternance" | "stage" | "cdd" | "cdi";
+// stage_scolaire (18/11) : stages de 3e, seconde, 1re et bac pro, montrés
+// seulement aux élèves (profiles.school_stage), jamais sur les pages publiques.
+export type ContractType = "alternance" | "stage" | "cdd" | "cdi" | "stage_scolaire";
 // Alternance et stage : les seuls types qui ont des pages SEO programmatiques
 // (métier × ville, entreprises, guides). CDD et CDI : ajoutés le 7/11.
 export type PlacementType = "alternance" | "stage";
@@ -27,7 +29,7 @@ export type ApplicationStatus =
   | "acceptee"
   | "refusee"
   | "cloturee";
-export type OfferSource = "demo" | "manuel" | "mistral_ingest" | "adzuna" | "france_travail" | "la_bonne_alternance";
+export type OfferSource = "demo" | "manuel" | "mistral_ingest" | "adzuna" | "france_travail" | "la_bonne_alternance" | "1eleve1stage" | "annuaire_entreprises";
 export type EmailProvider = "gmail";
 export type EmailReplySentiment = "positive" | "negative" | "neutral";
 
@@ -136,6 +138,8 @@ export type Offer = {
   // Colonne calculée par Postgres (SCHOOL_AD_COLUMN_SQL, 31/10), absente
   // tant que le SQL n'a pas été passé. Jamais écrite par le code.
   is_school_ad?: boolean | null;
+  // Stages scolaires (SQL 20261119000000) : classes concernées.
+  school_levels?: string[] | null;
 };
 
 export type Swipe = {

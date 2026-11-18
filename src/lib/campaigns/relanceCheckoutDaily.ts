@@ -69,6 +69,7 @@ export async function sendDailyCheckoutRelance(now: number = Date.now()): Promis
       db
         .from("profiles")
         .select("id, email, full_name, subscription_status, current_period_end, total_paid_cents, notify_new_offers, search_completed_at")
+        .is("school_stage", null) // élèves (18/11) : pas ces e-mails
         .in("id", ids),
       db.from("user_events").select("user_id, event_type, created_at").in("event_type", [CHECKOUT_DAILY_EVENT, SALES_SERIES_EVENT]).in("user_id", ids).limit(5000),
     ]);

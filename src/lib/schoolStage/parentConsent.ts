@@ -68,7 +68,7 @@ export async function sendParentConsentEmail(input: { userId: string; parentEmai
     subject: `${input.firstName?.trim() || "Votre enfant"} a besoin de votre accord pour chercher son ${what}`,
     html: `<p>Bonjour,</p>
 <p>${who} vient de créer un compte sur Stageio pour trouver son ${escapeHtml(what)}. Comme il ou elle a moins de 15 ans, nous avons besoin de l'accord d'un parent avant de continuer.</p>
-<p>Ce que fait Stageio : il affiche les entreprises proches de chez vous dans le secteur choisi et rédige une lettre de demande de stage. Votre enfant l'envoie ou la dépose lui-même : Stageio ne contacte aucune entreprise à sa place. C'est gratuit.</p>
+<p>Ce que fait Stageio : il montre à votre enfant des offres de stage près de chez vous (plateforme 1élève1stage de l'Éducation nationale pour la 3e et la seconde) et des entreprises proches à contacter, et prépare ses lettres de demande de stage. Votre enfant postule lui-même : Stageio ne contacte aucune entreprise à sa place. Certaines fonctions sont payantes : c'est vous qui paierez si besoin.</p>
 <p>Données gardées : prénom et nom, date de naissance, ville, niveau et secteurs choisis, et votre adresse e-mail.</p>
 <p><a href="${link}" style="display:inline-block;background:#12a05c;color:#fff;padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:700">Je donne mon accord</a></p>
 <p>Si vous n'êtes pas au courant ou si vous refusez, ignorez simplement cet e-mail : le compte reste bloqué. Pour le faire supprimer, répondez à cet e-mail.</p>
@@ -76,6 +76,33 @@ export async function sendParentConsentEmail(input: { userId: string; parentEmai
   });
   if (error) {
     console.error("accord parental : e-mail non envoyé", error.message);
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Moins de 15 ans, au paywall (18/11) : le lien de paiement part au parent,
+ * qui paie pour son enfant. Payer vaut accord (webhook Stripe).
+ */
+export async function sendParentPaymentEmail(input: { userId: string; parentEmail: string; firstName: string | null; level: SchoolStageLevel; payUrl: string }): Promise<boolean> {
+  const who = input.firstName?.trim() ? escapeHtml(input.firstName.trim()) : "Votre enfant";
+  const what = SCHOOL_STAGES[input.level].label.toLowerCase();
+  const fromEmail = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
+  const { error } = await getResendClient().emails.send({
+    from: `Stageio <${fromEmail}>`,
+    to: input.parentEmail.trim(),
+    subject: `${input.firstName?.trim() || "Votre enfant"} vous demande de débloquer Stageio pour son ${what}`,
+    html: `<p>Bonjour,</p>
+<p>${who} utilise Stageio pour trouver son ${escapeHtml(what)} et vous demande de débloquer l'accès. Comme il ou elle a moins de 15 ans, c'est à un parent de payer.</p>
+<p>Avec l'accès, votre enfant peut garder les offres qui l'intéressent et préparer ses candidatures : vraies offres de la plateforme 1élève1stage de l'Éducation nationale (pour la 3e et la seconde) et entreprises proches de chez vous à contacter, avec une lettre de demande de stage prête. Les candidatures aux offres 1élève1stage se valident sur cette plateforme, avec le compte ÉduConnect de l'élève.</p>
+<p>En payant, vous donnez aussi votre accord pour que Stageio garde ses informations (prénom et nom, date de naissance, ville, classe, secteurs choisis, votre e-mail).</p>
+<p><a href="${input.payUrl}" style="display:inline-block;background:#12a05c;color:#fff;padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:700">Voir les formules et payer</a></p>
+<p>Si vous n'êtes pas au courant, ignorez cet e-mail. Pour faire supprimer le compte, répondez simplement à ce message.</p>
+<p>L'équipe Stageio</p>`,
+  });
+  if (error) {
+    console.error("paiement parent : e-mail non envoyé", error.message);
     return false;
   }
   return true;

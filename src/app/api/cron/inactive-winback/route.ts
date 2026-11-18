@@ -43,6 +43,7 @@ export async function GET(request: NextRequest) {
   const { data: profiles, error: profilesError } = await admin
     .from("profiles")
     .select("id, email, full_name, subscription_status, last_active_at, inactive_campaign_emails_sent, notify_new_offers")
+    .is("school_stage", null) // élèves (18/11) : pas ces e-mails
     .lt("inactive_campaign_emails_sent", INACTIVE_WINBACK_EMAILS.length)
     .eq("notify_new_offers", true)
     .not("email", "is", null)

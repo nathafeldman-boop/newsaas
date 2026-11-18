@@ -224,7 +224,7 @@ export async function loadAudience(
   const others = Object.values(CAMPAIGNS).filter((c) => c.id !== campaign.id);
   const [profiles, sent, otherSentLists] = await Promise.all([
     fetchAllRowsByIdCursor<CampaignProfile>((afterId, limit) => {
-      let q = db.from("profiles").select(PROFILE_COLUMNS);
+      let q = db.from("profiles").select(PROFILE_COLUMNS).is("school_stage", null);
       if (afterId) q = q.gt("id", afterId);
       return q.order("id").limit(limit) as unknown as PromiseLike<{
         data: CampaignProfile[] | null;

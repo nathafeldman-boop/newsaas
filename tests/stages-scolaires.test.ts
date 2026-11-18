@@ -66,3 +66,29 @@ if (process.argv[2]) {
   console.log(`annuaire réel : ${real.length} entreprises, ex. ${real[0].name} · ${real[0].address}`);
 }
 console.log("stages scolaires : OK");
+
+// Offres 1élève1stage → lignes offers ; secteurs de l'onboarding → annuaire.
+import { e1sToRow, schoolSectorsFor } from "../src/lib/schoolStage/schoolOffers";
+{
+  const point = { lat: 48.857, lon: 2.352, departement: "75", label: "Paris" };
+  const row = e1sToRow(
+    { id: 105515, title: "journaliste", description: "Aller en projection", employer_name: "laseptiemebobine.com", link: "/offres-de-stage/105515?grade_id=1", city: "Paris", date_start: "14 juin 2027", date_end: "25 juin 2027", sector: "Journalisme", fits_for_seconde: true, fits_for_troisieme_or_quatrieme: false, available_weeks_count: "2 semaines disponibles" },
+    point,
+  )!;
+  assert.equal(row.title, "Journaliste");
+  assert.equal(row.location, "75 - Paris");
+  assert.deepEqual(row.school_levels, ["seconde"]);
+  assert.equal(row.apply_url, "https://1eleve1stage.education.gouv.fr/offres-de-stage/105515");
+  assert.equal(row.duration, "2 semaines disponibles, du 14 juin 2027 au 25 juin 2027");
+  assert.match(row.description, /1élève1stage/);
+  assert.equal(e1sToRow({ id: 1, title: "x", fits_for_seconde: false, fits_for_troisieme_or_quatrieme: false }, point), null);
+  assert.equal(e1sToRow({ id: 2, title: "x", employer_name: "Secret", can_read_employer_name: false, fits_for_seconde: true }, point)!.company, "Structure d'accueil");
+  assert.deepEqual(schoolSectorsFor(["Restauration", "Coiffure", "Restauration collective"]).map((s) => s.id), ["restauration", "beaute"]);
+  assert.deepEqual(schoolSectorsFor(["Quelque chose"]).map((s) => s.id), ["commerce", "restauration", "sante", "informatique"]);
+  if (process.argv[3]) {
+    const real = (JSON.parse(readFileSync(process.argv[3], "utf8")).internshipOffers as Parameters<typeof e1sToRow>[0][]).map((o) => e1sToRow(o, point)).filter(Boolean);
+    assert.ok(real.length > 0);
+    console.log(`1élève1stage réel : ${real.length} offres, ex. ${real[0]!.title} · ${real[0]!.company} · ${real[0]!.duration}`);
+  }
+}
+console.log("stages scolaires (offres) : OK");

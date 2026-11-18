@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
-import { markReferralGrantedAction } from "@/app/onboarding/actions";
+import { markReferralGrantedAction, saveSchoolStageOnboardingAction } from "@/app/onboarding/actions";
+import { CONSENT_AGE, SCHOOL_STAGES, SCHOOL_STAGE_IDS, ageOn } from "@/lib/schoolStage/levels";
 import { ChipMultiSelectWithCustom } from "@/components/ui/ChipMultiSelectWithCustom";
 import { LocationSearchSelect } from "@/components/ui/LocationSearchSelect";
 import { Highlight } from "@/components/ui/Highlight";
@@ -317,6 +318,13 @@ export function OnboardingWizard({
     initialProfile?.looking_for ?? [],
   );
 
+  // Stages scolaires (18/11) : classe, date de naissance, e-mail d'un parent
+  // sous 15 ans. Le reste de l'onboarding est le même pour tout le monde.
+  const [schoolLevel, setSchoolLevel] = useState<string>(initialProfile?.school_stage ?? "");
+  const [birthDate, setBirthDate] = useState<string>(initialProfile?.birth_date ?? "");
+  const [parentEmail, setParentEmail] = useState<string>(initialProfile?.parent_email ?? "");
+  const schoolMode = lookingFor.includes("stage_scolaire");
+  const schoolAge = ageOn(birthDate);
   const [targetJobs, setTargetJobs] = useState<string[]>(initialProfile?.target_jobs ?? []);
   const [mobility, setMobility] = useState(initialProfile?.mobility ?? "");
   const [educationLevel, setEducationLevel] = useState(initialProfile?.education_level ?? "");
@@ -342,14 +350,26 @@ export function OnboardingWizard({
   }, [stepId]);
 
   function toggleLookingFor(type: ContractType) {
+    // Stage scolaire : un parcours à part, pas mélangé avec alternance/CDI.
     setLookingFor((prev) =>
-      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type],
+      prev.includes(type)
+        ? prev.filter((t) => t !== type)
+        : type === "stage_scolaire"
+          ? ["stage_scolaire"]
+          : [...prev.filter((t) => t !== "stage_scolaire"), type],
     );
   }
 
   function validateCurrentStep(): string | null {
     if (stepId === "looking_for" && lookingFor.length === 0) {
       return "Sélectionne au moins un type de contrat.";
+    }
+    if (stepId === "looking_for" && schoolMode) {
+      if (!schoolLevel) return "Choisis ta classe.";
+      if (schoolAge === null || schoolAge < 10 || schoolAge > 25) return "Indique ta date de naissance.";
+      if (schoolAge < CONSENT_AGE && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(parentEmail.trim())) {
+        return "Tu as moins de 15 ans : indique l'e-mail d'un de tes parents.";
+      }
     }
     if (stepId === "city" && !city.trim()) {
       return "Indique au moins ta ville.";
@@ -457,6 +477,11 @@ export function OnboardingWizard({
     { ok: true; foundCount: number | null; cvFailed: boolean } | { ok: false; error: string }
   > {
     const supabase = createClient();
+
+    if (schoolMode) {
+      const school = await saveSchoolStageOnboardingAction({ level: schoolLevel, birthDate, parentEmail });
+      if (!school.ok) return { ok: false, error: school.error };
+    }
 
     let cvPath = initialProfile?.cv_path ?? null;
     let cvUploadedAt = initialProfile?.cv_uploaded_at ?? null;
@@ -876,17 +901,67 @@ export function OnboardingWizard({
                       onClick={() => toggleLookingFor(type)}
                     />
                   ))}
-                  {/* Stages scolaires (18/11) : parcours à part, sans paquet d'offres. */}
+                  {/* Stages scolaires (18/11) : même onboarding, paquet de stages scolaires. */}
                   <TileOption
                     size="lg"
                     label="Stage de 3e, de seconde, de 1re ou de bac pro"
                     icon="🎒"
-                    sub="Collège ou lycée : les entreprises près de chez toi + ta lettre"
-                    active={false}
-                    onClick={() => {
-                      window.location.href = "/stages-scolaires";
-                    }}
+                    sub="Collège ou lycée : les offres et les entreprises près de chez toi"
+                    active={schoolMode}
+                    onClick={() => toggleLookingFor("stage_scolaire")}
                   />
+                  {schoolMode && (
+                    <div className="card flex flex-col gap-3" style={{ padding: 14 }}>
+                      <p style={{ margin: 0, fontSize: 14, fontWeight: 700 }}>Ta classe</p>
+                      <div className="flex flex-wrap gap-2">
+                        {SCHOOL_STAGE_IDS.map((id) => (
+                          <button
+                            key={id}
+                            type="button"
+                            onClick={() => setSchoolLevel(id)}
+                            className="card"
+                            style={{
+                              padding: "8px 12px",
+                              borderRadius: 999,
+                              fontSize: 14,
+                              cursor: "pointer",
+                              border: `1.5px solid ${schoolLevel === id ? "var(--color-accent)" : "var(--color-divider)"}`,
+                              background: schoolLevel === id ? "color-mix(in srgb, var(--color-accent) 14%, var(--color-surface))" : "var(--color-surface)",
+                              fontWeight: schoolLevel === id ? 700 : 500,
+                            }}
+                          >
+                            {SCHOOL_STAGES[id].label}
+                          </button>
+                        ))}
+                      </div>
+                      <label style={{ fontSize: 14, fontWeight: 700 }}>
+                        Ta date de naissance
+                        <input
+                          type="date"
+                          value={birthDate}
+                          onChange={(e) => setBirthDate(e.target.value)}
+                          className="input"
+                          style={{ width: "100%", marginTop: 6, fontWeight: 400 }}
+                        />
+                      </label>
+                      {schoolAge !== null && schoolAge < CONSENT_AGE && (
+                        <label style={{ fontSize: 14, fontWeight: 700 }}>
+                          E-mail d&apos;un de tes parents
+                          <input
+                            type="email"
+                            value={parentEmail}
+                            onChange={(e) => setParentEmail(e.target.value)}
+                            className="input"
+                            autoComplete="off"
+                            style={{ width: "100%", marginTop: 6, fontWeight: 400 }}
+                          />
+                          <span style={{ display: "block", fontWeight: 400, fontSize: 12.5, marginTop: 4, opacity: 0.7 }}>
+                            Moins de 15 ans : la loi demande l&apos;accord d&apos;un parent. On lui envoie un lien.
+                          </span>
+                        </label>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             )}

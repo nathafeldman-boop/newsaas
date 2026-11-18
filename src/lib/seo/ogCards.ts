@@ -14,7 +14,7 @@ import type { ContractType, PlacementType } from "@/types/database";
 // page inconnue ou d'erreur de base, carte générique plutôt qu'une erreur :
 // un aperçu cassé ferait plus de tort qu'un aperçu générique.
 
-const TYPE_LABEL: Record<ContractType, string> = { alternance: "Alternance", stage: "Stage", cdd: "CDD", cdi: "CDI" };
+const TYPE_LABEL: Record<ContractType, string> = { alternance: "Alternance", stage: "Stage", cdd: "CDD", cdi: "CDI", stage_scolaire: "Stage scolaire" };
 
 const GENERIC: OgCard = {
   kicker: "Alternance et stage",

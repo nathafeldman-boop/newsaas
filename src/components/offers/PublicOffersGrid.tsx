@@ -9,6 +9,7 @@ const CONTRACT_LABEL: Record<ContractType, string> = {
   stage: "Stage",
   cdd: "CDD",
   cdi: "CDI",
+  stage_scolaire: "Stage scolaire",
 };
 
 export function PublicOffersGrid({

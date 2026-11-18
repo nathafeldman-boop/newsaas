@@ -103,6 +103,7 @@ export async function sendCheckoutRelance(now: number = Date.now()): Promise<Che
       db
         .from("profiles")
         .select("id, email, full_name, subscription_status, current_period_end, total_paid_cents, notify_new_offers, search_completed_at")
+        .is("school_stage", null) // élèves (18/11) : pas ces e-mails
         .in("id", ids),
       db.from("user_events").select("user_id").eq("event_type", CHECKOUT_RELANCE_EVENT).in("user_id", ids),
     ]);

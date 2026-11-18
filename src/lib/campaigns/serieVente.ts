@@ -153,7 +153,7 @@ async function loadDue(db: Db, now: number, midnight: number): Promise<{ due: Du
     fetchAllRowsByIdCursor<SeriesProfile>((afterId, limit) => {
       // Filtres de base faits par la base (moins de lignes lues à chaque passage) ;
       // les mêmes sont revérifiés plus bas.
-      let q = db.from("profiles").select(COLUMNS).not("notify_new_offers", "is", false).is("search_completed_at", null).or("total_paid_cents.is.null,total_paid_cents.eq.0").not("email", "is", null);
+      let q = db.from("profiles").select(COLUMNS).is("school_stage", null).not("notify_new_offers", "is", false).is("search_completed_at", null).or("total_paid_cents.is.null,total_paid_cents.eq.0").not("email", "is", null);
       if (afterId) q = q.gt("id", afterId);
       return q.order("id").limit(limit) as unknown as PromiseLike<{
         data: SeriesProfile[] | null;

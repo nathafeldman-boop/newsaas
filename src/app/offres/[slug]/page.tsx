@@ -78,6 +78,7 @@ const CONTRACT_LABEL: Record<Offer["contract_type"], string> = {
   stage: "Stage",
   cdd: "CDD",
   cdi: "CDI",
+  stage_scolaire: "Stage scolaire",
 };
 
 function offerTitle(offer: Offer): string {
@@ -352,6 +353,7 @@ const LISTING_LABEL: Record<Offer["contract_type"], string> = {
   stage: "Offres de stage",
   cdd: "Offres en CDD",
   cdi: "Offres en CDI",
+  stage_scolaire: "Offres de stage scolaire",
 };
 
 // Fil d'Ariane identique en JSON-LD et à l'écran, calqué sur les pages

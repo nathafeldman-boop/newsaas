@@ -157,6 +157,18 @@ export async function POST(request: NextRequest) {
             { count: "exact" },
           )
           .eq("id", userId);
+        // Élève de moins de 15 ans (18/11) : le paiement passe par le lien
+        // envoyé à son parent, et vaut accord parental.
+        if (!error) {
+          const { error: consentError } = await admin
+            .from("profiles")
+            .update({ parent_consent_at: new Date().toISOString() })
+            .eq("id", userId)
+            .not("school_stage", "is", null)
+            .not("parent_email", "is", null)
+            .is("parent_consent_at", null);
+          if (consentError && !/school_stage|parent_/.test(consentError.message)) console.error("Stripe webhook: accord parental non noté", consentError.message);
+        }
         if (error) {
           console.error("Stripe webhook: checkout.session.completed profile update failed", error, {
             userId,

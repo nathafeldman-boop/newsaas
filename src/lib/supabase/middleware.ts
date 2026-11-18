@@ -24,11 +24,9 @@ const PROTECTED_PATHS = [
   "/premium",
   "/affilies",
   "/onboarding",
-  "/stages-scolaires",
 ];
-// Stages scolaires (18/11) : l'élève y remplit son profil à la place de
-// l'onboarding ; /accord-parental est ouvert au parent sans compte.
-const ONBOARDING_EXEMPT_PATHS = ["/onboarding", "/auth", "/admin", "/stages-scolaires", "/accord-parental"];
+// /accord-parental (18/11) : ouvert au parent d'un élève, sans compte.
+const ONBOARDING_EXEMPT_PATHS = ["/onboarding", "/auth", "/admin", "/accord-parental"];
 
 function matchesPath(pathname: string, paths: string[]) {
   return paths.some(

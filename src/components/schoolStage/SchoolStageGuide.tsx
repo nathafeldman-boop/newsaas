@@ -96,14 +96,14 @@ export function SchoolStageGuide({ level }: { level: SchoolStageLevel }) {
       <p style={{ fontSize: 16, lineHeight: 1.55, margin: "12px 0 0", ...muted }}>{g.intro}</p>
 
       <div className="card elev-sm mt-6" style={{ padding: "var(--space-6)", background: "color-mix(in srgb, var(--color-accent) 8%, var(--color-surface))" }}>
-        <p style={{ margin: 0, fontWeight: 800, fontSize: 17 }}>Les entreprises près de chez toi + ta lettre, gratuitement</p>
+        <p style={{ margin: 0, fontWeight: 800, fontSize: 17 }}>Les offres de stage et les entreprises près de chez toi, avec ta lettre</p>
         <p style={{ margin: "6px 0 0", fontSize: 14, lineHeight: 1.5, ...muted }}>
-          Choisis un secteur ({SCHOOL_SECTORS.slice(0, 5).map((s) => s.label.toLowerCase()).join(", ")}…) : Stageio te montre les entreprises autour de
-          chez toi et écrit ta lettre de demande. Moins de 15 ans : on demande l&apos;accord d&apos;un parent. Après
-          l&apos;inscription, choisis « Stage de 3e, de seconde, de 1re ou de bac pro ».
+          Tu swipes les offres de stage de ta classe près de chez toi (offres de la plateforme 1élève1stage pour la 3e et la seconde) et des
+          entreprises à contacter ({SCHOOL_SECTORS.slice(0, 4).map((s) => s.label.toLowerCase()).join(", ")}…), et Stageio prépare ta lettre. Moins
+          de 15 ans : c&apos;est un parent qui donne son accord. À l&apos;inscription, choisis « Stage de 3e, de seconde, de 1re ou de bac pro ».
         </p>
         <Link href="/inscription" className="btn btn-primary" style={{ marginTop: 14, display: "inline-flex" }}>
-          Trouver mon entreprise
+          Trouver mon stage
         </Link>
       </div>
 

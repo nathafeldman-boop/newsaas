@@ -35,7 +35,7 @@ export function resolveSignupIntent(params: { type?: string; metier?: string; vi
   return { type, metier, city };
 }
 
-const OFFERS: Record<ContractType, string> = { alternance: "offres d'alternance", stage: "offres de stage", cdd: "offres en CDD", cdi: "offres en CDI" };
+const OFFERS: Record<ContractType, string> = { alternance: "offres d'alternance", stage: "offres de stage", cdd: "offres en CDD", cdi: "offres en CDI", stage_scolaire: "offres de stage scolaire" };
 
 // Barre d'inscription des pages publiques (voir StickySignupBar) : toujours
 // un texte, générique sans contexte.

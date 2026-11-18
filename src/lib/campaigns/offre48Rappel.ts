@@ -86,7 +86,7 @@ export async function sendOffer48Reminders(now: number = Date.now()): Promise<Re
     const ids = [...sentAt.keys()];
     const profiles: CampaignProfile[] = [];
     for (let i = 0; i < ids.length; i += 100) {
-      const { data, error } = await db.from("profiles").select(PROFILE_COLUMNS).in("id", ids.slice(i, i + 100));
+      const { data, error } = await db.from("profiles").select(PROFILE_COLUMNS).in("id", ids.slice(i, i + 100)).is("school_stage", null);
       if (error) throw new Error(error.message);
       profiles.push(...((data ?? []) as unknown as CampaignProfile[]));
     }

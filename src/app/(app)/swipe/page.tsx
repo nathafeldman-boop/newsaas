@@ -31,6 +31,7 @@ import { isAutoOfferAvailable } from "@/lib/subscription/autoAvailability";
 import { REGION_BONUS, regionDepartementLabels, regionName, sameRegionElsewhere, SPARSE_LOCAL_POOL } from "@/lib/matching/region";
 import { pinFirst, pinnedOfferId, PINNED_OFFER_COOKIE } from "@/lib/offers/pinnedOffer";
 import type { Offer } from "@/types/database";
+import { SchoolSwipe } from "@/components/schoolStage/SchoolSwipe";
 
 export default async function SwipePage() {
   const supabase = await createClient();
@@ -167,6 +168,14 @@ export default async function SwipePage() {
   // l'état du 8/09 10h-12h à la demande explicite, en attendant une
   // décision produit plus posée plutôt qu'une nouvelle expérimentation.
   const DECK_SIZE = 30;
+
+  // Élève de 3e, seconde, 1re ou bac pro (18/11) : son paquet ne contient que
+  // les stages scolaires de sa classe près de chez lui (1élève1stage, puis
+  // entreprises proches en candidature spontanée). Même swipe, mêmes favoris,
+  // même paywall que les autres.
+  if (profile?.school_stage) {
+    return <SchoolSwipe profile={profile} userId={user.id} excludeIds={excludeIds} premium={premium} totalSwipesEver={totalSwipesEver} applicationStreak={applicationStreak} />;
+  }
   // Bassin de candidats scoré AVANT tri : doit couvrir tout le volume actif
   // réaliste, sinon le tri par score ne s'applique qu'aux offres les plus
   // récentes (ce qu'on récupérait avant) et les meilleurs matchs d'un

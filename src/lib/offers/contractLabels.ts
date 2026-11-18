@@ -11,6 +11,7 @@ export const CONTRACT_LABEL: Record<ContractType, string> = {
   stage: "Stage",
   cdd: "CDD",
   cdi: "CDI",
+  stage_scolaire: "Stage scolaire",
 };
 
 // « Offres … » : « d'alternance », « de stage », « en CDD », « en CDI ».
@@ -19,6 +20,7 @@ export const CONTRACT_OF: Record<ContractType, string> = {
   stage: "de stage",
   cdd: "en CDD",
   cdi: "en CDI",
+  stage_scolaire: "de stage scolaire",
 };
 
 export const OFFERS_OF_CONTRACT: Record<ContractType, string> = {
@@ -26,6 +28,7 @@ export const OFFERS_OF_CONTRACT: Record<ContractType, string> = {
   stage: "offres de stage",
   cdd: "offres en CDD",
   cdi: "offres en CDI",
+  stage_scolaire: "offres de stage scolaire",
 };
 
 export const ALL_CONTRACT_TYPES: ContractType[] = ["cdi", "cdd", "alternance", "stage"];
@@ -36,7 +39,7 @@ export function isPlacementType(type: ContractType): type is PlacementType {
 
 // « ton alternance ou ton CDI », « leur stage » : ce que la personne cherche,
 // dans l'ordre de ALL_CONTRACT_TYPES. Liste vide : alternance ou stage.
-const NOUN: Record<ContractType, string> = { alternance: "alternance", stage: "stage", cdd: "CDD", cdi: "CDI" };
+const NOUN: Record<ContractType, string> = { alternance: "alternance", stage: "stage", cdd: "CDD", cdi: "CDI", stage_scolaire: "stage" };
 export function contractNouns(lookingFor: ContractType[], possessive: "ton" | "leur"): string {
   const types = ALL_CONTRACT_TYPES.filter((type) => lookingFor.includes(type));
   const list: ContractType[] = types.length > 0 ? types : ["alternance", "stage"];
@@ -44,10 +47,11 @@ export function contractNouns(lookingFor: ContractType[], possessive: "ton" | "l
   return words.length === 1 ? words[0] : `${words.slice(0, -1).join(", ")} ou ${words[words.length - 1]}`;
 }
 
-export const CONTRACT_ICON: Record<ContractType, string> = { cdi: "💼", cdd: "⏱️", alternance: "🎯", stage: "🌱" };
+export const CONTRACT_ICON: Record<ContractType, string> = { cdi: "💼", cdd: "⏱️", alternance: "🎯", stage: "🌱", stage_scolaire: "🎒" };
 export const CONTRACT_SUB: Record<ContractType, string> = {
   cdi: "Un premier emploi durable, ouvert aux débutants.",
   cdd: "Un contrat de quelques mois, ouvert aux débutants.",
   alternance: "Tu alternes école et entreprise, avec un salaire.",
   stage: "Une expérience de quelques mois pendant tes études.",
+  stage_scolaire: "Collège ou lycée : 3e, seconde, 1re ou bac pro.",
 };

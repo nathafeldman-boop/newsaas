@@ -48,8 +48,9 @@ export default async function ParentConsentPage({ searchParams }: { searchParams
           <>
             <h1 style={{ fontSize: 21, margin: 0 }}>{firstName} cherche son {p!.school_stage ? SCHOOL_STAGES[p!.school_stage].label.toLowerCase() : "stage"}</h1>
             <p style={{ fontSize: 14, lineHeight: 1.5, margin: "8px 0 0", ...muted }}>
-              Stageio affiche les entreprises proches de chez vous dans le secteur choisi et rédige une lettre de demande de stage. Votre enfant
-              l&apos;envoie ou la dépose lui-même : Stageio ne contacte aucune entreprise à sa place. C&apos;est gratuit.
+              Stageio montre à votre enfant des offres de stage près de chez vous (plateforme 1élève1stage de l&apos;Éducation nationale pour la 3e et
+              la seconde) et des entreprises proches à contacter, et prépare ses lettres. Votre enfant postule lui-même : Stageio ne contacte aucune
+              entreprise à sa place. Certaines fonctions sont payantes : c&apos;est vous qui paierez si besoin.
             </p>
             <p style={{ fontSize: 13, lineHeight: 1.5, margin: "8px 0 0", ...muted }}>
               Données gardées : prénom et nom, date de naissance, ville, classe, et votre adresse e-mail.
