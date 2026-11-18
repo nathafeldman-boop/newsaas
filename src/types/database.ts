@@ -275,6 +275,26 @@ export type CreatorVideo = {
   views: number | null;
   checked_at: string | null;
   last_error: string | null;
+  // Espace créateurs (SQL 20261119000001) : optionnelles tant que le SQL
+  // n'a pas été lancé.
+  creator_id?: string | null;
+  kind?: "carousel" | "video" | null;
+  declared_face?: "face" | "faceless" | null;
+  approved_face?: "face" | "faceless" | null;
+  review_status?: "none" | "pending" | "approved" | "corrected";
+  reviewed_at?: string | null;
+  video_seq?: number | null;
+};
+
+export type Creator = {
+  id: string;
+  name: string;
+  phone: string;
+  tiktok_handle: string | null;
+  access_token_hash: string;
+  accent: string;
+  created_at: string;
+  last_seen_at: string | null;
 };
 
 export type CreatorVideoViews = {
@@ -492,6 +512,12 @@ export type Database = {
         Row: CreatorVideo;
         Insert: Partial<CreatorVideo> & { url: string };
         Update: Partial<CreatorVideo>;
+        Relationships: [];
+      };
+      creators: {
+        Row: Creator;
+        Insert: Partial<Creator> & { name: string; phone: string; access_token_hash: string };
+        Update: Partial<Creator>;
         Relationships: [];
       };
       creator_video_views: {

@@ -26,7 +26,7 @@ const PROTECTED_PATHS = [
   "/onboarding",
 ];
 // /accord-parental (18/11) : ouvert au parent d'un élève, sans compte.
-const ONBOARDING_EXEMPT_PATHS = ["/onboarding", "/auth", "/admin", "/accord-parental"];
+const ONBOARDING_EXEMPT_PATHS = ["/onboarding", "/auth", "/admin", "/accord-parental", "/createurs"];
 
 function matchesPath(pathname: string, paths: string[]) {
   return paths.some(

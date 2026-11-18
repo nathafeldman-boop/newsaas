@@ -39,8 +39,11 @@ export function CreatorsPanel({
   return (
     <section id="createurs" style={{ marginTop: 32 }}>
       <h2 style={{ fontSize: 17, fontWeight: 700, margin: 0 }}>Vidéos des créateurs</h2>
+      <p style={{ fontSize: 13, margin: "4px 0 0" }}>
+        <a href="/admin/createurs">👥 Espace créateurs : lien d&apos;inscription, vidéos face/faceless à valider, gains par créateur →</a>
+      </p>
       <p style={{ fontSize: 12.5, color: muted, margin: "4px 0 12px", maxWidth: "75ch" }}>
-        Colle les liens TikTok (un par ligne). Les vues sont relevées tout de suite, puis toutes les 3 h pendant 60 jours. Une vidéo
+        Colle les liens TikTok (un par ligne). Les vues sont relevées tout de suite, puis toutes les 30 min pendant 60 jours. Une vidéo
         pas encore relevée affiche « en attente ».
       </p>
 

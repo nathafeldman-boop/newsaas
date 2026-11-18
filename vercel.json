@@ -86,7 +86,7 @@
     },
     {
       "path": "/api/cron/tiktok-views",
-      "schedule": "25 */3 * * *"
+      "schedule": "*/30 * * * *"
     }
   ]
 }

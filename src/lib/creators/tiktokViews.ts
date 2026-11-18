@@ -62,7 +62,12 @@ export function creatorFromUrl(url: string): string | null {
 
 const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
 
-export type FetchedViews = { views: number; finalUrl: string } | { error: string };
+/** Carrousel (photos) ou vidéo, lu dans la page : TikTok y met « imagePost » pour un carrousel, même avec une URL en /video/. */
+export function detectKind(html: string, url: string): "carousel" | "video" {
+  return /"imagePost":\{"images":\[/.test(html) || /\/photo\/\d/.test(url) ? "carousel" : "video";
+}
+
+export type FetchedViews = { views: number; finalUrl: string; kind: "carousel" | "video" } | { error: string };
 
 export async function fetchTikTokViews(url: string, timeoutMs = 12_000): Promise<FetchedViews> {
   try {
@@ -73,9 +78,10 @@ export async function fetchTikTokViews(url: string, timeoutMs = 12_000): Promise
       signal: AbortSignal.timeout(timeoutMs),
     });
     if (!res.ok) return { error: `HTTP ${res.status}` };
-    const views = extractPlayCount(await res.text());
+    const html = await res.text();
+    const views = extractPlayCount(html);
     if (views === null) return { error: "vues introuvables dans la page (vidéo supprimée, privée ou page bloquée)" };
-    return { views, finalUrl: res.url || url };
+    return { views, finalUrl: res.url || url, kind: detectKind(html, res.url || url) };
   } catch (err) {
     return { error: err instanceof Error ? err.message : String(err) };
   }

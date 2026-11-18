@@ -528,6 +528,31 @@ body:has([data-paywall-fullscreen]) .app-shell-content { padding-left: 0 !import
   background: radial-gradient(1200px 600px at 70% -10%, rgba(34, 197, 94, 0.14), transparent), radial-gradient(800px 500px at 0% 100%, rgba(56, 189, 248, 0.08), transparent), #050807;
   background-attachment: fixed;
 }
+/* Espace créateurs (18/11) : trois couleurs de plus, même principe que le vert. */
+.admin-dark[data-accent="rose"] {
+  --glow: rgba(244, 114, 182, 0.18); --color-accent: #ec4899; --color-accent-100: rgba(236, 72, 153, 0.14); --color-accent-200: rgba(236, 72, 153, 0.26);
+  --color-accent-500: #f472b6; --color-accent-600: #f472b6; --color-accent-700: #f9a8d4; --color-accent-800: #fbcfe8;
+  --chart-1: #f472b6; --chart-2: #a78bfa; --chart-3: #38bdf8;
+  background: radial-gradient(1200px 600px at 70% -10%, rgba(236, 72, 153, 0.14), transparent), radial-gradient(800px 500px at 0% 100%, rgba(167, 139, 250, 0.08), transparent), #0a0709;
+  background-attachment: fixed;
+}
+.admin-dark[data-accent="bleu"] {
+  --glow: rgba(56, 189, 248, 0.18); --color-accent: #0ea5e9; --color-accent-100: rgba(14, 165, 233, 0.14); --color-accent-200: rgba(14, 165, 233, 0.26);
+  --color-accent-500: #38bdf8; --color-accent-600: #38bdf8; --color-accent-700: #7dd3fc; --color-accent-800: #bae6fd;
+  --chart-1: #38bdf8; --chart-2: #4ade80; --chart-3: #f472b6;
+  background: radial-gradient(1200px 600px at 70% -10%, rgba(14, 165, 233, 0.15), transparent), radial-gradient(800px 500px at 0% 100%, rgba(99, 102, 241, 0.08), transparent), #05080b;
+  background-attachment: fixed;
+}
+.admin-dark[data-accent="orange"] {
+  --glow: rgba(251, 146, 60, 0.18); --color-accent: #f97316; --color-accent-100: rgba(249, 115, 22, 0.14); --color-accent-200: rgba(249, 115, 22, 0.26);
+  --color-accent-500: #fb923c; --color-accent-600: #fb923c; --color-accent-700: #fdba74; --color-accent-800: #fed7aa;
+  --chart-1: #fb923c; --chart-2: #facc15; --chart-3: #38bdf8;
+  background: radial-gradient(1200px 600px at 70% -10%, rgba(249, 115, 22, 0.14), transparent), radial-gradient(800px 500px at 0% 100%, rgba(250, 204, 21, 0.07), transparent), #0b0805;
+  background-attachment: fixed;
+}
+.creator-space .creator-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.creator-space .creator-rank { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; }
+.creator-space .creator-rank:hover { background: var(--card-hover); }
 .admin-dark .admin-side, .admin-dark .admin-topbar { background: transparent; }
 .admin-dark .admin-topbar { border-bottom: 1px solid var(--color-divider); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 10; }
 .admin-dark .admin-nav-link { color: var(--color-neutral-600); transition: background-color .15s ease, color .15s ease; }

@@ -31,12 +31,16 @@ export async function refreshCreatorVideos(onlyIds?: string[]): Promise<{ checke
       // Lien court : on garde le lien complet trouvé après redirection.
       const canonical = parseTikTokUrl(res.finalUrl);
       const patch: Partial<CreatorVideo> = { views: res.views, checked_at: now, last_error: null };
+      // Carrousel ou vidéo (18/11) : lu au premier relevé, puis gardé.
+      if (!v.kind) patch.kind = res.kind;
       if (canonical && canonical.url !== v.url && canonical.creator) patch.url = canonical.url;
       if (!v.creator) patch.creator = creatorFromUrl(res.finalUrl);
       const { error: upErr } = await admin.from("creator_videos").update(patch).eq("id", v.id);
       // Le lien complet existe déjà (même vidéo collée deux fois) : on garde l'ancien lien.
       if (upErr && patch.url) await admin.from("creator_videos").update({ ...patch, url: v.url }).eq("id", v.id);
-      await admin.from("creator_video_views").insert({ video_id: v.id, checked_at: now, views: res.views });
+      // Relevé toutes les 30 min (18/11) : on ne garde une ligne que si les
+      // vues ont bougé, sinon la table grossit pour rien.
+      if (v.views !== res.views) await admin.from("creator_video_views").insert({ video_id: v.id, checked_at: now, views: res.views });
     }
   };
   await Promise.all([worker(), worker(), worker(), worker()]);

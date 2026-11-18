@@ -44,3 +44,25 @@ export async function removeCreatorVideoAction(formData: FormData) {
   revalidatePath("/admin");
   redirect("/admin#createurs");
 }
+
+// Validation face / faceless d'une vidéo de créateur (18/11) : la 1re vidéo
+// puis une sur cinq arrivent ici. « approved » : le type déclaré est le bon ;
+// « corrected » : Stageio met l'autre type (le tarif suit).
+export async function reviewCreatorVideoAction(formData: FormData) {
+  await assertAdminSession();
+  const id = String(formData.get("id") ?? "");
+  const face = String(formData.get("face") ?? "");
+  if (/^[0-9a-f-]{36}$/i.test(id) && (face === "face" || face === "faceless")) {
+    const admin = createAdminClient();
+    const { data: v } = await admin.from("creator_videos").select("declared_face").eq("id", id).maybeSingle();
+    if (v) {
+      const { error } = await admin
+        .from("creator_videos")
+        .update({ approved_face: face, review_status: v.declared_face === face ? "approved" : "corrected", reviewed_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) console.error("reviewCreatorVideoAction failed", error);
+    }
+  }
+  revalidatePath("/admin/createurs");
+  redirect("/admin/createurs#a-valider");
+}
