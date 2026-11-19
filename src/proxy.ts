@@ -1,10 +1,11 @@
-import { type NextFetchEvent, type NextRequest } from "next/server";
+import { NextResponse, type NextFetchEvent, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 import { logVisit } from "@/lib/analytics/logVisit";
 import { linkedinCampaign, normalizeUtmSource, sourceFromReferrer } from "@/lib/analytics/referrerSource";
 import { logAffiliateClick } from "@/lib/affiliates/logAffiliateClick";
 import { offerIdFromPath, PINNED_OFFER_COOKIE, PINNED_OFFER_MAX_AGE } from "@/lib/offers/pinnedOffer";
 import { AB_ENTRY_COOKIE, abEntryApplies, isAbEntryVariant } from "@/lib/ab/entry";
+import { AB_LP_COOKIE, isAbLpVariant, LANDING_B_PATH, type AbLpVariant } from "@/lib/ab/landing";
 
 const VISITOR_COOKIE = "sid";
 const VISITOR_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 an
@@ -109,11 +110,27 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
     }
   }
 
+  // Test A/B de la page d'accueil (19/11, voir lib/ab/landing.ts) : groupe
+  // tiré à la première ouverture de « / », noté dans site_visits.
+  let lpVariant: AbLpVariant | null = null;
+  if (request.nextUrl.pathname === "/") {
+    const forcedLp = process.env.AB_LP_WINNER;
+    const existing = request.cookies.get(AB_LP_COOKIE)?.value;
+    if (isAbLpVariant(forcedLp)) lpVariant = forcedLp;
+    else if (isAbLpVariant(existing)) lpVariant = existing;
+    else if (isPageLoad) {
+      lpVariant = Math.random() < 0.5 ? "a" : "b";
+      response.cookies.set(AB_LP_COOKIE, lpVariant, { maxAge: 30 * 86_400, sameSite: "lax", path: "/" });
+      event.waitUntil(logVisit(visitorId, "/", request.headers.get("user-agent"), { source: utmSource, medium: utmMedium, campaign: `ab-lp-${lpVariant}` }));
+    }
+  }
+
   // Première page ouverte sur le site (18/11) : recopiée sur le profil à
   // l'inscription (voir onboarding/page.tsx) pour savoir quelles pages font
   // s'inscrire. Posée une seule fois, jamais écrasée.
   if (isPageLoad && !request.cookies.get(LANDING_COOKIE) && !/^\/(admin|api|auth|onboarding|createurs)/.test(request.nextUrl.pathname)) {
-    response.cookies.set(LANDING_COOKIE, request.nextUrl.pathname.slice(0, 200), { maxAge: UTM_COOKIE_MAX_AGE, httpOnly: true, sameSite: "lax", path: "/" });
+    const landingPath = request.nextUrl.pathname === "/" && lpVariant === "b" ? "/?lp=b" : request.nextUrl.pathname;
+    response.cookies.set(LANDING_COOKIE, landingPath.slice(0, 200), { maxAge: UTM_COOKIE_MAX_AGE, httpOnly: true, sameSite: "lax", path: "/" });
   }
 
   // Fiche d'offre ouverte (lien LinkedIn, Google, email…) : notée pour la
@@ -167,6 +184,15 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
       sameSite: "lax",
       path: "/",
     });
+  }
+
+  // Groupe « b » : la page façon Wapply, à la même adresse « / ».
+  if (lpVariant === "b" && request.nextUrl.pathname === "/") {
+    const url = request.nextUrl.clone();
+    url.pathname = LANDING_B_PATH;
+    const rewritten = NextResponse.rewrite(url, { headers: response.headers });
+    for (const c of response.cookies.getAll()) rewritten.cookies.set(c);
+    return rewritten;
   }
 
   return response;
