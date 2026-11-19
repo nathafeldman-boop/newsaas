@@ -75,7 +75,7 @@ export const STEPS_A: readonly StepId[] = STEP_IDS.filter((s) => !["quick_job", 
 export const STEPS_B: readonly StepId[] = ["quick_job", "proof_offers", "quick_criteria", "proof_reviews", "proof_week", "cv", "outro", "pledge", "pledge_done"];
 
 /** Début du test : les comptes créés avant gardent l'onboarding A. */
-export const AB_ONBOARDING_START = "2026-11-19T20:00:00Z";
+export const AB_ONBOARDING_START = "2026-11-19T18:35:00Z";
 
 /**
  * Groupe du test, tiré de l'id du compte (uuid aléatoire) : 50/50, stable,
