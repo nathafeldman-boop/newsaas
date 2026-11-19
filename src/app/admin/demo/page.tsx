@@ -33,6 +33,7 @@ async function loadDemoData() {
   // Preuve P1 du test A/B d'onboarding : offres actives par contrat.
   const contracts = ["cdi", "cdd", "alternance", "stage", "stage_scolaire"] as const;
   const byContract = await Promise.all(contracts.map((c) => admin.from("offers").select("id", { count: "exact", head: true }).eq("is_active", true).eq("contract_type", c)));
+  const allUsers = await admin.from("profiles").select("id", { count: "exact", head: true });
   const offersByContract: Partial<Record<string, number>> = {};
   contracts.forEach((c, i) => {
     if (!byContract[i].error) offersByContract[c] = byContract[i].count ?? 0;
@@ -53,6 +54,7 @@ async function loadDemoData() {
     weeklySignups: weekly.error ? null : (weekly.count ?? 0),
     activeOffers: active.error ? null : (active.count ?? 0),
     offersByContract,
+    totalUsers: allUsers.error ? null : (allUsers.count ?? 0),
   };
   return { deck, proof, trustCount: trust.count ?? 0 };
 }

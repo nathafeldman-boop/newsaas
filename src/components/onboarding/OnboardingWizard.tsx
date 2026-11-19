@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
-import { countWeekOffersAction, markReferralGrantedAction, saveSchoolStageOnboardingAction } from "@/app/onboarding/actions";
+import { markReferralGrantedAction, saveSchoolStageOnboardingAction } from "@/app/onboarding/actions";
 import { SCHOOL_STAGE_IDS, ageOn } from "@/lib/schoolStage/levels";
 import { ChipMultiSelectWithCustom } from "@/components/ui/ChipMultiSelectWithCustom";
 import { LocationSearchSelect } from "@/components/ui/LocationSearchSelect";
@@ -658,20 +658,6 @@ export function OnboardingWizard({
   const progressIndex = PROGRESS_STEPS.indexOf(stepId);
   const showChrome = !NO_CHROME_STEPS.includes(stepId);
 
-  // Preuve P3 : comptée à l'arrivée sur l'écran, pour le métier et la ville choisis.
-  const [weekCount, setWeekCount] = useState<number | null>(null);
-  useEffect(() => {
-    if (stepId !== "proof_week") return;
-    let alive = true;
-    void countWeekOffersAction({ job: targetJobs[0] ?? null, city, lookingFor }).then((n) => {
-      if (!alive) return;
-      setWeekCount(n ?? 0);
-    });
-    return () => {
-      alive = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stepId]);
 
   const schoolFields = (
                     <div className="card flex flex-col gap-3" style={{ padding: 14 }}>
@@ -1138,7 +1124,7 @@ export function OnboardingWizard({
             )}
 
             {stepId === "proof_offers" && <ProofOffers data={proof} lookingFor={lookingFor} onNext={goNext} />}
-            {stepId === "proof_week" && <ProofWeek count={weekCount} job={targetJobs[0] ?? null} city={city} onNext={goNext} />}
+            {stepId === "proof_week" && <ProofWeek data={proof} onNext={goNext} />}
 
             {/* Version B du test A/B (19/11) : parcours Wapply, au style Stageio. */}
             {stepId === "quick_job" && (

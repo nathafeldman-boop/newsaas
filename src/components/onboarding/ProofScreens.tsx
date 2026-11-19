@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, animate, motion } from "framer-motion";
+import { Fragment, useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 
 // Écrans de preuve de l'onboarding (28/10, Nathan : « sur les 10 écrans, il
 // nous faut de la proof : un après le 3e, un après le 5e, un après le 9e »).
@@ -18,6 +18,8 @@ export type ProofData = {
   activeOffers: number | null;
   /** Offres actives par type de contrat (P1). */
   offersByContract?: Partial<Record<string, number>> | null;
+  /** Comptes Stageio au total (P3). */
+  totalUsers?: number | null;
 };
 
 const muted = "color-mix(in srgb, var(--color-text) 62%, transparent)";
@@ -115,169 +117,104 @@ const APPROACHES = [
   { icon: "⚡", label: "Stageio", done: [true, true, true, true], color: "#0f9c56" },
 ] as const;
 
-const GAUGE_R = 120;
-const GAUGE_LEN = Math.PI * GAUGE_R;
-
-function arcPoint(ratio: number, r = GAUGE_R) {
-  const angle = Math.PI * (1 - ratio);
-  return { x: 150 + r * Math.cos(angle), y: 150 - r * Math.sin(angle) };
-}
+// Graphique en barres (19/11, Nathan : « fais plutôt un graphique ») : une
+// barre par façon de chercher, hauteur = critères faits pour toi sur 4, puis
+// le détail critère par critère.
+const CHART_H = 150;
 
 export function ProofCompare({ onNext }: { onNext: () => void }) {
-  // 0 : porte-à-porte, 1 : sites d'emploi, 2 : Stageio (l'aiguille s'arrête là).
+  // Les barres montent l'une après l'autre ; la dernière (Stageio) ressort.
   const [stage, setStage] = useState(-1);
   useEffect(() => {
-    const timers = [400, 1700, 3000].map((ms, i) => window.setTimeout(() => setStage(i), ms));
+    const timers = [350, 1050, 1750].map((ms, i) => window.setTimeout(() => setStage(i), ms));
     return () => timers.forEach(clearTimeout);
   }, []);
-  const current = stage >= 0 ? APPROACHES[stage] : null;
-  const score = current ? current.done.filter(Boolean).length : 0;
-  const ratio = score / 4;
   const final = stage === 2;
-  // Aiguille : angle animé à ressort (qui dépasse un peu, puis se pose),
-  // tourné autour du centre de la jauge.
-  const [angle, setAngle] = useState(-90);
-  const angleRef = useRef(-90);
-  useEffect(() => {
-    const controls = animate(angleRef.current, -90 + ratio * 180, {
-      type: "spring",
-      stiffness: 70,
-      damping: 9,
-      onUpdate: (a) => {
-        angleRef.current = a;
-        setAngle(a);
-      },
-    });
-    return () => controls.stop();
-  }, [ratio]);
 
   return (
     <div className="flex flex-1 flex-col px-1" style={{ position: "relative", overflow: "hidden" }}>
       <Glow />
       <div className="flex flex-1 flex-col justify-center" style={{ position: "relative" }}>
-      <div style={{ position: "relative", textAlign: "center" }}>
-        <Kicker>Pourquoi Stageio</Kicker>
-        <h1 style={{ fontSize: 26, fontWeight: 800, lineHeight: 1.18, margin: "6px 0 0" }}>Chercher seul, ou avec Stageio ?</h1>
-        <p style={{ fontSize: 14, margin: "6px 0 0", color: muted }}>Ce qui est fait pour toi, sur 4.</p>
-      </div>
+        <div style={{ position: "relative", textAlign: "center" }}>
+          <Kicker>Pourquoi Stageio</Kicker>
+          <h1 style={{ fontSize: 26, fontWeight: 800, lineHeight: 1.18, margin: "6px 0 0" }}>Chercher seul, ou avec Stageio ?</h1>
+          <p style={{ fontSize: 14, margin: "6px 0 0", color: muted }}>Ce qui est fait pour toi, sur 4 critères.</p>
+        </div>
 
-      <div style={{ position: "relative", width: "100%", maxWidth: 340, margin: "16px auto 0" }}>
-        <svg viewBox="0 0 300 170" width="100%" role="img" aria-label="Porte-à-porte 0 sur 4, sites d'emploi 2 sur 4, Stageio 4 sur 4">
-          <defs>
-            <linearGradient id="proof-gauge" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#e5484d" />
-              <stop offset="50%" stopColor="#f5a623" />
-              <stop offset="100%" stopColor="#0f9c56" />
-            </linearGradient>
-          </defs>
-          <path d={`M ${150 - GAUGE_R} 150 A ${GAUGE_R} ${GAUGE_R} 0 0 1 ${150 + GAUGE_R} 150`} stroke="var(--color-surface)" strokeWidth="22" fill="none" strokeLinecap="round" />
-          <motion.path
-            d={`M ${150 - GAUGE_R} 150 A ${GAUGE_R} ${GAUGE_R} 0 0 1 ${150 + GAUGE_R} 150`}
-            stroke="url(#proof-gauge)"
-            strokeWidth="22"
-            fill="none"
-            strokeLinecap="round"
-            strokeDasharray={GAUGE_LEN}
-            initial={{ strokeDashoffset: GAUGE_LEN }}
-            animate={{ strokeDashoffset: GAUGE_LEN * (1 - Math.max(ratio, 0.001)) }}
-            transition={{ type: "spring", stiffness: 60, damping: 14 }}
-          />
-          {[0, 0.25, 0.5, 0.75, 1].map((t) => {
-            const a = arcPoint(t, GAUGE_R + 20);
+        <div
+          role="img"
+          aria-label="Porte-à-porte 0 sur 4, sites d'emploi 2 sur 4, Stageio 4 sur 4"
+          style={{ position: "relative", margin: "22px auto 0", width: "100%", maxWidth: 340, height: CHART_H + 60, display: "grid", gridTemplateColumns: "22px repeat(3, minmax(0, 1fr))", columnGap: 10 }}
+        >
+          {/* Axe : 0 à 4, lignes de repère discrètes. */}
+          {[0, 1, 2, 3, 4].map((v) => (
+            <div key={v} aria-hidden style={{ position: "absolute", left: 26, right: 0, bottom: 34 + (v / 4) * CHART_H, borderTop: `1px ${v === 0 ? "solid" : "dashed"} color-mix(in srgb, var(--color-text) ${v === 0 ? 30 : 12}%, transparent)` }}>
+              <span style={{ position: "absolute", left: -24, top: -8, fontSize: 11, fontWeight: 700, color: "var(--color-neutral-500)" }}>{v}</span>
+            </div>
+          ))}
+          <div />
+          {APPROACHES.map((ap, i) => {
+            const score = ap.done.filter(Boolean).length;
+            const on = stage >= i;
+            const star = i === 2;
             return (
-              <text key={t} x={a.x} y={a.y + 4} textAnchor="middle" fontSize="10.5" fontWeight="700" fill="var(--color-neutral-500)">
-                {t * 4}
-              </text>
+              <div key={ap.label} className="flex flex-col items-center justify-end" style={{ position: "relative", height: CHART_H + 60 }}>
+                <motion.span
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: on ? 1 : 0, y: on ? 0 : 6 }}
+                  transition={{ delay: on ? 0.35 : 0 }}
+                  style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: star ? 22 : 16, color: ap.color, marginBottom: 4 }}
+                >
+                  {score}/4
+                </motion.span>
+                <motion.div
+                  initial={{ height: 4 }}
+                  animate={{ height: on ? Math.max(4, (score / 4) * CHART_H) : 4 }}
+                  transition={{ type: "spring", stiffness: 110, damping: 18 }}
+                  style={{
+                    width: "70%",
+                    flexShrink: 0,
+                    borderRadius: "10px 10px 4px 4px",
+                    background: star ? "linear-gradient(180deg, var(--color-accent), var(--color-accent-700))" : ap.color,
+                    opacity: star ? 1 : 0.85,
+                    boxShadow: star && final ? "0 12px 26px color-mix(in srgb, var(--color-accent) 35%, transparent)" : "none",
+                  }}
+                />
+                <div style={{ height: 34, flexShrink: 0, display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: 5, fontSize: 11.5, fontWeight: 800, textAlign: "center", lineHeight: 1.15 }}>
+                  {ap.icon} {ap.label}
+                </div>
+              </div>
             );
           })}
-          <g transform={`rotate(${angle} 150 150)`}>
-            <path d="M 146 150 L 150 52 L 154 150 Z" fill="var(--color-text)" />
-          </g>
-          <circle cx="150" cy="150" r="13" fill="var(--color-text)" />
-          <circle cx="150" cy="150" r="5" fill="var(--color-bg)" />
-        </svg>
-        <AnimatePresence mode="wait">
-          {current && (
-            <motion.div
-              key={current.label}
-              initial={{ opacity: 0, y: 8, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: final ? 1.08 : 1 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ type: "spring", stiffness: 380, damping: 22 }}
-              style={{ textAlign: "center", marginTop: -6 }}
-            >
-              <p style={{ margin: 0, fontFamily: "var(--font-heading)", fontSize: 40, fontWeight: 800, lineHeight: 1, color: current.color }}>
-                {score}/4
-              </p>
-              <p style={{ margin: "4px 0 0", fontSize: 15, fontWeight: 800 }}>
-                {current.icon} {current.label}
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
-        {final && (
-          <motion.span
-            aria-hidden
-            initial={{ opacity: 0.5, scale: 0.6 }}
-            animate={{ opacity: 0, scale: 1.6 }}
-            transition={{ duration: 1.1, ease: "easeOut" }}
-            style={{ position: "absolute", left: "50%", top: "52%", width: 160, height: 160, marginLeft: -80, marginTop: -80, borderRadius: "50%", border: "3px solid #0f9c56", pointerEvents: "none" }}
-          />
-        )}
-      </div>
+        </div>
 
-      <div style={{ position: "relative", display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 6, marginTop: 14 }}>
-        {APPROACHES.map((a, i) => {
-          const on = stage >= i;
-          const highlight = i === 2 && final;
-          return (
-            <motion.div
-              key={a.label}
-              animate={{ opacity: on ? 1 : 0.35, y: on ? 0 : 6, scale: highlight ? 1.04 : 1 }}
-              transition={{ type: "spring", stiffness: 300, damping: 22 }}
-              style={{
-                padding: "9px 6px 10px",
-                borderRadius: 14,
-                textAlign: "center",
-                background: highlight ? "linear-gradient(135deg, var(--color-accent), var(--color-accent-700))" : "var(--color-surface)",
-                color: highlight ? "var(--color-bg)" : "var(--color-text)",
-                boxShadow: highlight ? "0 12px 26px color-mix(in srgb, var(--color-accent) 32%, transparent)" : "none",
-              }}
-            >
-              <div style={{ fontSize: 12, fontWeight: 800 }}>
-                {a.icon} {a.label}
-              </div>
-              <div aria-hidden style={{ display: "flex", justifyContent: "center", gap: 4, marginTop: 6 }}>
-                {a.done.map((d, k) => (
-                  <motion.span
-                    key={k}
-                    initial={false}
-                    animate={{ scale: on && d ? [1, 1.4, 1] : 1 }}
-                    transition={{ delay: k * 0.08 }}
-                    style={{ width: 9, height: 9, borderRadius: "50%", background: d ? (highlight ? "var(--color-bg)" : a.color) : "color-mix(in srgb, var(--color-text) 15%, transparent)" }}
-                  />
+        {/* Détail : quels critères chaque façon de chercher fait pour toi. */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: final ? 1 : 0, y: final ? 0 : 8 }}
+          transition={{ duration: 0.4 }}
+          className="card"
+          style={{ position: "relative", margin: "16px auto 0", width: "100%", maxWidth: 360, padding: "10px 12px" }}
+        >
+          <div style={{ display: "grid", gridTemplateColumns: "1fr repeat(3, 40px)", alignItems: "center", rowGap: 6, fontSize: 12.5 }}>
+            <span />
+            {APPROACHES.map((ap) => (
+              <span key={ap.label} aria-label={ap.label} style={{ textAlign: "center", fontSize: 15 }}>
+                {ap.icon}
+              </span>
+            ))}
+            {CRITERIA.map((c, k) => (
+              <Fragment key={c}>
+                <span style={{ fontWeight: 700 }}>{c}</span>
+                {APPROACHES.map((ap) => (
+                  <span key={ap.label} style={{ textAlign: "center", fontWeight: 800, color: ap.done[k] ? "var(--color-accent-700)" : "color-mix(in srgb, var(--color-text) 30%, transparent)" }}>
+                    {ap.done[k] ? "✓" : "✕"}
+                  </span>
                 ))}
-              </div>
-            </motion.div>
-          );
-        })}
-      </div>
-
-      <motion.ul
-        initial={{ opacity: 0 }}
-        animate={{ opacity: final ? 1 : 0 }}
-        transition={{ duration: 0.4 }}
-        style={{ position: "relative", listStyle: "none", padding: 0, margin: "14px 0 0", display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "6px 10px" }}
-      >
-        {CRITERIA.map((c) => (
-          <li key={c} className="flex items-center gap-1.5" style={{ fontSize: 12.5, fontWeight: 700 }}>
-            <span aria-hidden style={{ color: "var(--color-accent-700)" }}>
-              ✓
-            </span>
-            {c}
-          </li>
-        ))}
-      </motion.ul>
+              </Fragment>
+            ))}
+          </div>
+        </motion.div>
       </div>
 
       <NextButton onClick={onNext} />
@@ -390,24 +327,109 @@ export function ProofReviews({ data, onNext }: { data: ProofData; onNext: () => 
 
 const DEMO_STEPS = [
   { at: 0, title: "Swipe les offres faites pour toi" },
-  { at: 2.3, title: "Un like lance ta candidature" },
-  { at: 5.47, title: "Ta lettre est déjà écrite" },
+  { at: 1.7, title: "Un like lance ta candidature" },
+  { at: 3.4, title: "Ta lettre est déjà écrite" },
 ] as const;
-const DEMO_DURATION = 12.23;
+// Mini-film animé en HTML (19/11, Nathan : « une VSL animée de 5 secondes »),
+// en boucle : la carte d'offre part à droite (like), la candidature part,
+// la lettre s'écrit. Exemple d'illustration, pas une vraie offre.
+const DEMO_DURATION = 5;
+
+function DemoFilm({ time }: { time: number }) {
+  const swipe = Math.min(1, Math.max(0, (time - 1.05) / 0.5)); // 0 → 1 : la carte part
+  const sent = time >= 1.7 && time < 3.4;
+  const letter = time >= 3.4;
+  const typed = Math.min(1, Math.max(0, (time - 3.6) / 1.1));
+  const lines = [0.92, 0.8, 0.88, 0.6];
+  return (
+    <div style={{ position: "relative", width: "100%", aspectRatio: "780 / 1688", borderRadius: 23, background: "#eaf5f8", overflow: "hidden", fontFamily: "var(--font-heading)" }}>
+      <div style={{ padding: "12px 10px 0", fontSize: 9, fontWeight: 800, color: "#0f2e1d" }}>
+        <span style={{ color: "#13a05b" }}>●</span> Stageio
+        <div style={{ fontSize: 10.5, marginTop: 4, whiteSpace: "nowrap" }}>Tes offres du jour</div>
+      </div>
+      {/* Carte d'offre (exemple) */}
+      {!letter && (
+        <div
+          style={{
+            position: "absolute",
+            left: 8,
+            right: 8,
+            top: 50,
+            borderRadius: 14,
+            background: "#fff",
+            boxShadow: "0 8px 20px rgba(19,43,51,.14)",
+            overflow: "hidden",
+            transform: `translateX(${swipe * 140}%) rotate(${swipe * 18}deg)`,
+            opacity: 1 - swipe * 0.9,
+            transition: "transform 60ms linear",
+          }}
+        >
+          <div style={{ background: "#13a05b", color: "#fff", padding: "8px 9px", fontSize: 9, fontWeight: 800, display: "flex", justifyContent: "space-between" }}>
+            <span>Exemple d&apos;offre</span>
+            <span>94 %</span>
+          </div>
+          <div style={{ padding: "9px 9px 12px" }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: "#0f2e1d", lineHeight: 1.2 }}>Vendeur·se en CDI</div>
+            <div style={{ fontSize: 9, color: "#4b6658", marginTop: 3 }}>📍 Lyon · Débutant accepté</div>
+            <div style={{ display: "flex", gap: 4, marginTop: 7 }}>
+              {["CDI", "Temps plein", "Débutant"].map((x) => (
+                <span key={x} style={{ fontSize: 8, fontWeight: 800, background: "#e3f5ea", color: "#0b6b3c", borderRadius: 6, padding: "2px 5px" }}>{x}</span>
+              ))}
+            </div>
+            {[0.95, 0.85, 0.7].map((w, i) => (
+              <div key={i} style={{ height: 5, width: `${w * 100}%`, background: "#e8efec", borderRadius: 3, marginTop: 6 }} />
+            ))}
+          </div>
+          {time > 0.7 && (
+            <div style={{ position: "absolute", top: 62, right: 8, transform: "rotate(12deg)", background: "#fff", border: "2.5px solid #13a05b", color: "#13a05b", borderRadius: 7, padding: "1px 7px", fontSize: 13, fontWeight: 900, opacity: Math.min(1, (time - 0.7) / 0.3) }}>
+              LIKE ❤️
+            </div>
+          )}
+        </div>
+      )}
+      {/* Boutons du swipe */}
+      {!letter && (
+        <div style={{ position: "absolute", bottom: 14, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 14 }}>
+          <span style={{ width: 30, height: 30, borderRadius: "50%", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, boxShadow: "0 3px 8px rgba(0,0,0,.08)" }}>✕</span>
+          <span style={{ width: 36, height: 36, borderRadius: "50%", background: "#13a05b", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, transform: `scale(${time > 0.85 && time < 1.25 ? 1.25 : 1})`, transition: "transform 120ms" }}>♥</span>
+        </div>
+      )}
+      {/* Candidature partie */}
+      {sent && (
+        <motion.div initial={{ opacity: 0, scale: 0.8, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ type: "spring", stiffness: 300, damping: 18 }} style={{ position: "absolute", left: 10, right: 10, top: "34%", textAlign: "center" }}>
+          <div style={{ width: 54, height: 54, margin: "0 auto", borderRadius: "50%", background: "#13a05b", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, fontWeight: 900 }}>✓</div>
+          <div style={{ fontSize: 12.5, fontWeight: 800, color: "#0f2e1d", marginTop: 9 }}>Candidature lancée</div>
+          <div style={{ fontSize: 9.5, color: "#4b6658", marginTop: 3 }}>Vendeur·se en CDI · Lyon</div>
+        </motion.div>
+      )}
+      {/* La lettre s'écrit */}
+      {letter && (
+        <motion.div initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ type: "spring", stiffness: 220, damping: 22 }} style={{ position: "absolute", left: 8, right: 8, top: 52, bottom: 14, background: "#fff", borderRadius: 12, padding: "10px 9px", boxShadow: "0 8px 20px rgba(19,43,51,.14)" }}>
+          <div style={{ fontSize: 9, fontWeight: 800, color: "#0b6b3c", background: "#e3f5ea", borderRadius: 6, padding: "2px 6px", display: "inline-block" }}>✨ Lettre prête</div>
+          <div style={{ fontSize: 9.5, fontWeight: 800, color: "#0f2e1d", marginTop: 8 }}>Madame, Monsieur,</div>
+          {lines.map((w, i) => {
+            const fill = Math.min(1, Math.max(0, typed * lines.length - i));
+            return <div key={i} style={{ height: 5, width: `${w * fill * 100}%`, background: "#cfe3d7", borderRadius: 3, marginTop: 7 }} />;
+          })}
+          {typed >= 1 && <div style={{ fontSize: 9, color: "#4b6658", marginTop: 9 }}>Envoyée avec ton CV ✓</div>}
+        </motion.div>
+      )}
+    </div>
+  );
+}
 
 export function ProofDemo({ data, onNext }: { data: ProofData; onNext: () => void }) {
   const [time, setTime] = useState(0);
-  // WebM (VP9) quand le navigateur sait le lire, sinon MP4 (Safari) : même
-  // choix que la vidéo du parcours sur la page d'accueil.
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [src, setSrc] = useState<string | undefined>(undefined);
   useEffect(() => {
-    const canWebm = !!videoRef.current?.canPlayType('video/webm; codecs="vp9"');
-    setSrc(canWebm ? "/app/parcours.webm" : "/app/parcours.mp4");
+    let raf = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      setTime(((now - start) / 1000) % DEMO_DURATION);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
   }, []);
-  useEffect(() => {
-    if (src) void videoRef.current?.play().catch(() => {});
-  }, [src]);
   const active = DEMO_STEPS.reduce((acc, s, i) => (time >= s.at ? i : acc), 0);
   return (
     <div className="flex flex-1 flex-col px-1" style={{ position: "relative", overflow: "hidden" }}>
@@ -425,19 +447,9 @@ export function ProofDemo({ data, onNext }: { data: ProofData; onNext: () => voi
           transition={{ type: "spring", stiffness: 160, damping: 18 }}
           style={{ flexShrink: 0, width: "46%", maxWidth: 210, padding: 6, borderRadius: 28, background: "#0e1a1f", boxShadow: "0 24px 50px rgba(19,43,51,.28)" }}
         >
-          <video
-            ref={videoRef}
-            src={src}
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="auto"
-            poster="/app/parcours-poster.jpg"
-            aria-label="Démo : swipe d'une offre, like, lettre de motivation prête"
-            onTimeUpdate={(e) => setTime(e.currentTarget.currentTime)}
-            style={{ display: "block", width: "100%", aspectRatio: "780 / 1688", borderRadius: 23, background: "#eaf5f8", objectFit: "cover" }}
-          />
+          <div role="img" aria-label="Démo : like d'une offre, candidature lancée, lettre de motivation prête">
+            <DemoFilm time={time} />
+          </div>
         </motion.div>
 
         <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 10, flex: 1, minWidth: 0 }}>
@@ -478,7 +490,7 @@ export function ProofDemo({ data, onNext }: { data: ProofData; onNext: () => voi
 
       {data.activeOffers !== null && data.activeOffers > 0 && (
         <p style={{ position: "relative", fontSize: 13, textAlign: "center", margin: "14px 0 0", color: muted }}>
-          Parmi {fmt(data.activeOffers)} offres d&apos;alternance et de stage en ce moment.
+          Parmi {fmt(data.activeOffers)} offres en ligne en ce moment.
         </p>
       )}
       </div>
@@ -573,43 +585,39 @@ export function ProofOffers({ data, lookingFor, onNext }: { data: ProofData; loo
   );
 }
 
-// --- P3. Offres de la semaine pour ton métier, près de chez toi ------------
-// Compté au moment où l'écran s'affiche (server action), jamais estimé : si
-// la base ne répond pas ou trouve 0, l'écran parle des offres de la semaine
-// en général.
+// --- P3. Communauté (19/11, Nathan : « dis qu'on accompagne plus de X
+// personnes à trouver leur emploi partout en France ») ---------------------
+// X = vrai nombre de comptes, lu en base, arrondi à la centaine inférieure.
 
-export function ProofWeek({ count, job, city, onNext }: { count: number | null; job: string | null; city: string; onNext: () => void }) {
-  const loading = count === null;
-  const where = city.trim() ? ` près de ${city.trim()}` : "";
+export function ProofWeek({ data, onNext }: { data: ProofData; onNext: () => void }) {
+  const users = data.totalUsers ?? 0;
+  const shown = users >= 200 ? Math.floor(users / 100) * 100 : users;
   return (
     <div className="flex flex-1 flex-col px-1" style={{ position: "relative", overflow: "hidden" }}>
       <Glow />
       <div className="flex flex-1 flex-col items-center justify-center text-center" style={{ position: "relative" }}>
-        <Kicker>Cette semaine</Kicker>
-        {loading ? (
-          <p style={{ fontSize: 16, fontWeight: 700, margin: "14px 0 0" }}>On compte les offres publiées pour toi…</p>
-        ) : count > 0 ? (
+        <Kicker>Tu n&apos;es pas seul·e</Kicker>
+        <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 260, damping: 16 }} aria-hidden style={{ fontSize: 54, marginTop: 10 }}>
+          🇫🇷
+        </motion.div>
+        {shown > 0 ? (
           <>
-            <p style={{ fontFamily: "var(--font-heading)", fontSize: 56, fontWeight: 800, margin: "10px 0 0", color: "var(--color-accent-700)" }}>
-              <Count target={count} />
+            <p style={{ fontSize: 18, fontWeight: 800, margin: "10px 0 0" }}>Stageio accompagne plus de</p>
+            <p style={{ fontFamily: "var(--font-heading)", fontSize: 58, fontWeight: 800, margin: "2px 0 0", color: "var(--color-accent-700)", lineHeight: 1.05 }}>
+              <Count target={shown} />
             </p>
-            <p style={{ fontSize: 18, fontWeight: 800, margin: "4px 0 0", lineHeight: 1.3, maxWidth: "28ch" }}>
-              {count > 1 ? "nouvelles offres publiées" : "nouvelle offre publiée"} ces 7 derniers jours{job ? ` pour « ${job} »` : ""}
-              {where}
-            </p>
+            <p style={{ fontSize: 18, fontWeight: 800, margin: "4px 0 0", lineHeight: 1.3, maxWidth: "26ch" }}>personnes à trouver leur emploi, partout en France</p>
           </>
         ) : (
-          <p style={{ fontSize: 18, fontWeight: 800, margin: "14px 0 0", lineHeight: 1.35, maxWidth: "28ch" }}>
-            De nouvelles offres arrivent chaque jour sur Stageio.
-          </p>
+          <p style={{ fontSize: 18, fontWeight: 800, margin: "14px 0 0", lineHeight: 1.35, maxWidth: "26ch" }}>Stageio accompagne des personnes partout en France à trouver leur emploi.</p>
         )}
         <motion.p
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          style={{ fontSize: 15, fontWeight: 800, margin: "18px 0 0", padding: "8px 16px", borderRadius: 999, background: "var(--color-surface)" }}
+          transition={{ delay: 0.8 }}
+          style={{ fontSize: 15, fontWeight: 800, margin: "20px 0 0", padding: "8px 16px", borderRadius: 999, background: "var(--color-accent-100)", color: "var(--color-accent-800)" }}
         >
-          🔔 On te les montre dès qu&apos;elles sortent
+          ✨ Et maintenant, toi
         </motion.p>
       </div>
       <NextButton onClick={onNext} />
