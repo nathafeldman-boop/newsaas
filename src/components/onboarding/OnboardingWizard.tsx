@@ -1775,27 +1775,49 @@ export function OnboardingWizard({
                     la même donnée) + rappel de l'offre rentrée -- juste avant
                     le bouton final, pour que l'urgence soit la dernière chose
                     lue avant de basculer sur /swipe puis /premium. */}
-                <div
-                  className="flex flex-col gap-2"
-                  style={{
-                    marginTop: 16,
-                    background: "var(--color-accent-2-100)",
-                    border: "1px solid var(--color-accent-2-300)",
-                    borderRadius: 16,
-                    padding: 14,
-                  }}
-                >
-                  <div className="flex items-start gap-2">
-                    <span aria-hidden style={{ fontSize: 16, lineHeight: 1.3 }}>
-                      📉
-                    </span>
-                    <p style={{ fontSize: 12, lineHeight: 1.45, color: "var(--color-accent-2-800)", margin: 0 }}>
-                      <strong>846 700 contrats d&apos;alternance signés en France en 2025</strong>, soit 5% de
-                      moins qu&apos;en 2024 (source DARES/Insee) — le marché se resserre, se démarquer compte
-                      plus que jamais.
-                    </p>
-                  </div>
-                </div>
+                {(() => {
+                  // Alternance choisie : chiffre DARES/Insee. Sinon : vrai nombre
+                  // d'offres en ligne pour les contrats choisis (lu en base).
+                  const alt = lookingFor.includes("alternance");
+                  const by = proof.offersByContract ?? {};
+                  const types = lookingFor.filter((t) => (by[t] ?? 0) > 0);
+                  const n = types.reduce((sum, t) => sum + (by[t] ?? 0), 0);
+                  if (!alt && n === 0) return null;
+                  return (
+                    <div
+                      className="flex flex-col gap-2"
+                      style={{
+                        marginTop: 16,
+                        background: "var(--color-accent-2-100)",
+                        border: "1px solid var(--color-accent-2-300)",
+                        borderRadius: 16,
+                        padding: 14,
+                      }}
+                    >
+                      <div className="flex items-start gap-2">
+                        <span aria-hidden style={{ fontSize: 16, lineHeight: 1.3 }}>
+                          {alt ? "📉" : "📈"}
+                        </span>
+                        <p style={{ fontSize: 12, lineHeight: 1.45, color: "var(--color-accent-2-800)", margin: 0 }}>
+                          {alt ? (
+                            <>
+                              <strong>846 700 contrats d&apos;alternance signés en France en 2025</strong>, soit 5% de
+                              moins qu&apos;en 2024 (source DARES/Insee) — le marché se resserre, se démarquer compte
+                              plus que jamais.
+                            </>
+                          ) : (
+                            <>
+                              <strong>
+                                {n.toLocaleString("fr-FR")} offres de {types.map((t) => (t === "cdi" || t === "cdd" ? CONTRACT_LABEL[t] : t === "stage_scolaire" ? "stage de collège ou lycée" : "stage")).join(" et ")} en ligne sur Stageio
+                              </strong>
+                              , mises à jour chaque jour — postuler tôt t&apos;aide à te démarquer.
+                            </>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 <div className="flex-1" style={{ minHeight: 20 }} />
 
