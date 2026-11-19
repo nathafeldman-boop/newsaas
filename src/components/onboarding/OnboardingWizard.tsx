@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { markReferralGrantedAction, saveSchoolStageOnboardingAction } from "@/app/onboarding/actions";
-import { SCHOOL_STAGES, SCHOOL_STAGE_IDS, ageOn } from "@/lib/schoolStage/levels";
+import { SCHOOL_STAGE_IDS, ageOn } from "@/lib/schoolStage/levels";
 import { ChipMultiSelectWithCustom } from "@/components/ui/ChipMultiSelectWithCustom";
 import { LocationSearchSelect } from "@/components/ui/LocationSearchSelect";
 import { Highlight } from "@/components/ui/Highlight";
@@ -78,6 +78,22 @@ function AnimatedCount({ target, durationMs }: { target: number; durationMs: num
 // Sous-textes des tuiles de mobilité (voir design) -- gardés ici plutôt que
 // dans lib/onboarding/options.ts pour ne pas ajouter un champ que
 // ProfileForm.tsx (qui réutilise MOBILITY_OPTIONS) n'a pas demandé.
+// Textes des tuiles « Tu cherches quoi ? » (19/11, Nathan : « trop vague ») :
+// propres à l'onboarding, les libellés du reste du site ne changent pas.
+const ONBOARDING_TYPE_TEXT: Partial<Record<ContractType, { label: string; sub: string }>> = {
+  cdi: { label: "CDI", sub: "Un emploi stable, sans date de fin. Ouvert aux débutants." },
+  cdd: { label: "CDD", sub: "Un emploi de quelques semaines ou quelques mois. Ouvert aux débutants." },
+  alternance: { label: "Alternance", sub: "Tu prépares un diplôme (du CAP au master) et tu travailles en entreprise, avec un salaire." },
+  stage: { label: "Stage étudiant", sub: "BTS, BUT, licence, master, école : un stage de quelques mois pendant tes études." },
+};
+
+const SCHOOL_CLASS_LABEL: Record<string, string> = {
+  "3e": "3e (collège)",
+  seconde: "Seconde",
+  premiere: "Première",
+  bac_pro: "Bac pro (PFMP)",
+};
+
 const MOBILITY_SUBTEXT: Record<string, string> = {
   "Sur place uniquement": "Seulement dans ta ville",
   "Mobile dans la région": "Jusqu'à ~50 km",
@@ -441,14 +457,23 @@ export function OnboardingWizard({
     setError(null);
     void logOnboardingEvent(userId, "onboarding_step_completed", stepId);
     setDirection(1);
-    setStepIndex((i) => Math.min(i + 1, STEP_IDS.length - 1));
+    setStepIndex((i) => nextIndex(i, 1));
   }
 
   function goBack() {
     cancelPendingAdvance();
     setError(null);
     setDirection(-1);
-    setStepIndex((i) => Math.max(i - 1, 0));
+    setStepIndex((i) => nextIndex(i, -1));
+  }
+
+  // Élève de collège ou lycée (19/11, Nathan : « les questions sont trop
+  // vagues ») : l'étape « niveau d'études et expérience » (Bac+2, 1-2 ans…)
+  // ne le concerne pas, on la saute.
+  function nextIndex(i: number, dir: 1 | -1): number {
+    let j = Math.min(Math.max(i + dir, 0), STEP_IDS.length - 1);
+    if (schoolMode && STEP_IDS[j] === "level") j = Math.min(Math.max(j + dir, 0), STEP_IDS.length - 1);
+    return j;
   }
 
   // Avance sans repasser par validateCurrentStep() (qui lirait l'ancienne
@@ -466,7 +491,7 @@ export function OnboardingWizard({
       setError(null);
       void logOnboardingEvent(userId, "onboarding_step_completed", completedStepId);
       setDirection(1);
-      setStepIndex((i) => Math.min(i + 1, STEP_IDS.length - 1));
+      setStepIndex((i) => nextIndex(i, 1));
     }, 320);
   }
 
@@ -885,15 +910,15 @@ export function OnboardingWizard({
 
             {stepId === "looking_for" && (
               <div className="flex flex-col gap-5">
-                <StepHeader title="Tu cherches quoi ?" subtitle="Tu peux en sélectionner plusieurs." />
+                <StepHeader title="Tu cherches quoi ?" subtitle="Choisis ce qui te correspond (plusieurs choix possibles, sauf pour un stage de collège ou lycée)." />
                 <div className="flex flex-col gap-3.5">
                   {ALL_CONTRACT_TYPES.map((type) => (
                     <TileOption
                       key={type}
                       size="lg"
-                      label={CONTRACT_LABEL[type]}
+                      label={ONBOARDING_TYPE_TEXT[type]?.label ?? CONTRACT_LABEL[type]}
                       icon={CONTRACT_ICON[type]}
-                      sub={CONTRACT_SUB[type]}
+                      sub={ONBOARDING_TYPE_TEXT[type]?.sub ?? CONTRACT_SUB[type]}
                       active={lookingFor.includes(type)}
                       onClick={() => toggleLookingFor(type)}
                     />
@@ -901,15 +926,15 @@ export function OnboardingWizard({
                   {/* Stages scolaires (18/11) : même onboarding, paquet de stages scolaires. */}
                   <TileOption
                     size="lg"
-                    label="Stage de 3e, de seconde, de 1re ou de bac pro"
+                    label="Stage de collège ou de lycée"
                     icon="🎒"
-                    sub="Collège ou lycée : les offres et les entreprises près de chez toi"
+                    sub="Stage de 3e, de seconde, de 1re ou de bac pro (PFMP)"
                     active={schoolMode}
                     onClick={() => toggleLookingFor("stage_scolaire")}
                   />
                   {schoolMode && (
                     <div className="card flex flex-col gap-3" style={{ padding: 14 }}>
-                      <p style={{ margin: 0, fontSize: 14, fontWeight: 700 }}>Ta classe</p>
+                      <p style={{ margin: 0, fontSize: 14, fontWeight: 700 }}>Tu es en quelle classe ?</p>
                       <div className="flex flex-wrap gap-2">
                         {SCHOOL_STAGE_IDS.map((id) => (
                           <button
@@ -927,12 +952,15 @@ export function OnboardingWizard({
                               fontWeight: schoolLevel === id ? 700 : 500,
                             }}
                           >
-                            {SCHOOL_STAGES[id].label}
+                            {SCHOOL_CLASS_LABEL[id]}
                           </button>
                         ))}
                       </div>
                       <label style={{ fontSize: 14, fontWeight: 700 }}>
                         Ta date de naissance
+                        <span style={{ display: "block", fontWeight: 400, fontSize: 12.5, marginTop: 2, opacity: 0.7 }}>
+                          Juste pour savoir si tu as plus ou moins de 15 ans.
+                        </span>
                         <input
                           type="date"
                           value={birthDate}
@@ -1121,7 +1149,10 @@ export function OnboardingWizard({
 
             {stepId === "sectors" && (
               <div className="flex flex-col gap-4">
-                <StepHeader title="Quels secteurs te font envie ?" subtitle="Choisis-en autant que tu veux." />
+                <StepHeader
+                  title={schoolMode ? "Quels domaines aimerais-tu découvrir ?" : "Quels secteurs te font envie ?"}
+                  subtitle={schoolMode ? "Choisis-en autant que tu veux : on te montre des stages dans ces domaines." : "Choisis-en autant que tu veux."}
+                />
                 <ChipMultiSelectWithCustom
                   options={SECTORS}
                   value={sectors}
@@ -1134,7 +1165,10 @@ export function OnboardingWizard({
 
             {stepId === "skills" && (
               <div className="flex flex-col gap-4">
-                <StepHeader title="Tu es bon·ne en quoi ?" subtitle="Outils, langues, soft skills : tout compte." />
+                <StepHeader
+                  title={schoolMode ? "Qu'est-ce que tu sais bien faire ?" : "Tu es bon·ne en quoi ?"}
+                  subtitle={schoolMode ? "Ex. parler aux gens, travailler en équipe, l'informatique, une langue… Ça sert pour ta lettre de stage." : "Outils, langues, soft skills : tout compte."}
+                />
                 <ChipMultiSelectWithCustom options={SKILLS} value={skills} onChange={setSkills} />
               </div>
             )}
@@ -1142,8 +1176,8 @@ export function OnboardingWizard({
             {stepId === "jobs" && (
               <div className="flex flex-col gap-4">
                 <StepHeader
-                  title="Quel métier tu vises ?"
-                  subtitle="Ça change vraiment le calcul de compatibilité."
+                  title={schoolMode ? "Quel métier aimerais-tu voir de près ?" : "Quel métier tu vises ?"}
+                  subtitle={schoolMode ? "Même si tu n'es pas sûr(e) : c'est fait pour découvrir." : "Ça change vraiment le calcul de compatibilité."}
                 />
                 <ChipMultiSelectWithCustom options={TARGET_JOBS} value={targetJobs} onChange={setTargetJobs} />
               </div>
@@ -1152,11 +1186,11 @@ export function OnboardingWizard({
             {stepId === "mobility" && (
               <div className="flex flex-col gap-5">
                 <StepHeader
-                  title="Tu peux bouger jusqu'où ?"
-                  subtitle="Pour ne pas te pénaliser sur des offres un peu plus loin."
+                  title={schoolMode ? "Jusqu'où peux-tu aller pour ton stage ?" : "Tu peux bouger jusqu'où ?"}
+                  subtitle={schoolMode ? "Pense au trajet de chaque jour depuis chez toi." : "Pour ne pas te pénaliser sur des offres un peu plus loin."}
                 />
                 <div className="grid grid-cols-2 gap-3">
-                  {MOBILITY_OPTIONS.map((opt) => (
+                  {MOBILITY_OPTIONS.filter((opt) => !(schoolMode && opt.value === "Full remote")).map((opt) => (
                     <TileOption
                       key={opt.value}
                       label={opt.value}
@@ -1233,8 +1267,8 @@ export function OnboardingWizard({
             {stepId === "dispo" && (
               <div className="flex flex-col gap-5">
                 <StepHeader
-                  title="Tu peux commencer quand ?"
-                  subtitle="On met en avant les offres qui démarrent au bon moment."
+                  title={schoolMode ? "Ton stage commence quand ?" : "Tu peux commencer quand ?"}
+                  subtitle={schoolMode ? "Regarde les dates données par ton collège ou ton lycée." : "On met en avant les offres qui démarrent au bon moment."}
                 />
                 <div className="grid grid-cols-2 gap-3">
                   {AVAILABILITY_OPTIONS.map((opt) => (
