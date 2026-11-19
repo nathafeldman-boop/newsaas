@@ -30,6 +30,13 @@ async function loadDemoData() {
     admin.from("offers").select("id", { count: "exact", head: true }).eq("is_active", true),
     admin.from("profiles").select("id", { count: "exact", head: true }).eq("onboarding_completed", true),
   ]);
+  // Preuve P1 du test A/B d'onboarding : offres actives par contrat.
+  const contracts = ["cdi", "cdd", "alternance", "stage", "stage_scolaire"] as const;
+  const byContract = await Promise.all(contracts.map((c) => admin.from("offers").select("id", { count: "exact", head: true }).eq("is_active", true).eq("contract_type", c)));
+  const offersByContract: Partial<Record<string, number>> = {};
+  contracts.forEach((c, i) => {
+    if (!byContract[i].error) offersByContract[c] = byContract[i].count ?? 0;
+  });
   // Une offre par entreprise, avec une vraie entreprise nommée : un deck lisible à l'écran.
   const seen = new Set<string>();
   const deck: Offer[] = [];
@@ -45,12 +52,15 @@ async function loadDemoData() {
     reviewStats,
     weeklySignups: weekly.error ? null : (weekly.count ?? 0),
     activeOffers: active.error ? null : (active.count ?? 0),
+    offersByContract,
   };
   return { deck, proof, trustCount: trust.count ?? 0 };
 }
 
-export default async function DemoPage() {
+// ?v=b : simulation de la version B du test A/B d'onboarding (19/11).
+export default async function DemoPage({ searchParams }: { searchParams: Promise<{ v?: string }> }) {
   await requireAdminPage();
+  const { v } = await searchParams;
   const { deck, proof, trustCount } = await loadDemoData();
-  return <DemoFlow offers={deck} proof={proof} trustCount={trustCount} />;
+  return <DemoFlow offers={deck} proof={proof} trustCount={trustCount} variant={v === "b" ? "b" : "a"} />;
 }

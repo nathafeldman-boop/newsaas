@@ -14,7 +14,7 @@ type Phase = { name: "onboarding" } | { name: "swipe" } | { name: "apply"; offer
 // Coquille du parcours de démo : les vrais écrans de l'app, enchaînés sans
 // compte. Le mode démo est posé AVANT le premier rendu des enfants, pour que
 // le client Supabase n'écrive jamais rien (voir lib/supabase/client.ts).
-export function DemoFlow({ offers, proof, trustCount }: { offers: Offer[]; proof: ProofData; trustCount: number }) {
+export function DemoFlow({ offers, proof, trustCount, variant = "a" }: { offers: Offer[]; proof: ProofData; trustCount: number; variant?: "a" | "b" }) {
   setDemoMode(true);
   useEffect(() => () => setDemoMode(false), []);
   const [phase, setPhase] = useState<Phase>({ name: "onboarding" });
@@ -45,7 +45,7 @@ export function DemoFlow({ offers, proof, trustCount }: { offers: Offer[]; proof
         {phase.name === "onboarding" && (
           <div className="flex flex-1 flex-col px-5 py-6">
             <div className="mx-auto flex w-full max-w-lg flex-1 flex-col">
-              <OnboardingWizard userId="demo" initialProfile={null} trustCount={trustCount} proof={proof} />
+              <OnboardingWizard userId="demo" initialProfile={null} trustCount={trustCount} proof={proof} variant={variant} />
             </div>
           </div>
         )}

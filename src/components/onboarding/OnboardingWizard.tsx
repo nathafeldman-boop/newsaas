@@ -601,6 +601,13 @@ export function OnboardingWizard({
         6_000,
       );
       count = counted && !counted.error ? (counted.count ?? null) : null;
+    } else if (lookingFor.length > 0) {
+      // Version B (pas d'écran secteurs) : offres des contrats choisis dans la ville.
+      const place = city.trim().split(" (")[0]?.replace(/[%_,()*\\]/g, " ").trim() ?? "";
+      let query = supabase.from("offers").select("id", { count: "exact", head: true }).eq("is_active", true).in("contract_type", lookingFor);
+      if (place.length >= 2 && mobility === "Sur place uniquement") query = query.ilike("location", `%${place}%`);
+      const counted = await withDeadline(query, 6_000);
+      count = counted && !counted.error ? (counted.count ?? null) : null;
     }
 
     return { ok: true, foundCount: count, cvFailed };

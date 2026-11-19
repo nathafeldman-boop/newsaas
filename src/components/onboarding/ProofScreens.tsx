@@ -600,7 +600,7 @@ export function ProofWeek({ count, job, city, onNext }: { count: number | null; 
           </>
         ) : (
           <p style={{ fontSize: 18, fontWeight: 800, margin: "14px 0 0", lineHeight: 1.35, maxWidth: "28ch" }}>
-            De nouvelles offres arrivent chaque jour : on te les montre dès qu&apos;elles sortent.
+            De nouvelles offres arrivent chaque jour sur Stageio.
           </p>
         )}
         <motion.p

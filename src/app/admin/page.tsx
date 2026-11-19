@@ -173,9 +173,14 @@ export default async function CockpitOverviewPage({
       </div>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <h1 style={{ fontSize: 24, fontWeight: 700, margin: "0 0 4px" }}>Vue d&apos;ensemble</h1>
-        <a href="/admin/demo" target="_blank" rel="noreferrer" className="btn btn-primary" style={{ fontSize: 13 }}>
-          🎬 Rejouer le parcours utilisateur
-        </a>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <a href="/admin/demo?v=a" target="_blank" rel="noreferrer" className="btn btn-primary" style={{ fontSize: 13 }}>
+            🎬 Simulation A · onboarding actuel
+          </a>
+          <a href="/admin/demo?v=b" target="_blank" rel="noreferrer" className="btn btn-primary" style={{ fontSize: 13 }}>
+            🎬 Simulation B · parcours court
+          </a>
+        </div>
       </div>
       <p style={{ margin: "0 0 16px", fontSize: 13, color: "var(--color-neutral-600)" }}>
         Comment se porte Stageio : {period} derniers jours, comparés aux {period} jours d&apos;avant.
