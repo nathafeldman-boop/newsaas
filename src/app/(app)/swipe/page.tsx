@@ -12,7 +12,7 @@ import {
   matchesTargetJob,
   profileDepartement,
 } from "@/lib/matching/score";
-import { dedupeOffers, deckUsesNearOnly, diversifyByCompany, fitsSubscriber, preferTargetJobs, subscriberOrder, targetJobTitlePatterns } from "@/lib/matching/deck";
+import { dedupeOffers, deckUsesNearOnly, diversifyByCompany, fitsSubscriber, subscriberOrder, targetJobTitlePatterns } from "@/lib/matching/deck";
 import { lookupCommuneDepartement, overseasMismatch, parseProfileLocation, type ProfileLocation } from "@/lib/matching/profileLocation";
 import { isPassReason, learnFromPassReasons, passReasonsSinceIso, type OfferTags, type PassReasonEvent } from "@/lib/matching/passReasons";
 import { classifyFormations, classifyMetier } from "@/lib/seo/metiers";
@@ -530,12 +530,10 @@ export default async function SwipePage() {
   // loin, puis les autres métiers de son secteur (subscriberOrder).
   const composed = profile
     ? diversifyByCompany(
-        premium
-          ? subscriberOrder(dedupeOffers(deckPool), fitTags)
-          : preferTargetJobs(
-              dedupeOffers(deckPool),
-              (o) => profile.target_jobs.length > 0 && matchesTargetJob(profile, o) && geoMatch(profile, o).points >= 0,
-            ),
+        // 19/11 (raison n°1 des « passer » : « trop loin ») : avant le
+        // paiement aussi, le bon métier près de chez lui passe en premier,
+        // puis le bon métier plus loin, puis le reste près de chez lui.
+        subscriberOrder(dedupeOffers(deckPool), fitTags),
         DECK_SIZE,
       )
     : deckPool;
