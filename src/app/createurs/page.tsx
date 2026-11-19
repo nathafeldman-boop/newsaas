@@ -51,8 +51,11 @@ export default async function CreatorDashboard({ searchParams }: { searchParams:
         <div className="cockpit-card w-full" style={{ padding: 28 }}>
           <h1 style={{ fontSize: 22, margin: 0 }}>Espace créateurs Stageio</h1>
           <p style={{ fontSize: 14.5, lineHeight: 1.55, margin: "10px 0 0", ...muted }}>
-            {q.lien === "invalide" ? "Ce lien perso n'est plus valide." : "Ouvre le lien d'invitation que Stageio t'a envoyé, ou ton lien perso."} Un souci ? Écris à Stageio.
+            {q.lien === "invalide" ? "Ce lien perso n'est plus valide." : "Crée ton espace en 30 secondes (nom et téléphone), ou ouvre ton lien perso si tu en as déjà un."}
           </p>
+          <a href="/createurs/inscription" className="btn btn-primary" style={{ marginTop: 16, display: "inline-flex" }}>
+            Créer mon espace créateur
+          </a>
         </div>
       </div>
     );

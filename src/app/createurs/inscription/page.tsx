@@ -1,23 +1,21 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { currentCreator, isValidInvite } from "@/lib/creators/access";
+import { currentCreator } from "@/lib/creators/access";
 import { signupCreatorAction } from "../actions";
 
 export const metadata: Metadata = { title: "Espace créateurs Stageio", robots: { index: false, follow: false } };
 
 const ERRORS: Record<string, string> = {
-  lien: "Ce lien d'invitation n'est pas valide. Demande le bon lien à Stageio.",
   nom: "Indique ton prénom et ton nom.",
   tel: "Indique un numéro de téléphone valide (06 12 34 56 78).",
   base: "L'inscription n'a pas marché, réessaie.",
 };
 
-// Inscription des créateurs (18/11) : lien d'invitation donné par Stageio,
-// puis nom et téléphone (pour savoir qui est qui et les joindre si besoin).
+// Inscription des créateurs (18/11, ouverte à tous le 19/11 : le lien
+// d'invitation bloquait les créateurs) : nom et téléphone (pour savoir qui est qui et les joindre si besoin).
 export default async function CreatorSignupPage({ searchParams }: { searchParams: Promise<{ i?: string; erreur?: string }> }) {
   const { i, erreur } = await searchParams;
   if (await currentCreator()) redirect("/createurs");
-  const valid = isValidInvite(i);
   const field = { width: "100%", marginTop: 6, fontWeight: 400 } as const;
   return (
     <div className="mx-auto flex min-h-screen max-w-md items-center px-5 py-10">
@@ -27,10 +25,10 @@ export default async function CreatorSignupPage({ searchParams }: { searchParams
         <p style={{ fontSize: 14.5, lineHeight: 1.55, margin: "10px 0 0", color: "var(--color-neutral-600)" }}>
           Colle le lien de chaque TikTok que tu postes : on relève tes vues toutes les 30 minutes et tu vois tes gains en direct.
         </p>
-        {(erreur || !valid) && <p style={{ fontSize: 13.5, color: "var(--bad)", margin: "14px 0 0" }}>{ERRORS[erreur ?? "lien"] ?? ERRORS.lien}</p>}
-        {valid && (
+        {erreur && ERRORS[erreur] && <p style={{ fontSize: 13.5, color: "var(--bad)", margin: "14px 0 0" }}>{ERRORS[erreur]}</p>}
+        {(
           <form action={signupCreatorAction} className="mt-6 flex flex-col gap-3">
-            <input type="hidden" name="i" value={i} />
+            <input type="hidden" name="i" value={i ?? ""} />
             <label style={{ fontSize: 14, fontWeight: 700 }}>
               Prénom et nom
               <input name="name" required autoComplete="name" className="input" style={field} />

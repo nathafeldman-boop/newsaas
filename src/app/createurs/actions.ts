@@ -22,18 +22,20 @@ function normalizePhone(raw: string): string | null {
 }
 
 export async function signupCreatorAction(formData: FormData) {
-  const invite = String(formData.get("i") ?? "");
-  if (!isValidInvite(invite)) redirect("/createurs/inscription?erreur=lien");
+  // Inscription ouverte (19/11) : l'ancien lien d'invitation reste accepté
+  // mais n'est plus obligatoire. Les gains restent validés par Stageio.
+  const i = String(formData.get("i") ?? "");
+  const invite = isValidInvite(i) ? i : "";
   const name = String(formData.get("name") ?? "").trim().replace(/\s+/g, " ").slice(0, 80);
   const phone = normalizePhone(String(formData.get("phone") ?? ""));
   const handle = String(formData.get("tiktok") ?? "").trim().replace(/^@/, "").toLowerCase().slice(0, 40) || null;
-  if (name.length < 2) redirect(`/createurs/inscription?i=${invite}&erreur=nom`);
-  if (!phone) redirect(`/createurs/inscription?i=${invite}&erreur=tel`);
+  if (name.length < 2) redirect(`/createurs/inscription?${invite ? `i=${invite}&` : ""}erreur=nom`);
+  if (!phone) redirect(`/createurs/inscription?${invite ? `i=${invite}&` : ""}erreur=tel`);
   const { token, hash } = newAccessToken();
   const { error } = await createAdminClient().from("creators").insert({ name, phone: phone!, tiktok_handle: handle, access_token_hash: hash });
   if (error) {
     console.error("créateurs : inscription impossible", error.message);
-    redirect(`/createurs/inscription?i=${invite}&erreur=base`);
+    redirect(`/createurs/inscription?${invite ? `i=${invite}&` : ""}erreur=base`);
   }
   await setCreatorCookie(token);
   redirect("/createurs?bienvenue=1");

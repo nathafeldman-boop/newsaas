@@ -37,7 +37,7 @@ export default async function AdminCreatorsPage() {
       {error && <p style={{ color: "var(--bad)" }}>Table creators absente (migration 20261119000001_creator_portal.sql) : {error.message}</p>}
 
       <div className="cockpit-card" style={{ padding: 16, marginTop: 14 }}>
-        <p style={{ margin: 0, fontWeight: 700 }}>🔗 Lien d&apos;inscription à envoyer aux créateurs</p>
+        <p style={{ margin: 0, fontWeight: 700 }}>🔗 Lien d&apos;inscription à envoyer aux créateurs (ou simplement stageio.fr/createurs)</p>
         <code style={{ display: "block", fontSize: 13, marginTop: 6, wordBreak: "break-all" }}>{link ?? "Clé serveur absente"}</code>
         <p style={{ margin: "6px 0 0", fontSize: 12.5, ...muted }}>
           Le même lien pour tous. Tarifs pour 1 000 vues : carrousel {eur(RPM_EUR.carousel)}, vidéo faceless {eur(RPM_EUR.faceless)}, vidéo face {eur(RPM_EUR.face)}.
