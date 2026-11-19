@@ -16,6 +16,8 @@ export type ProofData = {
   /** Inscrits des 7 derniers jours. */
   weeklySignups: number | null;
   activeOffers: number | null;
+  /** Offres actives par type de contrat (P1). */
+  offersByContract?: Partial<Record<string, number>> | null;
 };
 
 const muted = "color-mix(in srgb, var(--color-text) 62%, transparent)";
@@ -313,7 +315,7 @@ export function ProofReviews({ data, onNext }: { data: ProofData; onNext: () => 
             <span aria-hidden style={{ color: "#f5a623", letterSpacing: 1 }}>
               ★★★★★
             </span>
-            {reviewStats.average.toLocaleString("fr-FR")}/5 · {fmt(reviewStats.count)} avis
+            {reviewStats.average.toLocaleString("fr-FR")}/5 · note globale
           </motion.div>
         )}
 
@@ -525,6 +527,92 @@ export function PledgeDone({ contractLabel, onNext }: { contractLabel: string; o
         </motion.p>
       </div>
       <NextButton onClick={onNext}>Voir mes offres</NextButton>
+    </div>
+  );
+}
+
+// --- P1. Offres en ligne (19/11, test A/B) ----------------------------------
+// Vrai nombre d'offres actives pour les contrats choisis (tous contrats si
+// rien n'est encore choisi), lu en base au chargement de la page.
+
+const P1_LABEL: Record<string, string> = { cdi: "CDI", cdd: "CDD", alternance: "alternances", stage: "stages", stage_scolaire: "stages de collège et lycée" };
+
+export function ProofOffers({ data, lookingFor, onNext }: { data: ProofData; lookingFor: string[]; onNext: () => void }) {
+  const by = data.offersByContract ?? {};
+  const chosen = lookingFor.filter((c) => (by[c] ?? 0) > 0);
+  const parts = (chosen.length > 0 ? chosen : ["cdi", "cdd"]).filter((c) => (by[c] ?? 0) > 0);
+  const total = parts.reduce((s, c) => s + (by[c] ?? 0), 0) || data.activeOffers || 0;
+  return (
+    <div className="flex flex-1 flex-col px-1" style={{ position: "relative", overflow: "hidden" }}>
+      <Glow />
+      <div className="flex flex-1 flex-col items-center justify-center text-center" style={{ position: "relative" }}>
+        <Kicker>En ligne aujourd&apos;hui</Kicker>
+        {total > 0 && (
+          <p style={{ fontFamily: "var(--font-heading)", fontSize: 56, fontWeight: 800, margin: "10px 0 0", color: "var(--color-accent-700)", letterSpacing: "-0.02em" }}>
+            <Count target={total} />
+          </p>
+        )}
+        <p style={{ fontSize: 18, fontWeight: 800, margin: "4px 0 0", lineHeight: 1.3, maxWidth: "26ch" }}>
+          {parts.length > 0 ? `${parts.map((c) => P1_LABEL[c] ?? c).join(" et ")} en ligne sur Stageio` : "offres en ligne sur Stageio"}
+        </p>
+        {parts.length > 1 && (
+          <div className="flex flex-wrap justify-center gap-2" style={{ marginTop: 14 }}>
+            {parts.map((c) => (
+              <span key={c} style={{ padding: "6px 12px", borderRadius: 999, background: "var(--color-accent-100)", color: "var(--color-accent-800)", fontWeight: 800, fontSize: 13 }}>
+                {fmt(by[c] ?? 0)} {P1_LABEL[c] ?? c}
+              </span>
+            ))}
+          </div>
+        )}
+        <p style={{ fontSize: 14, margin: "16px 0 0", color: muted, maxWidth: "30ch", lineHeight: 1.45 }}>
+          Mises à jour chaque jour.
+        </p>
+      </div>
+      <NextButton onClick={onNext} />
+    </div>
+  );
+}
+
+// --- P3. Offres de la semaine pour ton métier, près de chez toi ------------
+// Compté au moment où l'écran s'affiche (server action), jamais estimé : si
+// la base ne répond pas ou trouve 0, l'écran parle des offres de la semaine
+// en général.
+
+export function ProofWeek({ count, job, city, onNext }: { count: number | null; job: string | null; city: string; onNext: () => void }) {
+  const loading = count === null;
+  const where = city.trim() ? ` près de ${city.trim()}` : "";
+  return (
+    <div className="flex flex-1 flex-col px-1" style={{ position: "relative", overflow: "hidden" }}>
+      <Glow />
+      <div className="flex flex-1 flex-col items-center justify-center text-center" style={{ position: "relative" }}>
+        <Kicker>Cette semaine</Kicker>
+        {loading ? (
+          <p style={{ fontSize: 16, fontWeight: 700, margin: "14px 0 0" }}>On compte les offres publiées pour toi…</p>
+        ) : count > 0 ? (
+          <>
+            <p style={{ fontFamily: "var(--font-heading)", fontSize: 56, fontWeight: 800, margin: "10px 0 0", color: "var(--color-accent-700)" }}>
+              <Count target={count} />
+            </p>
+            <p style={{ fontSize: 18, fontWeight: 800, margin: "4px 0 0", lineHeight: 1.3, maxWidth: "28ch" }}>
+              {count > 1 ? "nouvelles offres publiées" : "nouvelle offre publiée"} ces 7 derniers jours{job ? ` pour « ${job} »` : ""}
+              {where}
+            </p>
+          </>
+        ) : (
+          <p style={{ fontSize: 18, fontWeight: 800, margin: "14px 0 0", lineHeight: 1.35, maxWidth: "28ch" }}>
+            De nouvelles offres arrivent chaque jour : on te les montre dès qu&apos;elles sortent.
+          </p>
+        )}
+        <motion.p
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          style={{ fontSize: 15, fontWeight: 800, margin: "18px 0 0", padding: "8px 16px", borderRadius: 999, background: "var(--color-surface)" }}
+        >
+          🔔 On te les montre dès qu&apos;elles sortent
+        </motion.p>
+      </div>
+      <NextButton onClick={onNext} />
     </div>
   );
 }

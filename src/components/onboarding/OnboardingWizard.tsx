@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
-import { markReferralGrantedAction, saveSchoolStageOnboardingAction } from "@/app/onboarding/actions";
+import { countWeekOffersAction, markReferralGrantedAction, saveSchoolStageOnboardingAction } from "@/app/onboarding/actions";
 import { SCHOOL_STAGE_IDS, ageOn } from "@/lib/schoolStage/levels";
 import { ChipMultiSelectWithCustom } from "@/components/ui/ChipMultiSelectWithCustom";
 import { LocationSearchSelect } from "@/components/ui/LocationSearchSelect";
@@ -23,8 +23,8 @@ import {
   HEARD_FROM_OPTIONS,
   type HeardFromFormat,
 } from "@/lib/onboarding/options";
-import { NO_CHROME_STEPS, STEP_IDS, STEP_LABELS, type StepId } from "@/lib/onboarding/steps";
-import { PledgeDone, ProofCompare, ProofDemo, ProofReviews, type ProofData } from "@/components/onboarding/ProofScreens";
+import { NO_CHROME_STEPS, STEPS_A, STEPS_B, STEP_LABELS, type StepId } from "@/lib/onboarding/steps";
+import { PledgeDone, ProofCompare, ProofDemo, ProofOffers, ProofReviews, ProofWeek, type ProofData } from "@/components/onboarding/ProofScreens";
 import { PledgeSign } from "@/components/pledge/PledgeSign";
 import { UrgencyScreen } from "@/components/onboarding/UrgencyScreen";
 import { forgetSignupCity, readSignupCity } from "@/lib/signup/intentStorage";
@@ -43,7 +43,6 @@ import { useDemo } from "@/lib/demo/demoMode";
 // (pénalité de localisation) : un profil qui ne la renseigne jamais se fait
 // pénaliser par défaut comme s'il n'était mobile pour rien, même quand ce
 // n'est pas vrai — d'où son caractère obligatoire comme les autres.
-const PROGRESS_STEPS: StepId[] = STEP_IDS.filter((s) => !NO_CHROME_STEPS.includes(s));
 const SKIPPABLE: StepId[] = ["cv"];
 
 // Écran de réassurance sociale juste après le choix stage/alternance/les
@@ -104,6 +103,13 @@ const MOBILITY_SUBTEXT: Record<string, string> = {
 // Messages affichés en boucle pendant la sauvegarde finale (étape "outro") --
 // purement cosmétique (aucun ne décrit une étape technique distincte), sert
 // juste à faire sentir que l'app travaille pendant les ~1.8s d'animation.
+// Rayon de la version B, rangé dans la même colonne que la mobilité.
+const QUICK_RADIUS = [
+  { value: "Sur place uniquement", label: "📍 Ma ville" },
+  { value: "Mobile dans la région", label: "🚗 Ma région" },
+  { value: "Mobile en France", label: "🇫🇷 Toute la France" },
+] as const;
+
 const OUTRO_LOAD_MESSAGES = [
   "On analyse les offres actives…",
   "On calcule tes scores de compatibilité…",
@@ -281,12 +287,17 @@ export function OnboardingWizard({
   initialProfile,
   trustCount,
   proof,
+  variant = "a",
 }: {
   userId: string;
   initialProfile: Profile | null;
   trustCount: number;
   proof: ProofData;
+  /** Test A/B d'onboarding (lib/onboarding/steps.ts). */
+  variant?: "a" | "b";
 }) {
+  const STEP_IDS = variant === "b" ? STEPS_B : STEPS_A;
+  const PROGRESS_STEPS: StepId[] = STEP_IDS.filter((s) => !NO_CHROME_STEPS.includes(s));
   const demo = useDemo();
   const [stepIndex, setStepIndex] = useState(0);
   const [direction, setDirection] = useState(1);
@@ -377,6 +388,16 @@ export function OnboardingWizard({
   }
 
   function validateCurrentStep(): string | null {
+    if (stepId === "quick_job" && targetJobs.length === 0) return "Indique au moins un métier.";
+    if (stepId === "quick_criteria") {
+      if (lookingFor.length === 0) return "Choisis au moins un type de contrat.";
+      if (schoolMode) {
+        if (!schoolLevel) return "Choisis ta classe.";
+        if (schoolAge === null || schoolAge < 10 || schoolAge > 25) return "Indique ta date de naissance.";
+      } else if (!experienceLevel) return "Sélectionne ton niveau d'expérience.";
+      if (!city.trim()) return "Indique ta ville.";
+      if (!mobility) return "Choisis ton rayon.";
+    }
     if (stepId === "looking_for" && lookingFor.length === 0) {
       return "Sélectionne au moins un type de contrat.";
     }
@@ -442,9 +463,14 @@ export function OnboardingWizard({
     // soit de toute façon déjà écoulé -- l'ajouter ferait lire la ref
     // depuis ce tableau de closures construit pendant le rendu (voir
     // react-hooks/refs), pour un cas qui ne peut pas se produire ici.
+    // Version B : les écrans « modifier » du récap pointent sur ses 2 écrans.
+    const inB: Partial<Record<StepId, StepId>> = { looking_for: "quick_criteria", city: "quick_criteria", level: "quick_criteria", jobs: "quick_job", sectors: "quick_job" };
+    let index = STEP_IDS.indexOf(id);
+    if (index < 0 && inB[id]) index = STEP_IDS.indexOf(inB[id]);
+    if (index < 0) return;
     setError(null);
     setDirection(-1);
-    setStepIndex(STEP_IDS.indexOf(id));
+    setStepIndex(index);
   }
 
   function goNext() {
@@ -624,6 +650,61 @@ export function OnboardingWizard({
 
   const progressIndex = PROGRESS_STEPS.indexOf(stepId);
   const showChrome = !NO_CHROME_STEPS.includes(stepId);
+
+  // Preuve P3 : comptée à l'arrivée sur l'écran, pour le métier et la ville choisis.
+  const [weekCount, setWeekCount] = useState<number | null>(null);
+  useEffect(() => {
+    if (stepId !== "proof_week") return;
+    let alive = true;
+    void countWeekOffersAction({ job: targetJobs[0] ?? null, city, lookingFor }).then((n) => {
+      if (!alive) return;
+      setWeekCount(n ?? 0);
+    });
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stepId]);
+
+  const schoolFields = (
+                    <div className="card flex flex-col gap-3" style={{ padding: 14 }}>
+                      <p style={{ margin: 0, fontSize: 14, fontWeight: 700 }}>Tu es en quelle classe ?</p>
+                      <div className="flex flex-wrap gap-2">
+                        {SCHOOL_STAGE_IDS.map((id) => (
+                          <button
+                            key={id}
+                            type="button"
+                            onClick={() => setSchoolLevel(id)}
+                            className="card"
+                            style={{
+                              padding: "8px 12px",
+                              borderRadius: 999,
+                              fontSize: 14,
+                              cursor: "pointer",
+                              border: `1.5px solid ${schoolLevel === id ? "var(--color-accent)" : "var(--color-divider)"}`,
+                              background: schoolLevel === id ? "color-mix(in srgb, var(--color-accent) 14%, var(--color-surface))" : "var(--color-surface)",
+                              fontWeight: schoolLevel === id ? 700 : 500,
+                            }}
+                          >
+                            {SCHOOL_CLASS_LABEL[id]}
+                          </button>
+                        ))}
+                      </div>
+                      <label style={{ fontSize: 14, fontWeight: 700 }}>
+                        Ta date de naissance
+                        <span style={{ display: "block", fontWeight: 400, fontSize: 12.5, marginTop: 2, opacity: 0.7 }}>
+                          Juste pour savoir si tu as plus ou moins de 15 ans.
+                        </span>
+                        <input
+                          type="date"
+                          value={birthDate}
+                          onChange={(e) => setBirthDate(e.target.value)}
+                          className="input"
+                          style={{ width: "100%", marginTop: 6, fontWeight: 400 }}
+                        />
+                      </label>
+                    </div>
+  );
   const skippable = SKIPPABLE.includes(stepId);
   const currentStepValid = validateCurrentStep() === null;
 
@@ -932,45 +1013,7 @@ export function OnboardingWizard({
                     active={schoolMode}
                     onClick={() => toggleLookingFor("stage_scolaire")}
                   />
-                  {schoolMode && (
-                    <div className="card flex flex-col gap-3" style={{ padding: 14 }}>
-                      <p style={{ margin: 0, fontSize: 14, fontWeight: 700 }}>Tu es en quelle classe ?</p>
-                      <div className="flex flex-wrap gap-2">
-                        {SCHOOL_STAGE_IDS.map((id) => (
-                          <button
-                            key={id}
-                            type="button"
-                            onClick={() => setSchoolLevel(id)}
-                            className="card"
-                            style={{
-                              padding: "8px 12px",
-                              borderRadius: 999,
-                              fontSize: 14,
-                              cursor: "pointer",
-                              border: `1.5px solid ${schoolLevel === id ? "var(--color-accent)" : "var(--color-divider)"}`,
-                              background: schoolLevel === id ? "color-mix(in srgb, var(--color-accent) 14%, var(--color-surface))" : "var(--color-surface)",
-                              fontWeight: schoolLevel === id ? 700 : 500,
-                            }}
-                          >
-                            {SCHOOL_CLASS_LABEL[id]}
-                          </button>
-                        ))}
-                      </div>
-                      <label style={{ fontSize: 14, fontWeight: 700 }}>
-                        Ta date de naissance
-                        <span style={{ display: "block", fontWeight: 400, fontSize: 12.5, marginTop: 2, opacity: 0.7 }}>
-                          Juste pour savoir si tu as plus ou moins de 15 ans.
-                        </span>
-                        <input
-                          type="date"
-                          value={birthDate}
-                          onChange={(e) => setBirthDate(e.target.value)}
-                          className="input"
-                          style={{ width: "100%", marginTop: 6, fontWeight: 400 }}
-                        />
-                      </label>
-                    </div>
-                  )}
+                  {schoolMode && schoolFields}
                 </div>
               </div>
             )}
@@ -1084,6 +1127,100 @@ export function OnboardingWizard({
                 <button type="button" onClick={goNext} className="btn btn-primary btn-block">
                   Continuer
                 </button>
+              </div>
+            )}
+
+            {stepId === "proof_offers" && <ProofOffers data={proof} lookingFor={lookingFor} onNext={goNext} />}
+            {stepId === "proof_week" && <ProofWeek count={weekCount} job={targetJobs[0] ?? null} city={city} onNext={goNext} />}
+
+            {/* Version B du test A/B (19/11) : parcours Wapply, au style Stageio. */}
+            {stepId === "quick_job" && (
+              <div className="flex flex-col gap-4">
+                <StepHeader title="Tu cherches quoi comme job ?" subtitle="Indique le poste qui t'intéresse. Jusqu'à 3 métiers." />
+                <p className="card" style={{ margin: 0, padding: "10px 14px", fontSize: 13.5, textAlign: "center" }}>
+                  💡 Contrat et ville à l&apos;étape suivante.
+                </p>
+                <ChipMultiSelectWithCustom
+                  options={TARGET_JOBS}
+                  value={targetJobs}
+                  onChange={(next) => setTargetJobs(next.slice(0, 3))}
+                  searchable
+                  searchPlaceholder="Ex. vendeur, serveur, assistant RH…"
+                />
+                <label className="btn" style={{ alignSelf: "center", cursor: "pointer", border: "1.5px solid var(--color-divider)", background: "var(--color-surface)", fontSize: 14 }}>
+                  <input type="file" accept=".pdf,.docx" className="hidden" onChange={(e) => setCvFile(e.target.files?.[0] ?? null)} />
+                  {cvFile ? `✅ CV ajouté : ${cvFile.name.length > 24 ? `${cvFile.name.slice(0, 21)}…` : cvFile.name}` : "📄 Ajouter mon CV (facultatif)"}
+                </label>
+              </div>
+            )}
+
+            {stepId === "quick_criteria" && (
+              <div className="flex flex-col gap-5">
+                <StepHeader title="Tes critères de recherche" subtitle={targetJobs.length > 0 ? `Pour : ${targetJobs.join(", ")}` : undefined} />
+                <div className="flex flex-col gap-2">
+                  <p style={{ fontSize: 14, fontWeight: 800, margin: 0 }}>Type de contrat</p>
+                  <div className="flex flex-wrap gap-2">
+                    {[...ALL_CONTRACT_TYPES, "stage_scolaire" as ContractType].map((type) => {
+                      const on = lookingFor.includes(type);
+                      return (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => toggleLookingFor(type)}
+                          className={on ? "tag" : "tag tag-neutral"}
+                          style={{ padding: "8px 14px", fontSize: 14, fontWeight: 700, ...(on ? { background: "var(--color-accent)", color: "var(--color-bg)" } : {}) }}
+                        >
+                          {on ? "✓ " : ""}
+                          {type === "stage_scolaire" ? "Stage collège / lycée" : CONTRACT_LABEL[type]}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                {schoolMode ? (
+                  schoolFields
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <p style={{ fontSize: 14, fontWeight: 800, margin: 0 }}>Niveau d&apos;expérience</p>
+                    <div className="flex flex-wrap gap-2">
+                      {EXPERIENCE_LEVELS.map((opt) => {
+                        const on = experienceLevel === opt.value;
+                        return (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => setExperienceLevel(opt.value)}
+                            className={on ? "tag" : "tag tag-neutral"}
+                            style={{ padding: "8px 14px", fontSize: 14, fontWeight: 700, ...(on ? { background: "var(--color-accent)", color: "var(--color-bg)" } : {}) }}
+                          >
+                            {opt.icon} {opt.value}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                <div className="flex flex-col gap-2">
+                  <p style={{ fontSize: 14, fontWeight: 800, margin: 0 }}>Tu cherches où ?</p>
+                  <LocationSearchSelect options={LOCATION_OPTIONS} value={city} onChange={setCity} placeholder="Ta ville ou ton département…" />
+                  <p style={{ fontSize: 14, fontWeight: 800, margin: "6px 0 0" }}>Jusqu&apos;où ?</p>
+                  <div className="flex flex-wrap gap-2">
+                    {QUICK_RADIUS.filter((r) => !(schoolMode && r.value === "Mobile en France")).map((r) => {
+                      const on = mobility === r.value;
+                      return (
+                        <button
+                          key={r.value}
+                          type="button"
+                          onClick={() => setMobility(r.value)}
+                          className={on ? "tag" : "tag tag-neutral"}
+                          style={{ padding: "8px 14px", fontSize: 14, fontWeight: 700, ...(on ? { background: "var(--color-accent)", color: "var(--color-bg)" } : {}) }}
+                        >
+                          {r.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             )}
 
@@ -1588,7 +1725,7 @@ export function OnboardingWizard({
                       value: [educationLevel, experienceLevel, availabilityLabel].filter(Boolean).join(" · ") || "—",
                       onEdit: () => goToStep("level"),
                     },
-                  ].map((row) => (
+                  ].filter((row) => !(variant === "b" && row.label === "Secteurs")).map((row) => (
                     <div key={row.label} className="flex items-start gap-3">
                       <span
                         aria-hidden

@@ -63,3 +63,32 @@ export async function saveSchoolStageOnboardingAction(input: { level: string; bi
   }
   return { ok: true };
 }
+
+// Preuve P3 du test A/B d'onboarding (19/11) : offres publiées ces 7
+// derniers jours pour le métier et la ville choisis. Vrai compte en base,
+// borné (métier et ville nettoyés, pas de joker), null si la base échoue.
+export async function countWeekOffersAction(input: { job: string | null; city: string; lookingFor: string[] }): Promise<number | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+  const clean = (s: string) => s.replace(/[%_,()*\\]/g, " ").replace(/\s+/g, " ").trim().slice(0, 40);
+  const word = clean((input.job ?? "").split(/[\s/(]/)[0] ?? "");
+  const city = clean(input.city.split(" (")[0] ?? "");
+  const contracts = input.lookingFor.filter((c) => ["cdi", "cdd", "alternance", "stage", "stage_scolaire"].includes(c));
+  let q = createAdminClient()
+    .from("offers")
+    .select("id", { count: "exact", head: true })
+    .eq("is_active", true)
+    .gte("published_at", new Date(Date.now() - 7 * 86_400_000).toISOString());
+  if (contracts.length > 0) q = q.in("contract_type", contracts as never[]);
+  if (word.length >= 3) q = q.ilike("title", `%${word}%`);
+  if (city.length >= 2) q = q.ilike("location", `%${city}%`);
+  const { count, error } = await q;
+  if (error) {
+    console.error("onboarding : offres de la semaine non comptées", error.message);
+    return null;
+  }
+  return count ?? 0;
+}

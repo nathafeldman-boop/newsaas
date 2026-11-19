@@ -7,6 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
 import type { ProofData } from "@/components/onboarding/ProofScreens";
 import { getPublicReviewStats, getPublicTestimonials } from "@/lib/reviews/publicStats";
+import { onboardingVariant } from "@/lib/onboarding/steps";
 
 // Écrans de preuve (28/10) : uniquement des chiffres lus en base (avis
 // approuvés, inscrits de la semaine, offres actives). Une
@@ -19,13 +20,20 @@ async function loadProof(): Promise<ProofData> {
     const { count: n, error } = await query;
     return error ? null : (n ?? 0);
   };
-  const [testimonials, reviewStats, weeklySignups, activeOffers] = await Promise.all([
+  const contracts = ["cdi", "cdd", "alternance", "stage", "stage_scolaire"] as const;
+  const [testimonials, reviewStats, weeklySignups, activeOffers, ...byContract] = await Promise.all([
     getPublicTestimonials(6).catch(() => []),
     getPublicReviewStats().catch(() => ({ count: 0, average: null })),
     count(admin.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", weekAgo)).catch(() => null),
     count(admin.from("offers").select("id", { count: "exact", head: true }).eq("is_active", true)).catch(() => null),
+    ...contracts.map((c) => count(admin.from("offers").select("id", { count: "exact", head: true }).eq("is_active", true).eq("contract_type", c)).catch(() => null)),
   ]);
-  return { testimonials, reviewStats, weeklySignups, activeOffers };
+  const offersByContract: Partial<Record<string, number>> = {};
+  contracts.forEach((c, i) => {
+    const n = byContract[i];
+    if (typeof n === "number") offersByContract[c] = n;
+  });
+  return { testimonials, reviewStats, weeklySignups, activeOffers, offersByContract };
 }
 
 export default async function OnboardingPage() {
@@ -77,6 +85,7 @@ export default async function OnboardingPage() {
           initialProfile={profile ?? null}
           trustCount={trustCount ?? 0}
           proof={proof}
+          variant={onboardingVariant(user.id, profile?.created_at)}
         />
       </div>
     </div>
