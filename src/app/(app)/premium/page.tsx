@@ -442,7 +442,7 @@ export default async function PremiumPage({
                     ? "Candidater est réservé aux membres Premium."
                     : source === "swipe_limit"
                       ? "Ton essai gratuit de 3 swipes est terminé — passe Premium pour continuer."
-                      : "Liker (= mettre en favori) est réservé aux membres Premium."}
+                      : "Débloque Premium : cette offre t'attend en premier, tu pourras y postuler juste après."}
                 </div>
               </div>
             )}

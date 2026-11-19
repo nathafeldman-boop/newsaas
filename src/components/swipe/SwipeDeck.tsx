@@ -21,9 +21,9 @@ import { useApplyOnLike, type AutoApplySetup } from "@/components/swipe/ApplyOnL
 import { markAutoUpsellShown, readLikeAction, saveLikeAction, shouldShowAutoUpsell, type LikeAction } from "@/lib/swipe/likePreference";
 import { Icon } from "@/components/ui/Icon";
 import { PassReasonBar } from "@/components/swipe/PassReasonBar";
-import { LikeSendingOverlay } from "@/components/swipe/LikeSendingOverlay";
 import { widenSearchToFranceAction } from "@/app/(app)/swipe/actions";
 import { cardsToDrop, type OfferTags, type PassReason } from "@/lib/matching/passReasons";
+import { PINNED_OFFER_COOKIE, PINNED_OFFER_MAX_AGE } from "@/lib/offers/pinnedOffer";
 import { cn } from "@/lib/utils";
 import { useDemo } from "@/lib/demo/demoMode";
 import type { ContractType, Offer, SwipeDirection } from "@/types/database";
@@ -351,14 +351,6 @@ function SwipeDeckInner({
   // son titre/entreprise et proposer "Postuler maintenant" directement
   // depuis le modal, comme le fait le prototype de design.
   const [celebratingOffer, setCelebratingOffer] = useState<Offer | null>(null);
-  // Like sans Premium (19/11) : animation de préparation, puis paywall.
-  const [preparingOffer, setPreparingOffer] = useState<Offer | null>(null);
-  const goToPaywallAfterPrep = useCallback(
-    (o: Offer) => {
-      router.push(`/premium?source=swipe_like&offre=${encodeURIComponent(o.id)}`);
-    },
-    [router],
-  );
   const topCardRef = useRef<SwipeCardHandle>(null);
 
   const visible = stack.slice(0, 3);
@@ -466,9 +458,11 @@ function SwipeDeckInner({
 
     if (!isPremium) {
       if (direction === "like") {
-        if (preparingOffer) return false;
         void logButtonClick(userId, "premium_cta", { source: "swipe_like", offerId: offer.id });
-        setPreparingOffer(offer);
+        // 19/11 : l'offre likée revient en première carte après le paiement
+        // (même cookie que le retour sur une fiche publique, lib/offers/pinnedOffer.ts).
+        document.cookie = `${PINNED_OFFER_COOKIE}=${offer.id}; path=/; max-age=${PINNED_OFFER_MAX_AGE}; samesite=lax`;
+        router.push("/premium?source=swipe_like");
         return false;
       }
       if (swipesUsed >= FREE_SWIPE_LIMIT) {
@@ -636,7 +630,6 @@ function SwipeDeckInner({
           onClose={() => setCelebratingOffer(null)}
         />
         <LikeChoiceSheet offer={likeChoiceOffer} onChoose={handleLikeChoice} />
-        <LikeSendingOverlay offer={preparingOffer} onLocked={goToPaywallAfterPrep} />
         <AutoUpsellSheet
           offer={upsellOffer}
           onClose={() => setUpsellOffer(null)}
