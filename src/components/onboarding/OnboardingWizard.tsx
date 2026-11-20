@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { requestNow } from "@/lib/applications/status";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { markReferralGrantedAction, saveSchoolStageOnboardingAction } from "@/app/onboarding/actions";
@@ -382,6 +383,62 @@ export function OnboardingWizard({
   const heardOption = HEARD_FROM_OPTIONS.find((o) => o.value === heardFrom);
 
   const [cvFile, setCvFile] = useState<File | null>(null);
+
+  // Brouillon (20/11) : sur mobile, ouvrir le sélecteur de fichier (CV) ou
+  // changer d'appli recharge souvent la page, et l'onboarding repartait de
+  // l'écran 1 (vu dans les événements : intro > … > cv > intro). L'étape et
+  // les réponses sont gardées dans le navigateur 24 h et reprises au retour.
+  const draftKey = `stageio_onb_${userId}`;
+  const [draftReady, setDraftReady] = useState(false);
+  useEffect(() => {
+    if (demo) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setDraftReady(true);
+      return;
+    }
+    try {
+      const raw = localStorage.getItem(draftKey);
+      const d = raw ? JSON.parse(raw) : null;
+      if (d && d.v === 1 && d.variant === variant && requestNow() - d.at < 86_400_000) {
+        if (d.showSkipped) setShowSkipped(true);
+        if (Array.isArray(d.skills)) setSkills(d.skills);
+        if (Array.isArray(d.sectors)) setSectors(d.sectors);
+        if (typeof d.city === "string" && d.city) setCity(d.city);
+        if (Array.isArray(d.lookingFor) && d.lookingFor.length) setLookingFor(d.lookingFor);
+        if (typeof d.schoolLevel === "string") setSchoolLevel(d.schoolLevel);
+        if (typeof d.birthDate === "string") setBirthDate(d.birthDate);
+        if (Array.isArray(d.targetJobs)) setTargetJobs(d.targetJobs);
+        if (typeof d.mobility === "string") setMobility(d.mobility);
+        if (typeof d.educationLevel === "string") setEducationLevel(d.educationLevel);
+        if (typeof d.experienceLevel === "string") setExperienceLevel(d.experienceLevel);
+        if (d.availabilityLabel !== undefined) setAvailabilityLabel(d.availabilityLabel);
+        if (d.heardFrom !== undefined) setHeardFrom(d.heardFrom);
+        if (d.heardFormat !== undefined) setHeardFormat(d.heardFormat);
+        const steps = variant === "a" && d.showSkipped ? STEPS_A : STEP_IDS;
+        const outro = steps.indexOf("outro");
+        const idx = typeof d.step === "string" ? steps.indexOf(d.step) : -1;
+        if (idx > 0) setStepIndex(outro >= 0 ? Math.min(idx, outro) : idx);
+      }
+    } catch {
+      // Stockage indisponible ou brouillon illisible : on repart du début.
+    }
+    setDraftReady(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (!draftReady || demo) return;
+    try {
+      localStorage.setItem(
+        draftKey,
+        JSON.stringify({
+          v: 1, at: requestNow(), variant, step: stepId, showSkipped, skills, sectors, city, lookingFor, schoolLevel, birthDate,
+          targetJobs, mobility, educationLevel, experienceLevel, availabilityLabel, heardFrom, heardFormat,
+        }),
+      );
+    } catch {
+      // idem
+    }
+  }, [draftReady, demo, draftKey, variant, stepId, showSkipped, skills, sectors, city, lookingFor, schoolLevel, birthDate, targetJobs, mobility, educationLevel, experienceLevel, availabilityLabel, heardFrom, heardFormat]);
 
   useEffect(() => {
     void logOnboardingEvent(userId, "onboarding_step_viewed", stepId);
