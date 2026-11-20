@@ -298,7 +298,7 @@ export function OnboardingWizard({
   /** Test A/B d'onboarding (lib/onboarding/steps.ts). */
   variant?: "a" | "b";
   /** Arrivé depuis une fiche offre (20/11) : contrat et ville de l'offre. */
-  fromOffer?: { contract: ContractType; city: string | null } | null;
+  fromOffer?: { contract: ContractType; city: string | null; title?: string | null; company?: string | null } | null;
 }) {
   // Version A : écrans « contrat » et « ville » sautés quand l'offre les donne
   // (modifiables depuis le récap). Version B : écran critères pré-rempli.
@@ -355,7 +355,8 @@ export function OnboardingWizard({
   // avec une erreur sans qu'on comprenne pourquoi. Un profil existant garde
   // sa vraie valeur.
   const [lookingFor, setLookingFor] = useState<ContractType[]>(
-    initialProfile?.looking_for?.length ? initialProfile.looking_for : fromOffer ? [fromOffer.contract] : [],
+    // Le contrat de l'offre passe avant la valeur par défaut du compte (alternance + stage).
+    fromOffer ? [fromOffer.contract] : (initialProfile?.looking_for ?? []),
   );
 
   // Stages scolaires (18/11) : classe et date de naissance. Le reste de
@@ -864,6 +865,24 @@ export function OnboardingWizard({
             transition={{ duration: 0.26, ease: "easeInOut" }}
             style={{ display: "flex", flexDirection: "column", flex: 1 }}
           >
+            {stepIndex === 0 && fromOffer?.title && (
+              <div
+                className="card"
+                style={{ margin: "0 0 14px", padding: "12px 14px", borderColor: "var(--color-accent-300)", background: "var(--color-accent-100)" }}
+              >
+                <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "var(--color-accent-800)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                  📌 Ton offre t&apos;attend
+                </p>
+                <p style={{ margin: "4px 0 0", fontSize: 15.5, fontWeight: 800, lineHeight: 1.3 }}>
+                  {fromOffer.title.replace(/\s*\((?:H\/F|F\/H)\)\s*$/i, "")}
+                  {fromOffer.company && !/non communiqu/i.test(fromOffer.company) ? ` · ${fromOffer.company}` : ""}
+                </p>
+                <p style={{ margin: "4px 0 0", fontSize: 13, color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
+                  Quelques questions pour préparer ta candidature, puis elle s&apos;affiche en premier.
+                </p>
+              </div>
+            )}
+
             {stepId === "intro" && (
               <div className="flex flex-1 flex-col px-2" style={{ position: "relative", overflow: "hidden" }}>
                 <div

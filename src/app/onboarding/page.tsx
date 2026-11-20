@@ -78,18 +78,18 @@ export default async function OnboardingPage() {
   const admin = createAdminClient();
   // Arrivé depuis une fiche offre (cookie offre_vue, 20/11) : contrat et
   // ville repris de cette offre, écrans correspondants sautés (version A).
-  const pinnedId = profile?.looking_for?.length ? null : pinnedOfferId((await cookies()).get(PINNED_OFFER_COOKIE)?.value);
+  const pinnedId = profile?.onboarding_completed ? null : pinnedOfferId((await cookies()).get(PINNED_OFFER_COOKIE)?.value);
   const [{ count: trustCount }, proof, pinned] = await Promise.all([
     admin.from("profiles").select("id", { count: "exact", head: true }).eq("onboarding_completed", true),
     loadProof(),
     pinnedId
-      ? admin.from("offers").select("contract_type, location").eq("id", pinnedId).eq("is_active", true).maybeSingle().then((r) => r.data, () => null)
+      ? admin.from("offers").select("contract_type, location, title, company").eq("id", pinnedId).eq("is_active", true).maybeSingle().then((r) => r.data, () => null)
       : Promise.resolve(null),
   ]);
   const pinnedContract = pinned?.contract_type as ContractType | undefined;
   const fromOffer =
     pinnedContract && ["cdi", "cdd", "alternance", "stage"].includes(pinnedContract)
-      ? { contract: pinnedContract, city: locationFromOffer(pinned?.location) }
+      ? { contract: pinnedContract, city: locationFromOffer(pinned?.location), title: pinned?.title ?? null, company: pinned?.company ?? null }
       : null;
 
   return (
