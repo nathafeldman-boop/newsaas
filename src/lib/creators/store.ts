@@ -61,3 +61,10 @@ export async function loadCreatorData(): Promise<CreatorData> {
   if (snapErr) throw new Error(snapErr.message);
   return { videos: videos ?? [], snapshots: snapshots ?? [], missingTable: false };
 }
+
+/** Créateurs inscrits (dashboard, 20/11) : tableau vide si la table n'existe pas encore. */
+export async function loadCreatorRoster(): Promise<{ id: string; name: string; created_at: string; last_seen_at: string | null }[]> {
+  const { data, error } = await createAdminClient().from("creators").select("id, name, created_at, last_seen_at").order("created_at", { ascending: false }).limit(500);
+  if (error) return [];
+  return data ?? [];
+}

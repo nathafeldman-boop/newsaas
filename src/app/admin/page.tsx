@@ -24,7 +24,8 @@ import {
 import { requireAdminPage } from "@/lib/admin/accessCode";
 import { TodayLive } from "@/components/admin/cockpit/TodayLive";
 import { CreatorsPanel } from "@/components/admin/cockpit/CreatorsPanel";
-import { loadCreatorData, type CreatorData } from "@/lib/creators/store";
+import { loadCreatorData, loadCreatorRoster, type CreatorData } from "@/lib/creators/store";
+import { earningsEur, rpmOf } from "@/lib/creators/earnings";
 import { rpmEuros, viewsGainedIn } from "@/lib/creators/tiktokViews";
 import { autoOfferBlockers } from "@/lib/admin/autoStatus";
 import { DailyGoalGauge } from "@/components/admin/goals/DailyGoalGauge";
@@ -50,7 +51,7 @@ export default async function CockpitOverviewPage({
   const { current, previous } = periodRanges(period, now);
   const { snap, error } = await loadSnapshot();
 
-  const [signupsCur, signupsPrev, active7, active30, autoBlockers, savedGoals, creatorData] = await Promise.all([
+  const [signupsCur, signupsPrev, active7, active30, autoBlockers, savedGoals, creatorData, creatorRoster] = await Promise.all([
     signupsIn(current).catch(() => null),
     signupsIn(previous).catch(() => null),
     activeSince(now - 7 * DAY_MS).catch(() => null),
@@ -61,7 +62,33 @@ export default async function CockpitOverviewPage({
       console.error("cockpit: vidéos créateurs illisibles", err);
       return null;
     }),
+    loadCreatorRoster().catch(() => []),
   ]);
+  // Créateurs (20/11, Nathan : « combien on doit aux créateurs, s'ils se sont
+  // inscrits ») : inscriptions sur la période, et gains d'après les vues
+  // relevées et le tarif de chaque vidéo (lib/creators/earnings.ts).
+  const inRange = (iso: string, r: { start: number; end: number }) => {
+    const t = Date.parse(iso);
+    return t >= r.start && t < r.end;
+  };
+  const creatorsCur = creatorRoster.filter((c) => inRange(c.created_at, current)).length;
+  const creatorsPrev = creatorRoster.filter((c) => inRange(c.created_at, previous)).length;
+  const creatorVideos = (creatorData?.videos ?? []).filter((v) => v.creator_id);
+  const creatorsWithVideo = new Set(creatorVideos.map((v) => v.creator_id)).size;
+  const owedTotal = creatorVideos.reduce((sum, v) => sum + earningsEur(v.views ?? 0, rpmOf({ kind: v.kind ?? null, declared_face: v.declared_face ?? null, approved_face: v.approved_face ?? null })), 0);
+  const owedIn = (r: { start: number; end: number }) =>
+    creatorVideos.reduce(
+      (sum, v) =>
+        sum +
+        earningsEur(
+          viewsGainedIn((creatorData?.snapshots ?? []).filter((x) => x.video_id === v.id), r),
+          rpmOf({ kind: v.kind ?? null, declared_face: v.declared_face ?? null, approved_face: v.approved_face ?? null }),
+        ),
+      0,
+    );
+  const owedCur = owedIn(current);
+  const owedPrev = owedIn(previous);
+  const lastCreator = creatorRoster[0] ?? null;
   const autoAlert =
     autoBlockers.length > 0
       ? { tone: "is-bad", text: `Stageio Auto n'est pas proposée : ${autoBlockers.join(" ; ")}`, href: "/admin/sante" }
@@ -267,6 +294,28 @@ export default async function CockpitOverviewPage({
             sub={`En plus du rythme d'avant : ${rpmFmt(rpmExtra)} · repères : 2 € minimum, 4 €+ parfait`}
             definition="Encaissé sur la période (abonnements + accès à vie, brut) ÷ (vues créateurs ÷ 1000). Il compte aussi ce qu'apportent Facebook, les emails et Google. « En plus du rythme d'avant » retire l'encaissement quotidien moyen des 14 jours avant la première vidéo suivie : c'est l'estimation du revenu dû aux créateurs."
             source="Stripe + relevés TikTok"
+          />
+          <Kpi
+            accent="green"
+            href="/admin/createurs"
+            cta="Voir les créateurs"
+            label="Créateurs inscrits"
+            value={int(creatorRoster.length)}
+            delta={delta(creatorsCur, creatorsPrev, (x) => int(x))}
+            sub={`${int(creatorsCur)} sur la période · ${int(creatorsWithVideo)} avec au moins une vidéo${lastCreator ? ` · dernier : ${lastCreator.name}, ${new Date(lastCreator.created_at).toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" })}` : ""}`}
+            definition="Comptes créés sur stageio.fr/createurs/inscription. La variation compare les inscriptions de la période à celles de la période d'avant."
+            source="Table creators"
+          />
+          <Kpi
+            accent="green"
+            href="/admin/createurs"
+            cta="Détail par créateur"
+            label="Dû aux créateurs (période)"
+            value={euros(owedCur)}
+            delta={delta(owedCur, owedPrev, (x) => euros(x))}
+            sub={`Total gagné depuis le début : ${euros(owedTotal)} (aucun versement n'est encore noté)`}
+            definition="Vues gagnées sur la période par chaque vidéo d'un créateur inscrit × son tarif pour 1 000 vues : carrousel 0,50 €, vidéo faceless 1 €, vidéo face 1,50 € (type validé par Stageio, sinon déclaré). Le total compte toutes les vues relevées. Les versements déjà faits ne sont pas déduits."
+            source="Relevés TikTok + tarifs créateurs"
           />
         </KpiGrid>
       </Section>
