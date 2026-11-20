@@ -288,6 +288,7 @@ export function OnboardingWizard({
   trustCount,
   proof,
   variant = "a",
+  fromOffer = null,
 }: {
   userId: string;
   initialProfile: Profile | null;
@@ -295,8 +296,19 @@ export function OnboardingWizard({
   proof: ProofData;
   /** Test A/B d'onboarding (lib/onboarding/steps.ts). */
   variant?: "a" | "b";
+  /** Arrivé depuis une fiche offre (20/11) : contrat et ville de l'offre. */
+  fromOffer?: { contract: ContractType; city: string | null } | null;
 }) {
-  const STEP_IDS = variant === "b" ? STEPS_B : STEPS_A;
+  // Version A : écrans « contrat » et « ville » sautés quand l'offre les donne
+  // (modifiables depuis le récap). Version B : écran critères pré-rempli.
+  // Un lien « modifier » du récap vers un écran sauté le remet dans le parcours.
+  const [showSkipped, setShowSkipped] = useState(false);
+  const STEP_IDS =
+    variant === "b"
+      ? STEPS_B
+      : showSkipped || !fromOffer
+        ? STEPS_A
+        : STEPS_A.filter((s) => s !== "looking_for" && !(s === "city" && fromOffer.city));
   const PROGRESS_STEPS: StepId[] = STEP_IDS.filter((s) => !NO_CHROME_STEPS.includes(s));
   const demo = useDemo();
   const [stepIndex, setStepIndex] = useState(0);
@@ -322,7 +334,7 @@ export function OnboardingWizard({
   const [skills, setSkills] = useState<string[]>(initialProfile?.skills ?? []);
   const [sectors, setSectors] = useState<string[]>(initialProfile?.sectors ?? []);
 
-  const [city, setCity] = useState(initialProfile?.city ?? "");
+  const [city, setCity] = useState(initialProfile?.city || fromOffer?.city || "");
   const [cityCustomOpen, setCityCustomOpen] = useState(false);
   // Ville de la page d'où vient l'inscription (« Alternance commercial à
   // Lyon ») : pré-remplie seulement si le profil n'en a pas encore. Lue
@@ -342,7 +354,7 @@ export function OnboardingWizard({
   // avec une erreur sans qu'on comprenne pourquoi. Un profil existant garde
   // sa vraie valeur.
   const [lookingFor, setLookingFor] = useState<ContractType[]>(
-    initialProfile?.looking_for ?? [],
+    initialProfile?.looking_for?.length ? initialProfile.looking_for : fromOffer ? [fromOffer.contract] : [],
   );
 
   // Stages scolaires (18/11) : classe et date de naissance. Le reste de
@@ -467,6 +479,10 @@ export function OnboardingWizard({
     const inB: Partial<Record<StepId, StepId>> = { looking_for: "quick_criteria", city: "quick_criteria", level: "quick_criteria", jobs: "quick_job", sectors: "quick_job" };
     let index = STEP_IDS.indexOf(id);
     if (index < 0 && inB[id]) index = STEP_IDS.indexOf(inB[id]);
+    if (index < 0 && variant === "a" && STEPS_A.includes(id)) {
+      setShowSkipped(true);
+      index = STEPS_A.indexOf(id);
+    }
     if (index < 0) return;
     setError(null);
     setDirection(-1);

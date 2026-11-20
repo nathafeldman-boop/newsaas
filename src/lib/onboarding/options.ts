@@ -326,6 +326,27 @@ export const LOCATION_OPTIONS = [...TOP_CITIES, ...DEPARTMENT_LOCATIONS];
 
 const DEPARTMENT_LOCATION_SET = new Set(DEPARTMENT_LOCATIONS);
 
+function plain(s: string): string {
+  return s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+/**
+ * Ville de l'onboarding déduite du lieu d'une offre (« 13 - Marseille 8e
+ * Arrondissement » → « Marseille », « 974 - ST DENIS » → « La Réunion (974) »),
+ * pour pré-remplir quand l'inscrit arrive depuis une fiche offre (20/11).
+ */
+export function locationFromOffer(location: string | null | undefined): string | null {
+  const m = (location ?? "").match(/^\s*(\d{2,3}|2[AB])\s*-\s*(.+)$/i);
+  if (!m) return null;
+  const town = plain(m[2]);
+  const top = TOP_CITIES.find((c) => town === plain(c) || town.startsWith(`${plain(c)} `));
+  if (top) return top;
+  const code = m[1].toUpperCase();
+  if (code === "75") return "Paris";
+  const dep = FRENCH_DEPARTMENTS.find((d) => d.code === code);
+  return dep ? departmentLabel(dep) : null;
+}
+
 // Utilisé par le matching (lib/matching/score.ts) pour reconnaître qu'un
 // profil a choisi "tout un département" plutôt qu'une ville précise --
 // dans ce cas une correspondance de sous-chaîne sur offer.location n'a pas
