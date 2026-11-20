@@ -4,6 +4,12 @@ import type { ContractType } from "@/types/database";
 
 export const PUBLIC_OFFERS_PAGE_SIZE = 24;
 
+// 20/11 : les robots parcouraient ?page=2..900 (22 000 offres actives), une
+// requête à OFFSET profond par page, ce qui saturait la base (swipe et
+// Stageio Auto en panne). Au-delà de 40 pages : 404. Chaque offre reste
+// trouvable par les sitemaps.
+export const PUBLIC_OFFERS_MAX_PAGE = 40;
+
 export const PUBLIC_OFFER_COLUMNS = "id, title, company, location, contract_type, sector, published_at";
 
 export type PublicOfferRow = {
@@ -43,7 +49,7 @@ const cachedActiveCount = unstable_cache(
     return count ?? 0;
   },
   ["public-offers-count-v2"],
-  { revalidate: 600 },
+  { revalidate: 3600 },
 );
 
 export function fetchActiveOfferCount(type: ContractType | "all"): Promise<number> {
@@ -75,14 +81,15 @@ const cachedOffersPage = unstable_cache(
     return (data ?? []) as PublicOfferRow[];
   },
   ["public-offers-page-v1"],
-  { revalidate: 600 },
+  { revalidate: 3600 },
 );
 
 export async function fetchPublicOffers(type: ContractType | undefined, page: number) {
+  if (page > PUBLIC_OFFERS_MAX_PAGE) return { offers: [] as PublicOfferRow[], count: 0, totalPages: 0 };
   const [rows, count] = await Promise.all([cachedOffersPage(type ?? "all", page), cachedActiveCount(type ?? "all")]);
   if (rows === null) return { offers: [] as PublicOfferRow[], count: 0, totalPages: 0 };
   const data = rows;
-  const totalPages = Math.max(1, Math.ceil(count / PUBLIC_OFFERS_PAGE_SIZE));
+  const totalPages = Math.min(PUBLIC_OFFERS_MAX_PAGE, Math.max(1, Math.ceil(count / PUBLIC_OFFERS_PAGE_SIZE)));
   // Page au-delà de la dernière (le compte en cache peut avoir 10 minutes de
   // retard) : vide, comme le PGRST103 ci-dessus.
   if (data.length === 0 && page > 1) return { offers: [] as PublicOfferRow[], count, totalPages: 0 };
