@@ -24,6 +24,8 @@ import {
 import { requireAdminPage } from "@/lib/admin/accessCode";
 import { TodayLive } from "@/components/admin/cockpit/TodayLive";
 import { CreatorsPanel } from "@/components/admin/cockpit/CreatorsPanel";
+import { Funnel, type FunnelData } from "@/components/admin/cockpit/Funnel";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { loadCreatorData, loadCreatorRoster, type CreatorData } from "@/lib/creators/store";
 import { earningsEur, rpmOf } from "@/lib/creators/earnings";
 import { rpmEuros, viewsGainedIn } from "@/lib/creators/tiktokViews";
@@ -64,6 +66,14 @@ export default async function CockpitOverviewPage({
     }),
     loadCreatorRoster().catch(() => []),
   ]);
+  // Entonnoir (20/11) : fonction SQL admin_funnel, comptes créés sur la période.
+  const funnelOf = async (r: { start: number; end: number }): Promise<FunnelData | null> => {
+    // Client non typé : la fonction n'est pas dans les types générés.
+    const db = createAdminClient() as unknown as { rpc: (fn: string, args: object) => PromiseLike<{ data: unknown; error: unknown }> };
+    const { data, error } = await db.rpc("admin_funnel", { p_start: new Date(r.start).toISOString(), p_end: new Date(r.end).toISOString() });
+    return error || !data ? null : (data as FunnelData);
+  };
+  const [funnelCur, funnelPrev] = await Promise.all([funnelOf(current).catch(() => null), funnelOf(previous).catch(() => null)]);
   // Créateurs (20/11, Nathan : « combien on doit aux créateurs, s'ils se sont
   // inscrits ») : inscriptions sur la période, et gains d'après les vues
   // relevées et le tarif de chaque vidéo (lib/creators/earnings.ts).
@@ -269,6 +279,10 @@ export default async function CockpitOverviewPage({
             source="Stripe, remboursements"
           />
         </KpiGrid>
+      </Section>
+
+      <Section title="Entonnoir" subtitle="Comptes créés sur la période : combien restent à chaque étape (entre parenthèses, la période d'avant).">
+        {funnelCur ? <Funnel data={funnelCur} prev={funnelPrev} /> : <Insufficient />}
       </Section>
 
       <Section title="Créateurs TikTok" subtitle="Vues des vidéos collées en bas de page, relevées toutes les 3 h.">
