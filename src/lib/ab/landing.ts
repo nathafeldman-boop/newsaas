@@ -13,3 +13,6 @@ export const LANDING_B_PATH = "/accueil-b";
 export function isAbLpVariant(v: unknown): v is AbLpVariant {
   return v === "a" || v === "b";
 }
+
+// Test arrêté le 20/11 (Nathan) : tout le monde voit l'accueil A, le seul du 31/10.
+export const AB_LP_ACTIVE = false;

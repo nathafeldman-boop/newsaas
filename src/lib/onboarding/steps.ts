@@ -71,7 +71,9 @@ export const STEP_LABELS: Record<StepId, string> = {
 // « Confiance »), P2 (avis) et P3 (offres de la semaine, avant le CV).
 // B = parcours Wapply : le métier, puis contrat + niveau + ville + rayon sur
 // un seul écran, puis la suite habituelle (CV, récap, contrat, swipe).
-export const STEPS_A: readonly StepId[] = STEP_IDS.filter((s) => !["quick_job", "quick_criteria", "trust"].includes(s));
+// 20/11 (Nathan : « remets le parcours du 31/10 ») : A = les écrans du 31/10,
+// sans les preuves ajoutées depuis (offres en ligne, urgence, offres de la semaine).
+export const STEPS_A: readonly StepId[] = STEP_IDS.filter((s) => !["quick_job", "quick_criteria", "proof_offers", "urgency", "proof_week"].includes(s));
 export const STEPS_B: readonly StepId[] = ["quick_job", "proof_offers", "quick_criteria", "proof_reviews", "proof_week", "cv", "outro", "pledge", "pledge_done"];
 
 /** Début du test : les comptes créés avant gardent l'onboarding A. */
@@ -82,6 +84,8 @@ export const AB_ONBOARDING_START = "2026-11-19T18:35:00Z";
  * sans cookie ni colonne. En SQL : substr(id::text, 1, 1) < '8' → B.
  */
 export function onboardingVariant(userId: string, createdAt: string | null | undefined): "a" | "b" {
-  if (!createdAt || Date.parse(createdAt) < Date.parse(AB_ONBOARDING_START)) return "a";
-  return /^[0-7]/i.test(userId) ? "b" : "a";
+  // Test arrêté le 20/11 : tout le monde sur A.
+  void userId;
+  void createdAt;
+  return "a";
 }

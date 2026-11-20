@@ -20,6 +20,10 @@ export function abEntryDestination(v: AbEntryVariant): string {
 // elles-mêmes, l'appli, l'admin, les pages de compte, de paiement et légales.
 const EXCLUDED = /^\/($|inscription|login|onboarding|auth|admin|api|createurs|accord-parental|paiement|paiement-recu|premium|desabonnement|pourquoi|compte-supprime|legal|swipe|dashboard|favoris|mes-candidatures|candidature|cv|profil|parrainage|affilies|boite|spontanees|stages-scolaires|widget)(\/|$)/;
 
+// Test arrêté le 20/11 (Nathan : « on revient au parcours du 31/10 ») :
+// plus de tirage ni de redirection au premier clic.
+export const AB_ENTRY_ACTIVE = false;
+
 export function abEntryApplies(pathname: string): boolean {
-  return !EXCLUDED.test(pathname);
+  return AB_ENTRY_ACTIVE && !EXCLUDED.test(pathname);
 }

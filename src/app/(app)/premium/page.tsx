@@ -23,10 +23,7 @@ import { GuaranteeCard, type GuaranteePhase } from "@/components/premium/Guarant
 import { getGuaranteeStatus, type GuaranteeStatus } from "@/lib/premium/refundGuarantee";
 import { GUARANTEE_COOKIE } from "@/lib/premium/guaranteeTerms";
 import { getTrustCount } from "@/lib/premium/trustCount";
-import { PaywallPain } from "@/components/premium/PaywallPain";
 
-// « 9,99 € » → 9.99
-const euros = (price: string) => Number(price.replace(/[^\d,]/g, "").replace(",", "."));
 import { paywallHeadline } from "@/lib/premium/paywallTest";
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -442,7 +439,7 @@ export default async function PremiumPage({
                     ? "Candidater est réservé aux membres Premium."
                     : source === "swipe_limit"
                       ? "Ton essai gratuit de 3 swipes est terminé — passe Premium pour continuer."
-                      : "Débloque Premium : cette offre t'attend en premier, tu pourras y postuler juste après."}
+                      : "Liker (= mettre en favori) est réservé aux membres Premium."}
                 </div>
               </div>
             )}
@@ -472,14 +469,7 @@ export default async function PremiumPage({
               Débloque toutes les opportunités et les outils pour maximiser tes chances.
             </p>
 
-            {/* Douleur et investissement (Nathan, 12/11) : le délai qui file,
-                puis le salaire légal minimum face au prix. lib/premium/painCopy.ts. */}
-            <PaywallPain
-              lookingFor={profile?.looking_for}
-              premiumMonthly={euros(welcome?.active ? prices.monthly.welcome : prices.monthly.regular)}
-              autoMonthly={isAutoOfferAvailable(profile) ? euros(welcome?.active ? prices.auto.monthly.welcome : prices.auto.monthly.regular) : null}
-            />
-
+            {/* Bloc « douleur » du 12/11 retiré le 20/11 : retour au paywall du 31/10. */}
             <GuaranteeBadge initialVisible={guaranteeShown} />
 
             {under15 ? <ParentPaysCheck>{pricing}</ParentPaysCheck> : pricing}

@@ -5,7 +5,7 @@ import { linkedinCampaign, normalizeUtmSource, sourceFromReferrer } from "@/lib/
 import { logAffiliateClick } from "@/lib/affiliates/logAffiliateClick";
 import { offerIdFromPath, PINNED_OFFER_COOKIE, PINNED_OFFER_MAX_AGE } from "@/lib/offers/pinnedOffer";
 import { AB_ENTRY_COOKIE, abEntryApplies, isAbEntryVariant } from "@/lib/ab/entry";
-import { AB_LP_COOKIE, isAbLpVariant, LANDING_B_PATH, type AbLpVariant } from "@/lib/ab/landing";
+import { AB_LP_ACTIVE, AB_LP_COOKIE, isAbLpVariant, LANDING_B_PATH, type AbLpVariant } from "@/lib/ab/landing";
 
 const VISITOR_COOKIE = "sid";
 const VISITOR_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 an
@@ -113,7 +113,7 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
   // Test A/B de la page d'accueil (19/11, voir lib/ab/landing.ts) : groupe
   // tiré à la première ouverture de « / », noté dans site_visits.
   let lpVariant: AbLpVariant | null = null;
-  if (request.nextUrl.pathname === "/") {
+  if (AB_LP_ACTIVE && request.nextUrl.pathname === "/") {
     const forcedLp = process.env.AB_LP_WINNER;
     const existing = request.cookies.get(AB_LP_COOKIE)?.value;
     if (isAbLpVariant(forcedLp)) lpVariant = forcedLp;
