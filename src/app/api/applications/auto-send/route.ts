@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { isSimulationEmail } from "@/lib/simulation/accounts";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isAutoTier, isPremium } from "@/lib/subscription/isPremium";
@@ -232,7 +233,8 @@ async function applyViaLba(admin: Admin, supabase: Supabase, context: Context) {
   const letter = letterFor(context);
   const extension = /\.docx$/i.test(profile.cv_path) ? "docx" : "pdf";
   const fullName = `${names.first} ${names.last}`;
-  try {
+  // Simulation du parcours (admin) : tout pareil, sauf l'envoi au recruteur.
+  if (!isSimulationEmail(user.email)) try {
     await sendLbaApplication({
       applicant_first_name: names.first,
       applicant_last_name: names.last,
@@ -296,7 +298,8 @@ async function applyByEmail(admin: Admin, supabase: Supabase, context: Context) 
   // demande de l'étudiant ; répondre à ce message le joint directement.
   const text = `${letter}\n\n--\nCandidature envoyée par ${name ?? "le candidat"} via Stageio (stageio.fr). Répondez directement à ce message pour le joindre.`;
 
-  const { error: sendError } = await getResendClient().emails.send(
+  // Simulation du parcours (admin) : tout pareil, sauf l'envoi au recruteur.
+  const { error: sendError } = isSimulationEmail(user.email) ? { error: null } : await getResendClient().emails.send(
     {
       ...studentSender(name, fromAddress),
       to,

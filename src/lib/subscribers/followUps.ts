@@ -1,4 +1,5 @@
 import type { createAdminClient } from "@/lib/supabase/admin";
+import { isSimulationEmail } from "@/lib/simulation/accounts";
 import { fetchAllRows } from "@/lib/supabase/public";
 import { getResendClient } from "@/lib/resend/client";
 import { unsubscribeFooterHtml, unsubscribeHeaders } from "@/lib/resend/unsubscribe";
@@ -67,7 +68,8 @@ ${unsubscribeFooterHtml(profile.id)}
 export async function runFollowUps(admin: Admin, subscribers: Profile[], now: number = Date.now()) {
   const summary = { due: 0, autoSent: 0, reminders: 0, failures: [] as string[] };
   if (subscribers.length === 0) return summary;
-  const byId = new Map(subscribers.map((p) => [p.id, p]));
+  // Comptes de simulation (admin) : jamais de relance chez un recruteur.
+  const byId = new Map(subscribers.filter((p) => !isSimulationEmail(p.email)).map((p) => [p.id, p]));
   const ids = [...byId.keys()];
 
   // Candidatures envoyées, à leur date de relance.

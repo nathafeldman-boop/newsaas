@@ -1,4 +1,5 @@
 import type { createAdminClient } from "@/lib/supabase/admin";
+import { isSimulationEmail } from "@/lib/simulation/accounts";
 import { LbaError, MAX_CV_BYTES, lbaApiKey, sendLbaApplication } from "@/lib/laBonneAlternance/client";
 import { normalizePhone, splitFullName } from "@/lib/laBonneAlternance/applicant";
 import { getOrCreateInboxAddress, inboxDomain } from "@/lib/inbox/address";
@@ -56,7 +57,8 @@ export async function sendSpontaneous(admin: Admin, profile: SendProfile, target
 
   const letter = spontaneousLetter(profile, target.company, target.activity);
   const fullName = `${names.first} ${names.last}`;
-  try {
+  // Simulation du parcours (admin) : tout pareil, sauf l'envoi à l'entreprise.
+  if (!isSimulationEmail(profile.email)) try {
     await sendLbaApplication({
       applicant_first_name: names.first,
       applicant_last_name: names.last,

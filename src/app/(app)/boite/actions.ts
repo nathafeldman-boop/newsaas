@@ -1,5 +1,6 @@
 "use server";
 
+import { isSimulationEmail } from "@/lib/simulation/accounts";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -34,7 +35,8 @@ export async function replyInboxMessageAction(messageId: string, formData: FormD
 
   const name = profile?.full_name?.trim() || null;
   const subject = message.subject?.toLowerCase().startsWith("re:") ? message.subject : `Re: ${message.subject ?? ""}`.trim();
-  const { error } = await getResendClient().emails.send({
+  // Simulation du parcours (admin) : rien ne part chez le recruteur.
+  const { error } = isSimulationEmail(user.email) ? { error: null } : await getResendClient().emails.send({
     ...studentSender(name, fromAddress),
     to: message.from_address,
     subject,
