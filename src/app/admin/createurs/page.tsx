@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { inviteLink } from "@/lib/creators/access";
-import { RPM_EUR, earningsEur, rpmOf } from "@/lib/creators/earnings";
-import { reviewCreatorVideoAction } from "@/app/admin/creators-actions";
+import { earningsEur, rpmOf, type RpmRates } from "@/lib/creators/earnings";
+import { hasOwnRates, loadRpmDefaults, ratesFor } from "@/lib/creators/rates";
+import { reviewCreatorVideoAction, saveCreatorRpmAction, saveRpmDefaultsAction } from "@/app/admin/creators-actions";
 import type { Creator, CreatorVideo } from "@/types/database";
 
 // Créateurs (18/11) : lien d'invitation à donner, vidéos à valider (face ou
@@ -13,9 +14,20 @@ export const dynamic = "force-dynamic";
 const eur = (n: number) => n.toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
 const muted = { color: "var(--color-neutral-600)" } as const;
 
-export default async function AdminCreatorsPage() {
+const RPM_NOTICE: Record<string, string> = {
+  ok: "✅ Tarifs enregistrés.",
+  invalide: "Tarif non valide : écris un nombre en euros, par exemple 1,20.",
+  erreur: "L'enregistrement n'a pas marché, réessaie.",
+};
+
+const rpmInput = { width: 74, padding: "5px 7px", fontSize: 13, borderRadius: 8, border: "1px solid var(--color-divider)" } as const;
+const fr = (n: number) => n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+export default async function AdminCreatorsPage({ searchParams }: { searchParams: Promise<{ rpm?: string }> }) {
+  const { rpm } = await searchParams;
   const admin = createAdminClient();
-  const [{ data: creators, error }, { data: videos }] = await Promise.all([
+  const [defaults, { data: creators, error }, { data: videos }] = await Promise.all([
+    loadRpmDefaults(),
     admin.from("creators").select("*").order("created_at", { ascending: false }).limit(500),
     admin.from("creator_videos").select("*").not("creator_id", "is", null).order("added_at", { ascending: false }).limit(5000),
   ]);
@@ -40,8 +52,36 @@ export default async function AdminCreatorsPage() {
         <p style={{ margin: 0, fontWeight: 700 }}>🔗 Lien d&apos;inscription à envoyer aux créateurs (ou simplement stageio.fr/createurs)</p>
         <code style={{ display: "block", fontSize: 13, marginTop: 6, wordBreak: "break-all" }}>{link ?? "Clé serveur absente"}</code>
         <p style={{ margin: "6px 0 0", fontSize: 12.5, ...muted }}>
-          Le même lien pour tous. Tarifs pour 1 000 vues : carrousel {eur(RPM_EUR.carousel)}, vidéo faceless {eur(RPM_EUR.faceless)}, vidéo face {eur(RPM_EUR.face)}.
+          Le même lien pour tous.
         </p>
+      </div>
+
+      <div id="rpm" className="cockpit-card" style={{ padding: 16, marginTop: 14 }}>
+        <p style={{ margin: 0, fontWeight: 700 }}>💶 RPM : ce que tu paies pour 1 000 vues</p>
+        <p style={{ margin: "4px 0 10px", fontSize: 12.5, ...muted }}>
+          Tarif de tous les créateurs, sauf ceux à qui tu donnes un tarif à part (tableau plus bas). Il compte pour toutes leurs vues, passées
+          comprises, et s&apos;affiche tout de suite dans leur espace.
+        </p>
+        {rpm && RPM_NOTICE[rpm] && <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 700 }}>{RPM_NOTICE[rpm]}</p>}
+        <form action={saveRpmDefaultsAction} style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "flex-end" }}>
+          {(
+            [
+              ["carousel", "Carrousel"],
+              ["faceless", "Vidéo faceless"],
+              ["face", "Vidéo face"],
+            ] as const
+          ).map(([key, label]) => (
+            <label key={key} style={{ fontSize: 12.5, display: "grid", gap: 4 }}>
+              {label}
+              <span>
+                <input name={key} defaultValue={fr(defaults[key])} inputMode="decimal" required style={rpmInput} /> €
+              </span>
+            </label>
+          ))}
+          <button type="submit" className="btn btn-primary" style={{ fontSize: 13 }}>
+            Enregistrer
+          </button>
+        </form>
       </div>
 
       <section id="a-valider" style={{ marginTop: 22 }}>
@@ -74,13 +114,16 @@ export default async function AdminCreatorsPage() {
         ))}
       </section>
 
-      <section style={{ marginTop: 26 }}>
-        <h2 style={{ fontSize: 17, margin: "0 0 10px" }}>Créateurs inscrits ({list.length})</h2>
+      <section id="createurs-inscrits" style={{ marginTop: 26 }}>
+        <h2 style={{ fontSize: 17, margin: "0 0 4px" }}>Créateurs inscrits ({list.length})</h2>
+        <p style={{ fontSize: 12.5, margin: "0 0 10px", ...muted }}>
+          RPM à part : remplis seulement les cases à changer pour ce créateur ; une case vide = tarif par défaut.
+        </p>
         <div className="cockpit-card" style={{ padding: 14, overflowX: "auto" }}>
           <table className="cockpit-table" style={{ width: "100%", fontSize: 13, borderCollapse: "collapse", whiteSpace: "nowrap" }}>
             <thead>
               <tr style={{ textAlign: "left", ...muted }}>
-                {["Nom", "Téléphone", "TikTok", "Vidéos", "Vues", "Gains estimés", "Inscrit", "Vu"].map((h) => (
+                {["Nom", "Téléphone", "TikTok", "Vidéos", "Vues", "Gains estimés", "RPM (carrousel · faceless · face)", "Inscrit", "Vu"].map((h) => (
                   <th key={h} style={{ padding: "4px 12px 4px 0", fontWeight: 500 }}>
                     {h}
                   </th>
@@ -91,7 +134,8 @@ export default async function AdminCreatorsPage() {
               {list.map((c) => {
                 const mine = byCreator.get(c.id) ?? [];
                 const views = mine.reduce((s, v) => s + (v.views ?? 0), 0);
-                const gains = mine.reduce((s, v) => s + earningsEur(v.views ?? 0, rpmOf(toEv(v))), 0);
+                const rates: RpmRates = ratesFor(c, defaults);
+                const gains = mine.reduce((s, v) => s + earningsEur(v.views ?? 0, rpmOf(toEv(v), rates)), 0);
                 return (
                   <tr key={c.id} style={{ borderTop: "1px solid var(--color-divider)" }}>
                     <td style={{ padding: "6px 12px 6px 0", fontWeight: 700 }}>{c.name}</td>
@@ -102,6 +146,29 @@ export default async function AdminCreatorsPage() {
                     <td style={{ padding: "6px 12px 6px 0" }}>{mine.length}</td>
                     <td style={{ padding: "6px 12px 6px 0" }}>{views.toLocaleString("fr-FR")}</td>
                     <td style={{ padding: "6px 12px 6px 0", fontWeight: 700 }}>{eur(gains)}</td>
+                    <td style={{ padding: "6px 12px 6px 0" }}>
+                      <form action={saveCreatorRpmAction} style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                        <input type="hidden" name="id" value={c.id} />
+                        {(["carousel", "faceless", "face"] as const).map((key) => {
+                          const own = c[`rpm_${key}` as const];
+                          return (
+                            <input
+                              key={key}
+                              name={key}
+                              defaultValue={own === null || own === undefined ? "" : fr(Number(own))}
+                              placeholder={fr(defaults[key])}
+                              inputMode="decimal"
+                              aria-label={`RPM ${key} de ${c.name}`}
+                              style={{ ...rpmInput, width: 58 }}
+                            />
+                          );
+                        })}
+                        <button type="submit" className="btn" style={{ fontSize: 12, padding: "4px 8px" }}>
+                          OK
+                        </button>
+                        {hasOwnRates(c) && <span style={{ fontSize: 11, fontWeight: 700, color: "var(--color-accent-700)" }}>à part</span>}
+                      </form>
+                    </td>
                     <td style={{ padding: "6px 12px 6px 0", ...muted }}>{new Date(c.created_at).toLocaleDateString("fr-FR")}</td>
                     <td style={{ padding: "6px 0", ...muted }}>{c.last_seen_at ? new Date(c.last_seen_at).toLocaleDateString("fr-FR") : "—"}</td>
                   </tr>

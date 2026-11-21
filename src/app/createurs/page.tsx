@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { currentCreator, personalLink } from "@/lib/creators/access";
-import { RPM_EUR, dailySeries, earningsEur, faceOf, gainedByVideo, periodStarts, periodTotals, rpmOf, type EarningVideo } from "@/lib/creators/earnings";
+import { loadRpmDefaults, ratesFor } from "@/lib/creators/rates";
+import { dailySeries, earningsEur, faceOf, gainedByVideo, periodStarts, periodTotals, rpmOf, type EarningVideo } from "@/lib/creators/earnings";
 import { Kpi } from "@/components/admin/cockpit/Kpi";
 import { LineChart } from "@/components/admin/cockpit/LineChart";
 import { AccentPicker } from "@/components/creators/AccentPicker";
@@ -74,23 +75,25 @@ export default async function CreatorDashboard({ searchParams }: { searchParams:
   const snapshots = snaps ?? [];
   const ev: EarningVideo[] = videos.map((v) => ({ id: v.id, kind: v.kind ?? null, declared_face: v.declared_face ?? null, approved_face: v.approved_face ?? null, views: v.views }));
 
+  // Son tarif : celui réglé par Stageio (à part ou par défaut, voir /admin/createurs).
+  const rates = ratesFor(creator, await loadRpmDefaults());
   const starts = periodStarts(now);
-  const week = periodTotals(ev, snapshots, { start: starts.week, end: now });
-  const month = periodTotals(ev, snapshots, { start: starts.month, end: now });
-  const year = periodTotals(ev, snapshots, { start: starts.year, end: now });
+  const week = periodTotals(ev, snapshots, { start: starts.week, end: now }, rates);
+  const month = periodTotals(ev, snapshots, { start: starts.month, end: now }, rates);
+  const year = periodTotals(ev, snapshots, { start: starts.year, end: now }, rates);
   const totalViews = ev.reduce((s, v) => s + (v.views ?? 0), 0);
-  const totalEur = ev.reduce((s, v) => s + earningsEur(v.views ?? 0, rpmOf(v)), 0);
-  const series = dailySeries(ev, snapshots, 30, now);
+  const totalEur = ev.reduce((s, v) => s + earningsEur(v.views ?? 0, rpmOf(v, rates)), 0);
+  const series = dailySeries(ev, snapshots, 30, now, rates);
 
   const byEarnings = [...videos]
-    .map((v) => ({ v, eur: earningsEur(v.views ?? 0, rpmOf(ev.find((e) => e.id === v.id)!)) }))
+    .map((v) => ({ v, eur: earningsEur(v.views ?? 0, rpmOf(ev.find((e) => e.id === v.id)!, rates)) }))
     .filter((x) => (x.v.views ?? 0) > 0)
     .sort((a, b) => b.eur - a.eur);
   const lastWeek = gainedByVideo(snapshots, { start: now - 7 * 86_400_000, end: now });
   const hot = [...videos]
     .map((v) => ({ v, gained: lastWeek.get(v.id) ?? 0 }))
     .filter((x) => x.gained > 0)
-    .sort((a, b) => b.gained * rpmOf(ev.find((e) => e.id === b.v.id)!) - a.gained * rpmOf(ev.find((e) => e.id === a.v.id)!))
+    .sort((a, b) => b.gained * rpmOf(ev.find((e) => e.id === b.v.id)!, rates) - a.gained * rpmOf(ev.find((e) => e.id === a.v.id)!, rates))
     .slice(0, 3);
   const toDeclare = videos.filter((v) => v.kind === "video" && !v.declared_face);
 
@@ -117,7 +120,7 @@ export default async function CreatorDashboard({ searchParams }: { searchParams:
       <div className="cockpit-card cockpit-hero mt-5" style={{ padding: 18 }}>
         <p style={{ margin: 0, fontWeight: 700 }}>📌 À chaque TikTok que tu postes, colle son lien ici</p>
         <p style={{ margin: "4px 0 0", fontSize: 13.5, lineHeight: 1.5, ...muted }}>
-          On relève tes vues toutes les 30 minutes. Pour 1 000 vues : carrousel {eur(RPM_EUR.carousel)}, vidéo faceless {eur(RPM_EUR.faceless)}, vidéo face {eur(RPM_EUR.face)}.
+          On relève tes vues toutes les 30 minutes. Pour 1 000 vues : carrousel {eur(rates.carousel)}, vidéo faceless {eur(rates.faceless)}, vidéo face {eur(rates.face)}.
         </p>
         <form action={addCreatorVideoAction} className="mt-3" style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <input name="links" required className="input" placeholder="https://www.tiktok.com/@toncompte/video/…" style={{ flex: "1 1 320px", fontSize: 14 }} />
@@ -140,7 +143,7 @@ export default async function CreatorDashboard({ searchParams }: { searchParams:
       {toDeclare.length > 0 && (
         <div className="cockpit-card mt-4" style={{ padding: 18, borderColor: "var(--color-accent-200)" }}>
           <p style={{ margin: 0, fontWeight: 700 }}>👀 Dis-nous si on voit ton visage</p>
-          <p style={{ margin: "4px 0 8px", fontSize: 13, ...muted }}>Face : {eur(RPM_EUR.face)} pour 1 000 vues. Faceless : {eur(RPM_EUR.faceless)}. Stageio vérifie de temps en temps.</p>
+          <p style={{ margin: "4px 0 8px", fontSize: 13, ...muted }}>Face : {eur(rates.face)} pour 1 000 vues. Faceless : {eur(rates.faceless)}. Stageio vérifie de temps en temps.</p>
           {toDeclare.map((v) => (
             <div key={v.id} style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", padding: "8px 0", borderTop: "1px solid var(--color-divider)" }}>
               <a href={v.url} target="_blank" rel="noreferrer" style={{ flex: "1 1 240px", fontSize: 13.5, wordBreak: "break-all" }}>
@@ -212,7 +215,7 @@ export default async function CreatorDashboard({ searchParams }: { searchParams:
                   {kindLabel(v)} · +{num(gained)} vues en 7 jours
                 </span>
               </span>
-              <span style={{ fontWeight: 800 }}>{eur(earningsEur(gained, rpmOf(ev.find((x) => x.id === v.id)!)))}</span>
+              <span style={{ fontWeight: 800 }}>{eur(earningsEur(gained, rpmOf(ev.find((x) => x.id === v.id)!, rates)))}</span>
             </a>
           ))}
         </div>
@@ -246,8 +249,8 @@ export default async function CreatorDashboard({ searchParams }: { searchParams:
                       </td>
                       <td style={{ padding: "8px 12px 8px 0" }}>{kindLabel(v)}</td>
                       <td style={{ padding: "8px 12px 8px 0", fontWeight: 700 }}>{v.views === null ? "…" : num(v.views)}</td>
-                      <td style={{ padding: "8px 12px 8px 0" }}>{eur(rpmOf(e))}</td>
-                      <td style={{ padding: "8px 12px 8px 0", fontWeight: 700 }}>{eur(earningsEur(v.views ?? 0, rpmOf(e)))}</td>
+                      <td style={{ padding: "8px 12px 8px 0" }}>{eur(rpmOf(e, rates))}</td>
+                      <td style={{ padding: "8px 12px 8px 0", fontWeight: 700 }}>{eur(earningsEur(v.views ?? 0, rpmOf(e, rates)))}</td>
                       <td style={{ padding: "8px 12px 8px 0" }}>
                         {v.review_status === "pending" ? (
                           <span className="cockpit-pill is-warn" style={{ padding: "2px 8px", borderRadius: 8 }}>En attente Stageio</span>

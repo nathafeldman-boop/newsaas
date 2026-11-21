@@ -6,6 +6,7 @@ import { assertAdminSession } from "@/lib/admin/accessCode";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { parseTikTokList } from "@/lib/creators/tiktokViews";
 import { refreshCreatorVideos } from "@/lib/creators/store";
+import { parseRpm } from "@/lib/creators/rates";
 
 // Liens TikTok des créateurs collés dans la vue d'ensemble (un par ligne).
 // Premier relevé tout de suite, puis toutes les 3 h par le cron.
@@ -65,4 +66,41 @@ export async function reviewCreatorVideoAction(formData: FormData) {
   }
   revalidatePath("/admin/createurs");
   redirect("/admin/createurs#a-valider");
+}
+
+// RPM des créateurs réglé par Nathan (21/11) : tarifs par défaut, en euros
+// pour 1 000 vues. S'applique à toutes les vues, passées comprises.
+export async function saveRpmDefaultsAction(formData: FormData) {
+  await assertAdminSession();
+  const carousel = parseRpm(formData.get("carousel"));
+  const faceless = parseRpm(formData.get("faceless"));
+  const face = parseRpm(formData.get("face"));
+  if (typeof carousel !== "number" || typeof faceless !== "number" || typeof face !== "number") redirect("/admin/createurs?rpm=invalide#rpm");
+  const { error } = await createAdminClient()
+    .from("creator_rpm")
+    .upsert({ id: 1, carousel, faceless, face, updated_at: new Date().toISOString() });
+  if (error) console.error("saveRpmDefaultsAction failed", error);
+  revalidatePath("/admin/createurs");
+  revalidatePath("/admin");
+  redirect(`/admin/createurs?rpm=${error ? "erreur" : "ok"}#rpm`);
+}
+
+// Tarif propre à un créateur : case vide = tarif par défaut.
+export async function saveCreatorRpmAction(formData: FormData) {
+  await assertAdminSession();
+  const id = String(formData.get("id") ?? "");
+  const carousel = parseRpm(formData.get("carousel"));
+  const faceless = parseRpm(formData.get("faceless"));
+  const face = parseRpm(formData.get("face"));
+  if (!/^[0-9a-f-]{36}$/i.test(id) || carousel === undefined || faceless === undefined || face === undefined) {
+    redirect("/admin/createurs?rpm=invalide#createurs-inscrits");
+  }
+  const { error } = await createAdminClient()
+    .from("creators")
+    .update({ rpm_carousel: carousel, rpm_faceless: faceless, rpm_face: face })
+    .eq("id", id);
+  if (error) console.error("saveCreatorRpmAction failed", error);
+  revalidatePath("/admin/createurs");
+  revalidatePath("/admin");
+  redirect(`/admin/createurs?rpm=${error ? "erreur" : "ok"}#createurs-inscrits`);
 }

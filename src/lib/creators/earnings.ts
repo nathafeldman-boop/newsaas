@@ -8,7 +8,10 @@ import type { ViewSnapshot } from "@/lib/creators/tiktokViews";
 export type VideoKind = "carousel" | "video";
 export type FaceKind = "face" | "faceless";
 
-export const RPM_EUR = { carousel: 0.5, faceless: 1, face: 1.5 } as const;
+export type RpmRates = { carousel: number; faceless: number; face: number };
+
+/** Tarifs de départ ; les vrais tarifs sont réglés par Nathan dans l'admin (lib/creators/rates.ts). */
+export const RPM_EUR: RpmRates = { carousel: 0.5, faceless: 1, face: 1.5 };
 
 export type EarningVideo = {
   id: string;
@@ -23,9 +26,9 @@ export function faceOf(v: Pick<EarningVideo, "declared_face" | "approved_face">)
 }
 
 /** RPM de la vidéo (€ pour 1 000 vues). Type inconnu (pas encore relevé) : tarif carrousel, le plus bas. */
-export function rpmOf(v: Pick<EarningVideo, "kind" | "declared_face" | "approved_face">): number {
-  if (v.kind !== "video") return RPM_EUR.carousel;
-  return faceOf(v) === "face" ? RPM_EUR.face : RPM_EUR.faceless;
+export function rpmOf(v: Pick<EarningVideo, "kind" | "declared_face" | "approved_face">, rates: RpmRates = RPM_EUR): number {
+  if (v.kind !== "video") return rates.carousel;
+  return faceOf(v) === "face" ? rates.face : rates.faceless;
 }
 
 export function earningsEur(views: number, rpm: number): number {
@@ -67,20 +70,20 @@ export function gainedByVideo(snapshots: ViewSnapshot[], range: { start: number;
 export type PeriodTotals = { views: number; eur: number };
 
 /** Vues et gains sur une période, chaque vidéo à son RPM. */
-export function periodTotals(videos: EarningVideo[], snapshots: ViewSnapshot[], range: { start: number; end: number }): PeriodTotals {
+export function periodTotals(videos: EarningVideo[], snapshots: ViewSnapshot[], range: { start: number; end: number }, rates: RpmRates = RPM_EUR): PeriodTotals {
   const gained = gainedByVideo(snapshots, range);
   let views = 0;
   let eur = 0;
   for (const v of videos) {
     const g = gained.get(v.id) ?? 0;
     views += g;
-    eur += earningsEur(g, rpmOf(v));
+    eur += earningsEur(g, rpmOf(v, rates));
   }
   return { views, eur };
 }
 
 /** Courbe jour par jour (vues et euros gagnés chaque jour), `days` derniers jours jusqu'à `now`. */
-export function dailySeries(videos: EarningVideo[], snapshots: ViewSnapshot[], days: number, now: number): { times: number[]; views: number[]; eur: number[] } {
+export function dailySeries(videos: EarningVideo[], snapshots: ViewSnapshot[], days: number, now: number, rates: RpmRates = RPM_EUR): { times: number[]; views: number[]; eur: number[] } {
   const DAY = 86_400_000;
   const end = new Date(now);
   end.setHours(24, 0, 0, 0);
@@ -89,7 +92,7 @@ export function dailySeries(videos: EarningVideo[], snapshots: ViewSnapshot[], d
   const eur: number[] = [];
   for (let i = days - 1; i >= 0; i--) {
     const stop = end.getTime() - i * DAY;
-    const t = periodTotals(videos, snapshots, { start: stop - DAY, end: stop });
+    const t = periodTotals(videos, snapshots, { start: stop - DAY, end: stop }, rates);
     times.push(stop - DAY);
     views.push(t.views);
     eur.push(Math.round(t.eur * 100) / 100);

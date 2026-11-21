@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { CreatorVideo } from "@/types/database";
+import type { Creator, CreatorVideo } from "@/types/database";
 import { creatorFromUrl, fetchTikTokViews, parseTikTokUrl, type ViewSnapshot } from "@/lib/creators/tiktokViews";
 
 // Vidéos relevées : celles ajoutées depuis moins de 60 jours (au-delà, une
@@ -63,8 +63,13 @@ export async function loadCreatorData(): Promise<CreatorData> {
 }
 
 /** Créateurs inscrits (dashboard, 20/11) : tableau vide si la table n'existe pas encore. */
-export async function loadCreatorRoster(): Promise<{ id: string; name: string; created_at: string; last_seen_at: string | null }[]> {
-  const { data, error } = await createAdminClient().from("creators").select("id, name, created_at, last_seen_at").order("created_at", { ascending: false }).limit(500);
-  if (error) return [];
-  return data ?? [];
+export type CreatorRosterRow = Pick<Creator, "id" | "name" | "created_at" | "last_seen_at"> & Partial<Pick<Creator, "rpm_carousel" | "rpm_faceless" | "rpm_face">>;
+
+export async function loadCreatorRoster(): Promise<CreatorRosterRow[]> {
+  const db = createAdminClient();
+  const { data, error } = await db.from("creators").select("id, name, created_at, last_seen_at, rpm_carousel, rpm_faceless, rpm_face").order("created_at", { ascending: false }).limit(500);
+  if (!error) return data ?? [];
+  // Colonnes rpm_* pas encore créées : sans tarif à part.
+  const { data: base } = await db.from("creators").select("id, name, created_at, last_seen_at").order("created_at", { ascending: false }).limit(500);
+  return base ?? [];
 }

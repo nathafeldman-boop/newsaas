@@ -28,6 +28,7 @@ import { Funnel, type FunnelData } from "@/components/admin/cockpit/Funnel";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { loadCreatorData, loadCreatorRoster, type CreatorData } from "@/lib/creators/store";
 import { earningsEur, rpmOf } from "@/lib/creators/earnings";
+import { loadRpmDefaults, ratesFor } from "@/lib/creators/rates";
 import { rpmEuros, viewsGainedIn } from "@/lib/creators/tiktokViews";
 import { autoOfferBlockers } from "@/lib/admin/autoStatus";
 import { DailyGoalGauge } from "@/components/admin/goals/DailyGoalGauge";
@@ -53,7 +54,7 @@ export default async function CockpitOverviewPage({
   const { current, previous } = periodRanges(period, now);
   const { snap, error } = await loadSnapshot();
 
-  const [signupsCur, signupsPrev, active7, active30, autoBlockers, savedGoals, creatorData, creatorRoster] = await Promise.all([
+  const [signupsCur, signupsPrev, active7, active30, autoBlockers, savedGoals, creatorData, creatorRoster, rpmDefaults] = await Promise.all([
     signupsIn(current).catch(() => null),
     signupsIn(previous).catch(() => null),
     activeSince(now - 7 * DAY_MS).catch(() => null),
@@ -65,6 +66,7 @@ export default async function CockpitOverviewPage({
       return null;
     }),
     loadCreatorRoster().catch(() => []),
+    loadRpmDefaults(),
   ]);
   // Entonnoir (20/11) : fonction SQL admin_funnel, comptes créés sur la période.
   const funnelOf = async (r: { start: number; end: number }): Promise<FunnelData | null> => {
@@ -85,14 +87,18 @@ export default async function CockpitOverviewPage({
   const creatorsPrev = creatorRoster.filter((c) => inRange(c.created_at, previous)).length;
   const creatorVideos = (creatorData?.videos ?? []).filter((v) => v.creator_id);
   const creatorsWithVideo = new Set(creatorVideos.map((v) => v.creator_id)).size;
-  const owedTotal = creatorVideos.reduce((sum, v) => sum + earningsEur(v.views ?? 0, rpmOf({ kind: v.kind ?? null, declared_face: v.declared_face ?? null, approved_face: v.approved_face ?? null })), 0);
+  // Tarif de chaque vidéo : celui de son créateur (à part ou par défaut), réglé dans /admin/createurs.
+  const creatorRates = new Map(creatorRoster.map((c) => [c.id, ratesFor(c, rpmDefaults)]));
+  const rpmOfVideo = (v: (typeof creatorVideos)[number]) =>
+    rpmOf({ kind: v.kind ?? null, declared_face: v.declared_face ?? null, approved_face: v.approved_face ?? null }, creatorRates.get(v.creator_id!) ?? rpmDefaults);
+  const owedTotal = creatorVideos.reduce((sum, v) => sum + earningsEur(v.views ?? 0, rpmOfVideo(v)), 0);
   const owedIn = (r: { start: number; end: number }) =>
     creatorVideos.reduce(
       (sum, v) =>
         sum +
         earningsEur(
           viewsGainedIn((creatorData?.snapshots ?? []).filter((x) => x.video_id === v.id), r),
-          rpmOf({ kind: v.kind ?? null, declared_face: v.declared_face ?? null, approved_face: v.approved_face ?? null }),
+          rpmOfVideo(v),
         ),
       0,
     );

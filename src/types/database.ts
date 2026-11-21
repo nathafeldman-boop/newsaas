@@ -299,7 +299,14 @@ export type Creator = {
   accent: string;
   created_at: string;
   last_seen_at: string | null;
+  // Tarif propre au créateur, € pour 1 000 vues (SQL 20261121000000) ; null = tarif par défaut.
+  rpm_carousel?: number | null;
+  rpm_faceless?: number | null;
+  rpm_face?: number | null;
 };
+
+// Tarifs par défaut des créateurs (une seule ligne, id = 1).
+export type CreatorRpm = { id: number; carousel: number; faceless: number; face: number; updated_at: string };
 
 export type CreatorVideoViews = {
   video_id: string;
@@ -522,6 +529,12 @@ export type Database = {
         Row: Creator;
         Insert: Partial<Creator> & { name: string; phone: string; access_token_hash: string };
         Update: Partial<Creator>;
+        Relationships: [];
+      };
+      creator_rpm: {
+        Row: CreatorRpm;
+        Insert: Partial<CreatorRpm>;
+        Update: Partial<CreatorRpm>;
         Relationships: [];
       };
       creator_video_views: {
