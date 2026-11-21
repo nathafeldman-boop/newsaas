@@ -7,7 +7,7 @@ import { GUARANTEE_COOKIE, setBrowserCookie } from "@/lib/premium/guaranteeTerms
 import { GUARANTEE_EVENT } from "@/components/premium/PaywallExitGuard";
 import { GuaranteeHero } from "@/components/premium/GuaranteeHero";
 import { useWelcomeCountdown } from "@/components/premium/WelcomeCountdown";
-import { priceSheet, type LifetimeOffer, type PriceSheet } from "@/lib/pricing/plans";
+import { priceIncreasePct, priceSheet, type LifetimeOffer, type PriceSheet } from "@/lib/pricing/plans";
 
 // Avant le paywall, à chaque arrivée (Nathan, 22/10) : combien de
 // personnes nous ont fait confiance (vrai chiffre), la garantie remboursé
@@ -161,7 +161,7 @@ export function PaywallPledge({
                   <span style={{ color: "var(--color-accent-700)", fontVariantNumeric: "tabular-nums" }}>{welcome.remaining ?? (flash ? "20:00" : "10:00")}</span>
                 </h1>
                 <p style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.45, margin: "8px 0 0", color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
-                  {flash ? "pour profiter de ton offre" : "pour payer le prix de bienvenue"}. Après, c&apos;est <strong style={{ color: "#c2262b" }}>au moins 60 % plus cher</strong>.
+                  {flash ? "pour profiter de ton offre" : "pour payer le prix de bienvenue"}. Après, c&apos;est <strong style={{ color: "#c2262b" }}>au moins {Math.min(priceIncreasePct(prices.monthly.welcome, prices.monthly.regular), priceIncreasePct(lifetimeNow, prices.lifetime.regular))} % plus cher</strong>.
                 </p>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, width: "100%", marginTop: 20 }}>
                   <div

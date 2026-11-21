@@ -172,6 +172,16 @@ export function offerWindowStart(welcomeEndsAt: number, flashEndsAt: number | nu
 
 export type PriceTier = "welcome" | "regular";
 
+// « 9,99 € » -> 9.99
+export function euroAmount(price: string): number {
+  return Number(price.replace(/[^0-9,]/g, "").replace(",", "."));
+}
+
+/** Hausse après le prix de bienvenue, arrondie vers le bas (« au moins +70 % » reste vrai). */
+export function priceIncreasePct(from: string, to: string): number {
+  return Math.floor((euroAmount(to) / euroAmount(from) - 1) * 100 + 1e-9);
+}
+
 /** Prix affichés au paywall (un seul objet, lu côté serveur puis passé aux composants). */
 export type PriceSheet = {
   monthly: { welcome: string; regular: string };

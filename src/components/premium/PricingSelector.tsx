@@ -7,7 +7,7 @@ import { createCheckoutSessionAction } from "@/app/(app)/premium/actions";
 import { AccessCodeForm } from "@/components/premium/AccessCodeForm";
 import { AutoComparison, AutoHelpButton } from "@/components/premium/AutoExplainer";
 import { useWelcomeCountdown } from "@/components/premium/WelcomeCountdown";
-import { AUTO_DAILY_LIMIT, priceSheet, type LifetimeOffer, type PriceSheet } from "@/lib/pricing/plans";
+import { AUTO_DAILY_LIMIT, euroAmount, priceIncreasePct, priceSheet, type LifetimeOffer, type PriceSheet } from "@/lib/pricing/plans";
 
 type Plan = "monthly" | "lifetime";
 
@@ -322,7 +322,7 @@ function OfferTabs({
                 price={lifetimePrice}
                 strikePrice={promo?.strike ?? undefined}
                 afterPrice={welcome ? prices.lifetime.regular : undefined}
-                badge={promo ? promo.badge : "Le prix de 5 mois"}
+                badge={promo ? promo.badge : `Le prix de ${Math.round(euroAmount(lifetimePrice) / euroAmount(prices.monthly.welcome))} mois`}
               />
             )}
             {autoAvailable && (
@@ -376,11 +376,11 @@ function OfferTabs({
             ensuite{" "}
             {auto
               ? plan === "lifetime"
-                ? prices.auto.lifetime.regular
-                : `${prices.auto.monthly.regular}/mois`
+                ? `${prices.auto.lifetime.regular} (+${priceIncreasePct(autoLifetime, prices.auto.lifetime.regular)} %)`
+                : `${prices.auto.monthly.regular}/mois (+${priceIncreasePct(autoMonthly, prices.auto.monthly.regular)} %)`
               : plan === "lifetime"
-                ? prices.lifetime.regular
-                : `${prices.monthly.regular}/mois`}
+                ? `${prices.lifetime.regular} (+${priceIncreasePct(lifetimePrice, prices.lifetime.regular)} %)`
+                : `${prices.monthly.regular}/mois (+${priceIncreasePct(monthlyPrice, prices.monthly.regular)} %)`}
           </span>
         </p>
       )}
@@ -470,7 +470,7 @@ function ClassicPricing({
             price={lifetimePrice}
             strikePrice={promo?.strike ?? undefined}
             afterPrice={welcome ? prices.lifetime.regular : undefined}
-            badge={promo ? promo.badge : "Le prix de 5 mois"}
+            badge={promo ? promo.badge : `Le prix de ${Math.round(euroAmount(lifetimePrice) / euroAmount(prices.monthly.welcome))} mois`}
           />
         )}
         <PlanRow
