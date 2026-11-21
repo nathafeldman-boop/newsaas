@@ -117,6 +117,7 @@ function Sidebar({ open, onClose, favoritesBadge, inboxBadge }: { open: boolean;
                   <li key={item.href}>
                     <Link
                       href={item.href}
+                      data-tuto={item.href === "/favoris" ? "favoris" : undefined}
                       className={cn("relative flex items-center gap-3 transition-colors duration-150", !active && "hover:bg-[var(--color-surface)]")}
                       style={{
                         height: 38,

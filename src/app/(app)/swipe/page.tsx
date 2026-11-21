@@ -159,7 +159,10 @@ export default async function SwipePage() {
   // a été explicitement abandonné). `swiped` est plafonné à 500 lignes
   // (voir la requête plus haut) : largement suffisant pour ce qui n'a besoin
   // que de comparer à FREE_SWIPE_LIMIT (3).
-  const totalSwipesEver = (swiped ?? []).length;
+  // Le like offert du tuto (21/11) ne compte pas dans les 3 swipes gratuits : seulement les « passer ».
+  const totalSwipesEver = (swiped ?? []).filter((s) => s.direction === "pass").length;
+  // Premier passage sur le swipe (aucun swipe) : mini tuto like puis passer.
+  const firstVisit = (swiped ?? []).length === 0;
 
   const premium = isPremium(profile);
 
@@ -609,6 +612,7 @@ export default async function SwipePage() {
         tags={Object.fromEntries(sortedOffers.map((o) => [o.id, tags[o.id]]).filter(([, t]) => !!t))}
         userId={user.id}
         totalSwipesEver={totalSwipesEver}
+        tutorial={firstVisit}
         isPremium={premium}
         onSiteOnly={onSiteOnly}
         onSiteCity={profile?.city ?? null}

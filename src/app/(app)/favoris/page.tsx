@@ -4,6 +4,8 @@ import { FavoritesBoard, type FavoriteItem } from "@/components/offers/Favorites
 import { ownOffersByIds } from "@/lib/applications/ownOffers";
 import { computeMatchScore } from "@/lib/matching/score";
 import type { ApplicationStatus } from "@/types/database";
+import Link from "next/link";
+import { isPremium } from "@/lib/subscription/isPremium";
 
 export default async function FavorisPage() {
   const supabase = await createClient();
@@ -47,7 +49,31 @@ export default async function FavorisPage() {
         Les offres que tu as likées, prêtes à recevoir ta candidature.
       </p>
 
-      {items.length === 0 ? (
+      {items.length > 0 && !isPremium(profile) ? (
+        // Compte gratuit (like offert du tuto, 21/11) : l'offre est gardée,
+        // mais il faut Premium pour l'ouvrir et y candidater.
+        <div className="mt-6 flex flex-col gap-3">
+          {items.map((item) => (
+            <Link
+              key={item.offer.id}
+              href="/premium?source=favoris_locked"
+              className="card"
+              style={{ position: "relative", display: "block", padding: "14px 16px", textDecoration: "none", color: "inherit" }}
+            >
+              <span aria-hidden style={{ position: "absolute", right: 14, top: 14 }}>
+                🔒
+              </span>
+              <div style={{ fontWeight: 800, fontSize: 15, paddingRight: 24 }}>{item.offer.title}</div>
+              <div aria-hidden style={{ filter: "blur(5px)", userSelect: "none", fontSize: 13, marginTop: 4 }}>
+                {item.offer.company} · {item.offer.location} · lettre de motivation prête
+              </div>
+            </Link>
+          ))}
+          <Link href="/premium?source=favoris_locked" className="btn btn-primary btn-block" style={{ height: 50, borderRadius: 999, fontWeight: 800 }}>
+            Débloquer {items.length > 1 ? "mes candidatures" : "ma candidature"}
+          </Link>
+        </div>
+      ) : items.length === 0 ? (
         <p className="mt-10 text-center" style={{ color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
           Aucun favori pour l&apos;instant — va swiper quelques offres !
         </p>

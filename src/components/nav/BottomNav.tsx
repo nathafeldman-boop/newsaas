@@ -36,6 +36,7 @@ export function BottomNav({ favoritesBadge = 0, inboxBadge = null }: { favorites
           <Link
             key={item.href}
             href={item.href}
+            data-tuto={item.href === "/favoris" ? "favoris" : undefined}
             className="relative flex flex-1 flex-col items-center gap-1 no-underline"
             style={{
               fontFamily: "var(--font-heading)",

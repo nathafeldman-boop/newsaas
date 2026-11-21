@@ -1,5 +1,6 @@
 "use client";
 
+import { SwipeTutorial, type TutoStep } from "@/components/swipe/SwipeTutorial";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -314,6 +315,7 @@ function SwipeDeckInner({
   onSiteOnly = false,
   onSiteCity = null,
   tags = {},
+  tutorial = false,
 }: {
   offers: Offer[];
   scores: Record<string, number>;
@@ -321,6 +323,8 @@ function SwipeDeckInner({
   tags?: Record<string, OfferTags>;
   userId: string;
   initialTotalSwipes: number;
+  /** Premier passage sur le swipe : mini tuto (like offert, puis passer). */
+  tutorial?: boolean;
   isPremium: boolean;
   isAuto: boolean;
   autoOfferAvailable: boolean;
@@ -341,6 +345,21 @@ function SwipeDeckInner({
   const { applyOnLike, ui: applyUi } = useApplyOnLike(autoApplySetup, userId);
   const [stack, setStack] = useState(offers);
   const [swipesUsed, setSwipesUsed] = useState(initialTotalSwipes);
+  // Tuto du 21/11 : like offert (même sans Premium), l'offre file dans les
+  // favoris (+1), puis « passer », puis retour à la normale.
+  const [tuto, setTuto] = useState<TutoStep | null>(tutorial && offers.length >= 2 ? "like" : null);
+  const [flyTitle, setFlyTitle] = useState<string | null>(null);
+  useEffect(() => {
+    if (tuto === "like") void logButtonClick(userId, "swipe_tuto", { step: "start" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  function finishTuto() {
+    setTuto(null);
+    try {
+      localStorage.setItem(`stageio_tuto_${userId}`, "1");
+    } catch {}
+    void logButtonClick(userId, "swipe_tuto", { step: "done" });
+  }
 
   useEffect(() => {
     onSwipesUsedChange?.(swipesUsed);
@@ -455,6 +474,26 @@ function SwipeDeckInner({
       if (direction === "like") window.setTimeout(() => demo.onApply(offer), 450);
       return true;
     }
+
+    // Like offert du tuto : enregistré (règle en base : un seul pour un compte gratuit).
+    if (tuto === "like" && direction === "like") {
+      void recordSwipe(offer, "like");
+      topCardRef.current?.swipeOut("like");
+      setFlyTitle(offer.title);
+      setTuto("fly");
+      void logButtonClick(userId, "swipe_tuto", { step: "like", offerId: offer.id });
+      return true;
+    }
+    if (tuto === "like" || tuto === "fly" || tuto === "done") return false;
+    if (tuto === "pass" && direction === "pass") {
+      void recordSwipe(offer, "pass");
+      setSwipesUsed((n) => n + 1);
+      topCardRef.current?.swipeOut("pass");
+      setTuto("done");
+      void logButtonClick(userId, "swipe_tuto", { step: "pass", offerId: offer.id });
+      return true;
+    }
+    if (tuto === "pass") return false;
 
     if (!isPremium) {
       if (direction === "like") {
@@ -619,6 +658,14 @@ function SwipeDeckInner({
 
   return (
     <div className="flex w-full flex-col items-center">
+      <SwipeTutorial
+        step={tuto}
+        flyTitle={flyTitle}
+        onLike={() => handleSwipeIntent("like")}
+        onPass={() => handleSwipeIntent("pass")}
+        onFlown={() => setTuto("pass")}
+        onDone={finishTuto}
+      />
       <div className="relative h-[clamp(360px,66dvh,520px)] w-full max-w-sm">
         <MatchModal
           offer={celebratingOffer}
@@ -680,6 +727,7 @@ function SwipeDeckInner({
           type="button"
           onClick={() => handleSwipeIntent("pass")}
           aria-label="Passer"
+          data-tuto="pass"
           className="btn btn-icon btn-secondary"
           style={{ width: 58, height: 58, borderRadius: "50%", fontSize: 22 }}
         >
@@ -706,6 +754,7 @@ function SwipeDeckInner({
           type="button"
           onClick={() => handleSwipeIntent("like")}
           aria-label="Aimer"
+          data-tuto="like"
           className="btn btn-icon"
           style={{
             width: 68,
@@ -742,7 +791,10 @@ export function SwipeDeck({
   autoApplySetup,
   onSiteOnly = false,
   onSiteCity = null,
+  tutorial = false,
 }: {
+  /** Premier passage sur le swipe (aucun swipe) : mini tuto. */
+  tutorial?: boolean;
   offers: Offer[];
   scores: Record<string, number>;
   reasons?: Record<string, string[]>;
@@ -897,6 +949,7 @@ export function SwipeDeck({
         onSiteCity={onSiteCity}
         onStackChange={setCardsLeft}
         onSwipesUsedChange={setSwipesUsed}
+        tutorial={tutorial && contractFilter === "all"}
       />
     </div>
   );

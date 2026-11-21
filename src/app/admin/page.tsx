@@ -29,6 +29,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { loadCreatorData, loadCreatorRoster, type CreatorData } from "@/lib/creators/store";
 import { earningsEur, rpmOf } from "@/lib/creators/earnings";
 import { loadRpmDefaults, ratesFor } from "@/lib/creators/rates";
+import { startSimulationAction } from "@/app/admin/simulation/actions";
 import { rpmEuros, viewsGainedIn } from "@/lib/creators/tiktokViews";
 import { autoOfferBlockers } from "@/lib/admin/autoStatus";
 import { DailyGoalGauge } from "@/components/admin/goals/DailyGoalGauge";
@@ -289,6 +290,22 @@ export default async function CockpitOverviewPage({
 
       <Section title="Entonnoir" subtitle="Comptes créés sur la période : combien restent à chaque étape (entre parenthèses, la période d'avant).">
         {funnelCur ? <Funnel data={funnelCur} prev={funnelPrev} /> : <Insufficient />}
+      </Section>
+
+      <Section title="Simulation du parcours" subtitle="La vraie app avec un compte de test neuf : rejoue le parcours d'un inscrit, gratuit ou Premium.">
+        <div className="flex flex-wrap gap-2">
+          {(["gratuit", "premium"] as const).map((kind) => (
+            <form key={kind} action={startSimulationAction}>
+              <input type="hidden" name="kind" value={kind} />
+              <button type="submit" className={`btn${kind === "gratuit" ? " btn-primary" : ""}`} style={{ fontSize: 14 }}>
+                {kind === "gratuit" ? "▶ Parcours non Premium" : "▶ Parcours Premium"}
+              </button>
+            </form>
+          ))}
+          <a href="/admin/simulation" className="btn" style={{ fontSize: 14 }}>
+            Ouvrir la simulation
+          </a>
+        </div>
       </Section>
 
       <Section title="Créateurs TikTok" subtitle="Vues des vidéos collées en bas de page, relevées toutes les 3 h.">
