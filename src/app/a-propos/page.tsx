@@ -47,7 +47,7 @@ const n = (value: number) => value.toLocaleString("fr-FR");
 const FAQ = [
   {
     q: "Stageio est-il gratuit ?",
-    a: "L'inscription et la consultation de toutes les offres sont gratuites, sans limite. Le Premium sert à liker les offres, candidater, générer une lettre de motivation par IA et faire auditer ton CV : 9,99 € par mois sans engagement (prix de bienvenue, 15,99 € ensuite), ou 40 € en paiement unique pour un accès à vie.",
+    a: "L'inscription et la consultation de toutes les offres sont gratuites, sans limite. Le Premium sert à liker les offres, candidater, générer une lettre de motivation par IA et faire auditer ton CV : 9,99 € par mois sans engagement (prix de bienvenue, 16,99 € ensuite), ou 40 € en paiement unique pour un accès à vie.",
   },
   {
     q: "Comment résilier l'abonnement Premium ?",

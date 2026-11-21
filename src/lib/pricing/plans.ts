@@ -111,9 +111,13 @@ export const PRICE_TEST_START = Date.parse("2026-10-29T00:10:00Z");
 // WELCOME_PRICE_IDS.lifetime). Le site affichait 39,99 € alors que Stripe
 // encaissait 40,00 € : l'affichage suit maintenant le prix encaissé. Un essai
 // à 50 € a été en ligne quelques heures le 31/10, puis retiré.
+// 21/11 (Nathan : « augmente de 70 % au lieu de 60 ») : après les 10 minutes,
+// 16,99 €/mois et 68 € à vie (prix Stripe créés le 21/11, clés
+// stageio_premium_monthly_1699 / stageio_premium_lifetime_6800). Les prix
+// d'avant (15,99 € et 63,99 €) restent reconnus (abonnements en cours).
 export const PLAN_PRICES = {
-  monthly: { welcome: "9,99 €", regular: "15,99 €" },
-  lifetime: { welcome: "40 €", regular: "63,99 €" },
+  monthly: { welcome: "9,99 €", regular: "16,99 €" },
+  lifetime: { welcome: "40 €", regular: "68 €" },
 } as const;
 
 /** « 40 € à vie ou 9,99 €/mois » : rappel du prix dans les écrans réservés à Premium. */
@@ -141,6 +145,12 @@ export const WELCOME_PRICE_IDS = {
 };
 
 export const REGULAR_PRICE_IDS = {
+  monthly: "price_1Ue2dZRd6r34OMU67ZT32VvM",
+  lifetime: "price_1Ue2dgRd6r34OMU6wG3qb0bQ",
+};
+
+/** Prix d'après le chrono avant le 21/11 (+60 %) : 15,99 €/mois et 63,99 € à vie, toujours reconnus. */
+export const PREVIOUS_60_PRICE_IDS = {
   monthly: "price_1UTNd7Rd6r34OMU6HWEXPWsr",
   lifetime: process.env.STRIPE_PRICE_ID_LIFETIME_REGULAR?.trim() || "price_1USaRjRd6r34OMU6JhNZAkDw",
 };
@@ -151,7 +161,7 @@ export const PREVIOUS_REGULAR_MONTHLY_PRICE_ID = process.env.STRIPE_PRICE_ID_REG
 
 /** Tous les prix du mensuel Premium, anciens compris. */
 export function premiumMonthlyPriceIds(): string[] {
-  return [PREVIOUS_MONTHLY_WELCOME.priceId, WELCOME_PRICE_IDS.monthly, PREVIOUS_REGULAR_MONTHLY_PRICE_ID, REGULAR_PRICE_IDS.monthly];
+  return [PREVIOUS_MONTHLY_WELCOME.priceId, WELCOME_PRICE_IDS.monthly, PREVIOUS_REGULAR_MONTHLY_PRICE_ID, PREVIOUS_60_PRICE_IDS.monthly, REGULAR_PRICE_IDS.monthly];
 }
 
 // Offre ouverte avant le début du test (offre 48 h reçue par email, ou
@@ -204,21 +214,27 @@ export function priceSheet(legacy = false): PriceSheet {
 // (clés de recherche stageio_auto_monthly_1799 / stageio_auto_lifetime_8000).
 // Test de prix du 29/10 : ces prix deviennent les prix de bienvenue de
 // l'Auto ; ensuite 28,79 €/mois et 128 € à vie (voir PRICE_TEST_START).
+// 21/11 : après le chrono, +70 % : 30,59 €/mois et 136 € à vie (avant : 28,79 € et 128 €).
 export const AUTO_PRICES = {
-  monthly: { welcome: "17,99 €", regular: "28,79 €" },
-  lifetime: { welcome: "80 €", regular: "128 €" },
+  monthly: { welcome: "17,99 €", regular: "30,59 €" },
+  lifetime: { welcome: "80 €", regular: "136 €" },
 } as const;
 export const AUTO_MONTHLY_CENTS = 1799;
 /** Montants mensuels de l'Auto (bienvenue et normal) : repli de isAutoTier. */
-export const AUTO_MONTHLY_CENTS_ALL = [1799, 2879];
+export const AUTO_MONTHLY_CENTS_ALL = [1799, 2879, 3059];
 export const AUTO_DAILY_LIMIT = 100;
 export const AUTO_PRICE_IDS = {
   monthly: process.env.STRIPE_PRICE_ID_AUTO_MONTHLY?.trim() || "price_1UU96mRd6r34OMU6vrO0Mhln",
   lifetime: process.env.STRIPE_PRICE_ID_AUTO_LIFETIME?.trim() || "price_1UU96qRd6r34OMU6aTrAx6Ho",
 };
 export const AUTO_REGULAR_PRICE_IDS = {
+  monthly: "price_1Ue2dkRd6r34OMU6MaC0vLWD",
+  lifetime: "price_1Ue2dpRd6r34OMU6RX9mGruQ",
+};
+/** Prix Auto d'après le chrono avant le 21/11 (28,79 €/mois, 128 € à vie). */
+export const AUTO_PREVIOUS_60_PRICE_IDS = {
   monthly: "price_1UVgQQRd6r34OMU6AQ5zKrNg",
   lifetime: "price_1UVgQSRd6r34OMU6uBNB4JD5",
 };
 /** Tous les prix du mensuel Auto : un abonnement à l'un d'eux est l'Auto. */
-export const AUTO_MONTHLY_PRICE_IDS = [AUTO_PRICE_IDS.monthly, AUTO_REGULAR_PRICE_IDS.monthly];
+export const AUTO_MONTHLY_PRICE_IDS = [AUTO_PRICE_IDS.monthly, AUTO_PREVIOUS_60_PRICE_IDS.monthly, AUTO_REGULAR_PRICE_IDS.monthly];
