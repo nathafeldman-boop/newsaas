@@ -24,21 +24,9 @@ import { getGuaranteeStatus, type GuaranteeStatus } from "@/lib/premium/refundGu
 import { GUARANTEE_COOKIE } from "@/lib/premium/guaranteeTerms";
 import { getTrustCount } from "@/lib/premium/trustCount";
 
-import { unstable_cache } from "next/cache";
-import { PaywallPreview } from "@/components/premium/PaywallPreview";
-import { loadPaywallPreview, type PaywallPreviewData } from "@/lib/premium/paywallPreview";
-import { fetchActiveOfferCount } from "@/lib/offers/fetchPublicOffers";
-import { getPublicReviewStats } from "@/lib/reviews/publicStats";
+import { painCopy, primaryContract } from "@/lib/premium/painCopy";
+import type { ContractType } from "@/types/database";
 
-// Preuves du paywall (21/11, SOP) : vraie note des avis, en cache 1 h.
-const cachedReviewStats = unstable_cache(getPublicReviewStats, ["paywall-review-stats-v1"], { revalidate: 3600 });
-
-// Les 3 bénéfices, au-dessus des prix (SOP du 21/11).
-const CHECKS = [
-  "Toutes les offres près de chez toi, sans limite",
-  "Une lettre de motivation par offre",
-  "Le suivi de tes candidatures et des relances",
-];
 
 const ERROR_MESSAGES: Record<string, string> = {
   parent: "Coche « Oui, c'est un de mes parents qui paie » pour continuer.",
@@ -48,6 +36,87 @@ const ERROR_MESSAGES: Record<string, string> = {
   already_subscribed: "Tu as déjà un abonnement Premium actif — gère-le avec le bouton ci-dessous plutôt que d'en recréer un.",
   upgrade_failed: "Le passage à Stageio Auto n'a pas pu se faire (paiement refusé ou carte à mettre à jour). Rien n'a changé sur ton abonnement.",
 };
+
+const BENEFITS = [
+  {
+    label: "Liker & mettre en favori",
+    icon: (
+      <path
+        d="M6 9a4.5 4.5 0 100 6 6 6 0 004-1.7 6 6 0 004 1.7 4.5 4.5 0 100-6 6 6 0 00-4 1.7A6 6 0 006 9z"
+        stroke="var(--color-accent-700)"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        fill="none"
+      />
+    ),
+  },
+  {
+    label: "Candidatures illimitées",
+    icon: <path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z" fill="var(--color-accent-700)" />,
+  },
+  {
+    label: "Lettre de motivation générée par IA",
+    icon: (
+      <path
+        d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"
+        fill="var(--color-accent-700)"
+      />
+    ),
+  },
+  {
+    label: "Audit CV sur 100",
+    icon: (
+      <>
+        <path d="M4 15a8 8 0 1116 0" stroke="var(--color-accent-700)" strokeWidth="1.8" strokeLinecap="round" fill="none" />
+        <path d="M12 15l4-5" stroke="var(--color-accent-700)" strokeWidth="1.8" strokeLinecap="round" fill="none" />
+      </>
+    ),
+  },
+];
+
+function BenefitIcon({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        width: 32,
+        height: 32,
+        borderRadius: 10,
+        background: "var(--color-accent-100)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: 0,
+      }}
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24">
+        {children}
+      </svg>
+    </div>
+  );
+}
+
+// Les 4 avantages en grille 2x2 (maquette de Nathan, 26/09), sous les prix
+// depuis le 28/10 (Nathan : « tu les mets en dessous des prix »).
+function BenefitsGrid() {
+  return (
+    <div className="grid grid-cols-2 gap-2.5" style={{ marginTop: 12 }}>
+      {BENEFITS.map((b) => (
+        <div
+          key={b.label}
+          style={{
+            padding: "12px 12px",
+            borderRadius: 16,
+            border: "1px solid var(--color-divider)",
+            background: "var(--color-surface)",
+          }}
+        >
+          <BenefitIcon>{b.icon}</BenefitIcon>
+          <div style={{ fontSize: 12.5, fontWeight: 700, marginTop: 8, lineHeight: 1.3 }}>{b.label}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 // Garantie remboursé d'un compte Premium (null si aucune) et où en est sa
 // fenêtre de demande. Hors du composant : l'heure courante n'est lue
@@ -131,23 +200,15 @@ export default async function PremiumPage({
   const cookieStore = await cookies();
   const showPledge = !premium && !paymentIssue && !error && retour !== "paiement";
   const guaranteeShown = !!cookieStore.get(GUARANTEE_COOKIE);
-  const onPaywall = !premium && !paymentIssue;
-  const [trustCount, reviewStats, offersOnline] = onPaywall
-    ? await Promise.all([
-        getTrustCount().catch(() => 0),
-        cachedReviewStats().catch(() => ({ count: 0, average: null })),
-        fetchActiveOfferCount("all").catch(() => 0),
-      ])
-    : [0, { count: 0, average: null }, 0];
-  // Après un like : sa sélection d'offres, floutée, avant le paywall (SOP du 21/11).
-  let preview: PaywallPreviewData | null = null;
-  if (showPledge && blockedAction && profile) {
-    preview = await loadPaywallPreview(supabase, profile).catch((err) => {
-      console.error("PremiumPage: paywall preview failed", err, { userId: user.id });
-      return null;
-    });
-  }
-  const previewTotal = preview ? `${preview.count.toLocaleString("fr-FR")}${preview.capped ? "+" : ""}` : null;
+  const trustCount = showPledge ? await getTrustCount().catch(() => 0) : 0;
+  // Peur (Nathan, 25/11 : « accentue la peur des étudiants ») : le délai et
+  // ce qu'on perd à attendre, selon le contrat cherché. Faits vrais
+  // seulement (lib/premium/painCopy.ts).
+  const lookingFor = (profile?.looking_for ?? null) as ContractType[] | null;
+  const pain = painCopy(lookingFor);
+  const contract = primaryContract(lookingFor);
+  const headline =
+    contract === "cdi" ? "Trouve ton CDI plus efficacement." : contract === "cdd" ? "Trouve ton CDD plus efficacement." : contract === "alternance" ? "Trouve ton alternance plus efficacement." : "Trouve ton stage plus efficacement.";
 
   // Mesure seulement (tableau « Chemin de Léo » de l'admin), rien de visible.
   const variant = "mensuel" as const; // test paywall-a-vie-1 terminé le 12/11
@@ -161,6 +222,7 @@ export default async function PremiumPage({
   const pricing = (
             <PricingSelector
               userId={user.id}
+              benefits={<BenefitsGrid />}
               welcomeEndsAt={welcome?.endsAt ?? null}
               welcomeActive={welcome?.active ?? false}
               lifetimeOffer={lifetimeOffer}
@@ -168,7 +230,6 @@ export default async function PremiumPage({
               lifetimeAvailable
               autoAvailable={isAutoOfferAvailable(profile)}
               initialOffer={offre === "auto" ? "auto" : "premium"}
-              initialPlan="monthly"
               errorMessage={error ? (ERROR_MESSAGES[error] ?? "Une erreur est survenue.") : null}
             />
   );
@@ -304,9 +365,7 @@ export default async function PremiumPage({
         </div>
       ) : (
         <>
-          {preview ? (
-            <PaywallPreview data={preview} />
-          ) : showPledge && (
+          {showPledge && (
             <PaywallPledge
               trustCount={trustCount}
               welcomeEndsAt={welcome?.endsAt ?? null}
@@ -355,7 +414,7 @@ export default async function PremiumPage({
               </Link>
             </div>
 
-            {blockedAction && !preview && (
+            {blockedAction && (
               <div
                 className="flex items-center gap-2.5 animate-in"
                 style={{
@@ -402,51 +461,37 @@ export default async function PremiumPage({
 
             <h1
               className="animate-in"
-              style={{ fontSize: 25, fontWeight: 800, lineHeight: 1.18, letterSpacing: "-0.01em", margin: "14px 0 0" }}
+              style={{ fontSize: 25, fontWeight: 800, lineHeight: 1.22, letterSpacing: "-0.01em", margin: "14px 0 0" }}
             >
-              {previewTotal && preview && preview.count > 1
-                ? `Débloque tes ${previewTotal} offres et postule dès aujourd'hui`
-                : "Débloque toutes les offres et postule dès aujourd'hui"}
+              {headline}
             </h1>
             <p
               className="animate-in"
-              style={{ fontSize: 14, lineHeight: 1.45, margin: "8px 0 0", color: "color-mix(in srgb, var(--color-text) 62%, transparent)" }}
+              style={{
+                fontSize: 13.5,
+                lineHeight: 1.5,
+                maxWidth: "34ch",
+                margin: "8px 0 0",
+                color: "color-mix(in srgb, var(--color-text) 62%, transparent)",
+              }}
             >
-              Ta lettre est écrite pour chaque offre. Tu relis, tu envoies.
+              Débloque toutes les opportunités et les outils pour maximiser tes chances.
             </p>
 
-            {/* Preuves : vrais chiffres seulement (avis approuvés, comptes, offres en ligne). */}
-            <div className="flex flex-wrap gap-2 animate-in" style={{ marginTop: 12 }}>
-              {reviewStats.count > 0 && reviewStats.average !== null && (
-                <span className="tag tag-accent" style={{ fontSize: 12.5, fontWeight: 800, padding: "6px 10px" }}>
-                  ★ {String(reviewStats.average).replace(".", ",")}/5 note globale
-                </span>
-              )}
-              {trustCount >= 100 && (
-                <span className="tag tag-accent" style={{ fontSize: 12.5, fontWeight: 800, padding: "6px 10px" }}>
-                  +{(Math.floor(trustCount / 100) * 100).toLocaleString("fr-FR")} candidats
-                </span>
-              )}
-              {offersOnline > 0 && (
-                <span className="tag tag-accent" style={{ fontSize: 12.5, fontWeight: 800, padding: "6px 10px" }}>
-                  {offersOnline.toLocaleString("fr-FR")} offres en ligne
-                </span>
-              )}
+            {/* Le temps presse : faits vrais (règle des 3 mois, places, salaire perdu). */}
+            <div
+              className="animate-in"
+              role="note"
+              style={{ marginTop: 14, background: "#fdeee6", border: "1px solid #f6c9b0", borderRadius: 14, padding: "11px 13px" }}
+            >
+              <p style={{ margin: 0, fontSize: 11.5, fontWeight: 800, letterSpacing: "0.06em", color: "#b3261e" }}>⚠️ LE TEMPS PRESSE</p>
+              <p style={{ margin: "5px 0 0", fontSize: 13.5, lineHeight: 1.45, fontWeight: 700 }}>{pain.deadline}</p>
+              <p style={{ margin: "5px 0 0", fontSize: 13, lineHeight: 1.45, color: "#8a3410" }}>{pain.pain}</p>
             </div>
 
-            <ul className="animate-in" style={{ listStyle: "none", padding: 0, margin: "14px 0 0", display: "grid", gap: 8 }}>
-              {CHECKS.map((c) => (
-                <li key={c} style={{ fontSize: 14, fontWeight: 700, display: "flex", gap: 8 }}>
-                  <span aria-hidden style={{ color: "var(--color-accent-700)", fontWeight: 800 }}>✓</span>
-                  {c}
-                </li>
-              ))}
-            </ul>
+            <GuaranteeBadge initialVisible={guaranteeShown} />
 
             {under15 ? <ParentPaysCheck>{pricing}</ParentPaysCheck> : pricing}
-
-            {/* Garantie sous le bouton (SOP du 21/11). */}
-            <GuaranteeBadge initialVisible={guaranteeShown} />
           </div>
         </>
       )}

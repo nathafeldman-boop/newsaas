@@ -33,11 +33,13 @@ export type PainCopy = {
   investment: string;
 };
 
-function primary(lookingFor: ContractType[] | null | undefined): ContractType {
+/** Le contrat cherché qui compte le plus (alternance d'abord). */
+export function primaryContract(lookingFor: ContractType[] | null | undefined): ContractType {
   const list = lookingFor ?? [];
-  for (const t of ["alternance", "cdd", "cdi", "stage"] as const) if (list.includes(t)) return t;
+  for (const t of ["alternance", "cdd", "cdi", "stage", "stage_scolaire"] as const) if (list.includes(t)) return t;
   return "alternance";
 }
+const primary = primaryContract;
 
 /** Bornes de la jauge du paywall : minimum légal du contrat cherché et point de départ. */
 export function salaryGaugeRange(lookingFor: ContractType[] | null | undefined): { min: number; legalMin: number; start: number } {
@@ -51,16 +53,24 @@ export function painCopy(lookingFor: ContractType[] | null | undefined): PainCop
   const type = primary(lookingFor);
   if (type === "alternance") {
     return {
-      deadline: "Sans contrat, ton école ne peut te garder que 3 mois après ta rentrée. Pour la plupart des rentrées de septembre et d'octobre, la limite tombe en décembre ou en janvier.",
-      pain: "Passé ce délai, tu risques de devoir quitter ta formation ou de la payer toi-même.",
+      deadline: "Sans contrat, ton école ne peut te garder que 3 mois après ta rentrée. Pour une rentrée en septembre ou en octobre, la limite tombe en décembre ou en janvier.",
+      pain: "Passé ce délai, tu risques de perdre ta place en formation, ou de devoir la payer toi-même : souvent plusieurs milliers d'euros.",
       investment: `Une alternance, c'est un salaire : au minimum ${euros(APPRENTICE_MONTHLY_MIN)} brut par mois, souvent bien plus. Ton premier salaire paie déjà ${yearsOfPremium(APPRENTICE_MONTHLY_MIN)}.`,
     };
   }
   if (type === "stage") {
     return {
-      deadline: "Beaucoup d'entreprises choisissent leurs stagiaires des mois avant le début. Chaque semaine qui passe, il reste moins de places.",
-      pain: "Sans stage, pas de validation de ton année dans la plupart des formations.",
+      deadline: "Beaucoup d'entreprises choisissent leurs stagiaires des mois avant le début. Chaque semaine qui passe, des places partent à d'autres.",
+      pain: "Sans stage, ton année risque de ne pas être validée : c'est le cas dans la plupart des formations.",
       investment: `Au-delà de 2 mois, un stage est payé au moins ${STAGE_HOURLY_MIN.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €/h, environ ${euros(STAGE_MONTHLY_MIN)} par mois à temps plein. Un seul mois paie ${yearsOfPremium(STAGE_MONTHLY_MIN)}.`,
+    };
+  }
+  if (type === "stage_scolaire") {
+    // Stage scolaire : pas de salaire, donc pas de calcul « X mois de Premium ».
+    return {
+      deadline: "Ton stage est obligatoire, et les entreprises près de chez toi ne prennent que quelques élèves. Ceux qui demandent tôt prennent les places.",
+      pain: "Si tu attends, il ne restera que les entreprises que personne n'a choisies.",
+      investment: "Un stage dans un métier qui te plaît, c'est une vraie expérience à raconter dans ton rapport de stage et dans tes prochains dossiers.",
     };
   }
   return {
