@@ -69,6 +69,7 @@ export const SITEMAP_FILES = [
   "/sitemap-metiers-villes.xml",
   "/sitemap-territoires.xml",
   "/sitemap-entreprises.xml",
+  "/sitemap-stages-scolaires.xml",
   "/sitemap-offres-alternance.xml",
   "/sitemap-offres-stage.xml",
   "/sitemap-offres-cdi.xml",

@@ -21,7 +21,7 @@ const ANNUAIRE = "https://recherche-entreprises.api.gouv.fr";
 const RADIUS_KM = 25;
 const QUALITY = 70;
 
-type E1SOffer = {
+export type E1SOffer = {
   id: number;
   title?: string;
   description?: string;
@@ -136,7 +136,7 @@ export function e1sToRow(o: E1SOffer, point: CityPoint): SchoolOfferRow | null {
   };
 }
 
-async function fetchE1S(point: CityPoint, grade: number): Promise<E1SOffer[]> {
+export async function fetchE1S(point: CityPoint, grade: number): Promise<E1SOffer[]> {
   const out: E1SOffer[] = [];
   for (let page = 1; page <= 4; page++) {
     const url = `${E1S}/offres-de-stage.json?latitude=${point.lat}&longitude=${point.lon}&radius=${RADIUS_KM * 1000}&grade_id=${grade}&page=${page}`;

@@ -4,6 +4,7 @@ import { SITE_URL } from "@/lib/site";
 import { SCHOOL_STAGES, SCHOOL_STAGE_IDS, schoolStageLetter } from "@/lib/schoolStage/levels";
 import { SCHOOL_SECTORS } from "@/lib/schoolStage/companies";
 import type { SchoolStageLevel } from "@/types/database";
+import { SCHOOL_CITY_SLUGS, schoolCity } from "@/lib/schoolStage/cityPage";
 
 // Pages guides publiques des stages scolaires (18/11). Uniquement des faits
 // vérifiés sur education.gouv.fr / eduscol le 18/11 (voir levels.ts) ; pour
@@ -11,7 +12,7 @@ import type { SchoolStageLevel } from "@/types/database";
 
 type Guide = { title: string; description: string; intro: string; facts: string[]; tips: string[] };
 
-const GUIDES: Record<SchoolStageLevel, Guide> = {
+export const GUIDES: Record<SchoolStageLevel, Guide> = {
   "3e": {
     title: "Stage de 3e : trouver une entreprise près de chez toi",
     description: "Stage d'observation de 3e : durée, convention, dates, lettre de demande prête à remplir et entreprises près de chez toi.",
@@ -84,8 +85,9 @@ export function schoolGuideMetadata(level: SchoolStageLevel): Metadata {
 
 const muted = { color: "color-mix(in srgb, var(--color-text) 66%, transparent)" } as const;
 
-export function SchoolStageGuide({ level }: { level: SchoolStageLevel }) {
+export async function SchoolStageGuide({ level }: { level: SchoolStageLevel }) {
   const g = GUIDES[level];
+  const cities = (await Promise.all(SCHOOL_CITY_SLUGS.map(async (slug) => ({ slug, name: (await schoolCity(slug)).name })))).sort((a, b) => a.name.localeCompare(b.name, "fr"));
   const example = schoolStageLetter({ level, fullName: null, company: "[nom de l'entreprise]", activity: null });
   return (
     <main className="mx-auto w-full max-w-[720px] px-5 py-10">
@@ -119,6 +121,16 @@ export function SchoolStageGuide({ level }: { level: SchoolStageLevel }) {
           <li key={t}>{t}</li>
         ))}
       </ul>
+
+      <h2 style={{ fontSize: 21, margin: "28px 0 8px" }}>{SCHOOL_STAGES[level].label} dans ta ville</h2>
+      <p style={{ fontSize: 14, lineHeight: 1.8, margin: 0 }}>
+        {cities.map((c, i) => (
+          <span key={c.slug}>
+            {i > 0 ? " · " : ""}
+            <Link href={`/${SCHOOL_STAGES[level].slug}/${c.slug}`}>{c.name}</Link>
+          </span>
+        ))}
+      </p>
 
       <h2 style={{ fontSize: 21, margin: "28px 0 8px" }}>Modèle de lettre de demande de stage</h2>
       <pre className="card" style={{ whiteSpace: "pre-wrap", fontFamily: "inherit", fontSize: 14, lineHeight: 1.55, padding: 18, margin: 0 }}>
