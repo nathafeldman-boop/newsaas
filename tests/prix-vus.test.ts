@@ -79,7 +79,7 @@ const catalog: Catalog = {
   ],
 };
 const mail = renderPricesSeenEmail(profile, catalog, lastViewAt);
-assert.match(mail.subject, /9,99 €\/mois/);
+assert.match(mail.subject, /12,99 €\/mois/);
 assert.match(mail.html, /Salut Inès,/);
 assert.match(mail.html, /<strong>Chargé de recrutement<\/strong>/, "« (H/F) » retiré");
 assert.match(mail.html, /Acme RH · Lyon 3e/);
@@ -107,8 +107,8 @@ assert.equal(verifyGoParams({ u: url.searchParams.get("u"), e: url.searchParams.
 const welcome = { active: true, endsAt: now + 10 * 60_000, flashEndsAt: null, legacy: false };
 assert.equal(goPlanOffer("monthly", welcome, now).price, PLAN_PRICES.monthly.welcome);
 assert.equal(goPlanOffer("lifetime", welcome, now).price, PLAN_PRICES.lifetime.welcome);
-assert.equal(PLAN_PRICES.monthly.welcome, "9,99 €");
-assert.equal(PLAN_PRICES.lifetime.welcome, "40 €");
+assert.equal(PLAN_PRICES.monthly.welcome, "12,99 €");
+assert.equal(PLAN_PRICES.lifetime.welcome, "52 €");
 
 // L'email relance le prix de bienvenue ; la série Premium et les salves sautent ses destinataires le jour même.
 assert.ok(readFileSync("src/lib/pricing/welcome.ts", "utf8").includes("PRICES_SEEN_EVENT"), "welcome.ts relance le délai");

@@ -42,6 +42,6 @@ assert.equal(rpmEuros(2000, 5000), 4); // 20 € pour 5 000 vues = 4 €/1000
 assert.equal(rpmEuros(2000, 0), null);
 
 const cron = JSON.parse(readFileSync("vercel.json", "utf8")).crons.find((c: { path: string }) => c.path === "/api/cron/tiktok-views");
-assert.equal(cron?.schedule, "25 */3 * * *", "relevé toutes les 3 h");
+assert.equal(cron?.schedule, "*/30 * * * *", "relevé toutes les 30 min");
 
 console.log("createurs-tiktok : OK");

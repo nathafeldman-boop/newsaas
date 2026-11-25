@@ -11,7 +11,7 @@ const future = new Date(Date.now() + 10 * 86_400_000).toISOString();
 const past = new Date(Date.now() - 10 * 86_400_000).toISOString();
 
 assert.equal(AUTO_DAILY_LIMIT, 100);
-assert.equal(AUTO_MONTHLY_CENTS, 1799);
+assert.equal(AUTO_MONTHLY_CENTS, 2339);
 assert.match(AUTO_PRICE_IDS.monthly, /^price_/);
 assert.match(AUTO_PRICE_IDS.lifetime, /^price_/);
 

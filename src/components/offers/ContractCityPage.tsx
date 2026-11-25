@@ -12,6 +12,8 @@ import {
   type JobContract,
 } from "@/lib/offers/contractCitySegments";
 import { cityPhrase } from "@/lib/seo/programmaticIndex";
+import { contractMetierPath, getContractMetierIndex } from "@/lib/offers/contractMetierSegments";
+import { getMetier } from "@/lib/seo/metiers";
 import { pagedPath, pagedTitle } from "@/lib/seo/pagination";
 import { signupHref } from "@/lib/signup/intent";
 import { SITE_URL } from "@/lib/site";
@@ -42,10 +44,11 @@ export async function contractCityMetadata(type: JobContract, slug: string, page
 }
 
 export async function ContractCityPage({ type, slug, page }: { type: JobContract; slug: string; page: number }) {
-  const [segment, cities, otherCities] = await Promise.all([
+  const [segment, cities, otherCities, metierIndex] = await Promise.all([
     getContractCitySegment(type, slug),
     getContractCitySegments(type),
     getContractCitySegments(OTHER[type]),
+    getContractMetierIndex(type),
   ]);
   if (!segment) notFound();
   const { offers, count, totalPages } = await fetchContractCityOffers(type, segment, page);
@@ -58,6 +61,12 @@ export async function ContractCityPage({ type, slug, page }: { type: JobContract
     .filter((c) => c.slug !== segment.slug)
     .slice(0, 16)
     .map((c) => ({ href: `/offres/${type}/${c.slug}`, label: `${LABEL[type]} ${cityPhrase(c.label)}`, count: c.count }));
+
+  // Métiers qui recrutent dans la ville (pages du 25/11).
+  const metiers = metierIndex.combos
+    .filter((c) => c.city === segment.slug)
+    .slice(0, 16)
+    .map((c) => ({ href: contractMetierPath(type, c.metier, c.city), label: `${LABEL[type]} ${getMetier(c.metier)?.label ?? c.metier}`, count: c.count }));
 
   return (
     <div className="mx-auto max-w-4xl px-5 py-10 sm:px-9">
@@ -92,6 +101,7 @@ export async function ContractCityPage({ type, slug, page }: { type: JobContract
           </p>
         </section>
       )}
+      {page === 1 && metiers.length > 0 && <LinkChips title={`Métiers qui recrutent en ${LABEL[type]} ${where}`} links={metiers} />}
       {page === 1 && <LinkChips title={`Offres en ${LABEL[type]} dans d'autres villes`} links={nearby} />}
       <StickySignupBar href={signup} />
     </div>

@@ -28,16 +28,16 @@ for (const s of ["Nouveau sur Stageio", "Candidatures spontanées", "Stageio Aut
 }
 assert.ok(after.text.includes("Nouveau sur Stageio :") && after.text.includes("- Candidatures spontanées :"));
 assert.ok(!/en 2 jours|garanti(e)? en|trouve(ras)? ton alternance en/i.test(after.html), "aucune promesse de résultat");
-assert.ok(after.html.includes("9,99&nbsp;€") && after.html.includes("Moins de 35 centimes par jour"));
+assert.ok(after.html.includes("12,99&nbsp;€") && after.html.includes("Moins de 45 centimes par jour"));
 assert.ok(after.html.includes("Série de 5 emails au plus"));
 
 // Stage : « ton stage ».
 assert.equal(renderSeriesEmail(profile(["stage"]), 1, catalog, NEWS_LAUNCH + H).subject, "Léa, notre objectif : ton stage en 2 mois maximum");
 
-// Offre 48 h ouverte après le lancement : nouveau sujet, 9,99 €/mois et l'accès à vie à 30 €.
+// Offre 48 h ouverte après le lancement : nouveau sujet, 12,99 €/mois et l'accès à vie à 30 €.
 const opening = renderSeriesEmail(lea, 1, catalog, NEWS_LAUNCH + H, 0, NEWS_LAUNCH + H + FLASH_OFFER.windowMs);
 assert.equal(opening.subject, "🚀 Léa, le nouveau Stageio est là, et 48 h rien que pour toi");
-assert.ok(opening.html.includes("Nouveau sur Stageio") && opening.html.includes("30&nbsp;€") && opening.html.includes("9,99&nbsp;€/mois"));
+assert.ok(opening.html.includes("Nouveau sur Stageio") && opening.html.includes("30&nbsp;€") && opening.html.includes("12,99&nbsp;€/mois"));
 
 // Email n° 6 (série déjà finie) : même contenu, lien suivi à part, et il dit qu'il n'y en aura pas d'autre.
 const sixth = renderSeriesEmail(lea, NEWS_STEP, catalog, NEWS_LAUNCH + 3 * H);

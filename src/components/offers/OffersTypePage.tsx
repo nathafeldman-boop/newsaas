@@ -13,6 +13,8 @@ import type { ContractType } from "@/types/database";
 import { CONTRACT_OF, isPlacementType } from "@/lib/offers/contractLabels";
 import { StickySignupBar } from "@/components/signup/StickySignupBar";
 import { getContractCitySegments, isJobContract } from "@/lib/offers/contractCitySegments";
+import { contractMetierPath, getContractMetierIndex } from "@/lib/offers/contractMetierSegments";
+import { getMetier } from "@/lib/seo/metiers";
 import { cityPhrase } from "@/lib/seo/programmaticIndex";
 
 // /offres/alternance et /offres/stage : la liste complète d'un type, la page
@@ -51,10 +53,11 @@ export async function offersTypeMetadata(type: ContractType, page: number): Prom
 
 export async function OffersTypePage({ type, page }: { type: ContractType; page: number }) {
   const path = `/offres/${type}`;
-  const [{ offers, count, totalPages }, hub, jobCities] = await Promise.all([
+  const [{ offers, count, totalPages }, hub, jobCities, jobMetiers] = await Promise.all([
     fetchPublicOffers(type, page),
     hubModel(type),
     isJobContract(type) && page === 1 ? getContractCitySegments(type) : Promise.resolve([]),
+    isJobContract(type) && page === 1 ? getContractMetierIndex(type).then((i) => i.metiers) : Promise.resolve([]),
   ]);
   const recent = hub?.index.recent7d ?? 0;
   if (page > totalPages) notFound();
@@ -87,6 +90,12 @@ export async function OffersTypePage({ type, page }: { type: ContractType; page:
           <LinkChips title={`Offres ${OF[type]} par métier`} links={hub.metiers.slice(0, 16)} />
           <LinkChips title={`Offres ${OF[type]} par ville`} links={hub.cities.slice(0, 16)} />
         </>
+      )}
+      {isJobContract(type) && jobMetiers.length > 0 && (
+        <LinkChips
+          title={`Offres ${OF[type]} par métier`}
+          links={jobMetiers.slice(0, 24).map((m) => ({ href: contractMetierPath(type, m.metier, null), label: `${type.toUpperCase()} ${getMetier(m.metier)?.label ?? m.metier}`, count: m.count }))}
+        />
       )}
       {jobCities.length > 0 && (
         <LinkChips
