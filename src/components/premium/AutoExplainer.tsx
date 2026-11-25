@@ -181,8 +181,14 @@ function FaqItem({ q, a, index, open, onToggle }: { q: string; a: string; index:
 
 // Deux versions de la vidéo, qui finissent sur les prix de bienvenue ou sur
 // les prix normaux (même animation, seul l'écran des prix change).
-function AutoVideo({ tier }: { tier: PriceTier }) {
-  const prices = autoPricesFor(tier);
+// Les prix sont écrits dans les images (anciens prix) : à partir de
+// PRICE_CARD_AT, un écran de prix en HTML recouvre la vidéo, avec les prix du
+// moment (hausse de 30 % du 25/11), pour ne jamais afficher un prix faux.
+const PRICE_CARD_AT = 18.05;
+
+function AutoVideo({ tier, lifetimePrice }: { tier: PriceTier; lifetimePrice?: string }) {
+  const prices = { ...autoPricesFor(tier), ...(lifetimePrice ? { lifetime: lifetimePrice } : {}) };
+  const [showCard, setShowCard] = useState(false);
   const file = tier === "welcome" ? "/app/auto-vsl" : "/app/auto-vsl-regular";
   const ref = useRef<HTMLVideoElement>(null);
   const [progress, setProgress] = useState(0);
@@ -200,12 +206,60 @@ function AutoVideo({ tier }: { tier: PriceTier }) {
         onTimeUpdate={(e) => {
           const v = e.currentTarget;
           if (v.duration) setProgress(v.currentTime / v.duration);
+          setShowCard(v.currentTime >= PRICE_CARD_AT);
         }}
         style={{ display: "block", width: "100%", aspectRatio: "4 / 5", borderRadius: 18, background: "#0f9c56", objectFit: "cover" }}
       >
         <source src={`${file}.webm`} type='video/webm; codecs="vp9"' />
         <source src={`${file}.mp4`} type="video/mp4" />
       </video>
+      <AnimatePresence>
+        {showCard && (
+          <motion.div
+            key="prix"
+            aria-hidden
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{
+              position: "absolute",
+              inset: 0,
+              borderRadius: 18,
+              containerType: "inline-size",
+              background: "radial-gradient(circle at 50% 40%, #1aad66 0%, #129e5a 55%, #0d8f50 100%)",
+              color: "#fff",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              paddingTop: "19%",
+              textAlign: "center",
+              fontWeight: 600,
+            }}
+          >
+            <div style={{ fontSize: "11.5cqw", fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.1 }}>Stageio Auto</div>
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.35 }} style={{ marginTop: "5cqw" }}>
+              <span style={{ fontSize: "8.8cqw", fontWeight: 800, letterSpacing: "-0.02em" }}>{prices.monthly}</span>
+              <span style={{ fontSize: "3.6cqw" }}> / mois</span>
+              <div style={{ fontSize: "3.1cqw", opacity: 0.92, marginTop: "0.8cqw" }}>sans engagement</div>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.1, duration: 0.35 }} style={{ marginTop: "5cqw" }}>
+              <span style={{ fontSize: "3.6cqw" }}>ou </span>
+              <span style={{ fontSize: "7cqw", fontWeight: 800, letterSpacing: "-0.02em" }}>{prices.lifetime}</span>
+              <span style={{ fontSize: "3.6cqw" }}> à vie</span>
+              <div style={{ fontSize: "3.1cqw", opacity: 0.92, marginTop: "0.8cqw" }}>un seul paiement</div>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 1.8, duration: 0.3 }}
+              style={{ marginTop: "6cqw", padding: "1.6cqw 3.2cqw", borderRadius: 999, background: "rgba(255,255,255,.88)", color: "#0d8f50", fontSize: "3cqw", fontWeight: 800 }}
+            >
+              Tout Premium inclus
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div aria-hidden style={{ position: "absolute", left: 14, right: 14, bottom: 10, height: 4, borderRadius: 999, background: "rgba(255,255,255,.35)", overflow: "hidden" }}>
         <div style={{ height: "100%", width: `${progress * 100}%`, background: "#fff", borderRadius: 999, transition: "width 0.25s linear" }} />
       </div>
@@ -345,7 +399,7 @@ export function AutoHelpButton({
                   </div>
 
                   <div style={{ padding: "0 16px" }}>
-                    <AutoVideo tier={tier} />
+                    <AutoVideo tier={tier} lifetimePrice={lifetimePrice} />
                   </div>
 
                   <div style={{ margin: "14px 16px 0", padding: "12px 14px", borderRadius: 16, background: "var(--color-surface)", border: "1.5px solid var(--color-accent)" }}>

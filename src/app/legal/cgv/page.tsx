@@ -35,17 +35,18 @@ export default function CGVPage() {
       <Section title="Prix">
         <p>L&apos;accès Premium est proposé selon deux formules, au choix :</p>
         <ul style={{ margin: "8px 0 0", paddingLeft: 20, listStyle: "disc" }}>
-          <li><strong>16,99&nbsp;€ / mois</strong>, renouvelable automatiquement chaque mois ;</li>
-          <li><strong>68&nbsp;€</strong>, en un paiement unique, donnant un accès Premium à vie (sans renouvellement, sans limite de durée).</li>
+          <li><strong>22,09&nbsp;€ / mois</strong>, renouvelable automatiquement chaque mois ;</li>
+          <li><strong>88,40&nbsp;€</strong>, en un paiement unique, donnant un accès Premium à vie (sans renouvellement, sans limite de durée).</li>
         </ul>
         <p style={{ marginTop: 8 }}>
-          Ces prix s&apos;appliquent à partir du 21 novembre 2026 (du 29 octobre au 20 novembre 2026 : 15,99&nbsp;€ /
-          mois et 63,99&nbsp;€ à vie ; auparavant : 12,79&nbsp;€ / mois, prix de bienvenue de 7,99&nbsp;€ / mois). Un
+          Ces prix s&apos;appliquent à partir du 25 novembre 2026 (du 21 au 24 novembre 2026 : 16,99&nbsp;€ / mois et
+          68&nbsp;€ à vie, prix de bienvenue de 9,99&nbsp;€ / mois ou 40&nbsp;€ à vie ; du 29 octobre au 20 novembre
+          2026 : 15,99&nbsp;€ / mois et 63,99&nbsp;€ à vie ; auparavant : 12,79&nbsp;€ / mois, prix de bienvenue de 7,99&nbsp;€ / mois). Un
           abonnement déjà souscrit garde son prix.
         </p>
         <p style={{ marginTop: 8 }}>
           <strong>Prix de bienvenue :</strong> pendant 10 minutes à compter du premier affichage de la page Premium
-          sur son compte, l&apos;utilisateur peut souscrire au prix de 9,99&nbsp;€ / mois ou de 40&nbsp;€ pour
+          sur son compte, l&apos;utilisateur peut souscrire au prix de 12,99&nbsp;€ / mois ou de 52&nbsp;€ pour
           l&apos;accès à vie (7,99&nbsp;€ / mois pour un délai ouvert avant le 29 octobre 2026). Le prix de bienvenue souscrit pendant ce délai reste celui de l&apos;abonnement (pas
           d&apos;augmentation au renouvellement). Le délai restant est affiché sur la page Premium ; passé ce
           délai, les prix ci-dessus s&apos;appliquent. Les destinataires de l&apos;email « nouveautés » envoyé à
@@ -70,10 +71,11 @@ export default function CGVPage() {
           l&apos;offre reste celui de l&apos;abonnement ; passé l&apos;offre, les prix ci-dessus s&apos;appliquent.
         </p>
         <p style={{ marginTop: 8 }}>
-          <strong>Formule Stageio Auto</strong> (à partir du 24 octobre 2026) : <strong>30,59&nbsp;€ / mois</strong>,
-          renouvelable automatiquement chaque mois, ou <strong>136&nbsp;€</strong> en un paiement unique pour un accès
-          à vie (du 29 octobre au 20 novembre 2026 : 28,79&nbsp;€ / mois ou 128&nbsp;€ à vie). Prix de bienvenue, dans le même délai de 10 minutes (ou pendant l&apos;offre 48 h par email) :
-          17,99&nbsp;€ / mois ou 80&nbsp;€ à vie. Un compte déjà Premium qui ajoute Stageio Auto paie le prix
+          <strong>Formule Stageio Auto</strong> (à partir du 24 octobre 2026) : <strong>39,77&nbsp;€ / mois</strong>,
+          renouvelable automatiquement chaque mois, ou <strong>176,80&nbsp;€</strong> en un paiement unique pour un accès
+          à vie (du 21 au 24 novembre 2026 : 30,59&nbsp;€ / mois ou 136&nbsp;€ à vie, prix de bienvenue de 17,99&nbsp;€ /
+          mois ou 80&nbsp;€ à vie ; du 29 octobre au 20 novembre 2026 : 28,79&nbsp;€ / mois ou 128&nbsp;€ à vie). Prix de bienvenue, dans le même délai de 10 minutes (ou pendant l&apos;offre 48 h par email) :
+          23,39&nbsp;€ / mois ou 104&nbsp;€ à vie. Un compte déjà Premium qui ajoute Stageio Auto paie le prix
           ci-dessus. Avant le 29 octobre 2026, Stageio Auto était à 17,99&nbsp;€ / mois ou 80&nbsp;€ à vie, sans
           prix de bienvenue. Elle comprend tous les avantages Premium et, en plus : l&apos;envoi automatique de la candidature
           de l&apos;utilisateur (lettre de motivation et CV) quand il like une offre, dans la limite de 100 envois

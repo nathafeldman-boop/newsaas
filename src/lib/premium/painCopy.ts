@@ -1,4 +1,5 @@
 import type { ContractType } from "@/types/database";
+import { euroAmount, PLAN_PRICES } from "@/lib/pricing/plans";
 import { APPRENTICE_RATES, SMIC_MONTHLY_GROSS, STAGE_HOURLY_MIN } from "@/lib/salary/legalRates";
 
 // Douleur et investissement (Nathan, 12/11 : « appuie beaucoup plus sur la
@@ -6,10 +7,11 @@ import { APPRENTICE_RATES, SMIC_MONTHLY_GROSS, STAGE_HOURLY_MIN } from "@/lib/sa
 // bientôt fini et que c'est un investissement vu qu'ils auront un salaire »).
 // Uniquement des faits vérifiables : règle des 3 mois sans contrat
 // (Code du travail L6222-12-1), minimums légaux de legalRates.ts, et le prix
-// normal de Premium (15,99 €/mois, pas le prix de bienvenue) pour que
+// normal de Premium (prix mensuel après le chrono, pas le prix de bienvenue) pour que
 // « X ans de Premium » reste vrai quel que soit le prix affiché.
 
-const REGULAR_MONTHLY_EUROS = 15.99;
+// Prix mensuel normal (après le chrono), lu dans plans.ts : « X mois de Premium » reste vrai.
+const REGULAR_MONTHLY_EUROS = euroAmount(PLAN_PRICES.monthly.regular);
 // Stage à temps plein : 35 h × 52 semaines / 12 mois.
 const STAGE_MONTHLY_MIN = STAGE_HOURLY_MIN * 35 * (52 / 12);
 const APPRENTICE_MONTHLY_MIN = SMIC_MONTHLY_GROSS * APPRENTICE_RATES.under18[1];
