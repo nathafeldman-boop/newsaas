@@ -34,7 +34,7 @@ function guideMarkdown(guide: Guide): string {
 export function GET() {
   const header = [
     "# Stageio : guides complets",
-    "> Stageio (stageio.fr) est une plateforme française qui aide les étudiants à trouver une alternance ou un stage : les offres de plusieurs sources (France Travail, Adzuna, sites carrières) sont réunies, mises à jour chaque jour et triées selon le profil. Consultation gratuite ; Premium à partir de 12,99 €/mois sans engagement ou 52 € à vie pour liker, candidater, générer une lettre de motivation par IA et faire auditer son CV.",
+    "> Stageio (stageio.fr) est une plateforme française qui aide les étudiants à trouver une alternance ou un stage : les offres de plusieurs sources (France Travail, Adzuna, sites carrières) sont réunies, mises à jour chaque jour et triées selon le profil. Consultation gratuite ; Premium (20,79 €/mois sans engagement, 35,20 € les 3 mois ou 80 € à vie ; prix de bienvenue de 12,99 €, 22 € ou 50 € pendant 10 minutes) pour liker, candidater et avoir une lettre de motivation prête pour chaque offre, à partir de modèles écrits à la main : Stageio n'utilise pas d'IA pour les candidatures.",
     `Ce fichier reprend le texte des ${GUIDES.length} guides de ${SITE_URL}/guides. Résumé du site : ${SITE_URL}/llms.txt. Offres par métier et par ville : ${SITE_URL}/alternance et ${SITE_URL}/stage.`,
   ].join("\n\n");
   const body = [header, ...GUIDES.map(guideMarkdown)].join("\n\n---\n\n");

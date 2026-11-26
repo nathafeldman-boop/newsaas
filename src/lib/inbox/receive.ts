@@ -1,7 +1,5 @@
 import type { createAdminClient } from "@/lib/supabase/admin";
 import { domainOf } from "@/lib/inbox/parse";
-import { classifyEmailReply } from "@/lib/google/classifyEmailReplyWithAnthropic";
-import { isAnthropicConfigured } from "@/lib/anthropic/client";
 import { classifyReplyByRules } from "@/lib/inbox/replyRules";
 import { notifyInboxMessage } from "@/lib/resend/notifyInboxMessage";
 import { notifyInterviewReply } from "@/lib/resend/notifyInterviewReply";
@@ -84,10 +82,8 @@ export async function storeInboundEmail(admin: ReturnType<typeof createAdminClie
         snippet: email.bodyText.slice(0, 1500),
       };
       const companies = offer?.company ? [offer.company] : [];
-      // Sans IA (coupée par défaut) ou si elle échoue : classement par règles.
-      const verdict = isAnthropicConfigured()
-        ? await classifyEmailReply(reply, companies).catch(() => classifyReplyByRules(reply, companies))
-        : classifyReplyByRules(reply, companies);
+      // Classement par règles, sans IA (Nathan, 26/11 : pas d'IA pour les candidatures).
+      const verdict = classifyReplyByRules(reply, companies);
       const status = verdict.is_recruiting_reply ? sentimentToStatus(verdict.sentiment) : null;
       // Jamais par-dessus une réponse déjà tranchée (acceptée, refusée,
       // clôturée) : même garde-fou que la synchro Gmail.

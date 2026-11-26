@@ -47,7 +47,7 @@ const n = (value: number) => value.toLocaleString("fr-FR");
 const FAQ = [
   {
     q: "Stageio est-il gratuit ?",
-    a: "L'inscription et la consultation de toutes les offres sont gratuites, sans limite. Le Premium sert à liker les offres, candidater, générer une lettre de motivation par IA et faire auditer ton CV : 12,99 € par mois sans engagement (prix de bienvenue, 22,09 € ensuite), ou 52 € en paiement unique pour un accès à vie.",
+    a: "L'inscription et la consultation de toutes les offres sont gratuites, sans limite. Le Premium sert à liker les offres, candidater, avoir une lettre de motivation prête pour chaque offre (à partir de modèles écrits à la main, sans IA) : 20,79 € par mois sans engagement, 35,20 € les 3 mois ou 80 € en paiement unique pour un accès à vie (prix de bienvenue pendant 10 minutes : 12,99 €, 22 € ou 50 €).",
   },
   {
     q: "Comment résilier l'abonnement Premium ?",
@@ -148,9 +148,9 @@ export default async function AboutPage() {
 
       <h2 style={section}>Gratuit ou payant ?</h2>
       <p style={{ fontSize: 15, margin: 0 }}>
-        L&apos;inscription et la consultation de toutes les offres sont gratuites. Liker une offre, candidater et générer
-        une lettre de motivation par IA sont réservés aux membres Premium (12,99 € par mois sans engagement, prix de bienvenue, ou 52 € en
-        paiement unique pour un accès à vie).
+        L&apos;inscription et la consultation de toutes les offres sont gratuites. Liker une offre, candidater et avoir
+        une lettre de motivation prête pour chaque offre (modèles écrits à la main, sans IA) sont réservés aux membres Premium (20,79 € par
+        mois sans engagement, 35,20 € les 3 mois ou 80 € à vie ; prix de bienvenue pendant 10 minutes : 12,99 €, 22 € ou 50 €).
       </p>
 
       <h2 style={section}>Ce que Stageio publie en accès libre</h2>

@@ -1,4 +1,8 @@
-import type { EmailClassification } from "@/lib/google/classifyEmailReplyWithAnthropic";
+export type EmailClassification = {
+  is_recruiting_reply: boolean;
+  matched_company: string | null;
+  sentiment: "positive" | "negative" | "neutral" | null;
+};
 
 // Classement d'une réponse de recruteur sans IA (30/10 : l'IA est coupée par
 // défaut, crédit épuisé). Même forme que classifyEmailReply. Prudent : un

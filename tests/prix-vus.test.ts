@@ -108,7 +108,7 @@ const welcome = { active: true, endsAt: now + 10 * 60_000, flashEndsAt: null, le
 assert.equal(goPlanOffer("monthly", welcome, now).price, PLAN_PRICES.monthly.welcome);
 assert.equal(goPlanOffer("lifetime", welcome, now).price, PLAN_PRICES.lifetime.welcome);
 assert.equal(PLAN_PRICES.monthly.welcome, "12,99 €");
-assert.equal(PLAN_PRICES.lifetime.welcome, "52 €");
+assert.equal(PLAN_PRICES.lifetime.welcome, "50 €");
 
 // L'email relance le prix de bienvenue ; la série Premium et les salves sautent ses destinataires le jour même.
 assert.ok(readFileSync("src/lib/pricing/welcome.ts", "utf8").includes("PRICES_SEEN_EVENT"), "welcome.ts relance le délai");

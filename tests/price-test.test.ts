@@ -26,7 +26,8 @@ const cents = (price: string) => Math.round(Number(price.replace(/[^\d,]/g, "").
 
 // Prix demandés : 9,99 € de bienvenue, puis au moins +60 % ; Auto 17,99 € / 80 € puis +60 %.
 assert.equal(PLAN_PRICES.monthly.welcome, "12,99 €");
-assert.equal(PLAN_PRICES.monthly.regular, "22,09 €");
+assert.equal(PLAN_PRICES.monthly.regular, "20,79 €");
+assert.deepEqual(PLAN_PRICES.quarterly, { welcome: "22 €", regular: "35,20 €" });
 assert.deepEqual(AUTO_PRICES, { monthly: { welcome: "23,39 €", regular: "39,77 €" }, lifetime: { welcome: "104 €", regular: "176,80 €" } });
 for (const [w, r] of [
   [PLAN_PRICES.monthly.welcome, PLAN_PRICES.monthly.regular],
@@ -35,16 +36,17 @@ for (const [w, r] of [
 ]) {
   assert.ok(cents(r) >= cents(w) * 1.6, `${r} doit faire au moins +60 % sur ${w}`);
 }
-assert.equal(PREMIUM_PRICE_LINE, "52 € à vie ou 12,99 €/mois");
+assert.equal(PREMIUM_PRICE_LINE, "50 € à vie ou 12,99 €/mois");
 
-// Accès à vie Premium de bienvenue : 52 € depuis le 25/11, le prix Stripe réellement encaissé (5 200 centimes), écrit ici (plus lu d'une variable d'environnement).
-assert.equal(PLAN_PRICES.lifetime.welcome, "52 €");
-assert.equal(PLAN_PRICES.lifetime.regular, "88,40 €");
-assert.equal(cents(PLAN_PRICES.lifetime.welcome), 5200);
-assert.equal(WELCOME_PRICE_IDS.lifetime, "price_1UfhqcRd6r34OMU6OvEgKJe9");
+// Accès à vie Premium de bienvenue : 50 € depuis le 26/11, le prix Stripe réellement encaissé (5 000 centimes), écrit ici (plus lu d'une variable d'environnement).
+assert.equal(PLAN_PRICES.lifetime.welcome, "50 €");
+assert.equal(PLAN_PRICES.lifetime.regular, "80 €");
+assert.equal(cents(PLAN_PRICES.lifetime.welcome), 5000);
+assert.equal(WELCOME_PRICE_IDS.lifetime, "price_1UWeVYRd6r34OMU6dpfEj5Nz");
+assert.equal(WELCOME_PRICE_IDS.quarterly, "price_1Ug40kRd6r34OMU6hHufgQji");
 assert.notEqual(WELCOME_PRICE_IDS.lifetime, REGULAR_PRICE_IDS.lifetime);
-assert.equal(priceSheet().lifetime.welcome, "52 €");
-assert.equal(priceSheet(true).lifetime.welcome, "52 €", "une offre ouverte avant le test garde 7,99 € au mensuel, pas à vie");
+assert.equal(priceSheet().lifetime.welcome, "50 €");
+assert.equal(priceSheet(true).lifetime.welcome, "50 €", "une offre ouverte avant le test garde 7,99 € au mensuel, pas à vie");
 
 // Identifiants Stripe : écrits en dur, reconnus partout (anciens compris).
 for (const id of [WELCOME_PRICE_IDS.monthly, REGULAR_PRICE_IDS.monthly, AUTO_REGULAR_PRICE_IDS.monthly, AUTO_REGULAR_PRICE_IDS.lifetime]) assert.match(id, /^price_/);

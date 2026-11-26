@@ -54,7 +54,7 @@ ${footer(unsubscribeUrl)}`,
   (greeting, unsubscribeUrl) => ({
     subject: "Premium : candidatures illimitées, 52€ à vie ou 12,99€/mois",
     html: `<p>${greeting},</p>
-<p>Un point rapide sur Premium, au cas où : like et candidatures illimités, lettres de motivation IA, audit CV -- à partir de 12,99€/mois sans engagement, ou 52€ en un seul paiement pour un accès à vie (sans jamais rien repayer).</p>
+<p>Un point rapide sur Premium, au cas où : like et candidatures illimités, une lettre de motivation prête pour chaque offre (sans IA) -- à partir de 12,99€/mois sans engagement, 22€ les 3 mois, ou 50€ en un seul paiement pour un accès à vie (sans jamais rien repayer).</p>
 <p><a href="${SITE_URL}/premium">Voir les formules</a></p>
 ${footer(unsubscribeUrl)}`,
   }),

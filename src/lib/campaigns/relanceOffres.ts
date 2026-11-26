@@ -449,7 +449,7 @@ export function renderCampaignEmail(
 
   // Sans prix : ils dépendent du prix de bienvenue de chacun (10 min).
   const premium =
-    "Si tu veux aller plus vite : Premium débloque les likes, les candidatures illimitées, la lettre de motivation générée par IA et l'audit de ton CV.";
+    "Si tu veux aller plus vite : Premium débloque les likes, les candidatures illimitées, et une lettre de motivation prête pour chaque offre.";
 
   const premiumUrl = goLink(p.id, "choix", OFFERS_PREMIUM_UTM);
   const unsubscribeUrl = unsubscribeUrlFor(p.id);

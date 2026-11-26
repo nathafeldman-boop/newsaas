@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   // alternance / un stage ».
   title: "Stageio : l'appli pour trouver ton alternance ou ton stage en swipant",
   description:
-    "Les offres d'alternance et de stage de toute la France au même endroit, mises à jour chaque jour : swipe celles qui matchent ton profil, candidate en un geste, lettre de motivation par IA. Inscription gratuite.",
+    "Les offres d'alternance et de stage de toute la France au même endroit, mises à jour chaque jour : swipe celles qui matchent ton profil, candidate en un geste, lettre de motivation prête pour chaque offre. Inscription gratuite.",
   alternates: { canonical: "/" },
 };
 
@@ -41,7 +41,7 @@ const FAQ = [
   {
     question: "Est-ce que Stageio est gratuit ?",
     answer:
-      `L'inscription et la création de profil sont gratuites, et tu peux parcourir tout le catalogue d'offres sans limite. Liker une offre, candidater et générer une lettre de motivation par IA sont réservés aux membres Premium : ${PLAN_PRICES.monthly.regular}/mois sans engagement, ou ${PLAN_PRICES.lifetime.regular} en paiement unique pour un accès à vie. Prix de bienvenue de ${PLAN_PRICES.monthly.welcome}/mois ou ${PLAN_PRICES.lifetime.welcome} à vie pendant 10 minutes, à compter de la première fois où tu vois la page Premium.`,
+      `L'inscription et la création de profil sont gratuites, et tu peux parcourir tout le catalogue d'offres sans limite. Liker une offre, candidater et avoir une lettre de motivation prête pour chaque offre (modèles écrits à la main, sans IA) sont réservés aux membres Premium : ${PLAN_PRICES.monthly.regular}/mois sans engagement, ${PLAN_PRICES.quarterly.regular} les 3 mois, ou ${PLAN_PRICES.lifetime.regular} en paiement unique pour un accès à vie. Prix de bienvenue de ${PLAN_PRICES.monthly.welcome}/mois, ${PLAN_PRICES.quarterly.welcome} les 3 mois ou ${PLAN_PRICES.lifetime.welcome} à vie pendant 10 minutes, à compter de la première fois où tu vois la page Premium.`,
   },
   {
     question: "Stageio propose des stages, des alternances ou des CDI ?",
@@ -66,7 +66,7 @@ const FAQ = [
   {
     question: "Faut-il un CV pour s'inscrire sur Stageio ?",
     answer:
-      "Non, le CV est facultatif à l'inscription. Tu peux l'ajouter à tout moment depuis ton profil ; les utilisateurs Premium en profitent pour affiner encore le matching et débloquer l'audit de CV noté sur 100.",
+      "Non, le CV est facultatif à l'inscription. Tu peux l'ajouter à tout moment depuis ton profil ; les utilisateurs Premium en profitent pour affiner encore le matching. Tu peux aussi créer ton CV à partir de nos modèles.",
   },
   {
     question: "Stageio couvre-t-il tous les secteurs (informatique, marketing, RH, commerce...) ?",
@@ -123,11 +123,12 @@ function buildWebApplicationJsonLd(reviewStats: { count: number; average: number
     applicationCategory: "BusinessApplication",
     operatingSystem: "Web",
     // Prix réels (voir /premium) : gratuit pour parcourir les offres,
-    // Premium pour liker, candidater, la lettre IA et l'audit de CV.
+    // Premium pour liker, candidater et la lettre à partir de modèles.
     offers: [
       { "@type": "Offer", name: "Gratuit", price: "0", priceCurrency: "EUR" },
-      { "@type": "Offer", name: "Premium mensuel (sans engagement)", price: "12.79", priceCurrency: "EUR" },
-      { "@type": "Offer", name: "Premium à vie (paiement unique)", price: "63.99", priceCurrency: "EUR" },
+      { "@type": "Offer", name: "Premium mensuel (sans engagement)", price: "20.79", priceCurrency: "EUR" },
+      { "@type": "Offer", name: "Premium trimestriel", price: "35.20", priceCurrency: "EUR" },
+      { "@type": "Offer", name: "Premium à vie (paiement unique)", price: "80.00", priceCurrency: "EUR" },
     ],
     ...(reviewStats.count > 0 && reviewStats.average !== null
       ? {

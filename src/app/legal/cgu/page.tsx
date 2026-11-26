@@ -45,11 +45,11 @@ export default function CGUPage() {
         </ul>
       </Section>
 
-      <Section title="Contenu généré par IA">
+      <Section title="Lettres et CV préparés à partir de modèles">
         <p>
-          Stageio propose (fonctionnalité Premium) la génération assistée
-          par intelligence artificielle de lettres de motivation et d&apos;un
-          audit de CV, à partir des informations que tu fournis. Ces
+          Stageio propose (fonctionnalité Premium) des lettres de motivation
+          et des CV préparés à partir de modèles écrits par Stageio et des
+          informations que tu fournis, sans intelligence artificielle. Ces
           contenus sont des suggestions : Stageio ne garantit ni leur
           exactitude, ni qu&apos;ils obtiennent une réponse positive d&apos;un
           recruteur. Il t&apos;appartient de relire et de valider tout

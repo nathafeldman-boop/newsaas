@@ -27,27 +27,29 @@ export default function CGVPage() {
         </p>
         <ul style={{ margin: "8px 0 0", paddingLeft: 20, listStyle: "disc" }}>
           <li>la possibilité de liker une offre (la mettre en favori) et d&apos;y candidater ;</li>
-          <li>la génération de lettres de motivation par intelligence artificielle ;</li>
-          <li>l&apos;audit de CV noté sur 100.</li>
+          <li>une lettre de motivation par offre, préparée à partir de modèles écrits par Stageio et des informations de son profil (sans intelligence artificielle) ;</li>
+          <li>la création de son CV à partir de modèles.</li>
         </ul>
       </Section>
 
       <Section title="Prix">
-        <p>L&apos;accès Premium est proposé selon deux formules, au choix :</p>
+        <p>L&apos;accès Premium est proposé selon trois formules, au choix :</p>
         <ul style={{ margin: "8px 0 0", paddingLeft: 20, listStyle: "disc" }}>
-          <li><strong>22,09&nbsp;€ / mois</strong>, renouvelable automatiquement chaque mois ;</li>
-          <li><strong>88,40&nbsp;€</strong>, en un paiement unique, donnant un accès Premium à vie (sans renouvellement, sans limite de durée).</li>
+          <li><strong>20,79&nbsp;€ / mois</strong>, renouvelable automatiquement chaque mois ;</li>
+          <li><strong>35,20&nbsp;€ / 3 mois</strong> (formule trimestrielle), renouvelable automatiquement tous les 3 mois ;</li>
+          <li><strong>80&nbsp;€</strong>, en un paiement unique, donnant un accès Premium à vie (sans renouvellement, sans limite de durée).</li>
         </ul>
         <p style={{ marginTop: 8 }}>
-          Ces prix s&apos;appliquent à partir du 25 novembre 2026 (du 21 au 24 novembre 2026 : 16,99&nbsp;€ / mois et
+          Ces prix s&apos;appliquent à partir du 26 novembre 2026 (du 25 au 26 novembre 2026 : 22,09&nbsp;€ / mois et
+          88,40&nbsp;€ à vie, prix de bienvenue de 12,99&nbsp;€ / mois ou 52&nbsp;€ à vie ; du 21 au 24 novembre 2026 : 16,99&nbsp;€ / mois et
           68&nbsp;€ à vie, prix de bienvenue de 9,99&nbsp;€ / mois ou 40&nbsp;€ à vie ; du 29 octobre au 20 novembre
           2026 : 15,99&nbsp;€ / mois et 63,99&nbsp;€ à vie ; auparavant : 12,79&nbsp;€ / mois, prix de bienvenue de 7,99&nbsp;€ / mois). Un
           abonnement déjà souscrit garde son prix.
         </p>
         <p style={{ marginTop: 8 }}>
           <strong>Prix de bienvenue :</strong> pendant 10 minutes à compter du premier affichage de la page Premium
-          sur son compte, l&apos;utilisateur peut souscrire au prix de 12,99&nbsp;€ / mois ou de 52&nbsp;€ pour
-          l&apos;accès à vie (7,99&nbsp;€ / mois pour un délai ouvert avant le 29 octobre 2026). Le prix de bienvenue souscrit pendant ce délai reste celui de l&apos;abonnement (pas
+          sur son compte, l&apos;utilisateur peut souscrire au prix de 12,99&nbsp;€ / mois, de 22&nbsp;€ pour
+          3 mois ou de 50&nbsp;€ pour l&apos;accès à vie (7,99&nbsp;€ / mois pour un délai ouvert avant le 29 octobre 2026). Le prix de bienvenue souscrit pendant ce délai reste celui de l&apos;abonnement (pas
           d&apos;augmentation au renouvellement). Le délai restant est affiché sur la page Premium ; passé ce
           délai, les prix ci-dessus s&apos;appliquent. Les destinataires de l&apos;email « nouveautés » envoyé à
           partir du 23 octobre 2026 bénéficient d&apos;un nouveau délai de 10 minutes, à compter de leur première
@@ -71,7 +73,9 @@ export default function CGVPage() {
           l&apos;offre reste celui de l&apos;abonnement ; passé l&apos;offre, les prix ci-dessus s&apos;appliquent.
         </p>
         <p style={{ marginTop: 8 }}>
-          <strong>Formule Stageio Auto</strong> (à partir du 24 octobre 2026) : <strong>39,77&nbsp;€ / mois</strong>,
+          <strong>Formule Stageio Auto</strong> : cette formule n&apos;est plus proposée à la souscription depuis le
+          26 novembre 2026. Les utilisateurs qui l&apos;ont souscrite avant cette date la conservent, aux conditions
+          suivantes (à partir du 24 octobre 2026) : <strong>39,77&nbsp;€ / mois</strong>,
           renouvelable automatiquement chaque mois, ou <strong>176,80&nbsp;€</strong> en un paiement unique pour un accès
           à vie (du 21 au 24 novembre 2026 : 30,59&nbsp;€ / mois ou 136&nbsp;€ à vie, prix de bienvenue de 17,99&nbsp;€ /
           mois ou 80&nbsp;€ à vie ; du 29 octobre au 20 novembre 2026 : 28,79&nbsp;€ / mois ou 128&nbsp;€ à vie). Prix de bienvenue, dans le même délai de 10 minutes (ou pendant l&apos;offre 48 h par email) :
@@ -92,7 +96,7 @@ export default function CGVPage() {
         <p style={{ marginTop: 8 }}>
           {" "}
           <ToComplete>TVA applicable (montants ci-dessus TTC) ou &laquo; TVA non applicable, art. 293 B du CGI &raquo; selon ton statut fiscal — à préciser</ToComplete>
-          . Ces deux formules donnent accès aux mêmes avantages Premium, sans
+          . Les formules Premium donnent accès aux mêmes avantages Premium, sans
           engagement de durée : seule la fréquence (ou l&apos;absence) de
           facturation change. Le prix affiché au moment de l&apos;achat est
           celui applicable ; Stageio se réserve le droit de faire évoluer
@@ -107,9 +111,9 @@ export default function CGVPage() {
         <p>
           Le paiement s&apos;effectue par carte bancaire, via notre
           prestataire de paiement sécurisé Stripe. Stageio ne stocke à
-          aucun moment ton numéro de carte bancaire. La formule mensuelle
-          est à <strong>renouvellement automatique</strong> : le montant
-          correspondant est prélevé chaque mois, à la date anniversaire de
+          aucun moment ton numéro de carte bancaire. Les formules mensuelle
+          et trimestrielle sont à <strong>renouvellement automatique</strong> : le montant
+          correspondant est prélevé chaque mois (ou tous les 3 mois), à la date anniversaire de
           la souscription, tant que l&apos;abonnement n&apos;a pas été
           résilié. La formule à vie est un <strong>paiement unique</strong>,
           sans aucun renouvellement ni prélèvement ultérieur.
@@ -118,7 +122,7 @@ export default function CGVPage() {
 
       <Section title="Résiliation">
         <p>
-          Formule mensuelle : tu peux résilier ton abonnement à tout moment,
+          Formules mensuelle et trimestrielle : tu peux résilier ton abonnement à tout moment,
           sans justification ni frais, directement depuis le
           &laquo; Profil &raquo; de ton compte (&laquo; Gérer mon abonnement
           Premium &raquo;, qui mène au portail de gestion Stripe). La
@@ -137,24 +141,54 @@ export default function CGVPage() {
 
       <Section title="Droit de rétractation">
         <p>
-          Conformément à l&apos;article L221-28 13° du Code de la
-          consommation, le droit de rétractation de 14 jours ne s&apos;applique
-          pas à un contenu numérique/service dont l&apos;exécution a
-          commencé avec ton accord exprès avant la fin du délai de
-          rétractation, et à condition d&apos;avoir reconnu perdre ainsi ton
-          droit de rétractation. En validant ton achat (abonnement mensuel
-          ou accès à vie), tu demandes la fourniture immédiate du Service
-          et reconnaît perdre ton droit
-          de rétractation une fois le Service pleinement exécuté (accès
-          Premium activé). Tant que le Service n&apos;a pas commencé à être
-          exécuté, tu peux contacter{" "}
-          <a href="mailto:contact@stageio.fr">contact@stageio.fr</a> pour
-          te rétracter.
+          L&apos;accès Premium est un contenu numérique fourni immédiatement après le paiement. Conformément à
+          l&apos;article L221-28 13° du Code de la consommation, le droit de rétractation de 14 jours ne
+          s&apos;applique pas à un contenu numérique non fourni sur un support matériel dont l&apos;exécution a
+          commencé avec l&apos;accord préalable et exprès du consommateur, qui a renoncé à son droit de rétractation.
+        </p>
+        <p style={{ marginTop: 8 }}>
+          En cliquant sur le bouton de paiement (quelle que soit la formule), tu acceptes les présentes CGV, tu
+          demandes l&apos;accès immédiat à Premium et tu renonces expressément à ton droit de rétractation de 14
+          jours. Cette mention figure sous le bouton de paiement et sur la page de paiement. Cela ne retire rien à la garantie ci-dessous ni aux
+          garanties légales.
         </p>
       </Section>
 
       <div id="garantie" style={{ scrollMarginTop: 80 }}>
-        <Section title="Garantie « aucun entretien = remboursé »">
+        <Section title="Garantie 48 h : pas d'entretien, remboursé">
+          <p>
+            <strong>Pour les achats à partir du 26 novembre 2026</strong>, quelle que soit la formule Premium
+            (mensuelle, trimestrielle ou à vie) : si tu n&apos;obtiens aucun entretien dans les 48 heures qui suivent
+            ton premier paiement, Stageio te rembourse ce premier paiement en intégralité, aux conditions suivantes,
+            toutes cumulatives :
+          </p>
+          <ul style={{ margin: "8px 0 0", paddingLeft: 20, listStyle: "disc" }}>
+            <li>
+              avoir envoyé au moins 40 candidatures avec Stageio dans les 48 heures qui suivent le premier paiement
+              (décompte enregistré par Stageio) ; pour les offres où la candidature se fait sur le site du
+              recruteur, joindre à la demande une capture d&apos;écran de chaque candidature envoyée ;
+            </li>
+            <li>avoir complété son profil et son CV sur Stageio avant ces candidatures ;</li>
+            <li>
+              n&apos;avoir obtenu aucun entretien d&apos;embauche (en personne, par téléphone ou en visio, pour une
+              alternance, un stage ou un emploi) pendant ces 48 heures, ce que l&apos;utilisateur certifie sur
+              l&apos;honneur ; une fausse déclaration entraîne le refus ou la restitution du remboursement ;
+            </li>
+            <li>
+              faire la demande par email à <a href="mailto:contact@stageio.fr">contact@stageio.fr</a>, depuis
+              l&apos;adresse du compte, <strong>dans les 3 jours qui suivent le premier paiement</strong> ;
+            </li>
+            <li>ne pas avoir résilié son abonnement avant la demande.</li>
+          </ul>
+          <p style={{ marginTop: 8 }}>
+            Le remboursement porte sur le premier paiement uniquement, sur le moyen de paiement utilisé, sous 14 jours
+            après l&apos;acceptation de la demande. Il met fin à l&apos;accès Premium et, pour une formule à
+            renouvellement, résilie l&apos;abonnement. Une seule garantie par personne. Les accès Premium offerts
+            (codes d&apos;accès, parrainage) en sont exclus. Cette garantie s&apos;ajoute aux droits que la loi te
+            reconnaît et ne les réduit en rien.
+          </p>
+        </Section>
+        <Section title="Garantie « aucun entretien = remboursé » (achats avant le 26 novembre 2026)">
           <p>
             <strong>Qui en bénéficie :</strong> uniquement l&apos;utilisateur à qui cette garantie a été présentée sur la
             page Premium de Stageio (écran &laquo;&nbsp;Des résultats, ou on te rembourse&nbsp;&raquo; affiché avant les

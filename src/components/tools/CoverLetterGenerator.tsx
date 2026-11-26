@@ -227,8 +227,8 @@ export function CoverLetterGenerator({ defaultContract }: { defaultContract: Let
         </p>
         <div className="card mt-4" style={{ padding: "var(--space-4)", fontSize: 14 }}>
           <strong>Une lettre adaptée à chaque offre, en un clic ?</strong> Sur Stageio, tu swipes les offres d&apos;
-          {input.contract === "alternance" ? "alternance" : "stage"} de ta ville et l&apos;IA écrit ta lettre à partir de
-          l&apos;annonce et de ton profil (Premium).{" "}
+          {input.contract === "alternance" ? "alternance" : "stage"} de ta ville et ta lettre est préparée à partir de
+          l&apos;annonce et de ton profil, avec des modèles écrits à la main, sans IA (Premium).{" "}
           <Link href="/inscription">Créer mon profil gratuitement</Link>
         </div>
         <ShareButtons

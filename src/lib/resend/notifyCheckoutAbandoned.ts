@@ -18,7 +18,7 @@ export async function notifyCheckoutAbandoned(email: string, fullName: string | 
     subject: "Tu n'as pas terminé ton passage Premium sur Stageio",
     html: `<p>Salut${fullName ? ` ${fullName}` : ""},</p>
 <p>Tu as commencé à passer Premium sur Stageio mais le paiement n'a pas abouti -- ça arrive, rien n'a été débité.</p>
-<p>Premium débloque : liker/mettre en favori, candidater sans limite, une lettre de motivation générée par IA pour chaque offre, et un audit de ton CV noté sur 100.</p>
+<p>Premium débloque : liker/mettre en favori, candidater sans limite, une lettre de motivation prête pour chaque offre, à partir de modèles écrits à la main (sans IA).</p>
 <p><a href="${SITE_URL}/premium">Terminer mon passage Premium</a></p>
 ${unsubscribeFooterHtml(profileId)}`,
     headers: unsubscribeHeaders(profileId),

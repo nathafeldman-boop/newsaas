@@ -568,8 +568,7 @@ export function CvBuilder({
         ) : (
           <div className="card mt-4 cv-actions" style={{ padding: "var(--space-4)", fontSize: 14 }}>
             <p style={{ margin: 0 }}>
-              <strong>Ton CV est-il vraiment prêt ?</strong> Sur Stageio, l&apos;audit de CV le note sur 100 et te dit quoi
-              corriger, puis tu postules aux offres d&apos;{cv.contract === "alternance" ? "alternance" : "stage"} de ta ville
+              <strong>Ton CV est prêt ?</strong> Sur Stageio, tu postules aux offres d&apos;{cv.contract === "alternance" ? "alternance" : "stage"} de ta ville
               (Premium). <Link href="/inscription">Créer mon profil gratuitement</Link>
             </p>
           </div>

@@ -5,7 +5,6 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchFranceTravailOfferStatus } from "@/lib/franceTravail/client";
 import { CoverLetterPanel } from "@/components/candidature/CoverLetterPanel";
-import { CvOfferMatchPanel } from "@/components/candidature/CvOfferMatchPanel";
 import { ReportOfferButton } from "@/components/candidature/ReportOfferButton";
 import { isPremium } from "@/lib/subscription/isPremium";
 import { SchoolApplyPanel } from "@/components/schoolStage/SchoolApplyPanel";
@@ -20,14 +19,6 @@ function sentAtForPanel(application: Application | null): string | null {
   if (application.status === "envoyee" && !application.sent_at) return null;
   return application.sent_at ?? application.applied_at;
 }
-
-// CvOfferMatchPanel ci-dessous déclenche analyzeOfferFitAction, qui appelle Claude
-// Opus 5 -- voir le commentaire équivalent dans src/app/(app)/cv/page.tsx
-// pour le raisonnement complet (réflexion adaptative activée par défaut,
-// donc plus lente que Gemini/Mistral avant lui ; sans ceci la Server Action
-// tourne sur le défaut Vercel 10s et se fait tuer avant même que le repli
-// statique n'ait sa chance).
-export const maxDuration = 60;
 
 export default async function CandidaturePage({ params }: { params: Promise<{ offerId: string }> }) {
   const { offerId } = await params;
@@ -74,7 +65,6 @@ export default async function CandidaturePage({ params }: { params: Promise<{ of
       .eq("id", user.id)
       .single(),
   ]);
-  const canAnalyzeOfferFit = isPremium(profile) && !!profile?.cv_text;
   // Stage scolaire (18/11) : candidature payante, comme les autres.
   const school = offer.contract_type === "stage_scolaire" && !!profile?.school_stage;
   if (school && !isPremium(profile)) redirect("/premium?source=swipe_apply");
@@ -174,8 +164,6 @@ export default async function CandidaturePage({ params }: { params: Promise<{ of
                 },
               }}
             />
-
-            {canAnalyzeOfferFit && <CvOfferMatchPanel offerId={offerId} />}
 
             {offer.source === "france_travail" && (
               <p style={{ margin: "12px 0 0", fontSize: 12.5, lineHeight: 1.5, color: "color-mix(in srgb, var(--color-text) 62%, transparent)" }}>

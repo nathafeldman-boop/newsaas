@@ -202,7 +202,7 @@ export default async function LandingB() {
             </p>
             <p style={{ margin: 0, fontSize: 13, color: muted }}>ensuite {PLAN_PRICES.lifetime.regular}</p>
             <ul style={{ listStyle: "none", padding: 0, margin: "12px 0 14px", fontSize: 14, lineHeight: 1.9 }}>
-              {["Likes et candidatures illimités", "Lettres de motivation IA", "Audit de CV et matching", "Simulateur d'entretien", "Jamais de renouvellement"].map((x) => (
+              {["Likes et candidatures illimités", "Une lettre prête pour chaque offre", "CV à partir de modèles", "Simulateur d'entretien", "Jamais de renouvellement"].map((x) => (
                 <li key={x}>
                   <span style={{ color: "var(--color-accent-700)", fontWeight: 900 }}>✓</span> {x}
                 </li>

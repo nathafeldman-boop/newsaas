@@ -221,7 +221,7 @@ export const GUIDES: Guide[] = [
       {
         heading: "Et après le CV ?",
         paragraphs: [
-          "Un bon CV ne suffit pas sans une lettre de motivation qui le complète plutôt que de le répéter -- voir notre guide lettre de motivation pour une alternance. Sur Stageio, l'abonnement Premium inclut aussi un audit de CV noté sur 100, qui pointe précisément ce qui bloque sur ton CV avant que tu l'envoies.",
+          "Un bon CV ne suffit pas sans une lettre de motivation qui le complète plutôt que de le répéter -- voir notre guide lettre de motivation pour une alternance. Sur Stageio, tu peux aussi créer ton CV à partir de modèles prêts pour ton métier.",
         ],
       },
     ],
@@ -276,7 +276,7 @@ export const GUIDES: Guide[] = [
       {
         heading: "Gagner du temps avec l'IA",
         paragraphs: [
-          "L'abonnement Premium de Stageio inclut une génération de lettre de motivation par IA : elle reprend exactement cette structure (accroche précise, exigences reliées au profil, formule de politesse, 170-240 mots), personnalisée à partir de ton profil et du CV, pour chaque offre.",
+          "L'abonnement Premium de Stageio prépare une lettre de motivation pour chaque offre, à partir de modèles écrits à la main (sans IA) : elle reprend cette structure (accroche précise, exigences reliées au profil, formule de politesse), complétée avec ton profil et l'offre.",
         ],
       },
     ],
