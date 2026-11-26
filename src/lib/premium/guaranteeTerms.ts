@@ -17,7 +17,7 @@ export const GUARANTEE_MONTHS = 2;
 // de NEW_GUARANTEE_START (ceux d'avant gardent la leur). Toutes les formules.
 // Conditions (choix de Nathan, version « plus exigeante ») écrites dans les
 // CGV, section « Garantie » ; « sous conditions » toujours visible à côté.
-export const NEW_GUARANTEE_START = Date.parse("2026-11-26T15:32:00Z");
+export const NEW_GUARANTEE_START = Date.parse("2026-11-26T15:29:00Z");
 export const GUARANTEE_48H_HOURS = 48;
 export const GUARANTEE_48H_APPLICATIONS = 40;
 export const GUARANTEE_48H_REQUEST_DAYS = 3;
