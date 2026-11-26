@@ -39,83 +39,35 @@ const ERROR_MESSAGES: Record<string, string> = {
 };
 
 const BENEFITS = [
-  {
-    label: "Liker & mettre en favori",
-    icon: (
-      <path
-        d="M6 9a4.5 4.5 0 100 6 6 6 0 004-1.7 6 6 0 004 1.7 4.5 4.5 0 100-6 6 6 0 00-4 1.7A6 6 0 006 9z"
-        stroke="var(--color-accent-700)"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        fill="none"
-      />
-    ),
-  },
-  {
-    label: "Candidatures illimitées",
-    icon: <path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z" fill="var(--color-accent-700)" />,
-  },
-  {
-    label: "Une lettre de motivation par offre, sans IA",
-    icon: (
-      <path
-        d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"
-        fill="var(--color-accent-700)"
-      />
-    ),
-  },
-  {
-    label: "Ton CV à partir de modèles",
-    icon: (
-      <>
-        <path d="M4 15a8 8 0 1116 0" stroke="var(--color-accent-700)" strokeWidth="1.8" strokeLinecap="round" fill="none" />
-        <path d="M12 15l4-5" stroke="var(--color-accent-700)" strokeWidth="1.8" strokeLinecap="round" fill="none" />
-      </>
-    ),
-  },
+  { label: "Liker & mettre en favori" },
+  { label: "Candidatures illimitées" },
+  { label: "Une lettre de motivation par offre, sans IA" },
+  { label: "Ton CV à partir de modèles" },
 ];
-
-function BenefitIcon({ children }: { children: React.ReactNode }) {
-  return (
-    <div
-      style={{
-        width: 32,
-        height: 32,
-        borderRadius: 10,
-        background: "var(--color-accent-100)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flexShrink: 0,
-      }}
-    >
-      <svg width="16" height="16" viewBox="0 0 24 24">
-        {children}
-      </svg>
-    </div>
-  );
-}
 
 // Les 4 avantages en grille 2x2 (maquette de Nathan, 26/09), sous les prix
 // depuis le 28/10 (Nathan : « tu les mets en dessous des prix »).
 function BenefitsGrid() {
+  // Liste cochée « Ce que tu débloques » (26/11, comme le paywall TrendSaaS envoyé par Nathan).
   return (
-    <div className="grid grid-cols-2 gap-2.5" style={{ marginTop: 12 }}>
-      {BENEFITS.map((b) => (
-        <div
-          key={b.label}
-          style={{
-            padding: "12px 12px",
-            borderRadius: 16,
-            border: "1px solid var(--color-divider)",
-            background: "var(--color-surface)",
-          }}
-        >
-          <BenefitIcon>{b.icon}</BenefitIcon>
-          <div style={{ fontSize: 12.5, fontWeight: 700, marginTop: 8, lineHeight: 1.3 }}>{b.label}</div>
-        </div>
-      ))}
-    </div>
+    <section style={{ marginTop: 22 }}>
+      <h2 style={{ fontSize: 18, margin: "0 0 10px" }}>Ce que tu débloques</h2>
+      <div className="flex flex-col gap-2">
+        {BENEFITS.map((b) => (
+          <div
+            key={b.label}
+            className="flex items-center gap-3"
+            style={{ padding: "13px 14px", borderRadius: 16, border: "1px solid var(--color-divider)", background: "var(--color-surface)" }}
+          >
+            <svg aria-hidden width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent-700)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+              <circle cx="12" cy="12" r="9.5" />
+              <path d="M8 12.3l2.7 2.7L16 9.6" />
+            </svg>
+            <span style={{ fontSize: 14.5, fontWeight: 700, lineHeight: 1.3 }}>{b.label}</span>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -503,7 +455,8 @@ export default async function PremiumPage({
 
             <PaywallFaq />
             <PaywallReviews reviews={testimonials} average={reviewStats.average} count={reviewStats.count} />
-            <a href="#formules" className="btn btn-primary btn-block" style={{ marginTop: 22 }}>
+            <h2 style={{ fontSize: 18, margin: "26px 0 0" }}>Reprends là où tu en étais</h2>
+            <a href="#formules" className="btn btn-primary btn-block" style={{ marginTop: 10 }}>
               Choisir ma formule
             </a>
           </div>

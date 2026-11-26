@@ -101,7 +101,7 @@ export function PaywallReviews({ reviews, average, count }: { reviews: PublicTes
   if (reviews.length === 0) return null;
   return (
     <section style={{ marginTop: 26 }}>
-      <h2 style={{ fontSize: 18, margin: 0 }}>Ce qu&apos;en disent les membres</h2>
+      <h2 style={{ fontSize: 18, margin: 0 }}>Ce qu&apos;ils en disent</h2>
       {average !== null && count > 0 && (
         <p style={{ margin: "4px 0 10px", fontSize: 13, color: muted }}>
           ★ {String(average).replace(".", ",")}/5 sur {count.toLocaleString("fr-FR")} avis vérifiés
@@ -109,12 +109,32 @@ export function PaywallReviews({ reviews, average, count }: { reviews: PublicTes
       )}
       <div className="flex flex-col gap-2">
         {reviews.map((r, i) => (
-          <figure key={i} className="card" style={{ margin: 0, padding: "12px 14px" }}>
+          <figure key={i} className="card flex gap-3" style={{ margin: 0, padding: "12px 14px", flexDirection: "row", alignItems: "flex-start" }}>
+            <span
+              aria-hidden
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: "50%",
+                flexShrink: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: 800,
+                fontSize: 16,
+                background: "var(--color-accent-100)",
+                color: "var(--color-accent-700)",
+              }}
+            >
+              {r.author.trim().charAt(0).toUpperCase() || "★"}
+            </span>
+            <div style={{ minWidth: 0 }}>
             <div aria-label={`${r.rating} sur 5`} style={{ color: "var(--color-accent-700)", fontSize: 13, letterSpacing: 1 }}>
               {"★".repeat(r.rating)}
             </div>
             <blockquote style={{ margin: "4px 0 0", fontSize: 13.5, lineHeight: 1.5 }}>« {r.quote} »</blockquote>
             <figcaption style={{ marginTop: 6, fontSize: 12, fontWeight: 700, color: muted }}>{r.author}</figcaption>
+            </div>
           </figure>
         ))}
       </div>

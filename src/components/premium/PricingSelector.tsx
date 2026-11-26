@@ -455,6 +455,8 @@ function ClassicPricing({
   const quarterlyPrice = prices.quarterly[tier];
   // Prix par mois du trimestriel, arrondi au centime supérieur (jamais moins que le vrai prix).
   const quarterlyPerMonth = `${(Math.ceil((euroAmount(quarterlyPrice) / 3) * 100) / 100).toFixed(2).replace(".", ",")} €`;
+  // Prix par jour (comme TrendSaaS), arrondi au centime supérieur : 30 jours pour 1 mois, 90 pour 3 mois.
+  const perDay = (price: string, days: number) => `${(Math.ceil((euroAmount(price) / days) * 100) / 100).toFixed(2).replace(".", ",")} €`;
   // Trois formules, celle du milieu mise en avant et cochée (26/11, Nathan :
   // « un paywall comme TrendSaaS »). Le prix de la formule choisie est écrit
   // sur le bouton : aucune surprise au paiement.
@@ -473,7 +475,7 @@ function ClassicPricing({
           selected={plan === "monthly"}
           onSelect={() => setPlan("monthly")}
           label="1 mois"
-          sublabel="Sans engagement, résiliable à tout moment"
+          sublabel={`Soit ${perDay(monthlyPrice, 30)} par jour · sans engagement`}
           price={monthlyPrice}
           priceSuffix="/mois"
           afterPrice={welcome ? `${prices.monthly.regular}/mois` : undefined}
@@ -482,7 +484,7 @@ function ClassicPricing({
           selected={plan === "quarterly"}
           onSelect={() => setPlan("quarterly")}
           label="3 mois"
-          sublabel={`Soit ${quarterlyPerMonth} par mois, renouvelé tous les 3 mois`}
+          sublabel={`Soit ${perDay(quarterlyPrice, 90)} par jour (${quarterlyPerMonth} par mois), renouvelé tous les 3 mois`}
           price={quarterlyPrice}
           priceSuffix="/3 mois"
           afterPrice={welcome ? `${prices.quarterly.regular}/3 mois` : undefined}
