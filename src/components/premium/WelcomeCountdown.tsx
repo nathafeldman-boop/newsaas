@@ -173,7 +173,7 @@ export function WelcomePriceBanner({
         />
       </div>
       <p style={{ position: "relative", margin: "7px 0 0", fontSize: 12, fontWeight: 600, opacity: 0.92 }}>
-        Ensuite : {prices.monthly.regular}/mois · {prices.lifetime.regular} à vie
+        Ensuite : {prices.monthly.regular}/mois · {prices.quarterly.regular}/3 mois · {prices.lifetime.regular} à vie
       </p>
     </motion.div>
   );

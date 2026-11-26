@@ -3,6 +3,9 @@ import type { Range } from "@/lib/admin/cockpit/metrics";
 import { AUTO_MONTHLY_PRICE_IDS, FLASH_OFFER } from "@/lib/pricing/plans";
 
 const AUTO_LIFETIME_CENTS = [8000, 12800, 13600, 10400, 17680];
+// 80 € est aussi le Premium à vie après le chrono depuis le 26/11 : avant
+// cette date, 80 € était l'Auto à vie ; après, l'Auto n'est plus vendue.
+const PREMIUM_LIFETIME_80_SINCE = Date.parse("2026-11-26T00:00:00Z");
 
 // Statistiques d'un test de prix (onglet Tests, 29/10). Fonctions pures,
 // testables. Le chiffre qui tranche : le revenu par personne qui voit le
@@ -52,7 +55,9 @@ export function purchasesIn(snap: StripeSnapshot, range: Range): Purchase[] {
   for (const o of snap.oneTime) {
     // Auto à vie : 80 €, 128 €, 136 €, 104 € ou 176,80 € (25/11), et 63,23 € (offre 48 h du 5/11) ;
     // le reste est le Premium à vie (30 € à 88,40 €, qui dépasse maintenant 80 €).
-    const autoLifetime = AUTO_LIFETIME_CENTS.includes(o.amountCents) || o.amountCents === FLASH_OFFER.autoLifetimeCents;
+    const autoLifetime =
+      (AUTO_LIFETIME_CENTS.includes(o.amountCents) && !(o.amountCents === 8000 && o.created >= PREMIUM_LIFETIME_80_SINCE)) ||
+      o.amountCents === FLASH_OFFER.autoLifetimeCents;
     all.push({ userId: o.userId, customer: o.customer, t: o.created, cents: o.amountCents, plan: autoLifetime ? "auto_lifetime" : "premium_lifetime", first: false });
   }
   // Premier paiement de chaque compte (client Stripe, sinon profil).

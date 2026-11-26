@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { offerRefundGuaranteeAction } from "@/app/(app)/premium/guarantee-actions";
-import { GUARANTEE_CONDITIONS, GUARANTEE_COOKIE, GUARANTEE_MONTHS, setBrowserCookie } from "@/lib/premium/guaranteeTerms";
+import { GUARANTEE_48H_CONDITIONS, GUARANTEE_48H_APPLICATIONS, GUARANTEE_COOKIE, setBrowserCookie } from "@/lib/premium/guaranteeTerms";
 import { GuaranteeHero } from "@/components/premium/GuaranteeHero";
 
 export const GUARANTEE_EVENT = "stageio:guarantee";
@@ -97,7 +97,7 @@ export function PaywallExitGuard() {
             </p>
             <GuaranteeHero marginTop={12} />
             <p style={{ fontSize: 11.5, lineHeight: 1.45, margin: "10px 0 0", textAlign: "left", color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
-              Conditions : {GUARANTEE_CONDITIONS}{" "}
+              Conditions : {GUARANTEE_48H_CONDITIONS}{" "}
               <a href="/legal/cgv#garantie" target="_blank" rel="noopener" style={{ textDecoration: "underline" }}>
                 Détails dans les CGV
               </a>
@@ -158,8 +158,8 @@ export function GuaranteeBadge({ initialVisible }: { initialVisible: boolean }) 
         lineHeight: 1.45,
       }}
     >
-      <strong>🛡️ Ta garantie est activée :</strong> aucun entretien en {GUARANTEE_MONTHS} mois de Premium = remboursé, sur
-      l&apos;abonnement mensuel.{" "}
+      <strong>🛡️ Garantie 48 h :</strong> pas d&apos;entretien malgré {GUARANTEE_48H_APPLICATIONS} candidatures envoyées avec Stageio
+      dans les 48 h = remboursé, sur toutes les formules, sous conditions.{" "}
       <a href="/legal/cgv#garantie" target="_blank" rel="noopener" style={{ textDecoration: "underline" }}>
         Conditions
       </a>

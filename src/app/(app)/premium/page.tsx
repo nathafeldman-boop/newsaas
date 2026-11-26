@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { CONSENT_AGE, ageOn } from "@/lib/schoolStage/levels";
 import { ParentPaysCheck } from "@/components/premium/ParentPaysCheck";
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { logServerEvent } from "@/lib/analytics/logServerEvent";
@@ -18,10 +17,11 @@ import { WelcomePriceBanner } from "@/components/premium/WelcomeCountdown";
 import { getWelcomeState } from "@/lib/pricing/welcome";
 import { lifetimeOfferFor, priceSheet } from "@/lib/pricing/plans";
 import { PaywallPledge } from "@/components/premium/PaywallPledge";
-import { GuaranteeBadge, PaywallExitGuard } from "@/components/premium/PaywallExitGuard";
+import { PaywallExitGuard } from "@/components/premium/PaywallExitGuard";
+import { GuaranteeBlock, PaywallFaq, PaywallReviews } from "@/components/premium/PaywallBlocks";
+import { getPublicReviewStats, getPublicTestimonials } from "@/lib/reviews/publicStats";
 import { GuaranteeCard, type GuaranteePhase } from "@/components/premium/GuaranteeCard";
 import { getGuaranteeStatus, type GuaranteeStatus } from "@/lib/premium/refundGuarantee";
-import { GUARANTEE_COOKIE } from "@/lib/premium/guaranteeTerms";
 import { getTrustCount } from "@/lib/premium/trustCount";
 
 import { painCopy, primaryContract } from "@/lib/premium/painCopy";
@@ -34,6 +34,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   checkout_failed: "Impossible de démarrer le paiement, réessaie.",
   no_subscription: "Aucun abonnement actif à gérer.",
   already_subscribed: "Tu as déjà un abonnement Premium actif — gère-le avec le bouton ci-dessous plutôt que d'en recréer un.",
+  auto_closed: "Stageio Auto n'est plus proposé. Les formules Premium ci-dessous donnent accès à toutes les offres et aux outils.",
   upgrade_failed: "Le passage à Stageio Auto n'a pas pu se faire (paiement refusé ou carte à mettre à jour). Rien n'a changé sur ton abonnement.",
 };
 
@@ -55,7 +56,7 @@ const BENEFITS = [
     icon: <path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z" fill="var(--color-accent-700)" />,
   },
   {
-    label: "Lettre de motivation générée par IA",
+    label: "Une lettre de motivation par offre, sans IA",
     icon: (
       <path
         d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"
@@ -64,7 +65,7 @@ const BENEFITS = [
     ),
   },
   {
-    label: "Audit CV sur 100",
+    label: "Ton CV à partir de modèles",
     icon: (
       <>
         <path d="M4 15a8 8 0 1116 0" stroke="var(--color-accent-700)" strokeWidth="1.8" strokeLinecap="round" fill="none" />
@@ -197,10 +198,13 @@ export default async function PremiumPage({
   // l'onboarding depuis le 28/10). Pas après une erreur de
   // paiement ni au retour de Stripe sans payer : le paywall directement.
   // Garantie : badge si elle a déjà été vue.
-  const cookieStore = await cookies();
   const showPledge = !premium && !paymentIssue && !error && retour !== "paiement";
-  const guaranteeShown = !!cookieStore.get(GUARANTEE_COOKIE);
   const trustCount = showPledge ? await getTrustCount().catch(() => 0) : 0;
+  // Vrais avis approuvés (26/11, bloc avis du paywall) : rien si aucun.
+  const onPaywall = !premium && !paymentIssue;
+  const [testimonials, reviewStats] = onPaywall
+    ? await Promise.all([getPublicTestimonials(4).catch(() => []), getPublicReviewStats().catch(() => ({ count: 0, average: null }))])
+    : [[], { count: 0, average: null }];
   // Peur (Nathan, 25/11 : « accentue la peur des étudiants ») : le délai et
   // ce qu'on perd à attendre, selon le contrat cherché. Faits vrais
   // seulement (lib/premium/painCopy.ts).
@@ -459,6 +463,9 @@ export default async function PremiumPage({
                 lib/pricing/plans.ts : jamais de « −X % » ni de prix barré. */}
             <WelcomePriceBanner endsAt={welcome?.endsAt ?? null} initialActive={welcome?.active ?? false} flash={lifetimeOffer?.kind === "flash"} prices={prices} />
 
+            {/* Garantie 48 h bien visible au-dessus des formules (26/11, façon TrendSaaS). */}
+            <GuaranteeBlock />
+
             <h1
               className="animate-in"
               style={{ fontSize: 25, fontWeight: 800, lineHeight: 1.22, letterSpacing: "-0.01em", margin: "14px 0 0" }}
@@ -489,9 +496,16 @@ export default async function PremiumPage({
               <p style={{ margin: "5px 0 0", fontSize: 13, lineHeight: 1.45, color: "#8a3410" }}>{pain.pain}</p>
             </div>
 
-            <GuaranteeBadge initialVisible={guaranteeShown} />
-
+            <h2 id="formules" style={{ fontSize: 19, margin: "20px 0 0" }}>
+              Choisis ta formule
+            </h2>
             {under15 ? <ParentPaysCheck>{pricing}</ParentPaysCheck> : pricing}
+
+            <PaywallFaq />
+            <PaywallReviews reviews={testimonials} average={reviewStats.average} count={reviewStats.count} />
+            <a href="#formules" className="btn btn-primary btn-block" style={{ marginTop: 22 }}>
+              Choisir ma formule
+            </a>
           </div>
         </>
       )}

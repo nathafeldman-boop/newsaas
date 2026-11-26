@@ -10,6 +10,33 @@
 // refund-guarantee-reminder). Remboursement fait à la main dans Stripe.
 // Module sans dépendance serveur : importé aussi par les composants client.
 export const GUARANTEE_MONTHS = 2;
+
+// Garantie 48 h (26/11, Nathan : « si en 48 heures t'as pas d'entretien, on te
+// rembourse […] pour en savoir plus, vous allez dans les conditions
+// générales »). Remplace la garantie « 2 mois » pour les achats faits à partir
+// de NEW_GUARANTEE_START (ceux d'avant gardent la leur). Toutes les formules.
+// Conditions (choix de Nathan, version « plus exigeante ») écrites dans les
+// CGV, section « Garantie » ; « sous conditions » toujours visible à côté.
+export const NEW_GUARANTEE_START = Date.parse("2026-11-26T18:00:00Z");
+export const GUARANTEE_48H_HOURS = 48;
+export const GUARANTEE_48H_APPLICATIONS = 40;
+export const GUARANTEE_48H_REQUEST_DAYS = 3;
+export const GUARANTEE_48H = {
+  title: "Pas d'entretien en 48 h ? On te rembourse intégralement.",
+  subtitle: "Garantie 48 h",
+  hook: `Tu envoies au moins ${GUARANTEE_48H_APPLICATIONS} candidatures avec Stageio dans les 48 h qui suivent ton paiement et tu n'obtiens aucun entretien : on te rembourse la totalité.`,
+  mention: "Sous conditions",
+  link: "/legal/cgv#garantie",
+};
+export const GUARANTEE_48H_CONDITIONS =
+  `au moins ${GUARANTEE_48H_APPLICATIONS} candidatures envoyées avec Stageio dans les ${GUARANTEE_48H_HOURS} h qui suivent ton premier paiement ` +
+  `(avec une capture de l'envoi pour celles faites sur le site du recruteur), profil et CV complétés, aucun entretien obtenu, ` +
+  `demande par email dans les ${GUARANTEE_48H_REQUEST_DAYS} jours suivant le paiement, sans avoir résilié avant.`;
+
+/** L'achat relève-t-il de la garantie 48 h (achats à partir du 26/11) ? */
+export function isNewGuaranteePurchase(activatedAt: string | null): boolean {
+  return !!activatedAt && Date.parse(activatedAt) >= NEW_GUARANTEE_START;
+}
 /**
  * Accès à vie achetés à partir de cette date : pas de garantie ni de
  * remboursement (Nathan, 30/10 ; CGV, section « Garantie »). Ceux achetés

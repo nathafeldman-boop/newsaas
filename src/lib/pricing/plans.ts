@@ -121,9 +121,17 @@ export const PRICE_TEST_START = Date.parse("2026-10-29T00:10:00Z");
 // 88,40 € à vie). Prix Stripe créés le 25/11 (clés stageio_premium_monthly_1299
 // / _2209, stageio_premium_lifetime_5200 / _8840). Les prix d'avant (9,99 € /
 // 40 € de bienvenue, 16,99 € / 68 € ensuite) restent reconnus.
+// 26/11 (Nathan : « supprime l'abonnement auto […] à la place tu vas me créer
+// un trimestriel […] à 22 € […] le à vie à 50 € […] fais pas +70 %, fais +60 %
+// au bout de 10 minutes ») : trimestriel 22 € les 3 mois (moins cher que deux
+// mois), à vie 50 €, toujours 10 minutes, puis +60 % (20,79 €/mois, 35,20 € les
+// 3 mois, 80 € à vie). Prix Stripe du 26/11 (clés stageio_premium_monthly_2079,
+// stageio_premium_quarterly_2200 / _3520, stageio_premium_lifetime_8000 ; le
+// 50 € à vie stageio_premium_lifetime_5000 existait depuis l'essai du 31/10).
 export const PLAN_PRICES = {
-  monthly: { welcome: "12,99 €", regular: "22,09 €" },
-  lifetime: { welcome: "52 €", regular: "88,40 €" },
+  monthly: { welcome: "12,99 €", regular: "20,79 €" },
+  quarterly: { welcome: "22 €", regular: "35,20 €" },
+  lifetime: { welcome: "50 €", regular: "80 €" },
 } as const;
 
 /** « 40 € à vie ou 9,99 €/mois » : rappel du prix dans les écrans réservés à Premium. */
@@ -147,10 +155,19 @@ export const PREVIOUS_MONTHLY_WELCOME = {
 // reconnaître les achats (voir creditAffiliateCommission).
 export const WELCOME_PRICE_IDS = {
   monthly: "price_1UfhSMRd6r34OMU6NryIV3Cf",
-  lifetime: "price_1UfhqcRd6r34OMU6OvEgKJe9",
+  quarterly: "price_1Ug40kRd6r34OMU6hHufgQji",
+  lifetime: "price_1UWeVYRd6r34OMU6dpfEj5Nz",
 };
 
 export const REGULAR_PRICE_IDS = {
+  monthly: "price_1Ug40SRd6r34OMU6h60rl1er",
+  quarterly: "price_1Ug40pRd6r34OMU68WJJu8WU",
+  lifetime: "price_1Ug40wRd6r34OMU6Ok4rueUz",
+};
+
+/** Prix du 25 au 26/11 (52 € à vie de bienvenue, 22,09 €/mois et 88,40 € à vie ensuite), toujours reconnus. */
+export const PREVIOUS_30_PRICE_IDS = {
+  welcomeLifetime: "price_1UfhqcRd6r34OMU6OvEgKJe9",
   monthly: "price_1UfhqRRd6r34OMU64icyCHdX",
   lifetime: "price_1UfhqpRd6r34OMU6I1RtI5m7",
 };
@@ -182,8 +199,14 @@ export function premiumMonthlyPriceIds(): string[] {
     PREVIOUS_REGULAR_MONTHLY_PRICE_ID,
     PREVIOUS_60_PRICE_IDS.monthly,
     PREVIOUS_70_PRICE_IDS.monthly,
+    PREVIOUS_30_PRICE_IDS.monthly,
     REGULAR_PRICE_IDS.monthly,
   ];
+}
+
+/** Prix du trimestriel Premium (26/11). */
+export function premiumQuarterlyPriceIds(): string[] {
+  return [WELCOME_PRICE_IDS.quarterly, REGULAR_PRICE_IDS.quarterly];
 }
 
 // Offre ouverte avant le début du test (offre 48 h reçue par email, ou
@@ -217,6 +240,7 @@ export function priceIncreasePct(from: string, to: string): number {
 /** Prix affichés au paywall (un seul objet, lu côté serveur puis passé aux composants). */
 export type PriceSheet = {
   monthly: { welcome: string; regular: string };
+  quarterly: { welcome: string; regular: string };
   lifetime: { welcome: string; regular: string };
   auto: { monthly: { welcome: string; regular: string }; lifetime: { welcome: string; regular: string } };
 };
@@ -224,6 +248,7 @@ export type PriceSheet = {
 export function priceSheet(legacy = false): PriceSheet {
   return {
     monthly: { welcome: legacy ? PREVIOUS_MONTHLY_WELCOME.price : PLAN_PRICES.monthly.welcome, regular: PLAN_PRICES.monthly.regular },
+    quarterly: { ...PLAN_PRICES.quarterly },
     lifetime: { ...PLAN_PRICES.lifetime },
     auto: { monthly: { ...AUTO_PRICES.monthly }, lifetime: { ...AUTO_PRICES.lifetime } },
   };

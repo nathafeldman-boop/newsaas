@@ -5,7 +5,6 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getOrCreateInboxAddress } from "@/lib/inbox/address";
 import { isAutoTier, isPremium } from "@/lib/subscription/isPremium";
-import { AUTO_DAILY_LIMIT, AUTO_PRICES } from "@/lib/pricing/plans";
 
 export const metadata: Metadata = { title: "Ma boîte Stageio", robots: { index: false } };
 
@@ -40,12 +39,9 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
         <h1 style={{ fontSize: 26, margin: 0 }}>Ma boîte Stageio</h1>
         <div className="card elev-sm mt-4" style={{ padding: "var(--space-6)", alignItems: "flex-start", background: "var(--color-surface)" }}>
           <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.55 }}>
-            Avec Stageio Auto, chaque like envoie ta candidature depuis ton adresse de candidature (jusqu&apos;à {AUTO_DAILY_LIMIT} par jour),
-            et les réponses des recruteurs arrivent ici. {AUTO_PRICES.monthly.regular}/mois ou {AUTO_PRICES.lifetime.regular} à vie.
+            La boîte Stageio était réservée à la formule Stageio Auto, qui n&apos;est plus proposée. Tes candidatures se suivent depuis{" "}
+            <Link href="/mes-candidatures">ton suivi de candidatures</Link>.
           </p>
-          <Link href="/premium?offre=auto#auto" className="btn btn-primary" style={{ marginTop: 10 }}>
-            Découvrir Stageio Auto
-          </Link>
         </div>
       </div>
     );

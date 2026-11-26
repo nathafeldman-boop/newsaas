@@ -1,5 +1,5 @@
 import type Stripe from "stripe";
-import { LIFETIME_PROMO, PREVIOUS_60_PRICE_IDS, PREVIOUS_70_PRICE_IDS, premiumMonthlyPriceIds, REGULAR_PRICE_IDS, WELCOME_PRICE_IDS } from "@/lib/pricing/plans";
+import { LIFETIME_PROMO, PREVIOUS_30_PRICE_IDS, PREVIOUS_60_PRICE_IDS, PREVIOUS_70_PRICE_IDS, premiumMonthlyPriceIds, premiumQuarterlyPriceIds, REGULAR_PRICE_IDS, WELCOME_PRICE_IDS } from "@/lib/pricing/plans";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 // 50% sur mensuel et à vie (formule hebdomadaire retirée le 26/09, voir
@@ -13,11 +13,13 @@ import { createAdminClient } from "@/lib/supabase/admin";
 // exactement comme n'importe quel renouvellement mensuel.
 const COMMISSION_RATE = 0.5;
 
-function planLabelForPriceId(priceId: string | null): "week" | "month" | "lifetime" | null {
+function planLabelForPriceId(priceId: string | null): "week" | "month" | "quarter" | "lifetime" | null {
   if (!priceId) return null;
   if (priceId === process.env.STRIPE_PRICE_ID_WEEKLY?.trim()) return "week";
   // Tous les prix du mensuel Premium, ceux du test de prix du 29/10 compris.
   if (priceId === process.env.STRIPE_PRICE_ID?.trim() || premiumMonthlyPriceIds().includes(priceId)) return "month";
+  // Trimestriel (26/11).
+  if (premiumQuarterlyPriceIds().includes(priceId)) return "quarter";
   if (
     // Prix de bienvenue à vie (40 €), puis la variable d'environnement (même prix, ou un ancien).
     priceId === WELCOME_PRICE_IDS.lifetime ||
@@ -26,6 +28,8 @@ function planLabelForPriceId(priceId: string | null): "week" | "month" | "lifeti
     priceId === PREVIOUS_60_PRICE_IDS.lifetime ||
     priceId === PREVIOUS_70_PRICE_IDS.welcomeLifetime ||
     priceId === PREVIOUS_70_PRICE_IDS.lifetime ||
+    priceId === PREVIOUS_30_PRICE_IDS.welcomeLifetime ||
+    priceId === PREVIOUS_30_PRICE_IDS.lifetime ||
     priceId === LIFETIME_PROMO.priceId
   )
     return "lifetime";

@@ -10,6 +10,7 @@ import { useWelcomeCountdown } from "@/components/premium/WelcomeCountdown";
 import { AUTO_DAILY_LIMIT, euroAmount, priceIncreasePct, priceSheet, type LifetimeOffer, type PriceSheet } from "@/lib/pricing/plans";
 
 type Plan = "monthly" | "lifetime";
+type ClassicPlan = "monthly" | "quarterly" | "lifetime";
 
 // Bouton de paiement (28/10) : la page Stripe met une ou deux secondes à
 // s'ouvrir après le clic ; sans retour visible, on reclique ou on part.
@@ -441,50 +442,65 @@ function ClassicPricing({
   // Prix de bienvenue (voir lib/pricing/plans.ts) : fin fixée côté serveur.
   welcomeEndsAt?: number | null;
   welcomeActive?: boolean;
-  // Prix spécial de l'accès à vie (offre 48 h du compte, ou promo) : lu côté serveur.
+  // Prix spécial de l'accès à vie (offre de l'email du compte) : lu côté serveur.
   lifetimeOffer?: LifetimeOffer | null;
   prices?: PriceSheet;
 }) {
-  const { active: welcome, remaining } = useWelcomeCountdown(welcomeEndsAt, welcomeActive);
+  const { active: welcome } = useWelcomeCountdown(welcomeEndsAt, welcomeActive);
   const { active: offerPeriod } = useWelcomeCountdown(lifetimeOffer?.endsAt ?? null, lifetimeOffer !== null);
   const tier = welcome ? "welcome" : "regular";
-  // 30 € tant que le chrono de bienvenue tourne (39,99 € barré pendant la promo du 23-25/10 seulement).
   const promo = offerPeriod && welcome ? lifetimeOffer : null;
-  const flash = promo?.kind === "flash";
   const lifetimePrice = promo ? promo.price : prices.lifetime[tier];
   const monthlyPrice = prices.monthly[tier];
-  // Accès à vie affiché en premier et présélectionné (demande de Nathan,
-  // 14/10) ; le prix du plan choisi est écrit sur le bouton pour qu'il n'y
-  // ait aucune surprise au paiement.
-  const [plan, setPlan] = useState<Plan>(lifetimeAvailable ? "lifetime" : "monthly");
+  const quarterlyPrice = prices.quarterly[tier];
+  // Prix par mois du trimestriel, arrondi au centime supérieur (jamais moins que le vrai prix).
+  const quarterlyPerMonth = `${(Math.ceil((euroAmount(quarterlyPrice) / 3) * 100) / 100).toFixed(2).replace(".", ",")} €`;
+  // Trois formules, celle du milieu mise en avant et cochée (26/11, Nathan :
+  // « un paywall comme TrendSaaS »). Le prix de la formule choisie est écrit
+  // sur le bouton : aucune surprise au paiement.
+  const [plan, setPlan] = useState<ClassicPlan>("quarterly");
+  const label =
+    plan === "lifetime"
+      ? `Débloquer à vie · ${lifetimePrice}`
+      : plan === "quarterly"
+        ? `Débloquer 3 mois · ${quarterlyPrice}`
+        : `Débloquer 1 mois · ${monthlyPrice}`;
 
   return (
-    <div className="animate-in" style={{ marginTop: 18 }}>
+    <div className="animate-in" style={{ marginTop: 14 }}>
       <div className="flex flex-col gap-2.5">
+        <PlanRow
+          selected={plan === "monthly"}
+          onSelect={() => setPlan("monthly")}
+          label="1 mois"
+          sublabel="Sans engagement, résiliable à tout moment"
+          price={monthlyPrice}
+          priceSuffix="/mois"
+          afterPrice={welcome ? `${prices.monthly.regular}/mois` : undefined}
+        />
+        <PlanRow
+          selected={plan === "quarterly"}
+          onSelect={() => setPlan("quarterly")}
+          label="3 mois"
+          sublabel={`Soit ${quarterlyPerMonth} par mois, renouvelé tous les 3 mois`}
+          price={quarterlyPrice}
+          priceSuffix="/3 mois"
+          afterPrice={welcome ? `${prices.quarterly.regular}/3 mois` : undefined}
+          badge="Recommandé"
+        />
         {lifetimeAvailable && (
           <PlanRow
             selected={plan === "lifetime"}
             onSelect={() => setPlan("lifetime")}
-            label="Accès à vie"
+            label="À vie"
             sublabel="Paiement unique, jamais de renouvellement"
             price={lifetimePrice}
             strikePrice={promo?.strike ?? undefined}
             afterPrice={welcome ? prices.lifetime.regular : undefined}
-            badge={promo ? promo.badge : `Le prix de ${Math.round(euroAmount(lifetimePrice) / euroAmount(prices.monthly.welcome))} mois`}
+            badge={promo ? promo.badge : undefined}
           />
         )}
-        <PlanRow
-          selected={plan === "monthly"}
-          onSelect={() => setPlan("monthly")}
-          label="Mensuel"
-          sublabel="Résiliable à tout moment"
-          price={monthlyPrice}
-          afterPrice={welcome ? `${prices.monthly.regular}/mois` : undefined}
-          priceSuffix="/mois"
-        />
       </div>
-
-      {benefits}
 
       {errorMessage && (
         <p
@@ -501,48 +517,46 @@ function ClassicPricing({
         </p>
       )}
 
-      {welcome && (
-        <p style={{ margin: "14px 0 0", fontSize: 14, fontWeight: 700, textAlign: "center", color: "var(--color-accent-700)" }}>
-          {flash ? "🎁 Ton offre de l'email encore" : "🎁 Prix de bienvenue encore"}{" "}
-          <span style={{ fontSize: 20, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{remaining ?? "––:––"}</span>
-          <br />
-          <span style={{ fontSize: 12.5, fontWeight: 600 }}>
-            ensuite {plan === "lifetime" ? prices.lifetime.regular : `${prices.monthly.regular}/mois`}
-          </span>
-        </p>
-      )}
-
       <form action={createCheckoutSessionAction} style={{ marginTop: 14 }}>
         <input type="hidden" name="plan" value={plan} />
-        <CheckoutButton label={plan === "lifetime" ? `Débloquer à vie · ${lifetimePrice}` : `Débloquer Premium · ${monthlyPrice}/mois`} />
+        <CheckoutButton label={label} />
       </form>
 
       <div
         className="flex flex-wrap items-center justify-center gap-2"
         style={{ marginTop: 10, fontSize: 11.5, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}
       >
-        <span>🔒 Paiement sécurisé</span>
+        <span>🔒 Paiement sécurisé par Stripe</span>
         <span style={{ opacity: 0.5 }}>·</span>
         <span>{plan === "lifetime" ? "Paiement unique" : "Résiliable à tout moment"}</span>
         <span style={{ opacity: 0.5 }}>·</span>
         <AccessCodeForm />
       </div>
 
+      {/* Sous le bouton, en petit (26/11, Nathan) : accepter les CGV et
+          renoncer au délai de rétractation (accès immédiat, art. L221-28 13°). */}
       <p
         style={{
           fontSize: 10.5,
           textAlign: "center",
-          lineHeight: 1.4,
+          lineHeight: 1.45,
           margin: "12px 0 0",
-          color: "color-mix(in srgb, var(--color-text) 50%, transparent)",
+          color: "color-mix(in srgb, var(--color-text) 55%, transparent)",
         }}
       >
-        En continuant, tu acceptes les{" "}
+        En cliquant sur « Débloquer », tu acceptes les{" "}
         <Link href="/legal/cgv" style={{ color: "var(--color-accent-700)", textDecoration: "underline" }}>
-          CGV
+          conditions générales de vente
+        </Link>{" "}
+        et tu demandes l&apos;accès immédiat à Premium : tu renonces donc à ton droit de rétractation de 14 jours. La garantie 48 h
+        s&apos;applique{" "}
+        <Link href="/legal/cgv#garantie" style={{ color: "var(--color-accent-700)", textDecoration: "underline" }}>
+          sous conditions
         </Link>
         .
       </p>
+
+      {benefits}
     </div>
   );
 }

@@ -1,4 +1,3 @@
-import { cookies } from "next/headers";
 import { after } from "next/server";
 import Stripe from "stripe";
 import { recordCheckoutOpened } from "@/lib/stripe/checkoutReminder";
@@ -23,7 +22,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripeClient } from "@/lib/stripe/client";
 import { SITE_URL } from "@/lib/site";
-import { GUARANTEE_COOKIE, GUARANTEE_MONTHS } from "@/lib/premium/guaranteeTerms";
+import { GUARANTEE_48H_APPLICATIONS } from "@/lib/premium/guaranteeTerms";
 
 export async function getOrCreateStripeCustomer(userId: string, email: string | null, supabase: DbClient) {
   const { data: profile } = await supabase
@@ -50,7 +49,7 @@ export async function getOrCreateStripeCustomer(userId: string, email: string | 
   return customer.id;
 }
 
-export type CheckoutError = "already_subscribed" | "not_configured" | "checkout_failed" | "upgrade_failed" | "login_required";
+export type CheckoutError = "already_subscribed" | "not_configured" | "checkout_failed" | "upgrade_failed" | "login_required" | "auto_closed";
 
 type DbClient = Awaited<ReturnType<typeof createClient>> | ReturnType<typeof createAdminClient>;
 
@@ -73,12 +72,12 @@ const GUEST_SUCCESS_URL = `${SITE_URL}/paiement-recu?session_id={CHECKOUT_SESSIO
 // rassure : paiement sécurisé, accès immédiat, sans engagement (mensuel) ou
 // paiement unique (à vie), et la garantie quand l'étudiant l'a vue.
 async function checkoutPresentation(lifetime: boolean): Promise<Pick<Stripe.Checkout.SessionCreateParams, "branding_settings" | "custom_text">> {
-  const guarantee = !!(await cookies()).get(GUARANTEE_COOKIE);
   const message = [
     "🔒 Paiement sécurisé par Stripe pour Stageio. Ton accès s'ouvre dès le paiement.",
     lifetime ? "Paiement unique : aucun abonnement, rien à résilier." : "Sans engagement : tu résilies quand tu veux, depuis ton compte Stageio.",
-    // Garantie : abonnement mensuel seulement (accès à vie exclu depuis le 31/10, CGV).
-    guarantee && !lifetime ? `🛡️ Garantie : aucun entretien en ${GUARANTEE_MONTHS} mois de Premium = remboursé (conditions dans les CGV).` : null,
+    // Garantie 48 h (26/11), toutes formules, sous conditions (CGV).
+    `🛡️ Garantie 48 h : pas d'entretien malgré ${GUARANTEE_48H_APPLICATIONS} candidatures envoyées avec Stageio = remboursé (sous conditions, voir les CGV).`,
+    "En payant, tu acceptes les CGV de Stageio et tu renonces au délai de rétractation, l'accès étant immédiat.",
   ]
     .filter(Boolean)
     .join(" ");
@@ -117,7 +116,10 @@ export async function startCheckout(
 ): Promise<{ url: string } | { error: CheckoutError }> {
   const supabase: DbClient = options.guest ? createAdminClient() : await createClient();
 
-  if (plan === "auto_monthly" || plan === "auto_lifetime") return startAutoCheckout(user, plan, supabase, options);
+  // Stageio Auto n'est plus vendu (26/11, Nathan : « supprime l'abonnement
+  // auto, c'est pour ceux qui l'ont déjà pris ») : les abonnés actuels le
+  // gardent, aucun nouvel achat ni passage à Auto.
+  if (plan === "auto_monthly" || plan === "auto_lifetime") return { error: "auto_closed" };
 
   // Garde-fou serveur : /premium masque déjà le bouton "Débloquer Premium"
   // pour un profil Premium (voir isPremium() côté page), mais c'est
@@ -174,17 +176,23 @@ export async function startCheckout(
   // Promo accès à vie (30 € au lieu de 39,99 €) : pendant le prix de
   // bienvenue seulement, tant que la promo dure (même minute de marge).
   const promo = isLifetime && (flash || (welcome && now <= LIFETIME_PROMO.endsAt + 60_000));
+  // Trimestriel (26/11) : 22 € les 3 mois pendant le chrono, 35,20 € ensuite.
+  const isQuarterly = plan === "quarterly";
   const rawPriceId = promo
     ? LIFETIME_PROMO.priceId
     : welcome
     ? isLifetime
       ? WELCOME_PRICE_IDS.lifetime
-      : legacy
-        ? PREVIOUS_MONTHLY_WELCOME.priceId
-        : WELCOME_PRICE_IDS.monthly
+      : isQuarterly
+        ? WELCOME_PRICE_IDS.quarterly
+        : legacy
+          ? PREVIOUS_MONTHLY_WELCOME.priceId
+          : WELCOME_PRICE_IDS.monthly
     : isLifetime
       ? REGULAR_PRICE_IDS.lifetime
-      : REGULAR_PRICE_IDS.monthly;
+      : isQuarterly
+        ? REGULAR_PRICE_IDS.quarterly
+        : REGULAR_PRICE_IDS.monthly;
   // .trim() : Stripe rejette un ID avec un espace superflu ("No such
   // price") sans distinguer ça d'un ID réellement invalide -- un simple
   // copier-coller depuis le dashboard Stripe vers Vercel embarque parfois
@@ -270,6 +278,8 @@ async function welcomeAt(userId: string): Promise<{ welcome: boolean; flash: boo
 // - accès à vie Premium : il peut prendre l'Auto, mensuel ou à vie.
 // Jamais deux abonnements Auto ; rien ne part tant que la colonne
 // premium_tier (SQL du 24/10) n'existe pas.
+// Plus appelée depuis le 26/11 (Auto retirée de la vente) ; gardée pour la réouvrir au besoin.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function startAutoCheckout(
   user: { id: string; email: string | null },
   plan: "auto_monthly" | "auto_lifetime",

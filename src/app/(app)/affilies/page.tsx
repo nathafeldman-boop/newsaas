@@ -203,7 +203,7 @@ export default async function AffiliesPage({
                   <p style={{ fontSize: 13, margin: 0 }}>
                     {(c.commission_cents / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €{" "}
                     <span style={{ fontSize: 11, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                      ({c.plan_interval === "week" ? "hebdo" : c.plan_interval === "lifetime" ? "à vie" : "mensuel"})
+                      ({c.plan_interval === "week" ? "hebdo" : c.plan_interval === "lifetime" ? "à vie" : c.plan_interval === "quarter" ? "trimestriel" : "mensuel"})
                     </span>
                   </p>
                   <p style={{ fontSize: 11, margin: "2px 0 0", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>

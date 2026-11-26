@@ -179,6 +179,9 @@ export function PaywallPledge({
                     </p>
                     <p style={{ margin: "2px 0 0", fontSize: 12.5, fontWeight: 700 }}>par mois</p>
                     <div style={{ height: 1, margin: "12px 6px", background: "color-mix(in srgb, var(--color-bg) 35%, transparent)" }} />
+                    <p style={{ margin: 0, fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 800, lineHeight: 1 }}>{prices.quarterly.welcome}</p>
+                    <p style={{ margin: "2px 0 0", fontSize: 12.5, fontWeight: 700 }}>les 3 mois</p>
+                    <div style={{ height: 1, margin: "12px 6px", background: "color-mix(in srgb, var(--color-bg) 35%, transparent)" }} />
                     <p style={{ margin: 0, fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 800, lineHeight: 1 }}>{lifetimeNow}</p>
                     <p style={{ margin: "2px 0 0", fontSize: 12.5, fontWeight: 700 }}>à vie</p>
                   </div>
@@ -198,6 +201,11 @@ export function PaywallPledge({
                     </p>
                     <p style={{ margin: "2px 0 0", fontSize: 12.5, fontWeight: 700, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
                       par mois · <span style={{ color: "#c2262b" }}>{increase(prices.monthly.welcome, prices.monthly.regular)}</span>
+                    </p>
+                    <div style={{ height: 1, margin: "12px 6px", background: "var(--color-divider)" }} />
+                    <p style={{ margin: 0, fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 800, lineHeight: 1 }}>{prices.quarterly.regular}</p>
+                    <p style={{ margin: "2px 0 0", fontSize: 12.5, fontWeight: 700, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
+                      les 3 mois · <span style={{ color: "#c2262b" }}>{increase(prices.quarterly.welcome, prices.quarterly.regular)}</span>
                     </p>
                     <div style={{ height: 1, margin: "12px 6px", background: "var(--color-divider)" }} />
                     <p style={{ margin: 0, fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 800, lineHeight: 1 }}>{prices.lifetime.regular}</p>

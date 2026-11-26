@@ -4,6 +4,7 @@ import {
   GUARANTEE_REQUESTED_EVENT,
   guaranteeCoversPurchase,
   guaranteeWindow,
+  isNewGuaranteePurchase,
 } from "@/lib/premium/guaranteeTerms";
 
 // Côté serveur de la garantie (conditions et constantes dans guaranteeTerms).
@@ -27,6 +28,8 @@ export async function getGuaranteeStatus(
     return null;
   }
   if (!guaranteeCoversPurchase(profile.subscription_status, activatedAt)) return null;
+  // Achats à partir du 26/11 : garantie 48 h (demande par email, CGV), plus celle des 2 mois.
+  if (isNewGuaranteePurchase(activatedAt)) return null;
   const admin = createAdminClient();
   const { data: offered, error: offeredError } = await admin
     .from("user_events")

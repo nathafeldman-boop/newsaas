@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { GUARANTEE_MONTHS } from "@/lib/premium/guaranteeTerms";
+import { GUARANTEE_48H_APPLICATIONS } from "@/lib/premium/guaranteeTerms";
 
 // Carte « Remboursé » de la garantie : la même avant le paywall (3e écran)
 // et dans le message en quittant le paywall.
@@ -35,7 +35,8 @@ export function GuaranteeHero({ marginTop = 22 }: { marginTop?: number }) {
         Remboursé
       </p>
       <p style={{ fontSize: 16, fontWeight: 700, lineHeight: 1.4, margin: "10px 0 0" }}>
-        Pas d&apos;entretien au bout de {GUARANTEE_MONTHS} mois de Premium ? On te rembourse.
+        Pas d&apos;entretien dans les 48 h malgré {GUARANTEE_48H_APPLICATIONS} candidatures envoyées avec Stageio ? On te rembourse
+        intégralement.
       </p>
       <span
         style={{
@@ -48,7 +49,7 @@ export function GuaranteeHero({ marginTop = 22 }: { marginTop?: number }) {
           fontWeight: 800,
         }}
       >
-        Sur toutes les formules
+        Garantie 48 h · sous conditions
       </span>
     </motion.div>
   );
