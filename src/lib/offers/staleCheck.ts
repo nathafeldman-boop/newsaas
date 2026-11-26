@@ -55,3 +55,53 @@ export async function verifyUnseenFranceTravailOffers(admin: Admin, deadline: nu
   summary.live = live.length;
   return summary;
 }
+
+// Liens morts des autres sources (26/11, Nathan : « je n'arrive pas à
+// postuler, il n'y a que des erreurs 404 »). Chaque nuit, les offres hors
+// France Travail likées ces 3 derniers jours (celles sur lesquelles les
+// étudiants vont cliquer « Postuler ») sont vérifiées : 404, 410 ou page
+// « offre expirée » → retirée. Le clic passe aussi par /go/[offerId], qui
+// vérifie à nouveau. Sur un doute, rien ne change.
+const LIKED_DAYS = 3;
+const MAX_LINK_CHECKS = 300;
+
+export async function verifyLikedOfferLinks(admin: Admin, deadline: number, now = Date.now()) {
+  const { checkOfferLink } = await import("@/lib/offers/linkCheck");
+  const summary = { candidates: 0, checked: 0, dead: 0 };
+  const { data: apps, error } = await admin
+    .from("applications")
+    .select("offer_id")
+    .gte("applied_at", new Date(now - LIKED_DAYS * 86_400_000).toISOString())
+    .limit(5000);
+  if (error) throw new Error(error.message);
+  const ids = [...new Set((apps ?? []).map((a) => a.offer_id))];
+  const offers: { id: string; source: string; external_id: string | null; apply_url: string | null }[] = [];
+  for (let i = 0; i < ids.length && offers.length < MAX_LINK_CHECKS; i += 200) {
+    const { data } = await admin
+      .from("offers")
+      .select("id, source, external_id, apply_url")
+      .in("id", ids.slice(i, i + 200))
+      .eq("is_active", true)
+      .neq("source", "france_travail")
+      .neq("source", "demo");
+    offers.push(...(data ?? []));
+  }
+  summary.candidates = offers.length;
+  const queue = offers.slice(0, MAX_LINK_CHECKS);
+  const dead: string[] = [];
+  await Promise.all(
+    Array.from({ length: 8 }, async () => {
+      for (let o = queue.shift(); o && Date.now() < deadline; o = queue.shift()) {
+        const verdict = await checkOfferLink(o).catch(() => "unknown" as const);
+        summary.checked += 1;
+        if (verdict === "dead") dead.push(o.id);
+      }
+    }),
+  );
+  if (dead.length > 0) {
+    const { error: upErr } = await admin.from("offers").update({ is_active: false }).in("id", dead);
+    if (upErr) throw new Error(upErr.message);
+  }
+  summary.dead = dead.length;
+  return summary;
+}

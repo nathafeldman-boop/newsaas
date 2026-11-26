@@ -337,7 +337,7 @@ function RowDetails({ app, now, trackingReady, fullName }: { app: TrackedApplica
               {copied ? "Message copié ✓" : "Copier le message"}
             </button>
             {offer?.applyUrl && offer.isActive && (
-              <a href={offer.applyUrl} target="_blank" rel="noopener noreferrer" className="btn btn-ghost" style={{ fontSize: 12.5 }}>
+              <a href={`/go/${app.offerId}`} target="_blank" rel="noopener noreferrer" className="btn btn-ghost" style={{ fontSize: 12.5 }}>
                 Page de l&apos;offre ↗
               </a>
             )}

@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { dedupeActiveOffers } from "@/lib/offers/dedupe";
 import { OFFER_EXPIRY_DAYS, OFFER_UNSEEN_GRACE_DAYS } from "@/lib/offers/expiry";
-import { verifyUnseenFranceTravailOffers } from "@/lib/offers/staleCheck";
+import { verifyLikedOfferLinks, verifyUnseenFranceTravailOffers } from "@/lib/offers/staleCheck";
 
 // Cron quotidien (voir vercel.json) : désactive les offres ingérées qui
 // traînent depuis trop longtemps sans avoir été retraitées (probablement
@@ -61,11 +61,19 @@ export async function GET(request: NextRequest) {
   } catch (err) {
     franceTravail = { error: err instanceof Error ? err.message : String(err) };
   }
-  console.log("deactivate-expired-offers", JSON.stringify({ deactivated: data?.length ?? 0, franceTravail }));
+  // Liens morts des offres likées hors France Travail (26/11), avec le temps qui reste.
+  let likedLinks: Awaited<ReturnType<typeof verifyLikedOfferLinks>> | { error: string };
+  try {
+    likedLinks = await verifyLikedOfferLinks(admin, started + 285_000);
+  } catch (err) {
+    likedLinks = { error: err instanceof Error ? err.message : String(err) };
+  }
+  console.log("deactivate-expired-offers", JSON.stringify({ deactivated: data?.length ?? 0, franceTravail, likedLinks }));
 
   return NextResponse.json({
     deactivated: data?.length ?? 0,
     dedupe: dedupeResult,
     franceTravail,
+    likedLinks,
   });
 }

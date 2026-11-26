@@ -20,7 +20,15 @@ function sentAtForPanel(application: Application | null): string | null {
   return application.sent_at ?? application.applied_at;
 }
 
-export default async function CandidaturePage({ params }: { params: Promise<{ offerId: string }> }) {
+export default async function CandidaturePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ offerId: string }>;
+  searchParams: Promise<{ retiree?: string }>;
+}) {
+  // Lien de la source mort au clic sur « Postuler » (voir app/go/[offerId]).
+  const retiree = (await searchParams).retiree === "1";
   const { offerId } = await params;
 
   const supabase = await createClient();
@@ -44,7 +52,7 @@ export default async function CandidaturePage({ params }: { params: Promise<{ of
   // doute (délai, quota) ne bloque jamais : on garde l'état en base.
   const liveStatus =
     offer.source === "france_travail" && offer.external_id ? await fetchFranceTravailOfferStatus(offer.external_id, 2500, { checkPage: true }) : "unknown";
-  const gone = liveStatus === "gone" || (!offer.is_active && liveStatus !== "live");
+  const gone = retiree || liveStatus === "gone" || (!offer.is_active && liveStatus !== "live");
   if (liveStatus !== "unknown" && offer.is_active !== (liveStatus === "live")) {
     after(async () => {
       const { error } = await createAdminClient().from("offers").update({ is_active: liveStatus === "live" }).eq("id", offer.id);

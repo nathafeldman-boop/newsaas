@@ -219,7 +219,8 @@ export function CoverLetterPanel({
         // best-effort : le clic reste utile même si le presse-papier est refusé
       }
     }
-    window.open(applyUrl, "_blank", "noopener,noreferrer");
+    // Passe par /go : le lien est vérifié au clic, jamais de page 404 (26/11).
+    window.open(`/go/${offerId}`, "_blank", "noopener,noreferrer");
     setOpenedApply(true);
   }
 
