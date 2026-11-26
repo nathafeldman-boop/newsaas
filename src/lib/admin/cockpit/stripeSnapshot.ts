@@ -96,6 +96,8 @@ async function compute(): Promise<StripeSnapshot> {
   const db = createAdminClient();
   const since = Math.floor(SINCE / 1000);
 
+  // Base lente (27/11, « le dashboard bug trop ») : sans la liste des comptes,
+  // les chiffres Stripe restent justes ; seul le lien abonnement → compte manque.
   const profiles = await fetchAllRowsByIdCursor<{ id: string; stripe_customer_id: string | null }>((afterId, limit) => {
     let q = db.from("profiles").select("id, stripe_customer_id");
     if (afterId) q = q.gt("id", afterId);
@@ -103,6 +105,9 @@ async function compute(): Promise<StripeSnapshot> {
       data: { id: string; stripe_customer_id: string | null }[] | null;
       error: { message: string } | null;
     }>;
+  }).catch((err: unknown) => {
+    console.error("cockpit: comptes illisibles, abonnements Stripe sans lien compte", err);
+    return [] as { id: string; stripe_customer_id: string | null }[];
   });
   const profileIds = new Set(profiles.map((p) => p.id));
   const userByCustomer = new Map<string, string>();

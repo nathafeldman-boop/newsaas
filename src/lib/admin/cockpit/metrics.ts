@@ -79,16 +79,28 @@ const inRange = (t: number | null, r: Range) => t !== null && t >= r.start && t 
 const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
 const eur = (s: SubRecord) => s.currency === "eur";
 
-/** MRR (centimes) des abonnements en cours à l'instant t, impayés compris. */
+/**
+ * Compté dans le MRR à l'instant t : en cours et pas de résiliation demandée
+ * avant t (27/11, Nathan : « ce n'est pas mon vrai MRR ». Même règle que
+ * Stripe : un abonnement résilié pour la fin de sa période sort du MRR dès
+ * la demande, même s'il garde l'accès jusqu'à la fin).
+ */
+export function inMrrAt(sub: SubRecord, t: number): boolean {
+  if (!activeAt(sub, t)) return false;
+  const requested = sub.canceledAt ?? (sub.cancelAtPeriodEnd || sub.cancelAt !== null ? 0 : null);
+  return requested === null || requested > t;
+}
+
+/** MRR (centimes) des abonnements en cours à l'instant t, impayés compris, résiliations demandées exclues. */
 export function mrrAt(subs: SubRecord[], t: number): number {
-  return sum(subs.filter((s) => eur(s) && activeAt(s, t)).map((s) => s.mrrCents));
+  return sum(subs.filter((s) => eur(s) && inMrrAt(s, t)).map((s) => s.mrrCents));
 }
 
 export function mrrSeries(subs: SubRecord[], r: Range, stepMs = DAY_MS): { t: number; mrr: number; active: number }[] {
   const out: { t: number; mrr: number; active: number }[] = [];
   for (let t = r.start; t < r.end; t += stepMs) {
     const point = Math.min(t + stepMs - 1, r.end - 1);
-    const live = subs.filter((s) => activeAt(s, point));
+    const live = subs.filter((s) => inMrrAt(s, point));
     out.push({ t, mrr: sum(live.filter(eur).map((s) => s.mrrCents)), active: live.length });
   }
   return out;
@@ -128,9 +140,11 @@ export function currentState(subs: SubRecord[], now: number): CurrentState {
     plans.set(label, p);
   }
   const mrrOf = (xs: SubRecord[]) => sum(xs.filter(eur).map((s) => s.mrrCents));
+  // MRR et abonnés : hors résiliations programmées (comme Stripe), affichées à part.
+  const staying = healthy.filter((s) => !scheduled.includes(s));
   return {
-    active: healthy.length,
-    mrr: mrrOf(healthy),
+    active: staying.length,
+    mrr: mrrOf(staying),
     scheduled: { count: scheduled.length, mrr: mrrOf(scheduled) },
     pastDue: { count: pastDue.length, mrr: mrrOf(pastDue) },
     paused: { count: paused.length, mrr: mrrOf(paused) },

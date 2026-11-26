@@ -46,16 +46,17 @@ const paid = m.paidSubs(snap, fp);
 assert.deepEqual(paid.map((s) => s.id).sort(), ["A", "B", "C", "D"]);
 assert.equal(m.dueDate({ anchor: Date.UTC(2026, 0, 31, 10), interval: "month", intervalCount: 1 }, 1), Date.UTC(2026, 1, 28, 10));
 assert.equal(m.dueDate({ anchor: Date.UTC(2026, 0, 31, 10), interval: "month", intervalCount: 1 }, 2), Date.UTC(2026, 2, 31, 10));
-// MRR au 15/9 : A, B, C (799 chacun). D n'y est plus : son renouvellement
-// du 8/9 a été refusé, compté comme un départ ce jour-là (29/10), même si
-// Stripe ne l'a arrêté que le 20/9.
-assert.equal(m.mrrAt(paid, Date.UTC(2026, 8, 15)), 799 * 3);
+// MRR au 15/9 : A, B (799 chacun). C a demandé sa résiliation le 12/9 : hors
+// MRR dès la demande, comme Stripe (27/11). D n'y est plus : son
+// renouvellement du 8/9 a été refusé, compté comme un départ ce jour-là
+// (29/10), même si Stripe ne l'a arrêté que le 20/9.
+assert.equal(m.mrrAt(paid, Date.UTC(2026, 8, 15)), 799 * 2);
 assert.equal(paid.find((s) => s.id === "D")!.lostAt, T0 + 7 * D);
 assert.equal(m.mrrAt(paid, T0 + 7 * D - 1), 799 * 2 + 1517);
-// Au 5/10 : A, C (programmé mais en cours)
+// Au 5/10 : A ; C (programmé mais en cours) est à part, hors MRR (27/11, comme Stripe)
 const now = Date.UTC(2026, 9, 5);
 const st = m.currentState(paid, now);
-assert.equal(st.active, 2); assert.equal(st.scheduled.count, 1);
+assert.equal(st.active, 1); assert.equal(st.mrr, 799); assert.equal(st.scheduled.count, 1);
 // C : status "canceled" mais endedAt futur -> compté actif ; cancelAt défini -> programmé
 // Revenus septembre : A1 799 + B1 799 + C1 799 + D1 350 = 2747 récurrent ; à vie 3999 ; remboursement octobre
 const sept = { start: T0, end: oct1 };
