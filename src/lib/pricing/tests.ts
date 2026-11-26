@@ -2,8 +2,8 @@ import { PLAN_PRICES, PRICE_TEST_START } from "@/lib/pricing/plans";
 
 // Date approximative de mise en ligne de la hausse de +30 % (Nathan, 25/11) : à corriger au déploiement.
 export const PRICE_RAISE_30_START = Date.parse("2026-11-25T17:52:00Z");
-// Paywall trimestriel du 26/11 : date approximative, à corriger au déploiement.
-export const QUARTERLY_START = Date.parse("2026-11-26T18:00:00Z");
+// Paywall trimestriel du 26/11 : heure de mise en ligne (Nathan : « lance »).
+export const QUARTERLY_START = Date.parse("2026-11-26T15:32:00Z");
 
 // Tests de prix (29/10, Nathan : « on va tester ça pendant 2 jours, et si
 // c'est pas concluant je remettrai à la normale [...] tu vas mettre un
