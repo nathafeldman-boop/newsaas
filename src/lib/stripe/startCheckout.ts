@@ -49,6 +49,10 @@ export async function getOrCreateStripeCustomer(userId: string, email: string | 
   return customer.id;
 }
 
+// Moyens de paiement du Checkout (configuration Stripe, sans Link) : carte,
+// Apple Pay, Google Pay, PayPal, Revolut Pay, Klarna.
+export const STRIPE_PAYMENT_METHOD_CONFIGURATION = "pmc_1USF5tRd6r34OMU6D2srsCEl";
+
 export type CheckoutError = "already_subscribed" | "not_configured" | "checkout_failed" | "upgrade_failed" | "login_required" | "auto_closed";
 
 type DbClient = Awaited<ReturnType<typeof createClient>> | ReturnType<typeof createAdminClient>;
@@ -220,7 +224,11 @@ export async function startCheckout(
     // (rien à faire côté Checkout pour eux, seul le portail Stripe permet
     // de changer leur moyen de paiement), mais évite d'en créer de
     // nouveaux tant que l'hypothèse Link n'est pas formellement écartée.
-    payment_method_types: ["card"],
+    // 28/11 (Nathan : la friction est au paiement) : plus seulement la
+    // carte. Configuration Stripe « carte, Apple Pay, Google Pay, Klarna,
+    // Revolut Pay, PayPal », SANS Link (voir ci-dessus). Stripe n'affiche
+    // que les moyens compatibles avec le mode (Klarna : achat à vie seul).
+    payment_method_configuration: STRIPE_PAYMENT_METHOD_CONFIGURATION,
     // session_id transmis à /premium/success : filet de secours qui
     // resynchronise l'abonnement (ou l'achat à vie) à la volée si le
     // webhook Stripe n'est jamais arrivé ou a échoué (voir ce fichier pour
@@ -336,7 +344,7 @@ async function startAutoCheckout(
     mode: lifetime ? "payment" : "subscription",
     customer: customerId,
     line_items: [{ price: priceId, quantity: 1 }],
-    payment_method_types: ["card"],
+    payment_method_configuration: STRIPE_PAYMENT_METHOD_CONFIGURATION,
     success_url: options.guest ? GUEST_SUCCESS_URL : `${SITE_URL}/premium/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: options.guest ? options.guest.cancelUrl : `${SITE_URL}/premium?retour=paiement`,
     client_reference_id: user.id,

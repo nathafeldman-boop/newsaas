@@ -1,5 +1,5 @@
 import { getStripeClient } from "@/lib/stripe/client";
-import { getOrCreateStripeCustomer } from "@/lib/stripe/startCheckout";
+import { getOrCreateStripeCustomer, STRIPE_PAYMENT_METHOD_CONFIGURATION } from "@/lib/stripe/startCheckout";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { SITE_URL } from "@/lib/site";
@@ -46,7 +46,7 @@ export async function startUpsellCheckout(
     const session = await getStripeClient().checkout.sessions.create({
       mode: "payment",
       customer: customerId,
-      payment_method_types: ["card"],
+      payment_method_configuration: STRIPE_PAYMENT_METHOD_CONFIGURATION,
       line_items: [
         {
           quantity: 1,
