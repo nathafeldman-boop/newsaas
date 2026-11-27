@@ -28,9 +28,9 @@ async function loadProof(): Promise<ProofData> {
     getPublicTestimonials(6).catch(() => []),
     getPublicReviewStats().catch(() => ({ count: 0, average: null })),
     count(admin.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", weekAgo)).catch(() => null),
-    count(admin.from("offers").select("id", { count: "exact", head: true }).eq("is_active", true)).catch(() => null),
+    count(admin.from("offers").select("id", { count: "exact", head: true }).eq("is_active", true).eq("seo_only", false)).catch(() => null),
     count(admin.from("profiles").select("id", { count: "exact", head: true })).catch(() => null),
-    ...contracts.map((c) => count(admin.from("offers").select("id", { count: "exact", head: true }).eq("is_active", true).eq("contract_type", c)).catch(() => null)),
+    ...contracts.map((c) => count(admin.from("offers").select("id", { count: "exact", head: true }).eq("is_active", true).eq("seo_only", false).eq("contract_type", c)).catch(() => null)),
   ]);
   const offersByContract: Partial<Record<string, number>> = {};
   contracts.forEach((c, i) => {

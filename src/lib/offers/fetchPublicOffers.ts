@@ -42,7 +42,7 @@ const cachedActiveCount = unstable_cache(
   async (type: ContractType | "all") => {
     // GET limité à une ligne plutôt qu'un HEAD : même compte, et compatible
     // avec tous les intermédiaires.
-    let query = createAdminClient().from("offers").select("id", { count: "exact" }).eq("is_active", true).range(0, 0);
+    let query = createAdminClient().from("offers").select("id", { count: "exact" }).eq("is_active", true).eq("seo_only", false).range(0, 0);
     if (type !== "all") query = query.eq("contract_type", type);
     const { count, error } = await query;
     if (error) throw new Error(error.message);
@@ -69,6 +69,7 @@ const cachedOffersPage = unstable_cache(
       .from("offers")
       .select(PUBLIC_OFFER_COLUMNS)
       .eq("is_active", true)
+      .eq("seo_only", false)
       .order("published_at", { ascending: false })
       .order("id")
       .range((page - 1) * PUBLIC_OFFERS_PAGE_SIZE, page * PUBLIC_OFFERS_PAGE_SIZE - 1);

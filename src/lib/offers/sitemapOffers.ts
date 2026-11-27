@@ -27,6 +27,7 @@ export async function fetchOfferSitemapEntries(type: ContractType): Promise<Offe
       .select("id, title, company, location, published_at, created_at")
       .eq("is_active", true)
       .eq("contract_type", type)
+      .eq("seo_only", false)
       .neq("source", "adzuna");
     if (afterId) query = query.gt("id", afterId);
     return query.order("id").limit(limit);
@@ -75,4 +76,30 @@ export async function latestOfferCreatedAt(type?: ContractType): Promise<string 
     console.error("latestOfferCreatedAt failed", err);
     return null;
   }
+}
+
+// Offres importées pour Google seulement (seo_only, voir emploisSync.ts) :
+// plusieurs centaines de milliers d'URLs, au-delà des 50 000 d'un fichier.
+// Découpées en 16 sitemaps par premier caractère de l'id (uuid aléatoire :
+// tranches de taille égale), /sitemap-emplois-0.xml à /sitemap-emplois-f.xml.
+export const SEO_SITEMAP_BUCKETS = "0123456789abcdef".split("");
+
+export async function fetchSeoOfferSitemapEntries(bucket: string): Promise<OfferSitemapEntry[]> {
+  const index = SEO_SITEMAP_BUCKETS.indexOf(bucket);
+  if (index < 0) return [];
+  const lower = `${bucket}0000000-0000-0000-0000-000000000000`;
+  const next = SEO_SITEMAP_BUCKETS[index + 1];
+  const supabase = createCatalogClient();
+  const rows = await fetchAllRowsByIdCursor<Row>((afterId, limit) => {
+    let query = supabase
+      .from("offers")
+      .select("id, title, company, location, published_at, created_at")
+      .eq("is_active", true)
+      .eq("seo_only", true)
+      .gte("id", lower);
+    if (next) query = query.lt("id", `${next}0000000-0000-0000-0000-000000000000`);
+    if (afterId) query = query.gt("id", afterId);
+    return query.order("id").limit(limit);
+  }, SITEMAP_MAX_URLS);
+  return rows.map(toEntry);
 }

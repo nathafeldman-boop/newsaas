@@ -31,7 +31,8 @@ async function computeContractCitySegments(type: JobContract): Promise<CitySegme
       .select("id, location")
       .eq("is_active", true)
       .eq("contract_type", type)
-      .not("source", "in", "(adzuna,demo)");
+      .not("source", "in", "(adzuna,demo)")
+      .eq("seo_only", false);
     if (afterId) query = query.gt("id", afterId);
     return query.order("id").limit(limit);
   });
@@ -82,6 +83,7 @@ async function fetchPage(type: JobContract, locations: string[], knownCount: num
     .eq("is_active", true)
     .eq("contract_type", type)
     .not("source", "in", "(adzuna,demo)")
+    .eq("seo_only", false)
     .in("location", locations)
     .order("published_at", { ascending: false })
     .order("id")

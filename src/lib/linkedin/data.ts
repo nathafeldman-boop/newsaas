@@ -38,6 +38,7 @@ export async function loadCandidates(db: Db, kind: PostKind, now: number, citySe
     .from("offers")
     .select(LINKEDIN_OFFER_COLUMNS)
     .eq("is_active", true)
+    .eq("seo_only", false)
     .eq("contract_type", "alternance")
     .in("source", [...LINKEDIN_SOURCES])
     .gte("published_at", new Date(now - WINDOW_DAYS[kind] * DAY).toISOString())

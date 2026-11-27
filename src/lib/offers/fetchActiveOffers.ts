@@ -74,7 +74,7 @@ export async function fetchActiveOffers(
   if (titles && !titleOr) return [];
 
   function baseQuery() {
-    let q = supabase.from("offers").select("*").eq("is_active", true).limit(limit);
+    let q = supabase.from("offers").select("*").eq("is_active", true).eq("seo_only", false).limit(limit);
     if (excludeIds.length > 0) q = q.not("id", "in", `(${excludeIds.join(",")})`);
     if (sectors.length > 0) q = q.in("sector", sectors);
     if (contractTypes && contractTypes.length > 0) q = q.in("contract_type", contractTypes);

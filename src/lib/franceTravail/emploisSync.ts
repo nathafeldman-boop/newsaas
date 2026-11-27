@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runFranceTravailStream, type StreamResult } from "@/lib/franceTravail/sync";
 import type { FranceTravailQuery } from "@/lib/franceTravail/client";
+import { DEPARTEMENTS } from "@/lib/seo/departements";
 
 // CDI et CDD ouverts aux débutants (07/11 : « plus personne ne cherche
 // d'alternance en ce moment », demande de Nathan). France Travail compte des
@@ -17,7 +18,15 @@ import type { FranceTravailQuery } from "@/lib/franceTravail/client";
 // STALE_AFTER_DAYS est retirée (pourvue, trop ancienne ou sortie du
 // plafond) : les synchros de nuit des alternances ne les revoient pas.
 
-export type EmploisMode = "full" | "fresh";
+// - « seo » (27/11, Nathan : « pages SEO seulement ») : tous les CDI/CDD,
+//   expérience demandée ou non, par département et par jour de création
+//   (le plafond de ~1 150 résultats par recherche n'est pas atteint à cette
+//   échelle). Importés avec seo_only = true : fiche publique et sitemaps
+//   /sitemap-emplois-*.xml pour Google, jamais montrés aux inscrits. Chaque
+//   passage relit un des SEO_DAYS derniers jours ; une offre SEO publiée
+//   depuis plus de SEO_DAYS + 1 jours est retirée.
+
+export type EmploisMode = "full" | "fresh" | "seo";
 
 const REGIONS = ["11", "24", "27", "28", "32", "44", "52", "53", "75", "76", "84", "93", "94"];
 const TYPES = ["CDI", "CDD"];
@@ -39,7 +48,23 @@ function ftDate(ms: number): string {
   return new Date(ms).toISOString().replace(/\.\d{3}Z$/, "Z");
 }
 
+export const SEO_DAYS = 30;
+
+// Jour relu par un passage « seo » : change à chaque heure, si bien que les
+// passages horaires parcourent les SEO_DAYS jours en un peu plus d'une journée.
+export function seoDayIndex(now: number = Date.now()): number {
+  return Math.floor(now / 3_600_000) % SEO_DAYS;
+}
+
 export function emploisQueries(mode: EmploisMode, now: number = Date.now()): FranceTravailQuery[] {
+  if (mode === "seo") {
+    const day = seoDayIndex(now);
+    const window = {
+      minCreationDate: ftDate(now - (day + 1) * 86_400_000),
+      maxCreationDate: ftDate(now - day * 86_400_000),
+    };
+    return DEPARTEMENTS.flatMap((d) => TYPES.map((typeContrat) => ({ typeContrat, departement: d.code, ...window })));
+  }
   if (mode === "fresh") {
     const window = { minCreationDate: ftDate(now - FRESH_WINDOW_HOURS * 3_600_000), maxCreationDate: ftDate(now) };
     return TYPES.map((typeContrat) => ({ ...BASE, typeContrat, ...window }));
@@ -66,6 +91,18 @@ async function runPool<T, R>(items: T[], concurrency: number, worker: (item: T) 
   return results;
 }
 
+async function deactivateOldSeoOffers(admin: ReturnType<typeof createAdminClient>, now: number) {
+  const { count, error } = await admin
+    .from("offers")
+    .update({ is_active: false }, { count: "exact" })
+    .eq("source", "france_travail")
+    .eq("is_active", true)
+    .eq("seo_only", true)
+    .lt("published_at", new Date(now - (SEO_DAYS + 1) * 86_400_000).toISOString());
+  if (error) throw new Error(error.message);
+  return count ?? 0;
+}
+
 async function deactivateStaleEmplois(admin: ReturnType<typeof createAdminClient>, now: number) {
   const { data, error } = await admin
     .from("offers")
@@ -73,6 +110,7 @@ async function deactivateStaleEmplois(admin: ReturnType<typeof createAdminClient
     .eq("source", "france_travail")
     .eq("is_active", true)
     .in("contract_type", ["cdi", "cdd"])
+    .eq("seo_only", false)
     .lt("last_seen_at", new Date(now - STALE_AFTER_DAYS * 86_400_000).toISOString())
     .select("id");
   if (error) throw new Error(error.message);
@@ -94,7 +132,7 @@ export async function handleEmploisSync(request: NextRequest, mode: EmploisMode)
   const admin = createAdminClient();
 
   const results: StreamResult[] = await runPool(emploisQueries(mode), CONCURRENCY, (query) =>
-    runFranceTravailStream(admin, syncStartedAt, query, { deadline, emploi: true }),
+    runFranceTravailStream(admin, syncStartedAt, query, { deadline, emploi: true, seoOnly: mode === "seo" }),
   );
   const errors = results.flatMap((r) => r.errors);
   const truncated = results.filter((r) => r.truncated).length;
@@ -102,7 +140,12 @@ export async function handleEmploisSync(request: NextRequest, mode: EmploisMode)
   // Retrait seulement après une passe complète, sans erreur ni coupure :
   // une nuit en panne ne vide pas le catalogue.
   let deactivated = 0;
-  if (mode === "full" && truncated === 0 && errors.length === 0) {
+  if (mode === "seo") {
+    deactivated = await deactivateOldSeoOffers(admin, startedAt).catch((err: unknown) => {
+      errors.push(`deactivate seo: ${err instanceof Error ? err.message : String(err)}`);
+      return 0;
+    });
+  } else if (mode === "full" && truncated === 0 && errors.length === 0) {
     deactivated = await deactivateStaleEmplois(admin, startedAt).catch((err: unknown) => {
       errors.push(`deactivate: ${err instanceof Error ? err.message : String(err)}`);
       return 0;
@@ -111,6 +154,7 @@ export async function handleEmploisSync(request: NextRequest, mode: EmploisMode)
 
   const summary = {
     mode,
+    ...(mode === "seo" ? { seoDay: seoDayIndex(startedAt) } : {}),
     queries: results.length,
     fetched: results.reduce((sum, r) => sum + r.fetched, 0),
     mapped: results.reduce((sum, r) => sum + r.mapped, 0),

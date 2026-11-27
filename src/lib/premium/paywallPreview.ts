@@ -51,6 +51,7 @@ export async function loadPaywallPreview(supabase: SupabaseClient<Database>, pro
       .from("offers")
       .select("id, title, company, location, contract_type")
       .eq("is_active", true)
+      .eq("seo_only", false)
       .in("contract_type", contractTypes)
       .order("published_at", { ascending: false })
       .limit(PREVIEW_CAP + 1);

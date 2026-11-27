@@ -43,7 +43,15 @@ function withoutContactEmail<T extends { contact_email?: string | null }>(row: T
 
 // Offres France Travail prêtes pour l'upsert dans "offers" (aussi utilisé
 // par la synchro des offres fraîches, offresFraiches.ts).
-export function toOfferRows(jobs: FranceTravailJob[], syncStartedAt: string, options: { emploi?: boolean } = {}) {
+// seoOnly : offres importées seulement pour Google (voir emploisSync.ts,
+// mode « seo »). Le flux débutants (emploi sans seoOnly) écrit
+// seo_only = false : une offre d'abord importée pour Google devient visible
+// des inscrits dès que la recherche « moins d'un an d'expérience » la revoit.
+export function toOfferRows(
+  jobs: FranceTravailJob[],
+  syncStartedAt: string,
+  options: { emploi?: boolean; seoOnly?: boolean } = {},
+) {
   return jobs
     .map((job) => mapFranceTravailJob(job, options))
     .filter((o): o is NonNullable<typeof o> => o !== null)
@@ -52,6 +60,7 @@ export function toOfferRows(jobs: FranceTravailJob[], syncStartedAt: string, opt
       last_seen_at: syncStartedAt,
       content_fingerprint: computeOfferFingerprint(o.title, o.company),
       quality_score: computeOfferQualityScore(o),
+      ...(options.emploi ? { seo_only: options.seoOnly === true } : {}),
     }));
 }
 
@@ -63,7 +72,7 @@ export async function runFranceTravailStream(
   admin: ReturnType<typeof createAdminClient>,
   syncStartedAt: string,
   what: string | FranceTravailQuery,
-  options: { departement?: string; deadline?: number; expectAlternance?: boolean; emploi?: boolean } = {},
+  options: { departement?: string; deadline?: number; expectAlternance?: boolean; emploi?: boolean; seoOnly?: boolean } = {},
 ): Promise<StreamResult> {
   let fetched = 0;
   let mapped = 0;
@@ -107,22 +116,25 @@ export async function runFranceTravailStream(
     }
     fetched += jobs.length;
 
-    const rows = toOfferRows(jobs, syncStartedAt, { emploi: options.emploi });
+    const rows = toOfferRows(jobs, syncStartedAt, { emploi: options.emploi, seoOnly: options.seoOnly });
     mapped += rows.length;
     const withEmail = rows.filter((r) => r.contact_email).length;
     if (withEmail > 0) console.log(`France Travail ${label} : ${withEmail}/${rows.length} offres avec email recruteur`);
 
     if (rows.length > 0) {
+      // Import pour Google : jamais d'écriture sur une offre déjà en base (une
+      // offre débutants resterait sinon cachée aux inscrits).
+      const upsertOptions = { onConflict: "source,external_id", ignoreDuplicates: options.seoOnly === true };
       let { error } = await admin
         .from("offers")
-        .upsert(contactEmailColumnMissing ? rows.map(withoutContactEmail) : rows, { onConflict: "source,external_id" });
+        .upsert(contactEmailColumnMissing ? rows.map(withoutContactEmail) : rows, upsertOptions);
       // Colonne offers.contact_email pas encore créée en base : on retente
       // sans elle, et on s'en souvient pour la suite -- la synchro ne doit
       // jamais s'arrêter pour ça.
       if (error && !contactEmailColumnMissing && /contact_email/.test(error.message)) {
         contactEmailColumnMissing = true;
         console.error("France Travail: colonne offers.contact_email absente, emails recruteurs ignorés", error.message);
-        ({ error } = await admin.from("offers").upsert(rows.map(withoutContactEmail), { onConflict: "source,external_id" }));
+        ({ error } = await admin.from("offers").upsert(rows.map(withoutContactEmail), upsertOptions));
       }
       if (error) {
         errors.push(`upsert ${label} range ${rangeStart}-${rangeEnd}: ${error.message}`);

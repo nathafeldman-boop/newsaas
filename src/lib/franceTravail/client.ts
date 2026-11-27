@@ -154,6 +154,9 @@ export type FranceTravailQuery = {
   experience?: string;
   publieeDepuis?: number;
   region?: string;
+  // Code département ("75", "2A") : import SEO des CDI/CDD (emploisSync.ts,
+  // mode « seo »). Équivalent au paramètre `departement` de la fonction.
+  departement?: string;
   // 1 : plus récentes d'abord (les ~1 150 premières sont les plus fraîches).
   sort?: number;
 };
@@ -165,6 +168,7 @@ export function queryLabel(query: string | FranceTravailQuery): string {
     query.natureContrat ? `natureContrat=${query.natureContrat}` : null,
     query.typeContrat ? `typeContrat=${query.typeContrat}` : null,
     query.region ? `region=${query.region}` : null,
+    query.departement ? `departement=${query.departement}` : null,
   ]
     .filter(Boolean)
     .join(" ");
@@ -203,7 +207,8 @@ export async function searchFranceTravailPage(
   if (query.publieeDepuis) url.searchParams.set("publieeDepuis", String(query.publieeDepuis));
   if (query.region) url.searchParams.set("region", query.region);
   if (query.sort !== undefined) url.searchParams.set("sort", String(query.sort));
-  if (departement) url.searchParams.set("departement", departement);
+  const dep = departement ?? query.departement;
+  if (dep) url.searchParams.set("departement", dep);
 
   let res: Response;
   for (let attempt = 0; ; attempt++) {

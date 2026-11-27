@@ -76,4 +76,6 @@ export const SITEMAP_FILES = [
   "/sitemap-offres-cdi.xml",
   "/sitemap-offres-cdd.xml",
   "/sitemap-offres-recentes.xml",
+  // CDI/CDD importés pour Google seulement (27/11), 16 tranches.
+  ..."0123456789abcdef".split("").map((b) => `/sitemap-emplois-${b}.xml`),
 ];

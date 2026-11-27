@@ -285,7 +285,7 @@ export function catalogSize(catalog: Catalog): number {
 
 export async function loadCatalog(db: Db): Promise<Catalog> {
   const offers = await fetchAllRowsByIdCursor<CatalogOffer>((afterId, limit) => {
-    let q = db.from("offers").select("id, title, company, contract_type, sector, location, created_at").eq("is_active", true);
+    let q = db.from("offers").select("id, title, company, contract_type, sector, location, created_at").eq("is_active", true).eq("seo_only", false);
     if (afterId) q = q.gt("id", afterId);
     return q.order("id").limit(limit) as unknown as PromiseLike<{
       data: CatalogOffer[] | null;

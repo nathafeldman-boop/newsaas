@@ -144,6 +144,9 @@ export type Offer = {
   is_school_ad?: boolean | null;
   // Stages scolaires (SQL 20261119000000) : classes concernées.
   school_levels?: string[] | null;
+  // Offre importée seulement pour Google (SQL 20261127000000) : jamais
+  // montrée aux inscrits.
+  seo_only?: boolean | null;
 };
 
 export type Swipe = {

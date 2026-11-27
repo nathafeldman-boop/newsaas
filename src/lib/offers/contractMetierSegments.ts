@@ -39,7 +39,8 @@ async function computeIndex(type: JobContract): Promise<ContractMetierIndex> {
       .select("id, title, location, published_at")
       .eq("is_active", true)
       .eq("contract_type", type)
-      .not("source", "in", "(adzuna,demo)");
+      .not("source", "in", "(adzuna,demo)")
+      .eq("seo_only", false);
     if (afterId) query = query.gt("id", afterId);
     return query.order("id").limit(limit);
   });

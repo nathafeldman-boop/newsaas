@@ -671,14 +671,14 @@ export function OnboardingWizard({
     let count: number | null = 0;
     if (sectors.length > 0) {
       const counted = await withDeadline(
-        supabase.from("offers").select("id", { count: "exact", head: true }).eq("is_active", true).in("sector", sectors),
+        supabase.from("offers").select("id", { count: "exact", head: true }).eq("is_active", true).eq("seo_only", false).in("sector", sectors),
         6_000,
       );
       count = counted && !counted.error ? (counted.count ?? null) : null;
     } else if (lookingFor.length > 0) {
       // Version B (pas d'écran secteurs) : offres des contrats choisis dans la ville.
       const place = city.trim().split(" (")[0]?.replace(/[%_,()*\\]/g, " ").trim() ?? "";
-      let query = supabase.from("offers").select("id", { count: "exact", head: true }).eq("is_active", true).in("contract_type", lookingFor);
+      let query = supabase.from("offers").select("id", { count: "exact", head: true }).eq("is_active", true).eq("seo_only", false).in("contract_type", lookingFor);
       if (place.length >= 2 && mobility === "Sur place uniquement") query = query.ilike("location", `%${place}%`);
       const counted = await withDeadline(query, 6_000);
       count = counted && !counted.error ? (counted.count ?? null) : null;
