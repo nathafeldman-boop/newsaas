@@ -6,6 +6,8 @@ import { offerRefundGuaranteeAction } from "@/app/(app)/premium/guarantee-action
 import { GUARANTEE_COOKIE, setBrowserCookie } from "@/lib/premium/guaranteeTerms";
 import { GUARANTEE_EVENT } from "@/components/premium/PaywallExitGuard";
 import { GuaranteeHero } from "@/components/premium/GuaranteeHero";
+import { MonthImage } from "@/components/premium/PaywallBlocks";
+import { monthMoment } from "@/lib/premium/monthMoment";
 import { useWelcomeCountdown } from "@/components/premium/WelcomeCountdown";
 import { priceIncreasePct, priceSheet, type LifetimeOffer, type PriceSheet } from "@/lib/pricing/plans";
 
@@ -15,7 +17,7 @@ import { priceIncreasePct, priceSheet, type LifetimeOffer, type PriceSheet } fro
 // bienvenue expliqué avec les vrais prix, tant que ce prix est ouvert.
 // L'engagement signé à l'empreinte est passé à la fin de l'onboarding le
 // 28/10 (Nathan), voir components/pledge/PledgeSign.tsx.
-type Phase = "trust" | "guarantee" | "countdown" | "done";
+type Phase = "trust" | "moment" | "guarantee" | "countdown" | "done";
 
 // « 7,99 € » -> 7.99
 function euros(price: string): number {
@@ -65,7 +67,9 @@ export function PaywallPledge({
 }) {
   const showTrust = trustCount >= 100;
   const trustTarget = trustFloor(trustCount);
-  const [phase, setPhase] = useState<Phase>(showTrust ? "trust" : "guarantee");
+  const [phase, setPhase] = useState<Phase>(showTrust ? "trust" : "moment");
+  // « Début décembre : c'est le moment où les entreprises recrutent » (27/11), change chaque mois.
+  const [moment] = useState(() => monthMoment(new Date()));
   const welcome = useWelcomeCountdown(welcomeEndsAt, welcomeActive);
   const lifetimeNow = lifetimeOffer ? lifetimeOffer.price : prices.lifetime.welcome;
   const flash = lifetimeOffer?.kind === "flash";
@@ -93,7 +97,7 @@ export function PaywallPledge({
 
   useEffect(() => {
     if (phase !== "trust") return;
-    const timer = setTimeout(() => setPhase("guarantee"), 3200);
+    const timer = setTimeout(() => setPhase("moment"), 3200);
     return () => clearTimeout(timer);
   }, [phase]);
 
@@ -140,8 +144,29 @@ export function PaywallPledge({
                 <p style={{ fontSize: 14, margin: "8px 0 0", color: "color-mix(in srgb, var(--color-text) 62%, transparent)" }}>
                   accompagnés par Stageio pour trouver leur alternance ou leur stage.
                 </p>
-                <button type="button" className="btn btn-primary" onClick={() => setPhase("guarantee")} style={{ marginTop: 28, height: 50, borderRadius: 999, padding: "0 28px", fontWeight: 700 }}>
+                <button type="button" className="btn btn-primary" onClick={() => setPhase("moment")} style={{ marginTop: 28, height: 50, borderRadius: 999, padding: "0 28px", fontWeight: 700 }}>
                   Continuer →
+                </button>
+              </motion.div>
+            ) : phase === "moment" ? (
+              <motion.div
+                key="moment"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -16 }}
+                className="flex w-full flex-col items-center text-center"
+                style={{ maxWidth: 380, margin: "auto" }}
+              >
+                <MonthImage label={moment.label} month={moment.month} />
+                <p style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", margin: "24px 0 0", color: "var(--color-accent-700)" }}>
+                  {moment.label}, maintenant
+                </p>
+                <h1 style={{ fontSize: 27, fontWeight: 800, lineHeight: 1.18, margin: "8px 0 0" }}>
+                  C&apos;est le moment où les entreprises recrutent.
+                </h1>
+                <p style={{ fontSize: 14.5, lineHeight: 1.5, margin: "10px 0 0", color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>{moment.why}</p>
+                <button type="button" className="btn btn-primary" onClick={() => setPhase("guarantee")} style={{ marginTop: 24, height: 50, borderRadius: 999, padding: "0 28px", fontWeight: 700 }}>
+                  Je postule maintenant →
                 </button>
               </motion.div>
             ) : phase === "countdown" ? (

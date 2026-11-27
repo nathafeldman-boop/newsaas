@@ -141,3 +141,32 @@ export function PaywallReviews({ reviews, average, count }: { reviews: PublicTes
     </section>
   );
 }
+
+const MONTH_EMOJI = ["❄️", "💼", "🌱", "🌷", "☀️", "🎓", "🏖️", "🗓️", "🍂", "🎃", "🍁", "🎄"];
+
+/** Image du mois (page de calendrier), pour l'écran « c'est le moment » avant le paywall (27/11). */
+export function MonthImage({ label, month }: { label: string; month: number }) {
+  const top = label.startsWith("Mi-") ? "Mi" : label.split(" ")[0];
+  const monthName = label.replace(/^Mi-/, "").split(" ").slice(-1)[0];
+  return (
+    <div
+      role="img"
+      aria-label={label}
+      style={{
+        width: 150,
+        borderRadius: 24,
+        background: "#fff",
+        boxShadow: "0 18px 40px color-mix(in srgb, var(--color-accent) 30%, transparent)",
+        overflow: "hidden",
+        textAlign: "center",
+        transform: "rotate(-4deg)",
+      }}
+    >
+      <div style={{ background: "linear-gradient(135deg, var(--color-accent-700), var(--color-accent))", color: "#fff", fontSize: 14, fontWeight: 800, letterSpacing: "0.1em", padding: "8px 0", textTransform: "uppercase" }}>
+        {top}
+      </div>
+      <div style={{ fontSize: 56, lineHeight: 1.1, padding: "10px 0 0" }}>{MONTH_EMOJI[month]}</div>
+      <div style={{ fontSize: 20, fontWeight: 800, padding: "4px 6px 14px", textTransform: "capitalize", color: "var(--color-text)" }}>{monthName}</div>
+    </div>
+  );
+}

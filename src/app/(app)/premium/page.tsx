@@ -19,6 +19,7 @@ import { lifetimeOfferFor, priceSheet } from "@/lib/pricing/plans";
 import { PaywallPledge } from "@/components/premium/PaywallPledge";
 import { PaywallExitGuard } from "@/components/premium/PaywallExitGuard";
 import { GuaranteeBlock, PaywallFaq, PaywallReviews } from "@/components/premium/PaywallBlocks";
+import { FEATURED_REVIEWS } from "@/lib/premium/paywallHero";
 import { getPublicReviewStats, getPublicTestimonials } from "@/lib/reviews/publicStats";
 import { GuaranteeCard, type GuaranteePhase } from "@/components/premium/GuaranteeCard";
 import { getGuaranteeStatus, type GuaranteeStatus } from "@/lib/premium/refundGuarantee";
@@ -154,9 +155,11 @@ export default async function PremiumPage({
   const trustCount = showPledge ? await getTrustCount().catch(() => 0) : 0;
   // Vrais avis approuvés (26/11, bloc avis du paywall) : rien si aucun.
   const onPaywall = !premium && !paymentIssue;
-  const [testimonials, reviewStats] = onPaywall
-    ? await Promise.all([getPublicTestimonials(4).catch(() => []), getPublicReviewStats().catch(() => ({ count: 0, average: null }))])
+  const [dbTestimonials, reviewStats] = onPaywall
+    ? await Promise.all([getPublicTestimonials(6).catch(() => []), getPublicReviewStats().catch(() => ({ count: 0, average: null }))])
     : [[], { count: 0, average: null }];
+  // Avis du paywall : 5 étoiles seulement, ceux des membres qui ont trouvé (27/11) en premier.
+  const testimonials = [...FEATURED_REVIEWS, ...dbTestimonials.filter((t) => t.rating === 5)].slice(0, 6);
   // Peur (Nathan, 25/11 : « accentue la peur des étudiants ») : le délai et
   // ce qu'on perd à attendre, selon le contrat cherché. Faits vrais
   // seulement (lib/premium/painCopy.ts).
