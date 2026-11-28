@@ -28,6 +28,8 @@ import { NO_CHROME_STEPS, STEPS_A, STEPS_B, STEP_LABELS, type StepId } from "@/l
 import { PledgeDone, ProofCompare, ProofDemo, ProofOffers, ProofReviews, ProofWeek, type ProofData } from "@/components/onboarding/ProofScreens";
 import { PledgeSign } from "@/components/pledge/PledgeSign";
 import { UrgencyScreen } from "@/components/onboarding/UrgencyScreen";
+import { logButtonClick } from "@/lib/analytics/logButtonClick";
+import { GoalScreen, PotentialScreen, type InterviewGoal, type PotentialCounts } from "@/components/onboarding/GoalScreens";
 import { forgetSignupCity, readSignupCity } from "@/lib/signup/intentStorage";
 import { useDemo } from "@/lib/demo/demoMode";
 
@@ -316,6 +318,8 @@ export function OnboardingWizard({
   const [direction, setDirection] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const stepId = STEP_IDS[stepIndex];
+  const [interviewGoal, setInterviewGoal] = useState<InterviewGoal | null>(null);
+  const [potentialCounts, setPotentialCounts] = useState<PotentialCounts | null>(null);
 
   // Séquence de l'étape "outro" (voir design mobile) : sauvegarde réelle du
   // profil en tâche de fond pendant une petite animation de chargement,
@@ -368,6 +372,33 @@ export function OnboardingWizard({
   const schoolAge = ageOn(birthDate);
   const [targetJobs, setTargetJobs] = useState<string[]>(initialProfile?.target_jobs ?? []);
   const [mobility, setMobility] = useState(initialProfile?.mobility ?? "");
+
+  // Écran « potentiel » : offres comptées en base pour ce profil (contrats
+  // choisis, ville si « sur place »). Bornées à 6 s : sans réponse, l'écran
+  // n'affiche pas de chiffre plutôt qu'un faux.
+  useEffect(() => {
+    if (stepId !== "potential" || potentialCounts) return;
+    let cancelled = false;
+    const db = createClient();
+    const place = city.trim().split(" (")[0]?.replace(/[%_,()*\\]/g, " ").trim() ?? "";
+    const base = () => {
+      let q = db.from("offers").select("id", { count: "exact", head: true }).eq("is_active", true).eq("seo_only", false);
+      if (lookingFor.length > 0) q = q.in("contract_type", lookingFor);
+      if (place.length >= 2 && mobility === "Sur place uniquement") q = q.ilike("location", `%${place}%`);
+      return q;
+    };
+    const since = new Date(Date.now() - 7 * 86_400_000).toISOString();
+    void Promise.all([withDeadline(base(), 6_000), withDeadline(base().gte("created_at", since), 6_000)]).then(([all, week]) => {
+      if (cancelled) return;
+      setPotentialCounts({
+        matching: all && !all.error ? (all.count ?? null) : null,
+        thisWeek: week && !week.error ? (week.count ?? null) : null,
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [stepId, potentialCounts, city, mobility, lookingFor]);
   const [educationLevel, setEducationLevel] = useState(initialProfile?.education_level ?? "");
   const [experienceLevel, setExperienceLevel] = useState(initialProfile?.experience_level ?? "");
   // On retient le libellé de la tuile tapée (pas directement une date) : une
@@ -573,6 +604,9 @@ export function OnboardingWizard({
   function nextIndex(i: number, dir: 1 | -1): number {
     let j = Math.min(Math.max(i + dir, 0), STEP_IDS.length - 1);
     if (schoolMode && STEP_IDS[j] === "level") j = Math.min(Math.max(j + dir, 0), STEP_IDS.length - 1);
+    // Objectif d'entretien et potentiel (28/11) : pas pour les stages
+    // scolaires (pas d'entretien d'embauche).
+    while (schoolMode && (STEP_IDS[j] === "goal" || STEP_IDS[j] === "potential")) j = Math.min(Math.max(j + dir, 0), STEP_IDS.length - 1);
     return j;
   }
 
@@ -1313,6 +1347,19 @@ export function OnboardingWizard({
             {stepId === "proof_reviews" && <ProofReviews data={proof} onNext={goNext} />}
             {stepId === "proof_demo" && <ProofDemo data={proof} onNext={goNext} />}
             {stepId === "urgency" && <UrgencyScreen lookingFor={lookingFor} onNext={goNext} />}
+            {stepId === "goal" && (
+              <GoalScreen
+                value={interviewGoal}
+                onPick={(g) => {
+                  setInterviewGoal(g);
+                  void logButtonClick(userId, "interview_goal", { goal: g });
+                  advanceStep("goal");
+                }}
+              />
+            )}
+            {stepId === "potential" && (
+              <PotentialScreen goal={interviewGoal ?? "week"} contractLabel={lookingFor.length === 1 ? ({ alternance: "d'alternance", stage: "de stage", cdi: "en CDI", cdd: "en CDD", stage_scolaire: "de stage" } as const)[lookingFor[0]] : ""} counts={potentialCounts} onNext={goNext} />
+            )}
             {stepId === "pledge" && (
               <div className="flex flex-1 flex-col px-1">
                 <PledgeSign userId={userId} contractLabel={myContractLabel(lookingFor)} onSigned={goNext} />

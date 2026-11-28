@@ -28,6 +28,8 @@ export const STEP_IDS = [
   "source",
   "proof_demo",
   "proof_week",
+  "goal",
+  "potential",
   "cv",
   "outro",
   "pledge",
@@ -35,7 +37,7 @@ export const STEP_IDS = [
 ] as const;
 
 /** Écrans sans question (pas de barre de progression, pas de « Continuer » commun). */
-export const NO_CHROME_STEPS: readonly StepId[] = ["intro", "trust", "proof_offers", "proof_week", "proof_compare", "proof_reviews", "proof_demo", "urgency", "outro", "pledge", "pledge_done"];
+export const NO_CHROME_STEPS: readonly StepId[] = ["intro", "trust", "proof_offers", "proof_week", "proof_compare", "proof_reviews", "proof_demo", "urgency", "goal", "potential", "outro", "pledge", "pledge_done"];
 export type StepId = (typeof STEP_IDS)[number];
 
 export const STEP_LABELS: Record<StepId, string> = {
@@ -62,6 +64,8 @@ export const STEP_LABELS: Record<StepId, string> = {
   proof_demo: "Preuve : démo de l'appli",
   pledge: "Contrat à l'empreinte",
   pledge_done: "Contrat signé",
+  goal: "Objectif : premier entretien",
+  potential: "Calcul du potentiel",
 };
 
 // Test A/B d'onboarding (19/11, Nathan : « copie juste l'onboarding de
@@ -74,7 +78,7 @@ export const STEP_LABELS: Record<StepId, string> = {
 // 20/11 (Nathan : « remets le parcours du 31/10 ») : A = les écrans du 31/10,
 // sans les preuves ajoutées depuis (offres en ligne, urgence, offres de la semaine).
 export const STEPS_A: readonly StepId[] = STEP_IDS.filter((s) => !["quick_job", "quick_criteria", "proof_offers", "urgency", "proof_week"].includes(s));
-export const STEPS_B: readonly StepId[] = ["quick_job", "proof_offers", "quick_criteria", "proof_reviews", "proof_week", "cv", "outro", "pledge", "pledge_done"];
+export const STEPS_B: readonly StepId[] = ["quick_job", "proof_offers", "quick_criteria", "proof_reviews", "proof_week", "goal", "potential", "cv", "outro", "pledge", "pledge_done"];
 
 /** Début du test : les comptes créés avant gardent l'onboarding A. */
 export const AB_ONBOARDING_START = "2026-11-19T18:35:00Z";
