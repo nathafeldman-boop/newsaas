@@ -91,6 +91,40 @@ async function runPool<T, R>(items: T[], concurrency: number, worker: (item: T) 
   return results;
 }
 
+// Grands départements (28/11, premier passage SEO : Bouches-du-Rhône,
+// Rhône, Nord…) : au-delà de la première page, France Travail renvoie la
+// même page, quelle que soit la fenêtre Range. On redécoupe alors la journée
+// en deux, jusqu'à SEO_SPLIT_DEPTH fois (tranches de 3 h), pour que chaque
+// recherche tienne dans une page.
+const SEO_SPLIT_DEPTH = 3;
+const PAGINATION_IGNORED = /pagination ignorée par l'API/;
+
+export function splitWindow(query: FranceTravailQuery): [FranceTravailQuery, FranceTravailQuery] | null {
+  if (!query.minCreationDate || !query.maxCreationDate) return null;
+  const from = Date.parse(query.minCreationDate);
+  const to = Date.parse(query.maxCreationDate);
+  const mid = from + Math.floor((to - from) / 2);
+  return [
+    { ...query, maxCreationDate: ftDate(mid) },
+    { ...query, minCreationDate: ftDate(mid) },
+  ];
+}
+
+async function runSplitting(
+  run: (q: FranceTravailQuery) => Promise<StreamResult>,
+  query: FranceTravailQuery,
+  depth: number,
+): Promise<StreamResult[]> {
+  const result = await run(query);
+  const halves = depth < SEO_SPLIT_DEPTH && result.errors.some((e) => PAGINATION_IGNORED.test(e)) ? splitWindow(query) : null;
+  if (!halves) return [result];
+  // La première page de cette recherche est déjà en base : on garde son
+  // compte, sans l'erreur, et on relit les deux moitiés.
+  const kept = { ...result, errors: result.errors.filter((e) => !PAGINATION_IGNORED.test(e)) };
+  const [a, b] = await Promise.all(halves.map((h) => runSplitting(run, h, depth + 1)));
+  return [kept, ...a, ...b];
+}
+
 async function deactivateOldSeoOffers(admin: ReturnType<typeof createAdminClient>, now: number) {
   const { count, error } = await admin
     .from("offers")
@@ -131,9 +165,11 @@ export async function handleEmploisSync(request: NextRequest, mode: EmploisMode)
   const deadline = startedAt + TIME_BUDGET_MS;
   const admin = createAdminClient();
 
-  const results: StreamResult[] = await runPool(emploisQueries(mode), CONCURRENCY, (query) =>
-    runFranceTravailStream(admin, syncStartedAt, query, { deadline, emploi: true, seoOnly: mode === "seo" }),
-  );
+  const run = (query: FranceTravailQuery) =>
+    runFranceTravailStream(admin, syncStartedAt, query, { deadline, emploi: true, seoOnly: mode === "seo" });
+  const results: StreamResult[] = (
+    await runPool(emploisQueries(mode), CONCURRENCY, (query) => (mode === "seo" ? runSplitting(run, query, 0) : run(query).then((r) => [r])))
+  ).flat();
   const errors = results.flatMap((r) => r.errors);
   const truncated = results.filter((r) => r.truncated).length;
 

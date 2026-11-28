@@ -44,3 +44,13 @@ assert.equal("seo_only" in toOfferRows([alt], t)[0], false, "synchros alternance
 assert.equal(SEO_SITEMAP_BUCKETS.length, 16);
 assert.equal(SITEMAP_FILES.filter((f) => f.startsWith("/sitemap-emplois-")).length, 16);
 console.log("seo-emplois : ok");
+
+// Grands départements : la journée se redécoupe en deux moitiés jointives.
+import { splitWindow } from "../src/lib/franceTravail/emploisSync";
+const q0 = queries[0];
+const halves = splitWindow(q0)!;
+assert.equal(halves[0].minCreationDate, q0.minCreationDate);
+assert.equal(halves[0].maxCreationDate, halves[1].minCreationDate);
+assert.equal(halves[1].maxCreationDate, q0.maxCreationDate);
+assert.equal(halves[0].departement, q0.departement);
+console.log("seo-emplois (découpage) : ok");
