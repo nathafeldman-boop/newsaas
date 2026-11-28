@@ -17,7 +17,7 @@ import { priceIncreasePct, priceSheet, type LifetimeOffer, type PriceSheet } fro
 // bienvenue expliqué avec les vrais prix, tant que ce prix est ouvert.
 // L'engagement signé à l'empreinte est passé à la fin de l'onboarding le
 // 28/10 (Nathan), voir components/pledge/PledgeSign.tsx.
-type Phase = "trust" | "moment" | "guarantee" | "countdown" | "done";
+type Phase = "trust" | "results" | "moment" | "guarantee" | "countdown" | "done";
 
 // « 7,99 € » -> 7.99
 function euros(price: string): number {
@@ -67,7 +67,7 @@ export function PaywallPledge({
 }) {
   const showTrust = trustCount >= 100;
   const trustTarget = trustFloor(trustCount);
-  const [phase, setPhase] = useState<Phase>(showTrust ? "trust" : "moment");
+  const [phase, setPhase] = useState<Phase>(showTrust ? "trust" : "results");
   // « Début décembre : c'est le moment où les entreprises recrutent » (27/11), change chaque mois.
   const [moment] = useState(() => monthMoment(new Date()));
   const welcome = useWelcomeCountdown(welcomeEndsAt, welcomeActive);
@@ -97,7 +97,7 @@ export function PaywallPledge({
 
   useEffect(() => {
     if (phase !== "trust") return;
-    const timer = setTimeout(() => setPhase("moment"), 3200);
+    const timer = setTimeout(() => setPhase("results"), 3200);
     return () => clearTimeout(timer);
   }, [phase]);
 
@@ -144,8 +144,37 @@ export function PaywallPledge({
                 <p style={{ fontSize: 14, margin: "8px 0 0", color: "color-mix(in srgb, var(--color-text) 62%, transparent)" }}>
                   accompagnés par Stageio pour trouver leur alternance ou leur stage.
                 </p>
-                <button type="button" className="btn btn-primary" onClick={() => setPhase("moment")} style={{ marginTop: 28, height: 50, borderRadius: 999, padding: "0 28px", fontWeight: 700 }}>
+                <button type="button" className="btn btn-primary" onClick={() => setPhase("results")} style={{ marginTop: 28, height: 50, borderRadius: 999, padding: "0 28px", fontWeight: 700 }}>
                   Continuer →
+                </button>
+              </motion.div>
+            ) : phase === "results" ? (
+              // Résultats des abonnés (28/11, Nathan : « sur 300 abonnements,
+              // 250 ont trouvé leur alternance », chiffres qu'il garantit vrais).
+              // « Plus de 75 % » reste en dessous des 83 % que donnent ses chiffres.
+              <motion.div
+                key="results"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -16 }}
+                className="flex w-full flex-col items-center text-center"
+                style={{ maxWidth: 380, margin: "auto" }}
+              >
+                <div aria-hidden style={{ fontSize: 44 }}>🎓</div>
+                <p style={{ fontSize: 15, fontWeight: 600, margin: "14px 0 0", color: "color-mix(in srgb, var(--color-text) 65%, transparent)" }}>
+                  Plus de
+                </p>
+                <p style={{ fontFamily: "var(--font-heading)", fontSize: 64, fontWeight: 800, lineHeight: 1.05, margin: "2px 0 0", color: "var(--color-accent-700)" }}>
+                  75 %
+                </p>
+                <p style={{ fontSize: 20, fontWeight: 800, lineHeight: 1.3, margin: "8px 0 0" }}>
+                  de nos abonnés ont trouvé leur alternance avec Stageio
+                </p>
+                <p style={{ fontSize: 13, margin: "10px 0 0", color: "color-mix(in srgb, var(--color-text) 58%, transparent)" }}>
+                  250 abonnés sur 300 nous ont dit avoir trouvé.
+                </p>
+                <button type="button" className="btn btn-primary" onClick={() => setPhase("moment")} style={{ marginTop: 28, height: 50, borderRadius: 999, padding: "0 28px", fontWeight: 700 }}>
+                  Moi aussi →
                 </button>
               </motion.div>
             ) : phase === "moment" ? (

@@ -78,7 +78,7 @@ export const STEP_LABELS: Record<StepId, string> = {
 // 20/11 (Nathan : « remets le parcours du 31/10 ») : A = les écrans du 31/10,
 // sans les preuves ajoutées depuis (offres en ligne, urgence, offres de la semaine).
 export const STEPS_A: readonly StepId[] = STEP_IDS.filter((s) => !["quick_job", "quick_criteria", "proof_offers", "urgency", "proof_week"].includes(s));
-export const STEPS_B: readonly StepId[] = ["quick_job", "proof_offers", "quick_criteria", "proof_reviews", "proof_week", "goal", "potential", "cv", "outro", "pledge", "pledge_done"];
+export const STEPS_B: readonly StepId[] = ["quick_job", "proof_offers", "quick_criteria", "proof_reviews", "proof_week", "proof_compare", "goal", "potential", "cv", "outro", "pledge", "pledge_done"];
 
 /** Début du test : les comptes créés avant gardent l'onboarding A. */
 export const AB_ONBOARDING_START = "2026-11-19T18:35:00Z";
