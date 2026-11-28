@@ -85,10 +85,6 @@
       "schedule": "17 * * * *"
     },
     {
-      "path": "/api/cron/sync-france-travail-emplois?mode=seo",
-      "schedule": "37 7-23 * * *"
-    },
-    {
       "path": "/api/cron/tiktok-views",
       "schedule": "*/30 * * * *"
     }

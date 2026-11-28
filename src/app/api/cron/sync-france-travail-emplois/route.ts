@@ -8,6 +8,9 @@ export const maxDuration = 300;
 
 export async function GET(request: NextRequest) {
   const param = request.nextUrl.searchParams.get("mode");
-  const mode = param === "fresh" || param === "seo" ? param : "full";
+  // 28/11 : import SEO en pause, il saturait les I/O de la base (inscriptions et
+  // connexions en erreur). À relancer seulement avec un rythme plus doux.
+  if (param === "seo") return Response.json({ ok: true, skipped: "seo en pause" });
+  const mode = param === "fresh" ? param : "full";
   return handleEmploisSync(request, mode);
 }
